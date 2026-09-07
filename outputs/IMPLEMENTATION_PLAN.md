@@ -151,7 +151,7 @@ Phase 8: Full QA
 |------|--------|
 | **Goal** | Complete P0 verification |
 | **Dependencies** | All phases complete |
-| **QA Doc** | qa/00_全流程验收矩阵.md (NOTE: this file is MISSING from the design pack - must be created) |
+| **QA Doc** | docs/qa_00_全流程验收矩阵.md (CONFIRMED: qa/ directory is empty in design pack. This file MUST be created before Phase 8. Content should be based on gate conditions in 02_Codex执行优先级与阶段计划.md and 00_使用方法_必读.md §7) |
 | **Commands** | `dart format .`, `flutter analyze`, `flutter test`, `flutter test integration_test` |
 | **Acceptance** | All P0 items pass; no fake buttons/stats; no duplicate rewards; offline works; recovery works; unrun tests explicitly marked |
 
@@ -159,14 +159,23 @@ Phase 8: Full QA
 
 ## Missing Files from Design Pack
 
-The following files are referenced in execution_order.json and documentation but do NOT exist in the pack:
+CONFIRMED after Phase 0.5 full scan of CozyFocus_Complete_Development_Pack_V2_20260907:
 
-| File | Referenced By | Impact |
-|------|--------------|--------|
-| `reference/01_技术架构契约.md` | execution_order.json Phase 0, multiple prompts | HIGH - architecture constraints missing. Covered by this document's ARCHITECTURE_DECISION.md |
-| `reference/02_动态资产契约.md` | execution_order.json Phase 0, animation prompts | HIGH - Rive asset contract missing. Covered by PET_ANIMATION_ARCHITECTURE.md |
-| `qa/00_全流程验收矩阵.md` | execution_order.json Phase 0 and 8 | HIGH - acceptance criteria missing. Must be created in Phase 1 or early Phase 2 |
-| `04_完成定义与验收方法.md` | Root docs, Phase 8 | MEDIUM - completion definition missing. Partially covered by 00_使用方法_必读.md section 7 |
-| `designs/03_专注中.png` | prompts/03 | Verify: may exist with encoding-mangled name. Check on disk. |
+| File | Status | Impact | Replacement |
+|------|--------|--------|-------------|
+| `reference/01_技术架构契约.md` | ❌ CONFIRMED MISSING | HIGH | outputs/ARCHITECTURE_DECISION.md serves as equivalent |
+| `reference/02_动态资产契约.md` | ❌ CONFIRMED MISSING | HIGH | outputs/PET_ANIMATION_ARCHITECTURE.md serves as equivalent |
+| `qa/00_全流程验收矩阵.md` | ❌ CONFIRMED MISSING (qa/ is empty) | HIGH | Must be created before Phase 8. Base on gate conditions in 02_Codex执行优先级与阶段计划.md |
+| `designs/03_专注中.png` | ❌ CONFIRMED MISSING from designs/ | MEDIUM | Phase 2 implementer must ask for this design or infer from 03A/03B/03C |
+| `designs/14_空数据状态.png` | ⚠️ UNCONFIRMED — name may be encoding-mangled | LOW | Verify at Phase 7 |
+| `designs/15_离线_同步状态.png` | ⚠️ UNCONFIRMED — name may be encoding-mangled | LOW | Verify at Phase 7 |
+| `designs/03A_暂停状态.png` | ⚠️ UNCONFIRMED — only 03B/03C visible in scan | LOW | Verify at Phase 2 |
 
-**Recommendation**: Create stubs for missing files before Phase 1, or accept the replacement documents generated in this Phase 0.
+**ACTION**: Create docs/qa_00_全流程验收矩阵.md before Phase 8. For reference contracts, use ARCHITECTURE_DECISION.md and PET_ANIMATION_ARCHITECTURE.md as authoritative replacements.
+
+## Mochi Species Correction (Phase 0.5)
+- **ERROR IN PREVIOUS OUTPUTS**: Multiple places wrote "Mochi cat"
+- **CORRECT**: Mochi is a DOG based on design files
+- **Code impact**: `species = PetSpecies.dog`, `characterId = 'mochi'`, domain stays generic `Pet`
+- Do NOT write CatRepository, CatAnimation, MochiCatEngine
+
