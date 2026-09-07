@@ -1,0 +1,431 @@
+{
+  "elements": {
+    "sync_outbox": {
+      "id": {
+        "library_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+        "name": "sync_outbox"
+      },
+      "declaration": {
+        "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+        "offset": 42,
+        "name": "SyncOutboxTable"
+      },
+      "references": [],
+      "type": "table",
+      "columns": [
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
+          "nullable": false,
+          "nameInSql": "id",
+          "nameInDart": "id",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 145,
+            "name": "id"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
+          "nullable": false,
+          "nameInSql": "table_name",
+          "nameInDart": "tableName_",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 178,
+            "name": "tableName_"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
+          "nullable": false,
+          "nameInSql": "record_id",
+          "nameInDart": "recordId",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 239,
+            "name": "recordId"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
+          "nullable": false,
+          "nameInSql": "operation",
+          "nameInDart": "operation",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 278,
+            "name": "operation"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
+          "nullable": false,
+          "nameInSql": "payload_json",
+          "nameInDart": "payloadJson",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 318,
+            "name": "payloadJson"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
+          "nullable": false,
+          "nameInSql": "status",
+          "nameInDart": "status",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 360,
+            "name": "status"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": {
+            "elements": [
+              "const ",
+              {
+                "lexeme": "Constant",
+                "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+              },
+              "('pending')"
+            ]
+          },
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "attempt_count",
+          "nameInDart": "attemptCount",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 435,
+            "name": "attemptCount"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": {
+            "elements": [
+              "const ",
+              {
+                "lexeme": "Constant",
+                "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+              },
+              "(0)"
+            ]
+          },
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "dateTime"
+          },
+          "nullable": false,
+          "nameInSql": "created_at",
+          "nameInDart": "createdAt",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 516,
+            "name": "createdAt"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "dateTime"
+          },
+          "nullable": true,
+          "nameInSql": "last_attempt_at",
+          "nameInDart": "lastAttemptAt",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 564,
+            "name": "lastAttemptAt"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
+          "nullable": true,
+          "nameInSql": "error_message",
+          "nameInDart": "errorMessage",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 623,
+            "name": "errorMessage"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        }
+      ],
+      "existing_data_class": null,
+      "table_constraints": [
+        {
+          "type": "primary_key",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "custom_parent_class": null,
+      "interfaces_for_row_class": [],
+      "fixed_entity_info_name": null,
+      "base_dart_name": "SyncOutboxTable",
+      "row_class_name": "SyncOutboxTableData",
+      "companion_class_name": null,
+      "without_rowid": false,
+      "strict": false,
+      "write_default_constraints": true,
+      "custom_constraints": [],
+      "attached_indices": []
+    },
+    "reward_ledger": {
+      "id": {
+        "library_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+        "name": "reward_ledger"
+      },
+      "declaration": {
+        "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+        "offset": 720,
+        "name": "RewardLedgerTable"
+      },
+      "references": [],
+      "type": "table",
+      "columns": [
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
+          "nullable": false,
+          "nameInSql": "session_id",
+          "nameInDart": "sessionId",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 896,
+            "name": "sessionId"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
+          "nullable": false,
+          "nameInSql": "user_id",
+          "nameInDart": "userId",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 936,
+            "name": "userId"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "focus_coins_earned",
+          "nameInDart": "focusCoinsEarned",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 972,
+            "name": "focusCoinsEarned"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "experience_earned",
+          "nameInDart": "experienceEarned",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 1021,
+            "name": "experienceEarned"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
+          "nullable": true,
+          "nameInSql": "craft_recipe_unlocked",
+          "nameInDart": "craftRecipeUnlocked",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 1071,
+            "name": "craftRecipeUnlocked"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "dateTime"
+          },
+          "nullable": false,
+          "nameInSql": "settled_at",
+          "nameInDart": "settledAt",
+          "declaration": {
+            "source_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+            "offset": 1136,
+            "name": "settledAt"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        }
+      ],
+      "existing_data_class": null,
+      "table_constraints": [
+        {
+          "type": "primary_key",
+          "columns": [
+            "session_id"
+          ]
+        }
+      ],
+      "custom_parent_class": null,
+      "interfaces_for_row_class": [],
+      "fixed_entity_info_name": null,
+      "base_dart_name": "RewardLedgerTable",
+      "row_class_name": "RewardLedgerTableData",
+      "companion_class_name": null,
+      "without_rowid": false,
+      "strict": false,
+      "write_default_constraints": true,
+      "custom_constraints": [],
+      "attached_indices": []
+    }
+  },
+  "imports": [
+    "package:drift/drift.dart"
+  ]
+}

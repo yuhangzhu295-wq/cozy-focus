@@ -1,0 +1,6 @@
+{
+  "elements": {},
+  "imports": [
+    "package:cozy_focus_app/domain/models/enums.dart"
+  ]
+}

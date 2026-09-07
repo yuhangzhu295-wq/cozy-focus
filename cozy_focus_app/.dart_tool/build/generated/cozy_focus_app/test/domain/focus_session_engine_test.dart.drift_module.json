@@ -1,0 +1,18 @@
+{
+  "elements": {},
+  "imports": [
+    "package:flutter_test/flutter_test.dart",
+    "package:cozy_focus_app/domain/models/enums.dart",
+    "package:cozy_focus_app/domain/models/focus_session.dart",
+    "package:cozy_focus_app/domain/models/focus_record.dart",
+    "package:cozy_focus_app/domain/models/pet_models.dart",
+    "package:cozy_focus_app/domain/models/sync_models.dart",
+    "package:cozy_focus_app/domain/repositories/i_focus_session_repository.dart",
+    "package:cozy_focus_app/domain/repositories/i_focus_record_repository.dart",
+    "package:cozy_focus_app/domain/repositories/i_reward_ledger_repository.dart",
+    "package:cozy_focus_app/domain/repositories/i_pet_repository.dart",
+    "package:cozy_focus_app/domain/services/focus_clock.dart",
+    "package:cozy_focus_app/domain/services/focus_session_engine.dart",
+    "package:cozy_focus_app/domain/services/reward_service.dart"
+  ]
+}

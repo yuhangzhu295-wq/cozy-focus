@@ -1,4 +1,4 @@
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:cozy_focus_app/domain/models/focus_session.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 
@@ -55,7 +55,6 @@ void main() {
     });
 
     test('elapsed is never negative', () {
-      // endAt == startAt → 0
       final session = makeSession(
         endAt: baseStart,
         status: FocusSessionStatus.finishing,

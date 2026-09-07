@@ -1,0 +1,53 @@
+{
+  "elements": {
+    "RewardLedgerDao": {
+      "id": {
+        "library_uri": "package:cozy_focus_app/data/local/daos/reward_ledger_dao.dart",
+        "name": "RewardLedgerDao"
+      },
+      "declaration": {
+        "source_uri": "package:cozy_focus_app/data/local/daos/reward_ledger_dao.dart",
+        "offset": 238,
+        "name": "RewardLedgerDao"
+      },
+      "references": [
+        {
+          "library_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+          "name": "reward_ledger"
+        }
+      ],
+      "type": "dao",
+      "tables": [
+        {
+          "library_uri": "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+          "name": "reward_ledger"
+        }
+      ],
+      "views": [],
+      "includes": [],
+      "queries": [],
+      "dart_type": {
+        "elements": [
+          {
+            "lexeme": "RewardLedgerDao",
+            "import_uri": "package:cozy_focus_app/data/local/daos/reward_ledger_dao.dart"
+          }
+        ]
+      },
+      "database": {
+        "elements": [
+          {
+            "lexeme": "AppDatabase",
+            "import_uri": "package:cozy_focus_app/data/local/app_database.dart"
+          }
+        ]
+      }
+    }
+  },
+  "imports": [
+    "package:drift/drift.dart",
+    "package:cozy_focus_app/domain/models/sync_models.dart",
+    "package:cozy_focus_app/data/local/tables/sync_tables.dart",
+    "package:cozy_focus_app/data/local/app_database.dart"
+  ]
+}

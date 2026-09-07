@@ -1,0 +1,5 @@
+// ignore_for_file: type=lint
+mixin _$RewardLedgerDaoMixin on DatabaseAccessor<AppDatabase> {
+  $RewardLedgerTableTable get rewardLedgerTable =>
+      attachedDatabase.rewardLedgerTable;
+}

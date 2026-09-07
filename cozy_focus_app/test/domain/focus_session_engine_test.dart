@@ -1,6 +1,8 @@
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/models/focus_session.dart';
+import 'package:cozy_focus_app/domain/models/focus_record.dart';
+import 'package:cozy_focus_app/domain/models/pet_models.dart';
 import 'package:cozy_focus_app/domain/models/sync_models.dart';
 import 'package:cozy_focus_app/domain/repositories/i_focus_session_repository.dart';
 import 'package:cozy_focus_app/domain/repositories/i_focus_record_repository.dart';
@@ -57,12 +59,12 @@ class StubLedgerRepo implements IRewardLedgerRepository {
 }
 
 class StubPetRepo implements IPetRepository {
-  @override Future<void> savePet(pet) async {}
-  @override Future<pet_models.Pet?> findPetByUser(String userId) async => null;
-  @override Future<void> savePetProgress(progress) async {}
-  @override Future<pet_models.PetProgress?> findPetProgress(String petId) async => null;
-  @override Future<void> addMemory(memory) async {}
-  @override Future<List<pet_models.PetMemory>> findMemories(String petId, {int limit = 50}) async => [];
+  @override Future<void> savePet(Pet pet) async {}
+  @override Future<Pet?> findPetByUser(String userId) async => null;
+  @override Future<void> savePetProgress(PetProgress progress) async {}
+  @override Future<PetProgress?> findPetProgress(String petId) async => null;
+  @override Future<void> addMemory(PetMemory memory) async {}
+  @override Future<List<PetMemory>> findMemories(String petId, {int limit = 50}) async => [];
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -113,7 +115,7 @@ void main() {
       final paused = await engine.pause();
       expect(paused.status, equals(FocusSessionStatus.paused));
       expect(paused.pauseIntervals.length, equals(1));
-      expect(paused.pauseIntervals.last.pauseEnd, isNull); // still open
+      expect(paused.pauseIntervals.last.pauseEnd, isNull);
     });
 
     test('pause → resume closes pause interval', () async {
@@ -128,13 +130,13 @@ void main() {
 
     test('elapsed excludes pause duration', () async {
       await engine.start(userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
-      clock.advance(const Duration(minutes: 10));  // run 10min
+      clock.advance(const Duration(minutes: 10));
       await engine.pause();
-      clock.advance(const Duration(minutes: 5));   // paused 5min
+      clock.advance(const Duration(minutes: 5));
       await engine.resume();
-      clock.advance(const Duration(minutes: 15));  // run 15min
+      clock.advance(const Duration(minutes: 15));
       final completed = await engine.complete();
-      // elapsed = 10 + 15 = 25min = 1500s, pause = 5min excluded
+      // elapsed = 10 + 15 = 25min = 1500s, pause 5min excluded
       expect(completed.elapsedSeconds, equals(1500));
     });
 
@@ -169,14 +171,8 @@ void main() {
 
   group('Reward idempotency', () {
     test('settle twice with same session_id → second returns false', () async {
-      await engine.start(userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
-      clock.advance(const Duration(minutes: 25));
-      await engine.complete();
-      await engine.save(); // first settle
-
-      // Manually try to settle again
       final session = FocusSession(
-        id: 'duplicate-test',
+        id: 'idem-test',
         userId: 'u1',
         plannedSeconds: 1500,
         mode: FocusMode.focus,

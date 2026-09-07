@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false}],"elements":[{"kind":"table","name":"craft_recipes","dart_name":"CraftRecipes"},{"kind":"table","name":"craft_jobs","dart_name":"CraftJobs"},{"kind":"table","name":"inventory_items","dart_name":"InventoryItems"},{"kind":"table","name":"room_items","dart_name":"RoomItems"}]}

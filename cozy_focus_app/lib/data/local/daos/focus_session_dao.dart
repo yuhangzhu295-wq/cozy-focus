@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
-import '../../../domain/models/focus_session.dart';
+import '../../../domain/models/focus_session.dart' as domain;
 import '../../../domain/models/enums.dart';
 import '../tables/focus_sessions_table.dart';
-import '../app_database.dart';
+import '../app_database.dart' hide FocusSession;
 
 part 'focus_session_dao.g.dart';
 
@@ -12,30 +12,30 @@ class FocusSessionDao extends DatabaseAccessor<AppDatabase>
     with _$FocusSessionDaoMixin {
   FocusSessionDao(super.db);
 
-  Future<void> upsertSession(FocusSession session) async {
+  Future<void> upsertSession(domain.FocusSession session) async {
     await into(focusSessions).insertOnConflictUpdate(
-      FocusSessionsCompanion.insert(
-        id: session.id,
-        userId: session.userId,
+      FocusSessionsCompanion(
+        id: Value(session.id),
+        userId: Value(session.userId),
         categoryId: Value(session.categoryId),
-        plannedSeconds: session.plannedSeconds,
-        mode: session.mode.name,
-        startAt: session.startAt,
-        pauseIntervalsJson: _encodePauses(session.pauseIntervals),
+        plannedSeconds: Value(session.plannedSeconds),
+        mode: Value(session.mode.name),
+        startAt: Value(session.startAt),
+        pauseIntervalsJson: Value(_encodePauses(session.pauseIntervals)),
         endAt: Value(session.endAt),
-        status: session.status.name,
-        timezoneOffsetMinutes: session.timezoneOffsetMinutes,
+        status: Value(session.status.name),
+        timezoneOffsetMinutes: Value(session.timezoneOffsetMinutes),
       ),
     );
   }
 
-  Future<FocusSession?> findById(String id) async {
+  Future<domain.FocusSession?> findById(String id) async {
     final row = await (select(focusSessions)..where((t) => t.id.equals(id)))
         .getSingleOrNull();
     return row == null ? null : _map(row);
   }
 
-  Future<List<FocusSession>> findActive(String userId) async {
+  Future<List<domain.FocusSession>> findActive(String userId) async {
     final rows = await (select(focusSessions)
           ..where((t) =>
               t.userId.equals(userId) &
@@ -44,7 +44,7 @@ class FocusSessionDao extends DatabaseAccessor<AppDatabase>
     return rows.map(_map).toList();
   }
 
-  Future<List<FocusSession>> findRecent(String userId, {int limit = 20}) async {
+  Future<List<domain.FocusSession>> findRecent(String userId, {int limit = 20}) async {
     final rows = await (select(focusSessions)
           ..where((t) => t.userId.equals(userId))
           ..orderBy([(t) => OrderingTerm.desc(t.startAt)])
@@ -57,24 +57,26 @@ class FocusSessionDao extends DatabaseAccessor<AppDatabase>
     await (delete(focusSessions)..where((t) => t.id.equals(id))).go();
   }
 
-  // ── mappers ──────────────────────────────────────────────────────────────
-
-  FocusSession _map(FocusSessionsData row) {
-    return FocusSession(
-      id: row.id,
-      userId: row.userId,
-      categoryId: row.categoryId,
-      plannedSeconds: row.plannedSeconds,
+  // Drift generates row type as FocusSession (same name as our domain model).
+  // We reference it from the generated mixin via the type alias in the .g.dart part.
+  // The 'hide FocusSession' on app_database.dart import ensures the domain type wins
+  // in this file; the Drift row type is referenced as the positional type in .get() etc.
+  domain.FocusSession _map(dynamic row) {
+    return domain.FocusSession(
+      id: row.id as String,
+      userId: row.userId as String,
+      categoryId: row.categoryId as String?,
+      plannedSeconds: row.plannedSeconds as int,
       mode: FocusMode.values.firstWhere((e) => e.name == row.mode),
-      startAt: row.startAt,
-      pauseIntervals: _decodePauses(row.pauseIntervalsJson),
-      endAt: row.endAt,
+      startAt: row.startAt as DateTime,
+      pauseIntervals: _decodePauses(row.pauseIntervalsJson as String),
+      endAt: row.endAt as DateTime?,
       status: FocusSessionStatus.values.firstWhere((e) => e.name == row.status),
-      timezoneOffsetMinutes: row.timezoneOffsetMinutes,
+      timezoneOffsetMinutes: row.timezoneOffsetMinutes as int,
     );
   }
 
-  String _encodePauses(List<PauseInterval> intervals) {
+  String _encodePauses(List<domain.PauseInterval> intervals) {
     return jsonEncode(intervals
         .map((p) => {
               'pauseStart': p.pauseStart.toIso8601String(),
@@ -83,10 +85,10 @@ class FocusSessionDao extends DatabaseAccessor<AppDatabase>
         .toList());
   }
 
-  List<PauseInterval> _decodePauses(String json) {
+  List<domain.PauseInterval> _decodePauses(String json) {
     final list = jsonDecode(json) as List;
     return list.map((e) {
-      return PauseInterval(
+      return domain.PauseInterval(
         pauseStart: DateTime.parse(e['pauseStart'] as String),
         pauseEnd: e['pauseEnd'] != null
             ? DateTime.parse(e['pauseEnd'] as String)

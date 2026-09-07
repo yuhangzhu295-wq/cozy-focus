@@ -14,15 +14,15 @@ class SyncOutboxDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> enqueue(SyncOutbox entry) async {
     await into(syncOutboxTable).insert(
-      SyncOutboxTableCompanion.insert(
-        id: entry.id,
-        tableName_: entry.tableName,
-        recordId: entry.recordId,
-        operation: entry.operation,
-        payloadJson: jsonEncode(entry.payload),
+      SyncOutboxTableCompanion(
+        id: Value(entry.id),
+        tableName_: Value(entry.tableName),
+        recordId: Value(entry.recordId),
+        operation: Value(entry.operation),
+        payloadJson: Value(jsonEncode(entry.payload)),
         status: Value(entry.status.name),
         attemptCount: Value(entry.attemptCount),
-        createdAt: entry.createdAt,
+        createdAt: Value(entry.createdAt),
         lastAttemptAt: Value(entry.lastAttemptAt),
         errorMessage: Value(entry.errorMessage),
       ),
@@ -40,24 +40,22 @@ class SyncOutboxDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> markSynced(String id) async {
     await (update(syncOutboxTable)..where((t) => t.id.equals(id))).write(
-      SyncOutboxTableCompanion(status: Value('synced')),
+      const SyncOutboxTableCompanion(status: Value('synced')),
     );
   }
 
   Future<void> markFailed(String id, String errorMessage) async {
     final now = DateTime.now();
+    // Fetch current attempt count
+    final row = await (select(syncOutboxTable)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    final newCount = (row?.attemptCount ?? 0) + 1;
     await (update(syncOutboxTable)..where((t) => t.id.equals(id))).write(
       SyncOutboxTableCompanion(
-        status: Value('failed'),
+        status: const Value('failed'),
         errorMessage: Value(errorMessage),
         lastAttemptAt: Value(now),
-        attemptCount: Value(
-          (await (select(syncOutboxTable)..where((t) => t.id.equals(id)))
-                  .getSingleOrNull())
-              ?.attemptCount
-              .let((c) => c + 1) ??
-              1,
-        ),
+        attemptCount: Value(newCount),
       ),
     );
   }

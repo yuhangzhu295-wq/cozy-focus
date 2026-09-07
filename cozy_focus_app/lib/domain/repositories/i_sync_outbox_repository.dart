@@ -1,5 +1,4 @@
 import '../models/sync_models.dart';
-import '../models/enums.dart';
 
 abstract interface class ISyncOutboxRepository {
   Future<void> enqueue(SyncOutbox entry);
@@ -8,3 +7,4 @@ abstract interface class ISyncOutboxRepository {
   Future<void> markFailed(String id, String errorMessage);
   Future<void> delete(String id);
 }
+

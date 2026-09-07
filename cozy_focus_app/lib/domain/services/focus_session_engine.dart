@@ -1,5 +1,6 @@
 import '../models/enums.dart';
 import '../models/focus_session.dart';
+import '../models/focus_record.dart';
 import '../repositories/i_focus_session_repository.dart';
 import '../repositories/i_focus_record_repository.dart';
 import 'focus_clock.dart';
@@ -225,3 +226,4 @@ class FocusSessionEngine {
     return intervals;
   }
 }
+

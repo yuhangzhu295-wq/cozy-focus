@@ -1,0 +1,7 @@
+{
+  "elements": {},
+  "imports": [
+    "package:flutter_test/flutter_test.dart",
+    "package:cozy_focus_app/domain/services/focus_clock.dart"
+  ]
+}

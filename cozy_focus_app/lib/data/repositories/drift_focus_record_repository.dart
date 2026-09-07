@@ -1,4 +1,4 @@
-import '../../domain/models/focus_record.dart';
+import '../../domain/models/focus_record.dart' as domain;
 import '../../domain/repositories/i_focus_record_repository.dart';
 import '../local/daos/focus_record_dao.dart';
 
@@ -7,14 +7,14 @@ class DriftFocusRecordRepository implements IFocusRecordRepository {
   DriftFocusRecordRepository(this._dao);
 
   @override
-  Future<void> insert(FocusRecord record) => _dao.insert(record);
+  Future<void> insert(domain.FocusRecord record) => _dao.insert(record);
 
   @override
-  Future<FocusRecord?> findBySessionId(String sessionId) =>
+  Future<domain.FocusRecord?> findBySessionId(String sessionId) =>
       _dao.findBySessionId(sessionId);
 
   @override
-  Future<List<FocusRecord>> findByDateRange(
+  Future<List<domain.FocusRecord>> findByDateRange(
     String userId, {
     required DateTime from,
     required DateTime to,

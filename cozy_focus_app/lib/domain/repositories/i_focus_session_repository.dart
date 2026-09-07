@@ -1,5 +1,4 @@
 import '../models/focus_session.dart';
-import '../models/enums.dart';
 
 abstract interface class IFocusSessionRepository {
   /// Persist a new session (must be idempotent on id).
@@ -20,3 +19,4 @@ abstract interface class IFocusSessionRepository {
   /// Delete; only permitted for cancelled sessions.
   Future<void> delete(String id);
 }
+

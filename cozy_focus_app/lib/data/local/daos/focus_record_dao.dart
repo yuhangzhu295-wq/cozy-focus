@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
-import '../../../domain/models/focus_record.dart';
+import '../../../domain/models/focus_record.dart' as domain;
 import '../tables/focus_records_table.dart';
-import '../app_database.dart';
+import '../app_database.dart' hide FocusRecord;
 
 part 'focus_record_dao.g.dart';
 
@@ -10,31 +10,31 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
     with _$FocusRecordDaoMixin {
   FocusRecordDao(super.db);
 
-  Future<void> insert(FocusRecord record) async {
+  Future<void> insert(domain.FocusRecord record) async {
     await into(focusRecords).insertOnConflictUpdate(
-      FocusRecordsCompanion.insert(
-        id: record.id,
-        sessionId: record.sessionId,
-        userId: record.userId,
+      FocusRecordsCompanion(
+        id: Value(record.id),
+        sessionId: Value(record.sessionId),
+        userId: Value(record.userId),
         categoryId: Value(record.categoryId),
-        durationSeconds: record.durationSeconds,
-        startAt: record.startAt,
-        endAt: record.endAt,
-        recordedAt: record.recordedAt,
+        durationSeconds: Value(record.durationSeconds),
+        startAt: Value(record.startAt),
+        endAt: Value(record.endAt),
+        recordedAt: Value(record.recordedAt),
         isCountedForReward: Value(record.isCountedForReward),
         note: Value(record.note),
       ),
     );
   }
 
-  Future<FocusRecord?> findBySessionId(String sessionId) async {
+  Future<domain.FocusRecord?> findBySessionId(String sessionId) async {
     final row = await (select(focusRecords)
           ..where((t) => t.sessionId.equals(sessionId)))
         .getSingleOrNull();
     return row == null ? null : _map(row);
   }
 
-  Future<List<FocusRecord>> findByDateRange(
+  Future<List<domain.FocusRecord>> findByDateRange(
     String userId, {
     required DateTime from,
     required DateTime to,
@@ -52,8 +52,8 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
   Future<int> totalSecondsForDay(String userId, DateTime date) async {
     final dayStart = DateTime(date.year, date.month, date.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
-    final rows = await findByDateRange(userId, from: dayStart, to: dayEnd);
-    return rows.fold(0, (acc, r) => acc + r.durationSeconds);
+    final records = await findByDateRange(userId, from: dayStart, to: dayEnd);
+    return records.fold<int>(0, (acc, r) => acc + r.durationSeconds);
   }
 
   Future<Map<DateTime, int>> dailyTotals(
@@ -70,18 +70,18 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
     return map;
   }
 
-  FocusRecord _map(FocusRecordsData row) {
-    return FocusRecord(
-      id: row.id,
-      sessionId: row.sessionId,
-      userId: row.userId,
-      categoryId: row.categoryId,
-      durationSeconds: row.durationSeconds,
-      startAt: row.startAt,
-      endAt: row.endAt,
-      recordedAt: row.recordedAt,
-      isCountedForReward: row.isCountedForReward,
-      note: row.note,
+  domain.FocusRecord _map(dynamic row) {
+    return domain.FocusRecord(
+      id: row.id as String,
+      sessionId: row.sessionId as String,
+      userId: row.userId as String,
+      categoryId: row.categoryId as String?,
+      durationSeconds: row.durationSeconds as int,
+      startAt: row.startAt as DateTime,
+      endAt: row.endAt as DateTime,
+      recordedAt: row.recordedAt as DateTime,
+      isCountedForReward: row.isCountedForReward as bool,
+      note: row.note as String?,
     );
   }
 }

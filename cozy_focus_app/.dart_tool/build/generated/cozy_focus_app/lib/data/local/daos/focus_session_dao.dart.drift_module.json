@@ -1,0 +1,54 @@
+{
+  "elements": {
+    "FocusSessionDao": {
+      "id": {
+        "library_uri": "package:cozy_focus_app/data/local/daos/focus_session_dao.dart",
+        "name": "FocusSessionDao"
+      },
+      "declaration": {
+        "source_uri": "package:cozy_focus_app/data/local/daos/focus_session_dao.dart",
+        "offset": 340,
+        "name": "FocusSessionDao"
+      },
+      "references": [
+        {
+          "library_uri": "package:cozy_focus_app/data/local/tables/focus_sessions_table.dart",
+          "name": "focus_sessions"
+        }
+      ],
+      "type": "dao",
+      "tables": [
+        {
+          "library_uri": "package:cozy_focus_app/data/local/tables/focus_sessions_table.dart",
+          "name": "focus_sessions"
+        }
+      ],
+      "views": [],
+      "includes": [],
+      "queries": [],
+      "dart_type": {
+        "elements": [
+          {
+            "lexeme": "FocusSessionDao",
+            "import_uri": "package:cozy_focus_app/data/local/daos/focus_session_dao.dart"
+          }
+        ]
+      },
+      "database": {
+        "elements": [
+          {
+            "lexeme": "AppDatabase",
+            "import_uri": "package:cozy_focus_app/data/local/app_database.dart"
+          }
+        ]
+      }
+    }
+  },
+  "imports": [
+    "package:drift/drift.dart",
+    "package:cozy_focus_app/domain/models/focus_session.dart",
+    "package:cozy_focus_app/domain/models/enums.dart",
+    "package:cozy_focus_app/data/local/tables/focus_sessions_table.dart",
+    "package:cozy_focus_app/data/local/app_database.dart"
+  ]
+}

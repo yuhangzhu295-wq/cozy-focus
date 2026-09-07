@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
-import '../../../domain/models/pet_models.dart';
+import '../../../domain/models/pet_models.dart' as domain;
 import '../../../domain/models/enums.dart';
 import '../tables/pet_tables.dart';
-import '../app_database.dart';
+import '../app_database.dart' hide Pet, PetMemory;
 
 part 'pet_dao.g.dart';
 
@@ -10,59 +10,59 @@ part 'pet_dao.g.dart';
 class PetDao extends DatabaseAccessor<AppDatabase> with _$PetDaoMixin {
   PetDao(super.db);
 
-  Future<void> upsertPet(Pet pet) async {
+  Future<void> upsertPet(domain.Pet pet) async {
     await into(pets).insertOnConflictUpdate(
-      PetsCompanion.insert(
-        id: pet.id,
-        userId: pet.userId,
-        characterId: pet.characterId,
-        species: pet.species.name,
-        name: pet.name,
-        adoptedAt: pet.adoptedAt,
+      PetsCompanion(
+        id: Value(pet.id),
+        userId: Value(pet.userId),
+        characterId: Value(pet.characterId),
+        species: Value(pet.species.name),
+        name: Value(pet.name),
+        adoptedAt: Value(pet.adoptedAt),
       ),
     );
   }
 
-  Future<Pet?> findPetByUser(String userId) async {
+  Future<domain.Pet?> findPetByUser(String userId) async {
     final row = await (select(pets)..where((t) => t.userId.equals(userId)))
         .getSingleOrNull();
     return row == null ? null : _mapPet(row);
   }
 
-  Future<void> upsertProgress(PetProgress progress) async {
+  Future<void> upsertProgress(domain.PetProgress progress) async {
     await into(petProgressTable).insertOnConflictUpdate(
-      PetProgressTableCompanion.insert(
-        id: progress.id,
-        petId: progress.petId,
+      PetProgressTableCompanion(
+        id: Value(progress.id),
+        petId: Value(progress.petId),
         level: Value(progress.level),
         experiencePoints: Value(progress.experiencePoints),
         totalFocusMinutes: Value(progress.totalFocusMinutes),
         happinessScore: Value(progress.happinessScore),
-        updatedAt: progress.updatedAt,
+        updatedAt: Value(progress.updatedAt),
       ),
     );
   }
 
-  Future<PetProgress?> findProgress(String petId) async {
+  Future<domain.PetProgress?> findProgress(String petId) async {
     final row = await (select(petProgressTable)
           ..where((t) => t.petId.equals(petId)))
         .getSingleOrNull();
     return row == null ? null : _mapProgress(row);
   }
 
-  Future<void> addMemory(PetMemory memory) async {
+  Future<void> addMemory(domain.PetMemory memory) async {
     await into(petMemories).insert(
-      PetMemoriesCompanion.insert(
-        id: memory.id,
-        petId: memory.petId,
-        memoryType: memory.memoryType,
-        content: memory.content,
-        happenedAt: memory.happenedAt,
+      PetMemoriesCompanion(
+        id: Value(memory.id),
+        petId: Value(memory.petId),
+        memoryType: Value(memory.memoryType),
+        content: Value(memory.content),
+        happenedAt: Value(memory.happenedAt),
       ),
     );
   }
 
-  Future<List<PetMemory>> findMemories(String petId, {int limit = 50}) async {
+  Future<List<domain.PetMemory>> findMemories(String petId, {int limit = 50}) async {
     final rows = await (select(petMemories)
           ..where((t) => t.petId.equals(petId))
           ..orderBy([(t) => OrderingTerm.desc(t.happenedAt)])
@@ -71,16 +71,16 @@ class PetDao extends DatabaseAccessor<AppDatabase> with _$PetDaoMixin {
     return rows.map(_mapMemory).toList();
   }
 
-  Pet _mapPet(PetsData row) => Pet(
-        id: row.id,
-        userId: row.userId,
-        characterId: row.characterId,
-        species: PetSpecies.values.firstWhere((e) => e.name == row.species),
-        name: row.name,
-        adoptedAt: row.adoptedAt,
+  domain.Pet _mapPet(dynamic row) => domain.Pet(
+        id: row.id as String,
+        userId: row.userId as String,
+        characterId: row.characterId as String,
+        species: PetSpecies.values.firstWhere((e) => e.name == (row.species as String)),
+        name: row.name as String,
+        adoptedAt: row.adoptedAt as DateTime,
       );
 
-  PetProgress _mapProgress(PetProgressTableData row) => PetProgress(
+  domain.PetProgress _mapProgress(PetProgressTableData row) => domain.PetProgress(
         id: row.id,
         petId: row.petId,
         level: row.level,
@@ -90,11 +90,11 @@ class PetDao extends DatabaseAccessor<AppDatabase> with _$PetDaoMixin {
         updatedAt: row.updatedAt,
       );
 
-  PetMemory _mapMemory(PetMemoriesData row) => PetMemory(
-        id: row.id,
-        petId: row.petId,
-        memoryType: row.memoryType,
-        content: row.content,
-        happenedAt: row.happenedAt,
+  domain.PetMemory _mapMemory(dynamic row) => domain.PetMemory(
+        id: row.id as String,
+        petId: row.petId as String,
+        memoryType: row.memoryType as String,
+        content: row.content as String,
+        happenedAt: row.happenedAt as DateTime,
       );
 }

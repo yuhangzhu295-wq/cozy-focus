@@ -1,0 +1,8 @@
+{
+  "elements": {},
+  "imports": [
+    "package:flutter_test/flutter_test.dart",
+    "package:cozy_focus_app/domain/models/focus_session.dart",
+    "package:cozy_focus_app/domain/models/enums.dart"
+  ]
+}
