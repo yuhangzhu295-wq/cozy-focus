@@ -5,8 +5,14 @@ import '../pages/focus_active_page.dart';
 import '../pages/focus_complete_page.dart';
 import '../pages/focus_save_page.dart';
 import '../pages/focus_reward_page.dart';
+import '../pages/progress_overview_page.dart';
+import '../pages/record_detail_page.dart';
+import '../pages/weekly_report_page.dart';
+import '../pages/monthly_report_page.dart';
+import '../pages/yearly_report_page.dart';
+import '../pages/yearly_wrapped_share_page.dart';
 
-/// App routing table powered by GoRouter
+/// App routing table powered by GoRouter for Cozy Focus
 final appRouter = GoRouter(
   initialLocation: '/',
   routes: [
@@ -33,6 +39,32 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/focus/reward',
       builder: (context, state) => const FocusRewardPage(),
+    ),
+    // Phase 3: Records & Reports
+    GoRoute(
+      path: '/progress',
+      builder: (context, state) => const ProgressOverviewPage(),
+    ),
+    GoRoute(
+      path: '/records/:id',
+      builder: (context, state) =>
+          RecordDetailPage(recordId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/reports/weekly',
+      builder: (context, state) => const WeeklyReportPage(),
+    ),
+    GoRoute(
+      path: '/reports/monthly',
+      builder: (context, state) => const MonthlyReportPage(),
+    ),
+    GoRoute(
+      path: '/reports/yearly',
+      builder: (context, state) => const YearlyReportPage(),
+    ),
+    GoRoute(
+      path: '/reports/yearly/wrapped',
+      builder: (context, state) => const YearlyWrappedSharePage(),
     ),
   ],
 );

@@ -14,6 +14,15 @@ class DriftFocusRecordRepository implements IFocusRecordRepository {
       _dao.findBySessionId(sessionId);
 
   @override
+  Future<domain.FocusRecord?> findById(String id) => _dao.findById(id);
+
+  @override
+  Future<void> update(domain.FocusRecord record) => _dao.updateRecord(record);
+
+  @override
+  Future<void> deleteById(String id) => _dao.deleteById(id);
+
+  @override
   Future<List<domain.FocusRecord>> findByDateRange(
     String userId, {
     required DateTime from,

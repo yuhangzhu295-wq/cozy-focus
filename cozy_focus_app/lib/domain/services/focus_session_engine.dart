@@ -75,7 +75,8 @@ class FocusSessionEngine {
     final session = _requireSession();
     if (session.status != FocusSessionStatus.running &&
         session.status != FocusSessionStatus.restored) {
-      throw StateError('Expected session status running but got ${session.status}');
+      throw StateError(
+          'Expected session status running but got ${session.status}');
     }
     final updated = session.copyWith(
       pauseIntervals: [
@@ -95,7 +96,8 @@ class FocusSessionEngine {
     final session = _requireSession();
     if (session.status != FocusSessionStatus.paused &&
         session.status != FocusSessionStatus.restored) {
-      throw StateError('Expected session status paused but got ${session.status}');
+      throw StateError(
+          'Expected session status paused but got ${session.status}');
     }
     // Close the open pause interval
     final intervals = session.pauseIntervals.toList();

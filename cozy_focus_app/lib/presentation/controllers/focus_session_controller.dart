@@ -113,7 +113,8 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
 
     final isRunning = session.status == FocusSessionStatus.running ||
         (session.status == FocusSessionStatus.restored &&
-            (session.pauseIntervals.isEmpty || session.pauseIntervals.last.pauseEnd != null));
+            (session.pauseIntervals.isEmpty ||
+                session.pauseIntervals.last.pauseEnd != null));
     if (isRunning) {
       _startTicker();
     } else {
@@ -132,7 +133,8 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
       final isRunning = session != null &&
           (session.status == FocusSessionStatus.running ||
               (session.status == FocusSessionStatus.restored &&
-                  (session.pauseIntervals.isEmpty || session.pauseIntervals.last.pauseEnd != null)));
+                  (session.pauseIntervals.isEmpty ||
+                      session.pauseIntervals.last.pauseEnd != null)));
       if (!isRunning) {
         _ticker?.cancel();
         return;

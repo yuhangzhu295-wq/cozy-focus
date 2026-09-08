@@ -51,6 +51,18 @@ class StubRecordRepo implements IFocusRecordRepository {
   Future<FocusRecord?> findBySessionId(String id) async =>
       _records.where((r) => r.sessionId == id).firstOrNull;
   @override
+  Future<FocusRecord?> findById(String id) async =>
+      _records.where((r) => r.id == id).firstOrNull;
+  @override
+  Future<void> update(FocusRecord record) async {
+    final idx = _records.indexWhere((r) => r.id == record.id);
+    if (idx != -1) _records[idx] = record;
+  }
+
+  @override
+  Future<void> deleteById(String id) async =>
+      _records.removeWhere((r) => r.id == id);
+  @override
   Future<List<FocusRecord>> findByDateRange(String userId,
           {required DateTime from, required DateTime to}) async =>
       _records;

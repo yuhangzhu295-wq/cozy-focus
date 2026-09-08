@@ -8,7 +8,8 @@ class FocusSession {
   final String id; // UUIDv4
   final String userId;
   final String? categoryId;
-  final String? taskName; // persisted so history/reports can read it after restart
+  final String?
+      taskName; // persisted so history/reports can read it after restart
   final int plannedSeconds; // user-chosen duration
   final FocusMode mode;
 

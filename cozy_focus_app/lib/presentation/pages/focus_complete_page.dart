@@ -77,11 +77,13 @@ class FocusCompletePage extends ConsumerWidget {
 
               // XP Summary Pill
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppColors.accentPeachLight,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(color: AppColors.accentPeach.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: AppColors.accentPeach.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

@@ -57,7 +57,8 @@ class HomeController extends StateNotifier<HomeUIState> {
     final petRepo = _ref.read(petRepositoryProvider);
     final sessionRepo = _ref.read(focusSessionRepositoryProvider);
 
-    final now = DateTime.now();
+    final clock = _ref.read(focusClockProvider);
+    final now = clock.now();
     final todaySec = await recordRepo.totalSecondsForDay(defaultUserId, now);
 
     final dayStart = DateTime(now.year, now.month, now.day);
@@ -75,8 +76,8 @@ class HomeController extends StateNotifier<HomeUIState> {
         id: 'mochi_pet_id',
         userId: defaultUserId,
         species: PetSpecies.dog,
-       characterId: 'mochi',
-       name: 'Mochi',
+        characterId: 'mochi',
+        name: 'Mochi',
         adoptedAt: now,
       );
       await petRepo.savePet(pet);

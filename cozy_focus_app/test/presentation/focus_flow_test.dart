@@ -38,8 +38,10 @@ void main() {
   });
 
   group('Focus Session Controller & Lifecycle Tests', () {
-    test('1. Start session creates running session and persists in Drift', () async {
-      final controller = container.read(focusSessionControllerProvider.notifier);
+    test('1. Start session creates running session and persists in Drift',
+        () async {
+      final controller =
+          container.read(focusSessionControllerProvider.notifier);
       final session = await controller.startSession(
         userId: 'test_user',
         plannedSeconds: 1500,
@@ -61,7 +63,8 @@ void main() {
     });
 
     test('2. Pause and Resume accumulates pause intervals correctly', () async {
-      final controller = container.read(focusSessionControllerProvider.notifier);
+      final controller =
+          container.read(focusSessionControllerProvider.notifier);
       await controller.startSession(
         userId: 'test_user',
         plannedSeconds: 1500,
@@ -99,8 +102,10 @@ void main() {
       expect(uiState.elapsedSeconds, 1200);
     });
 
-    test('3. Early finish cancel clears session without creating FocusRecord', () async {
-      final controller = container.read(focusSessionControllerProvider.notifier);
+    test('3. Early finish cancel clears session without creating FocusRecord',
+        () async {
+      final controller =
+          container.read(focusSessionControllerProvider.notifier);
       final session = await controller.startSession(
         userId: 'test_user',
         plannedSeconds: 1500,
@@ -118,7 +123,8 @@ void main() {
     });
 
     test('4. Complete Session != Saved Record separation', () async {
-      final controller = container.read(focusSessionControllerProvider.notifier);
+      final controller =
+          container.read(focusSessionControllerProvider.notifier);
       final session = await controller.startSession(
         userId: 'test_user',
         plannedSeconds: 1500,
@@ -150,8 +156,10 @@ void main() {
       expect(record.note, contains('心情: 😊'));
     });
 
-    test('5. Reward settlement idempotency rejects duplicate settlement', () async {
-      final controller = container.read(focusSessionControllerProvider.notifier);
+    test('5. Reward settlement idempotency rejects duplicate settlement',
+        () async {
+      final controller =
+          container.read(focusSessionControllerProvider.notifier);
       final session = await controller.startSession(
         userId: 'test_user',
         plannedSeconds: 1200,
@@ -170,10 +178,12 @@ void main() {
       // Settle again on same session ID via repository
       final rewardRepo = container.read(rewardLedgerRepositoryProvider);
       final doubleSettle = await rewardRepo.settleReward(ledger);
-      expect(doubleSettle, isFalse, reason: 'Duplicate settlement must be rejected');
+      expect(doubleSettle, isFalse,
+          reason: 'Duplicate settlement must be rejected');
     });
 
-    test('6. Home controller aggregates real today focus data from Drift', () async {
+    test('6. Home controller aggregates real today focus data from Drift',
+        () async {
       final homeController = container.read(homeControllerProvider.notifier);
       await homeController.loadHomeData();
 
@@ -181,7 +191,8 @@ void main() {
       expect(homeState.todayFocusSeconds, 0);
 
       // Complete and save a 30-min session
-      final sessionController = container.read(focusSessionControllerProvider.notifier);
+      final sessionController =
+          container.read(focusSessionControllerProvider.notifier);
       await sessionController.startSession(
         userId: HomeController.defaultUserId,
         plannedSeconds: 1800,
@@ -197,9 +208,11 @@ void main() {
       expect(homeState.todayMinutes, 30);
     });
 
-    test('7. App restart / process restore recovers active session from Drift', () async {
+    test('7. App restart / process restore recovers active session from Drift',
+        () async {
       // Simulate session started in previous run
-      final sessionController = container.read(focusSessionControllerProvider.notifier);
+      final sessionController =
+          container.read(focusSessionControllerProvider.notifier);
       final originalSession = await sessionController.startSession(
         userId: 'restore_user',
         plannedSeconds: 1500,
@@ -216,7 +229,8 @@ void main() {
         ],
       );
 
-      final newController = newContainer.read(focusSessionControllerProvider.notifier);
+      final newController =
+          newContainer.read(focusSessionControllerProvider.notifier);
       final restored = await newController.restoreSession('restore_user');
 
       expect(restored, isNotNull);
@@ -230,8 +244,10 @@ void main() {
       newContainer.dispose();
     });
 
-    test('8. Restored session can be completed or cancelled without StateError', () async {
-      final sessionController = container.read(focusSessionControllerProvider.notifier);
+    test('8. Restored session can be completed or cancelled without StateError',
+        () async {
+      final sessionController =
+          container.read(focusSessionControllerProvider.notifier);
       await sessionController.startSession(
         userId: 'restore_test_user',
         plannedSeconds: 1500,
@@ -248,7 +264,8 @@ void main() {
         ],
       );
 
-      final newController = newContainer.read(focusSessionControllerProvider.notifier);
+      final newController =
+          newContainer.read(focusSessionControllerProvider.notifier);
       final restored = await newController.restoreSession('restore_test_user');
       expect(restored, isNotNull);
       expect(restored!.status, FocusSessionStatus.restored);
@@ -258,7 +275,8 @@ void main() {
       expect(completed.status, FocusSessionStatus.finishing);
 
       // Save the record
-      final saved = await newController.saveSession(note: 'Restored & saved successfully');
+      final saved = await newController.saveSession(
+          note: 'Restored & saved successfully');
       expect(saved.status, FocusSessionStatus.saved);
 
       final record = await db.focusRecordDao.findBySessionId(restored.id);

@@ -1,3 +1,4 @@
+import '../../domain/services/statistics_engine.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/local/app_database.dart';
 import '../../data/repositories/drift_focus_session_repository.dart';
@@ -69,4 +70,10 @@ final focusSessionEngineProvider = Provider<FocusSessionEngine>((ref) {
     rewardService: rewardService,
     clock: clock,
   );
+});
+
+/// StatisticsEngine — single authority for report aggregations
+final statisticsEngineProvider = Provider<StatisticsEngine>((ref) {
+  final recordRepo = ref.watch(focusRecordRepositoryProvider);
+  return StatisticsEngine(recordRepo);
 });

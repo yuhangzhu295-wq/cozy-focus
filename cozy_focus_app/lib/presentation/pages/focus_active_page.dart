@@ -35,7 +35,9 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
     // Screen 03B: When app resumes from background or lockscreen,
     // re-evaluate elapsed time directly from timestamps via controller.
     if (state == AppLifecycleState.resumed) {
-      ref.read(focusSessionControllerProvider.notifier).restoreSession('default_user');
+      ref
+          .read(focusSessionControllerProvider.notifier)
+          .restoreSession('default_user');
     }
   }
 
@@ -169,7 +171,8 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
         : _formatDuration(sessionState.remainingSeconds);
 
     return Scaffold(
-      backgroundColor: isPaused ? AppColors.backgroundWarm : AppColors.focusNightBg,
+      backgroundColor:
+          isPaused ? AppColors.backgroundWarm : AppColors.focusNightBg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -221,7 +224,9 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
             Text(
               isPaused
                   ? '喝口水，休息一下吧 ☕'
-                  : (isFlow ? '正计时 (Flow Mode)' : 'Mochi is working with you... ♡'),
+                  : (isFlow
+                      ? '正计时 (Flow Mode)'
+                      : 'Mochi is working with you... ♡'),
               style: TextStyle(
                 fontSize: 14,
                 color: isPaused ? AppColors.textSecondary : Colors.white70,
@@ -251,7 +256,8 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                           width: double.infinity,
                           height: 52,
                           child: ElevatedButton.icon(
-                            icon: const Icon(Icons.play_arrow_rounded, size: 24),
+                            icon:
+                                const Icon(Icons.play_arrow_rounded, size: 24),
                             label: const Text('继续专注',
                                 style: TextStyle(
                                     fontSize: 16, fontWeight: FontWeight.bold)),
@@ -266,14 +272,15 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.accentPeach,
-                              side: const BorderSide(color: AppColors.accentPeach),
+                              side: const BorderSide(
+                                  color: AppColors.accentPeach),
                               shape: RoundedRectangleBorder(
                                 borderRadius:
                                     BorderRadius.circular(AppRadius.pill),
                               ),
                             ),
-                            onPressed: () =>
-                                _showEarlyFinishDialog(sessionState.elapsedSeconds),
+                            onPressed: () => _showEarlyFinishDialog(
+                                sessionState.elapsedSeconds),
                             child: const Text('提前结束'),
                           ),
                         ),
@@ -291,8 +298,8 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                             padding: const EdgeInsets.all(16),
                           ),
                           icon: const Icon(Icons.stop_rounded),
-                          onPressed: () =>
-                              _showEarlyFinishDialog(sessionState.elapsedSeconds),
+                          onPressed: () => _showEarlyFinishDialog(
+                              sessionState.elapsedSeconds),
                         ),
                         const SizedBox(width: 28),
                         // Pause Button (03)

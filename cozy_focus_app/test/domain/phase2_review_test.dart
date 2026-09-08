@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/models/focus_session.dart';
 import 'package:cozy_focus_app/domain/models/focus_record.dart';
@@ -26,48 +26,83 @@ class _StubClock implements FocusClock {
 
 class _StubSessionRepo implements IFocusSessionRepository {
   final Map<String, FocusSession> _store = {};
-  @override Future<void> save(FocusSession s) async => _store[s.id] = s;
-  @override Future<void> update(FocusSession s) async => _store[s.id] = s;
-  @override Future<FocusSession?> findById(String id) async => _store[id];
-  @override Future<List<FocusSession>> findActive(String userId) async =>
+  @override
+  Future<void> save(FocusSession s) async => _store[s.id] = s;
+  @override
+  Future<void> update(FocusSession s) async => _store[s.id] = s;
+  @override
+  Future<FocusSession?> findById(String id) async => _store[id];
+  @override
+  Future<List<FocusSession>> findActive(String userId) async =>
       _store.values.where((s) => s.isActive).toList();
-  @override Future<List<FocusSession>> findRecent(String userId,
-      {int limit = 20}) async => _store.values.toList();
-  @override Future<void> delete(String id) async => _store.remove(id);
+  @override
+  Future<List<FocusSession>> findRecent(String userId,
+          {int limit = 20}) async =>
+      _store.values.toList();
+  @override
+  Future<void> delete(String id) async => _store.remove(id);
 }
 
 class _StubRecordRepo implements IFocusRecordRepository {
   final List<FocusRecord> _records = [];
-  @override Future<void> insert(FocusRecord r) async => _records.add(r);
-  @override Future<FocusRecord?> findBySessionId(String id) async =>
+  @override
+  Future<void> insert(FocusRecord r) async => _records.add(r);
+  @override
+  Future<FocusRecord?> findBySessionId(String id) async =>
       _records.where((r) => r.sessionId == id).firstOrNull;
-  @override Future<List<FocusRecord>> findByDateRange(String userId,
-      {required DateTime from, required DateTime to}) async => _records;
-  @override Future<int> totalSecondsForDay(String userId, DateTime date) async => 0;
-  @override Future<Map<DateTime, int>> dailyTotals(String userId,
-      {required DateTime from, required DateTime to}) async => {};
+  @override
+  Future<FocusRecord?> findById(String id) async =>
+      _records.where((r) => r.id == id).firstOrNull;
+  @override
+  Future<void> update(FocusRecord record) async {
+    final idx = _records.indexWhere((r) => r.id == record.id);
+    if (idx != -1) _records[idx] = record;
+  }
+
+  @override
+  Future<void> deleteById(String id) async =>
+      _records.removeWhere((r) => r.id == id);
+  @override
+  Future<List<FocusRecord>> findByDateRange(String userId,
+          {required DateTime from, required DateTime to}) async =>
+      _records;
+  @override
+  Future<int> totalSecondsForDay(String userId, DateTime date) async => 0;
+  @override
+  Future<Map<DateTime, int>> dailyTotals(String userId,
+          {required DateTime from, required DateTime to}) async =>
+      {};
 }
 
 class _StubLedgerRepo implements IRewardLedgerRepository {
   final Map<String, RewardLedger> _store = {};
   RewardLedger? lastEntry;
-  @override Future<bool> settleReward(RewardLedger entry) async {
+  @override
+  Future<bool> settleReward(RewardLedger entry) async {
     if (_store.containsKey(entry.sessionId)) return false;
     _store[entry.sessionId] = entry;
     lastEntry = entry;
     return true;
   }
-  @override Future<RewardLedger?> findBySessionId(String id) async => _store[id];
+
+  @override
+  Future<RewardLedger?> findBySessionId(String id) async => _store[id];
 }
 
 class _StubPetRepo implements IPetRepository {
-  @override Future<void> savePet(Pet pet) async {}
-  @override Future<Pet?> findPetByUser(String userId) async => null;
-  @override Future<void> savePetProgress(PetProgress progress) async {}
-  @override Future<PetProgress?> findPetProgress(String petId) async => null;
-  @override Future<void> addMemory(PetMemory memory) async {}
-  @override Future<List<PetMemory>> findMemories(String petId,
-      {int limit = 50}) async => [];
+  @override
+  Future<void> savePet(Pet pet) async {}
+  @override
+  Future<Pet?> findPetByUser(String userId) async => null;
+  @override
+  Future<void> savePetProgress(PetProgress progress) async {}
+  @override
+  Future<PetProgress?> findPetProgress(String petId) async => null;
+  @override
+  Future<void> addMemory(PetMemory memory) async {}
+  @override
+  Future<List<PetMemory>> findMemories(String petId, {int limit = 50}) async =>
+      [];
 }
 
 FocusSessionEngine _makeEngine({
@@ -123,7 +158,8 @@ void main() {
           mode: FocusMode.focus,
           taskName: 'write arch doc',
           categoryId: 'work');
-      expect(sessionRepo._store.values.first.taskName, equals('write arch doc'));
+      expect(
+          sessionRepo._store.values.first.taskName, equals('write arch doc'));
     });
 
     test('taskName denormalized onto FocusRecord after save()', () async {
@@ -167,7 +203,8 @@ void main() {
 
     // -- mood ---------------------------------------------------------------------
 
-    test('mood stored as structured field, not concatenated into note', () async {
+    test('mood stored as structured field, not concatenated into note',
+        () async {
       await engine.start(
           userId: userId, plannedSeconds: 1500, mode: FocusMode.focus);
       clock.advance(const Duration(minutes: 20));
@@ -194,7 +231,8 @@ void main() {
           engine.currentSession!.elapsedSecondsAt(clock.now());
       await engine.complete();
       await engine.save(note: null);
-      expect(recordRepo._records.first.durationSeconds, equals(elapsedBeforeSave),
+      expect(
+          recordRepo._records.first.durationSeconds, equals(elapsedBeforeSave),
           reason:
               'FocusRecord.durationSeconds must equal elapsedSecondsAt(clock.now()) '
               'computed from the injected clock, not DateTime.now()');
@@ -202,7 +240,8 @@ void main() {
 
     // -- reward consistency ------------------------------------------------------
 
-    test('reward coins based on same elapsed as FocusRecord duration', () async {
+    test('reward coins based on same elapsed as FocusRecord duration',
+        () async {
       await engine.start(
           userId: userId, plannedSeconds: 1500, mode: FocusMode.focus);
       clock.advance(const Duration(minutes: 25)); // 1500 s
@@ -217,7 +256,8 @@ void main() {
       // So coins = (record.durationSeconds / 60).floor() * 2
       final expectedCoins = (record.durationSeconds / 60).floor() * 2;
       expect(ledger!.focusCoinsEarned, equals(expectedCoins),
-          reason: 'Reward coins must be derived from the same elapsed source as FocusRecord');
+          reason:
+              'Reward coins must be derived from the same elapsed source as FocusRecord');
     });
 
     // -- idempotency -------------------------------------------------------------
@@ -243,7 +283,8 @@ void main() {
 
     // -- app restart -------------------------------------------------------------
 
-    test('app restart: new engine restores session with taskName intact', () async {
+    test('app restart: new engine restores session with taskName intact',
+        () async {
       await engine.start(
           userId: userId,
           plannedSeconds: 1500,
@@ -261,8 +302,8 @@ void main() {
 
       expect(engine2.currentSession, isNotNull,
           reason: 'Restored engine must find the active session');
-      expect(engine2.currentSession!.status,
-          equals(FocusSessionStatus.restored));
+      expect(
+          engine2.currentSession!.status, equals(FocusSessionStatus.restored));
       expect(engine2.currentSession!.taskName, equals('persisted task'),
           reason: 'taskName must survive process restart via Drift');
 

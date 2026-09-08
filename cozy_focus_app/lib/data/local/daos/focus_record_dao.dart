@@ -36,6 +36,27 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
     return row == null ? null : _map(row);
   }
 
+  Future<domain.FocusRecord?> findById(String id) async {
+    final row = await (select(focusRecords)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    return row == null ? null : _map(row);
+  }
+
+  Future<void> updateRecord(domain.FocusRecord record) async {
+    await (update(focusRecords)..where((t) => t.id.equals(record.id))).write(
+      FocusRecordsCompanion(
+        categoryId: Value(record.categoryId),
+        taskName: Value(record.taskName),
+        mood: Value(record.mood),
+        note: Value(record.note),
+      ),
+    );
+  }
+
+  Future<void> deleteById(String id) async {
+    await (delete(focusRecords)..where((t) => t.id.equals(id))).go();
+  }
+
   Future<List<domain.FocusRecord>> findByDateRange(
     String userId, {
     required DateTime from,

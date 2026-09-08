@@ -5,6 +5,12 @@ abstract interface class IFocusRecordRepository {
 
   Future<FocusRecord?> findBySessionId(String sessionId);
 
+  Future<FocusRecord?> findById(String id);
+
+  Future<void> update(FocusRecord record);
+
+  Future<void> deleteById(String id);
+
   /// All records for a date range (inclusive), for statistics aggregation.
   Future<List<FocusRecord>> findByDateRange(
     String userId, {

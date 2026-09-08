@@ -23,8 +23,16 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
 
   final List<Map<String, dynamic>> _categories = [
     {'name': '学习', 'icon': Icons.school_rounded, 'color': AppColors.catStudy},
-    {'name': '工作', 'icon': Icons.business_center_rounded, 'color': AppColors.catWork},
-    {'name': '阅读', 'icon': Icons.menu_book_rounded, 'color': AppColors.catReading},
+    {
+      'name': '工作',
+      'icon': Icons.business_center_rounded,
+      'color': AppColors.catWork
+    },
+    {
+      'name': '阅读',
+      'icon': Icons.menu_book_rounded,
+      'color': AppColors.catReading
+    },
     {'name': '生活', 'icon': Icons.spa_rounded, 'color': AppColors.catLife},
   ];
 
@@ -85,7 +93,8 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -143,16 +152,18 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                               color: AppColors.primarySage),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadius.sm),
-                            borderSide: const BorderSide(color: AppColors.border),
+                            borderSide:
+                                const BorderSide(color: AppColors.border),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadius.sm),
-                            borderSide: const BorderSide(color: AppColors.border),
+                            borderSide:
+                                const BorderSide(color: AppColors.border),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadius.sm),
-                            borderSide:
-                                const BorderSide(color: AppColors.primarySage, width: 1.5),
+                            borderSide: const BorderSide(
+                                color: AppColors.primarySage, width: 1.5),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 12),
@@ -204,7 +215,8 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             onSelected: (_) {
-                              setState(() => _selectedCategory = cat['name'] as String);
+                              setState(() =>
+                                  _selectedCategory = cat['name'] as String);
                             },
                           );
                         }).toList(),
@@ -381,7 +393,8 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
             Icon(
               icon,
               size: 22,
-              color: isSelected ? AppColors.primarySage : AppColors.textSecondary,
+              color:
+                  isSelected ? AppColors.primarySage : AppColors.textSecondary,
             ),
             const SizedBox(height: 6),
             Text(
@@ -390,7 +403,8 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? AppColors.primaryDark : AppColors.textPrimary,
+                color:
+                    isSelected ? AppColors.primaryDark : AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),

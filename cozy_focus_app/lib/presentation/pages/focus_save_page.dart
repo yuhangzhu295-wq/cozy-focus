@@ -44,7 +44,8 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
   void initState() {
     super.initState();
     final sessionState = ref.read(focusSessionControllerProvider);
-    _taskController = TextEditingController(text: sessionState.taskName ?? '专注任务');
+    _taskController =
+        TextEditingController(text: sessionState.taskName ?? '专注任务');
     if (sessionState.categoryName != null) {
       _selectedCategory = sessionState.categoryName!;
     }
@@ -120,7 +121,8 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -181,9 +183,11 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                         decoration: InputDecoration(
                           hintText: '输入任务名称...',
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
                           suffixIcon: IconButton(
-                            icon: const Icon(Icons.cancel_rounded, size: 20, color: AppColors.textTertiary),
+                            icon: const Icon(Icons.cancel_rounded,
+                                size: 20, color: AppColors.textTertiary),
                             onPressed: () => _taskController.clear(),
                           ),
                         ),
@@ -210,8 +214,12 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                             width: isSelected ? 1.5 : 1,
                           ),
                           labelStyle: TextStyle(
-                            color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? AppColors.textPrimary
+                                : AppColors.textSecondary,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                           onSelected: (_) {
                             setState(() {
@@ -228,7 +236,8 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                     _buildSectionHeader('心情'),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 12),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -240,15 +249,19 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                           final isSelected = _selectedMoodIndex == idx;
                           return InkWell(
                             borderRadius: BorderRadius.circular(AppRadius.pill),
-                            onTap: () => setState(() => _selectedMoodIndex = idx),
+                            onTap: () =>
+                                setState(() => _selectedMoodIndex = idx),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: isSelected ? AppColors.primaryLight : Colors.transparent,
+                                color: isSelected
+                                    ? AppColors.primaryLight
+                                    : Colors.transparent,
                                 shape: BoxShape.circle,
                                 border: isSelected
-                                    ? Border.all(color: AppColors.primarySage, width: 2)
+                                    ? Border.all(
+                                        color: AppColors.primarySage, width: 2)
                                     : null,
                               ),
                               child: Text(
@@ -377,7 +390,8 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    const Text('⭐', style: TextStyle(fontSize: 18)),
+                                    const Text('⭐',
+                                        style: TextStyle(fontSize: 18)),
                                     const SizedBox(width: 6),
                                     Text(
                                       '+$earnedXp XP',
@@ -423,12 +437,14 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : const Text(
                           '保存记录',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.bold),
                         ),
                 ),
               ),

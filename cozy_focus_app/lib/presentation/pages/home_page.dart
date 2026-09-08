@@ -79,7 +79,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
                   // Level Badge (Screen 01)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -94,7 +95,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.pets_rounded, size: 16, color: AppColors.primarySage),
+                        const Icon(Icons.pets_rounded,
+                            size: 16, color: AppColors.primarySage),
                         const SizedBox(width: 6),
                         Text(
                           'Lv.$level ${pet?.name ?? 'Mochi'}',
@@ -115,7 +117,8 @@ class _HomePageState extends ConsumerState<HomePage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(AppRadius.md),
@@ -129,7 +132,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                         color: AppColors.primaryLight,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.timer_outlined, size: 18, color: AppColors.primarySage),
+                      child: const Icon(Icons.timer_outlined,
+                          size: 18, color: AppColors.primarySage),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -157,15 +161,18 @@ class _HomePageState extends ConsumerState<HomePage> {
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   onTap: () => context.go('/focus/active'),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: AppColors.accentPeachLight,
                       borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.accentPeach.withValues(alpha: 0.5)),
+                      border: Border.all(
+                          color: AppColors.accentPeach.withValues(alpha: 0.5)),
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.play_circle_fill_rounded, color: AppColors.accentPeach, size: 24),
+                        Icon(Icons.play_circle_fill_rounded,
+                            color: AppColors.accentPeach, size: 24),
                         SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -181,12 +188,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                               ),
                               Text(
                                 '点击快速返回专注页面',
-                                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary),
                               ),
                             ],
                           ),
                         ),
-                        Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.accentPeach),
+                        Icon(Icons.arrow_forward_ios_rounded,
+                            size: 14, color: AppColors.accentPeach),
                       ],
                     ),
                   ),
@@ -203,7 +213,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                       // Room Illustration Decor / Soft container
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 24),
-                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 24, horizontal: 16),
                         decoration: BoxDecoration(
                           color: AppColors.backgroundWarm,
                           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -212,7 +223,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                         child: Column(
                           children: [
                             PetAvatarWidget(
-                              visualState: hasActiveSession ? PetVisualState.focus : PetVisualState.idle,
+                              visualState: hasActiveSession
+                                  ? PetVisualState.focus
+                                  : PetVisualState.idle,
                               size: 190,
                               message: hasActiveSession
                                   ? 'Mochi 正在专注陪伴你...'
@@ -271,7 +284,8 @@ class _HomePageState extends ConsumerState<HomePage> {
             Container(
               decoration: const BoxDecoration(
                 color: AppColors.surface,
-                border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                border:
+                    Border(top: BorderSide(color: AppColors.border, width: 1)),
               ),
               child: BottomNavigationBar(
                 currentIndex: _currentNavIndex,
@@ -284,10 +298,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                   if (index == 1) {
                     // Quick Start focus
                     context.go('/focus/setup');
+                  } else if (index == 2) {
+                    // Phase 3: Progress & Reports
+                    context.push('/progress');
                   } else if (index == 0) {
                     setState(() => _currentNavIndex = 0);
                   } else {
-                    // Phase 3, 4, 5 placeholder notification
+                    // Phase 4, 5 placeholder notification
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('该功能将在后续版本开放，先和 Mochi 专注吧 ♡'),

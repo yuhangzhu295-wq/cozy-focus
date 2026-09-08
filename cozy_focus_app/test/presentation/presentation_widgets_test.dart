@@ -55,7 +55,8 @@ void main() {
   });
 
   group('Phase 2 Widget Rendering & Interactions Tests', () {
-    testWidgets('Screen 01: HomePage renders pet greeting and start button', (tester) async {
+    testWidgets('Screen 01: HomePage renders pet greeting and start button',
+        (tester) async {
       await tester.pumpWidget(createTestApp(container, const HomePage()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
@@ -65,7 +66,8 @@ void main() {
       expect(find.text('开始专注 >'), findsOneWidget);
     });
 
-    testWidgets('Screen 02: FocusSetupPage renders categories and mode options', (tester) async {
+    testWidgets('Screen 02: FocusSetupPage renders categories and mode options',
+        (tester) async {
       await tester.pumpWidget(createTestApp(container, const FocusSetupPage()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
@@ -79,7 +81,9 @@ void main() {
       expect(find.text('开始专注'), findsOneWidget);
     });
 
-    testWidgets('Screen 03: FocusActivePage shows timer and pause/resume button', (tester) async {
+    testWidgets(
+        'Screen 03: FocusActivePage shows timer and pause/resume button',
+        (tester) async {
       // Start session first
       final engine = container.read(focusSessionEngineProvider);
       await engine.start(
@@ -88,7 +92,8 @@ void main() {
         mode: FocusMode.focus,
       );
 
-      await tester.pumpWidget(createTestApp(container, const FocusActivePage()));
+      await tester
+          .pumpWidget(createTestApp(container, const FocusActivePage()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -98,11 +103,15 @@ void main() {
       expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
 
       // Cancel session to stop ticker
-      await container.read(focusSessionControllerProvider.notifier).cancelSession();
+      await container
+          .read(focusSessionControllerProvider.notifier)
+          .cancelSession();
     });
 
-    testWidgets('Screen 04: FocusCompletePage renders celebration and minutes', (tester) async {
-      await tester.pumpWidget(createTestApp(container, const FocusCompletePage()));
+    testWidgets('Screen 04: FocusCompletePage renders celebration and minutes',
+        (tester) async {
+      await tester
+          .pumpWidget(createTestApp(container, const FocusCompletePage()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -111,7 +120,8 @@ void main() {
       expect(find.text('继续保存记录'), findsOneWidget);
     });
 
-    testWidgets('Screen 04A: FocusSavePage allows mood selection & save', (tester) async {
+    testWidgets('Screen 04A: FocusSavePage allows mood selection & save',
+        (tester) async {
       await tester.pumpWidget(createTestApp(container, const FocusSavePage()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
@@ -122,12 +132,14 @@ void main() {
       expect(find.text('保存记录'), findsOneWidget);
     });
 
-    testWidgets('Screen 04B: FocusRewardPage renders rewards and return CTA', (tester) async {
-      await tester.pumpWidget(createTestApp(container, const FocusRewardPage()));
+    testWidgets('Screen 04B: FocusRewardPage renders rewards and return CTA',
+        (tester) async {
+      await tester
+          .pumpWidget(createTestApp(container, const FocusRewardPage()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-     expect(find.text('获得奖励'), findsOneWidget);
+      expect(find.text('获得奖励'), findsOneWidget);
       expect(find.text('制作工坊'), findsOneWidget);
       expect(find.text('返回首页'), findsOneWidget);
     });

@@ -33,7 +33,9 @@ class FocusRewardPage extends ConsumerWidget {
       body: SafeArea(
         child: FutureBuilder(
           future: sessionId != null
-              ? ref.read(rewardLedgerRepositoryProvider).findBySessionId(sessionId)
+              ? ref
+                  .read(rewardLedgerRepositoryProvider)
+                  .findBySessionId(sessionId)
               : Future.value(null),
           builder: (context, snapshot) {
             final ledger = snapshot.data;
@@ -134,12 +136,15 @@ class FocusRewardPage extends ConsumerWidget {
                     height: 52,
                     child: ElevatedButton(
                       onPressed: () {
-                        ref.read(homeControllerProvider.notifier).loadHomeData();
+                        ref
+                            .read(homeControllerProvider.notifier)
+                            .loadHomeData();
                         context.go('/');
                       },
                       child: const Text(
                         '返回首页',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
