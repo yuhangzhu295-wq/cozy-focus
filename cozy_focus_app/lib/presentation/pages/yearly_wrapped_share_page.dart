@@ -1,42 +1,113 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../controllers/reports_controller.dart';
+import '../services/wrapped_export_service.dart';
 import '../theme/app_theme.dart';
 
-/// Screen 08A: Yearly Wrapped / Share Page (08A 年度 Wrapped / 分享)
+/// Screen 08A: Yearly Wrapped / Share Page
+///
 /// Real features:
-/// - Top navigation with dismiss/back
-/// - Annual Wrapped Share Card Preview:
-///   * Header: "My YYYY Focus Journey"
-///   * Prominent focus hours (e.g. "326 hours")
-///   * Mochi puppy pet companion artwork & level
-///   * Key annual milestones (Active days, total sessions, favorite category)
-///   * Brand watermark "Cozy Focus · With Mochi ♡"
-/// - Privacy guarantee badge: "默认不含私人备注，保护个人隐私"
-/// - Active system share sheet invocation with real share parameters
-/// - Save card image to photo gallery action
-class YearlyWrappedSharePage extends ConsumerWidget {
+/// - Card preview with actual stats from StatisticsEngine (no hardcoded fake numbers).
+/// - RepaintBoundary-based PNG export via WrappedExportService.
+/// - Real gallery save with success/failure/permission feedback.
+/// - Real share sheet with PNG file (card excludes private notes).
+class YearlyWrappedSharePage extends ConsumerStatefulWidget {
   const YearlyWrappedSharePage({super.key});
 
-  Future<void> _shareToSystem(BuildContext context, int year, String hours,
-      int days, int sessions) async {
-    final text = '✨ My $year Focus Journey with Cozy Focus ✨\n'
-        '这一年，我和 Mochi 一起坚持专注了 $hours 小时，累计 $sessions 次，达成 $days 个专注日！\n'
-        '每一次平静专注的时光，都在成为更温暖坚定的自己。♡\n'
-        '#CozyFocus #FocusWithMochi';
+  @override
+  ConsumerState<YearlyWrappedSharePage> createState() =>
+      _YearlyWrappedSharePageState();
+}
 
-    await SharePlus.instance.share(
-      ShareParams(
-        text: text,
-        subject: 'Cozy Focus $year 年度 Wrapped',
-      ),
+class _YearlyWrappedSharePageState
+    extends ConsumerState<YearlyWrappedSharePage> {
+  final _cardKey = GlobalKey();
+  final _exportService = const WrappedExportService();
+  bool _isSaving = false;
+  bool _isSharing = false;
+
+  Future<Uint8List?> _captureCard() async {
+    // Let the widget finish painting before capture.
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    return _exportService.captureCardAsBytes(_cardKey);
+  }
+
+  Future<void> _saveToGallery(int year) async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+    try {
+      final bytes = await _captureCard();
+      if (bytes == null) {
+        _showMessage('无法生成卡片，请稍后重试');
+        return;
+      }
+      final result = await _exportService.saveToGallery(
+        bytes,
+        'cozy_focus_${year}_wrapped.png',
+      );
+      switch (result) {
+        case ExportResult.success:
+          _showMessage('已保存年度专注卡片到相册 ♡');
+        case ExportResult.permissionDenied:
+          _showMessage('请在系统设置中允许访问相册');
+        case ExportResult.failed:
+          _showMessage('保存失败，请重试');
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _shareCard(
+    int year,
+    String hours,
+    int days,
+    int sessions,
+  ) async {
+    if (_isSharing) return;
+    setState(() => _isSharing = true);
+    try {
+      final shareText =
+          '✨ My $year Focus Journey with Cozy Focus ✨\n'
+          '这一年，我和 Mochi 一起坚持专注了 $hours 小时，'
+          '累计 $sessions 次，达成 $days 个专注日！\n'
+          '每一次平静专注的时光，都在成为更温暖坚定的自己。♡\n'
+          '#CozyFocus #FocusWithMochi';
+
+      final bytes = await _captureCard();
+      if (bytes != null) {
+        await _exportService.shareAsImage(
+          bytes,
+          'cozy_focus_${year}_wrapped.png',
+          shareText,
+        );
+      } else {
+        // Fallback: share text only when PNG capture is unavailable.
+        await SharePlus.instance.share(
+          ShareParams(
+            text: shareText,
+            subject: 'Cozy Focus $year 年度 Wrapped',
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
+    }
+  }
+
+  void _showMessage(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
     );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = ref.watch(reportsControllerProvider);
     final report = state.yearlyReport;
     final petProg = state.petProgress;
@@ -77,17 +148,19 @@ class YearlyWrappedSharePage extends ConsumerWidget {
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 child: Column(
                   children: [
-                    // Wrapped Card Preview Container
-                    _buildWrappedCard(
-                      year: year,
-                      totalHours: totalHours,
-                      activeDays: activeDays,
-                      sessionCount: sessionCount,
-                      petLevel: petLevel,
+                    // Only the card is inside RepaintBoundary — AppBar and
+                    // buttons are excluded from the exported PNG.
+                    RepaintBoundary(
+                      key: _cardKey,
+                      child: WrappedShareCard(
+                        year: year,
+                        totalHours: totalHours,
+                        activeDays: activeDays,
+                        sessionCount: sessionCount,
+                        petLevel: petLevel,
+                      ),
                     ),
                     const SizedBox(height: 16),
-
-                    // Privacy Notice
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 8),
@@ -117,7 +190,7 @@ class YearlyWrappedSharePage extends ConsumerWidget {
               ),
             ),
 
-            // Bottom Action Area
+            // Bottom action area.
             Container(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
               decoration: const BoxDecoration(
@@ -140,27 +213,31 @@ class YearlyWrappedSharePage extends ConsumerWidget {
                         ),
                         elevation: 0,
                       ),
-                      onPressed: () => _shareToSystem(
-                        context,
-                        year,
-                        totalHours,
-                        activeDays,
-                        sessionCount,
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.share_rounded, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            '分享到社交平台',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                      onPressed: _isSharing
+                          ? null
+                          : () => _shareCard(
+                                year, totalHours, activeDays, sessionCount),
+                      child: _isSharing
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.share_rounded, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  '分享到社交平台',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -175,28 +252,29 @@ class YearlyWrappedSharePage extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                       ),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('已保存年度精美卡片到相册 ♡'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.download_rounded, size: 18),
-                          SizedBox(width: 6),
-                          Text(
-                            '保存卡片到相册',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                      onPressed: _isSaving ? null : () => _saveToGallery(year),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.textPrimary),
+                            )
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.download_rounded, size: 18),
+                                SizedBox(width: 6),
+                                Text(
+                                  '保存卡片到相册',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ],
@@ -207,14 +285,28 @@ class YearlyWrappedSharePage extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildWrappedCard({
-    required int year,
-    required String totalHours,
-    required int activeDays,
-    required int sessionCount,
-    required int petLevel,
-  }) {
+/// Stateless card widget placed inside RepaintBoundary.
+/// Contains only shareable stats — no private notes, no task names.
+class WrappedShareCard extends StatelessWidget {
+  const WrappedShareCard({
+    super.key,
+    required this.year,
+    required this.totalHours,
+    required this.activeDays,
+    required this.sessionCount,
+    required this.petLevel,
+  });
+
+  final int year;
+  final String totalHours;
+  final int activeDays;
+  final int sessionCount;
+  final int petLevel;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -232,7 +324,6 @@ class YearlyWrappedSharePage extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // Card Header
           Text(
             'My $year Focus Journey',
             style: const TextStyle(
@@ -268,8 +359,6 @@ class YearlyWrappedSharePage extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Center Pet Visual illustration
           Container(
             width: 140,
             height: 140,
@@ -279,10 +368,7 @@ class YearlyWrappedSharePage extends ConsumerWidget {
               border: Border.all(color: AppColors.borderLight, width: 2),
             ),
             child: const Center(
-              child: Text(
-                '🐶',
-                style: TextStyle(fontSize: 72),
-              ),
+              child: Text('🐶', style: TextStyle(fontSize: 72)),
             ),
           ),
           const SizedBox(height: 12),
@@ -302,10 +388,10 @@ class YearlyWrappedSharePage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-
-          // Key Milestones Row
+          // Key milestone stats — all derived from real data, no hardcoded numbers.
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            padding:
+                const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             decoration: BoxDecoration(
               color: AppColors.backgroundWarm,
               borderRadius: BorderRadius.circular(AppRadius.md),
@@ -314,18 +400,20 @@ class YearlyWrappedSharePage extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildStatItem('专注天数', '$activeDays 天'),
-                Container(width: 1, height: 28, color: AppColors.borderLight),
+                Container(
+                    width: 1, height: 28, color: AppColors.borderLight),
                 _buildStatItem('累计专注', '$sessionCount 次'),
-                Container(width: 1, height: 28, color: AppColors.borderLight),
-                _buildStatItem('最长陪伴', '365 日'),
+                Container(
+                    width: 1, height: 28, color: AppColors.borderLight),
+                // Pet level comes from real PetProgress; defaults to Lv.1 when
+                // Phase 5 is not yet implemented — never a fake high number.
+                _buildStatItem('Mochi 等级', 'Lv.$petLevel'),
               ],
             ),
           ),
           const SizedBox(height: 20),
-
-          // Quote
           const Text(
-            '“温柔地对待时间，时间也会温柔地回馈你。”',
+            '"温柔地对待时间，时间也会温柔地回馈你。"',
             style: TextStyle(
               fontSize: 12,
               fontStyle: FontStyle.italic,
@@ -334,14 +422,13 @@ class YearlyWrappedSharePage extends ConsumerWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-
-          // App Branding Footer
           const Divider(color: AppColors.borderLight),
           const SizedBox(height: 8),
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.pets_rounded, size: 14, color: AppColors.primarySage),
+              Icon(Icons.pets_rounded,
+                  size: 14, color: AppColors.primarySage),
               SizedBox(width: 6),
               Text(
                 'Cozy Focus · 你的温柔专注空间',

@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Cozy Focus 需要访问相册来保存你的年度专注卡片。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Cozy Focus 需要访问相册来保存你的年度专注卡片。</string>
 </dict>
 </plist>

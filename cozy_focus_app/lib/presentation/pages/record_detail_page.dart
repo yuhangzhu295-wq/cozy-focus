@@ -71,7 +71,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
     final taskController = TextEditingController(text: r.taskName ?? '');
     final noteController = TextEditingController(text: r.note ?? '');
     String selectedCategory = r.categoryId ?? 'default';
-    String selectedMood = r.mood ?? '😊';
+    String? selectedMood = r.mood; // null = user never selected
 
     final categories = [
       {'id': 'study', 'name': '学习', 'icon': Icons.school_rounded},
@@ -171,7 +171,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: moods.map((m) {
-                        final isSel = selectedMood == m;
+                        final isSel = selectedMood != null && selectedMood == m;
                         return GestureDetector(
                           onTap: () => setDialogState(() => selectedMood = m),
                           child: Container(
@@ -515,7 +515,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                               color: AppColors.textSecondary,
                             )),
                         Text(
-                          r.mood != null && r.mood!.isNotEmpty ? r.mood! : '😊',
+                          r.mood != null && r.mood!.isNotEmpty ? r.mood! : '未记录',
                           style: const TextStyle(fontSize: 24),
                         ),
                       ],

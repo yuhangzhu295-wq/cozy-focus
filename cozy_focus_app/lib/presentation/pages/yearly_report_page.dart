@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../domain/services/statistics_engine.dart';
 import '../controllers/reports_controller.dart';
 import '../theme/app_theme.dart';
+import '../services/wrapped_export_service.dart';
 
 /// Screen 08: Yearly Report (08 年度报告)
 /// Real features:
@@ -25,6 +26,10 @@ class YearlyReportPage extends ConsumerStatefulWidget {
 }
 
 class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
+  final _summaryKey = GlobalKey();
+  final _exportService = const WrappedExportService();
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +45,56 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
     await SharePlus.instance.share(
       ShareParams(text: text, subject: 'Cozy Focus $year 年度报告分享'),
     );
+  }
+
+  Future<void> _saveSummaryToGallery(int year) async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+    try {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      final bytes = await _exportService.captureCardAsBytes(_summaryKey);
+      if (bytes == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('无法生成报告卡片，请稍后重试'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+      final result = await _exportService.saveToGallery(
+        bytes,
+        'cozy_focus_${year}_yearly.png',
+      );
+      if (!mounted) return;
+      switch (result) {
+        case ExportResult.success:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('已保存年度报告卡片到相册 ♡'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        case ExportResult.permissionDenied:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('请在系统设置中允许访问相册'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        case ExportResult.failed:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('保存失败，请重试'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -108,7 +163,11 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
                 _buildHeroBanner(currentYear),
                 const SizedBox(height: 16),
 
-                // 3 Metric Cards
+               // 3 Metric Cards
+                RepaintBoundary(
+                  key: _summaryKey,
+                  child: Column(
+                    children: [
                 _buildMetricCardsRow(
                   totalHours: totalHours,
                   hoursDiffPct: comp?.durationChangePercentage,
@@ -125,6 +184,9 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
 
                 // 365-day Calendar Heatmap
                 _buildYearlyHeatmapCard(report, currentYear),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 // Mochi Encouragement Card
@@ -174,12 +236,7 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
                       ),
                     ),
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('已保存年度报告卡片到相册 ♡'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                      _saveSummaryToGallery(state.yearlyYear);
                     },
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -481,7 +538,10 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
         ? (bestMonth.totalSeconds / 3600).toStringAsFixed(1)
         : '0';
 
-    final slotLabel = peakSlot != null ? ' ()' : '暂无数据';
+    // Fixed: was ' ()' — string interpolation was empty due to missing dollar signs. — string interpolation was empty due to missing dollar signs.
+    final slotLabel = peakSlot != null
+        ? '${peakSlot.name} (${peakSlot.timeRange})'
+        : '暂无数据';
 
     return Row(
       children: [
