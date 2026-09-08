@@ -1,1 +1,0 @@
-{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false}],"elements":[{"kind":"table","name":"sync_outbox","dart_name":"SyncOutboxTable"},{"kind":"table","name":"reward_ledger","dart_name":"RewardLedgerTable"}]}

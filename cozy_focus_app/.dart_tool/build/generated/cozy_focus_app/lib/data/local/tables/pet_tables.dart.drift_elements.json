@@ -1,1 +1,0 @@
-{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false}],"elements":[{"kind":"table","name":"pets","dart_name":"Pets"},{"kind":"table","name":"pet_memories","dart_name":"PetMemories"},{"kind":"table","name":"pet_progress","dart_name":"PetProgressTable"}]}

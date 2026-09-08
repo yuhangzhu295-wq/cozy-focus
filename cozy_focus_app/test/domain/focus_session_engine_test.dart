@@ -25,46 +25,70 @@ class StubClock implements FocusClock {
 class StubSessionRepo implements IFocusSessionRepository {
   final Map<String, FocusSession> _store = {};
 
-  @override Future<void> save(FocusSession s) async => _store[s.id] = s;
-  @override Future<void> update(FocusSession s) async => _store[s.id] = s;
-  @override Future<FocusSession?> findById(String id) async => _store[id];
-  @override Future<List<FocusSession>> findActive(String userId) async =>
+  @override
+  Future<void> save(FocusSession s) async => _store[s.id] = s;
+  @override
+  Future<void> update(FocusSession s) async => _store[s.id] = s;
+  @override
+  Future<FocusSession?> findById(String id) async => _store[id];
+  @override
+  Future<List<FocusSession>> findActive(String userId) async =>
       _store.values.where((s) => s.isActive).toList();
-  @override Future<List<FocusSession>> findRecent(String userId, {int limit = 20}) async =>
+  @override
+  Future<List<FocusSession>> findRecent(String userId,
+          {int limit = 20}) async =>
       _store.values.toList();
-  @override Future<void> delete(String id) async => _store.remove(id);
+  @override
+  Future<void> delete(String id) async => _store.remove(id);
 }
 
 class StubRecordRepo implements IFocusRecordRepository {
   final List<FocusRecord> _records = [];
 
-  @override Future<void> insert(FocusRecord r) async => _records.add(r);
-  @override Future<FocusRecord?> findBySessionId(String id) async =>
+  @override
+  Future<void> insert(FocusRecord r) async => _records.add(r);
+  @override
+  Future<FocusRecord?> findBySessionId(String id) async =>
       _records.where((r) => r.sessionId == id).firstOrNull;
-  @override Future<List<FocusRecord>> findByDateRange(String userId,
-      {required DateTime from, required DateTime to}) async => _records;
-  @override Future<int> totalSecondsForDay(String userId, DateTime date) async => 0;
-  @override Future<Map<DateTime, int>> dailyTotals(String userId,
-      {required DateTime from, required DateTime to}) async => {};
+  @override
+  Future<List<FocusRecord>> findByDateRange(String userId,
+          {required DateTime from, required DateTime to}) async =>
+      _records;
+  @override
+  Future<int> totalSecondsForDay(String userId, DateTime date) async => 0;
+  @override
+  Future<Map<DateTime, int>> dailyTotals(String userId,
+          {required DateTime from, required DateTime to}) async =>
+      {};
 }
 
 class StubLedgerRepo implements IRewardLedgerRepository {
   final Map<String, RewardLedger> _store = {};
-  @override Future<bool> settleReward(RewardLedger entry) async {
+  @override
+  Future<bool> settleReward(RewardLedger entry) async {
     if (_store.containsKey(entry.sessionId)) return false;
     _store[entry.sessionId] = entry;
     return true;
   }
-  @override Future<RewardLedger?> findBySessionId(String id) async => _store[id];
+
+  @override
+  Future<RewardLedger?> findBySessionId(String id) async => _store[id];
 }
 
 class StubPetRepo implements IPetRepository {
-  @override Future<void> savePet(Pet pet) async {}
-  @override Future<Pet?> findPetByUser(String userId) async => null;
-  @override Future<void> savePetProgress(PetProgress progress) async {}
-  @override Future<PetProgress?> findPetProgress(String petId) async => null;
-  @override Future<void> addMemory(PetMemory memory) async {}
-  @override Future<List<PetMemory>> findMemories(String petId, {int limit = 50}) async => [];
+  @override
+  Future<void> savePet(Pet pet) async {}
+  @override
+  Future<Pet?> findPetByUser(String userId) async => null;
+  @override
+  Future<void> savePetProgress(PetProgress progress) async {}
+  @override
+  Future<PetProgress?> findPetProgress(String petId) async => null;
+  @override
+  Future<void> addMemory(PetMemory memory) async {}
+  @override
+  Future<List<PetMemory>> findMemories(String petId, {int limit = 50}) async =>
+      [];
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -110,7 +134,8 @@ void main() {
     });
 
     test('start → pause → status is paused', () async {
-      await engine.start(userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
+      await engine.start(
+          userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
       clock.advance(const Duration(minutes: 10));
       final paused = await engine.pause();
       expect(paused.status, equals(FocusSessionStatus.paused));
@@ -119,7 +144,8 @@ void main() {
     });
 
     test('pause → resume closes pause interval', () async {
-      await engine.start(userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
+      await engine.start(
+          userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
       clock.advance(const Duration(minutes: 10));
       await engine.pause();
       clock.advance(const Duration(minutes: 5));
@@ -129,7 +155,8 @@ void main() {
     });
 
     test('elapsed excludes pause duration', () async {
-      await engine.start(userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
+      await engine.start(
+          userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
       clock.advance(const Duration(minutes: 10));
       await engine.pause();
       clock.advance(const Duration(minutes: 5));
@@ -141,7 +168,8 @@ void main() {
     });
 
     test('complete → save writes FocusRecord', () async {
-      await engine.start(userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
+      await engine.start(
+          userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
       clock.advance(const Duration(minutes: 25));
       await engine.complete();
       final saved = await engine.save();
@@ -161,9 +189,11 @@ void main() {
     });
 
     test('second start while active throws StateError', () async {
-      await engine.start(userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
+      await engine.start(
+          userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
       expect(
-        () => engine.start(userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus),
+        () => engine.start(
+            userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus),
         throwsA(isA<StateError>()),
       );
     });

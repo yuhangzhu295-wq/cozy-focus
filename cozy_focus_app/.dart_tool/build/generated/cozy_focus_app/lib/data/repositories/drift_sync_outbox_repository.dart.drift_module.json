@@ -1,8 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:cozy_focus_app/domain/models/sync_models.dart",
-    "package:cozy_focus_app/domain/repositories/i_sync_outbox_repository.dart",
-    "package:cozy_focus_app/data/local/daos/sync_outbox_dao.dart"
-  ]
-}

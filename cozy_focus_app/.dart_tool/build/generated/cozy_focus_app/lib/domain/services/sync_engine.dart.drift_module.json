@@ -1,9 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:cozy_focus_app/domain/models/sync_models.dart",
-    "package:cozy_focus_app/domain/models/enums.dart",
-    "package:cozy_focus_app/domain/repositories/i_sync_outbox_repository.dart",
-    "package:uuid/uuid.dart"
-  ]
-}

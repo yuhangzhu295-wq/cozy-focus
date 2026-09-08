@@ -1,6 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:cozy_focus_app/domain/models/craft_models.dart"
-  ]
-}

@@ -1,4 +1,0 @@
-// ignore_for_file: type=lint
-mixin _$FocusRecordDaoMixin on DatabaseAccessor<AppDatabase> {
-  $FocusRecordsTable get focusRecords => attachedDatabase.focusRecords;
-}

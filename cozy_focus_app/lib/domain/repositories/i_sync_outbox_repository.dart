@@ -7,4 +7,3 @@ abstract interface class ISyncOutboxRepository {
   Future<void> markFailed(String id, String errorMessage);
   Future<void> delete(String id);
 }
-

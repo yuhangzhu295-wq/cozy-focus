@@ -10,7 +10,8 @@ class DriftPetRepository implements IPetRepository {
   Future<void> savePet(domain.Pet pet) => _dao.upsertPet(pet);
 
   @override
-  Future<domain.Pet?> findPetByUser(String userId) => _dao.findPetByUser(userId);
+  Future<domain.Pet?> findPetByUser(String userId) =>
+      _dao.findPetByUser(userId);
 
   @override
   Future<void> savePetProgress(domain.PetProgress progress) =>

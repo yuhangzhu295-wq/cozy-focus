@@ -1,0 +1,54 @@
+﻿# Flutter/Dart tool caches -- regenerated on every build
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Coverage reports
+coverage/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Android generated / local config
+android/local.properties
+android/.gradle/
+android/captures/
+android/key.properties
+*.jks
+
+# iOS generated / local config
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Runner.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+
+# macOS generated / local config
+macos/Flutter/ephemeral/
+macos/Pods/
+
+# Windows generated / local config
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+
+# Linux generated / local config
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+
+# Dart-generated source files ARE committed (they are the build artifact)
+# Do NOT add *.g.dart here -- Drift DAO generated files must stay tracked

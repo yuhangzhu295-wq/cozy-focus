@@ -1,8 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:cozy_focus_app/domain/models/focus_session.dart",
-    "package:cozy_focus_app/domain/repositories/i_focus_session_repository.dart",
-    "package:cozy_focus_app/data/local/daos/focus_session_dao.dart"
-  ]
-}

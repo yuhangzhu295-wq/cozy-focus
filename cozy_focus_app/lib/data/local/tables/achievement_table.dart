@@ -17,5 +17,7 @@ class Achievements extends Table {
   Set<Column> get primaryKey => {id};
 
   @override
-  List<Set<Column>> get uniqueKeys => [{userId, achievementKey}];
+  List<Set<Column>> get uniqueKeys => [
+        {userId, achievementKey}
+      ];
 }

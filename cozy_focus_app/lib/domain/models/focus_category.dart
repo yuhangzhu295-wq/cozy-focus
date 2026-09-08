@@ -2,7 +2,7 @@ class FocusCategory {
   final String id;
   final String userId;
   final String name;
-  final int colorValue;    // ARGB integer
+  final int colorValue; // ARGB integer
   final String? iconName;
   final bool isArchived;
   final DateTime createdAt;

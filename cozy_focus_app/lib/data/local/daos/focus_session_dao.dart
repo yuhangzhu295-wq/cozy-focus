@@ -44,7 +44,8 @@ class FocusSessionDao extends DatabaseAccessor<AppDatabase>
     return rows.map(_map).toList();
   }
 
-  Future<List<domain.FocusSession>> findRecent(String userId, {int limit = 20}) async {
+  Future<List<domain.FocusSession>> findRecent(String userId,
+      {int limit = 20}) async {
     final rows = await (select(focusSessions)
           ..where((t) => t.userId.equals(userId))
           ..orderBy([(t) => OrderingTerm.desc(t.startAt)])

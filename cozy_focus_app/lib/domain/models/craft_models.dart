@@ -4,8 +4,8 @@ class CraftRecipe {
   final String id;
   final String name;
   final String? description;
-  final int requiredMinutes;  // focus minutes needed to unlock
-  final Map<String, int> ingredientCosts;  // itemId → quantity
+  final int requiredMinutes; // focus minutes needed to unlock
+  final Map<String, int> ingredientCosts; // itemId → quantity
   final String outputItemId;
   final int outputQuantity;
   final String? artworkPath;
@@ -30,7 +30,7 @@ class CraftJob {
   final DateTime startedAt;
   final DateTime? completedAt;
   final bool rewardClaimed;
-  final String? sessionId;  // session that triggered this craft
+  final String? sessionId; // session that triggered this craft
 
   const CraftJob({
     required this.id,
@@ -47,7 +47,7 @@ class CraftJob {
 class InventoryItem {
   final String id;
   final String userId;
-  final String itemId;     // references item definition catalog
+  final String itemId; // references item definition catalog
   final int quantity;
   final DateTime updatedAt;
 

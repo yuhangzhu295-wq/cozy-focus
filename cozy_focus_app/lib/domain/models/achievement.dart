@@ -3,11 +3,11 @@ import 'enums.dart';
 class Achievement {
   final String id;
   final String userId;
-  final String achievementKey;  // unique slug, e.g. "first_session"
+  final String achievementKey; // unique slug, e.g. "first_session"
   final AchievementType type;
   final String title;
   final String? description;
-  final int threshold;          // target value (count/minutes/days)
+  final int threshold; // target value (count/minutes/days)
   final int currentValue;
   final bool isUnlocked;
   final DateTime? unlockedAt;

@@ -62,7 +62,8 @@ class PetDao extends DatabaseAccessor<AppDatabase> with _$PetDaoMixin {
     );
   }
 
-  Future<List<domain.PetMemory>> findMemories(String petId, {int limit = 50}) async {
+  Future<List<domain.PetMemory>> findMemories(String petId,
+      {int limit = 50}) async {
     final rows = await (select(petMemories)
           ..where((t) => t.petId.equals(petId))
           ..orderBy([(t) => OrderingTerm.desc(t.happenedAt)])
@@ -75,12 +76,14 @@ class PetDao extends DatabaseAccessor<AppDatabase> with _$PetDaoMixin {
         id: row.id as String,
         userId: row.userId as String,
         characterId: row.characterId as String,
-        species: PetSpecies.values.firstWhere((e) => e.name == (row.species as String)),
+        species: PetSpecies.values
+            .firstWhere((e) => e.name == (row.species as String)),
         name: row.name as String,
         adoptedAt: row.adoptedAt as DateTime,
       );
 
-  domain.PetProgress _mapProgress(PetProgressTableData row) => domain.PetProgress(
+  domain.PetProgress _mapProgress(PetProgressTableData row) =>
+      domain.PetProgress(
         id: row.id,
         petId: row.petId,
         level: row.level,

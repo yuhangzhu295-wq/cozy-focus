@@ -5,19 +5,19 @@ import 'enums.dart';
 /// Timing truth: elapsed = endAt - startAt - sum(pauseIntervals)
 /// Timer.periodic is forbidden as the elapsed-time fact source.
 class FocusSession {
-  final String id;              // UUIDv4
+  final String id; // UUIDv4
   final String userId;
   final String? categoryId;
-  final int plannedSeconds;     // user-chosen duration
+  final int plannedSeconds; // user-chosen duration
   final FocusMode mode;
 
-  final DateTime startAt;       // monotonic-safe local timestamp
+  final DateTime startAt; // monotonic-safe local timestamp
 
   /// Each entry is a closed [pauseStart, pauseEnd] pair.
   /// An open pause has pauseEnd == null (session currently paused).
   final List<PauseInterval> pauseIntervals;
 
-  final DateTime? endAt;        // null while running or paused
+  final DateTime? endAt; // null while running or paused
   final FocusSessionStatus status;
 
   /// Device local timezone offset in minutes at session start.

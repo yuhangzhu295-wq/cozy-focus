@@ -12,7 +12,9 @@ class Pets extends Table {
   Set<Column> get primaryKey => {id};
 
   @override
-  List<Set<Column>> get uniqueKeys => [{userId}];
+  List<Set<Column>> get uniqueKeys => [
+        {userId}
+      ];
 }
 
 class PetProgressTable extends Table {
@@ -31,7 +33,9 @@ class PetProgressTable extends Table {
   Set<Column> get primaryKey => {id};
 
   @override
-  List<Set<Column>> get uniqueKeys => [{petId}];
+  List<Set<Column>> get uniqueKeys => [
+        {petId}
+      ];
 }
 
 class PetMemories extends Table {

@@ -1,4 +1,0 @@
-// ignore_for_file: type=lint
-mixin _$FocusSessionDaoMixin on DatabaseAccessor<AppDatabase> {
-  $FocusSessionsTable get focusSessions => attachedDatabase.focusSessions;
-}

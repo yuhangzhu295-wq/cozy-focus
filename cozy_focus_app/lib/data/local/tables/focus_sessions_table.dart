@@ -7,9 +7,10 @@ class FocusSessions extends Table {
   TextColumn get userId => text()();
   TextColumn get categoryId => text().nullable()();
   IntColumn get plannedSeconds => integer()();
-  TextColumn get mode => text()();  // "focus" | "shortBreak" | "longBreak"
+  TextColumn get mode => text()(); // "focus" | "shortBreak" | "longBreak"
   DateTimeColumn get startAt => dateTime()();
-  TextColumn get pauseIntervalsJson => text().withDefault(const Constant('[]'))();
+  TextColumn get pauseIntervalsJson =>
+      text().withDefault(const Constant('[]'))();
   DateTimeColumn get endAt => dateTime().nullable()();
   TextColumn get status => text()();
   IntColumn get timezoneOffsetMinutes => integer()();

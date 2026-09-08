@@ -3,10 +3,10 @@ import 'enums.dart';
 /// Outbox entry for local-first sync. Every local write that must reach
 /// Supabase gets an entry here; SyncEngine drains the queue.
 class SyncOutbox {
-  final String id;          // UUIDv4
-  final String tableName;   // target Supabase table
-  final String recordId;    // FK into local table
-  final String operation;   // "insert" | "update" | "delete"
+  final String id; // UUIDv4
+  final String tableName; // target Supabase table
+  final String recordId; // FK into local table
+  final String operation; // "insert" | "update" | "delete"
   final Map<String, dynamic> payload;
   final SyncStatus status;
   final int attemptCount;
@@ -31,7 +31,7 @@ class SyncOutbox {
 /// Reward ledger — one row per session, enforces idempotency.
 /// session_id is the PRIMARY KEY; inserting twice is a no-op.
 class RewardLedger {
-  final String sessionId;   // PK = FK focus_sessions.id
+  final String sessionId; // PK = FK focus_sessions.id
   final String userId;
   final int focusCoinsEarned;
   final int experienceEarned;

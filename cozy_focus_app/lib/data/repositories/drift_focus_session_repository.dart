@@ -10,7 +10,8 @@ class DriftFocusSessionRepository implements IFocusSessionRepository {
   Future<void> save(domain.FocusSession session) => _dao.upsertSession(session);
 
   @override
-  Future<void> update(domain.FocusSession session) => _dao.upsertSession(session);
+  Future<void> update(domain.FocusSession session) =>
+      _dao.upsertSession(session);
 
   @override
   Future<domain.FocusSession?> findById(String id) => _dao.findById(id);
@@ -20,7 +21,8 @@ class DriftFocusSessionRepository implements IFocusSessionRepository {
       _dao.findActive(userId);
 
   @override
-  Future<List<domain.FocusSession>> findRecent(String userId, {int limit = 20}) =>
+  Future<List<domain.FocusSession>> findRecent(String userId,
+          {int limit = 20}) =>
       _dao.findRecent(userId, limit: limit);
 
   @override

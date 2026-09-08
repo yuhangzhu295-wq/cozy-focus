@@ -5,7 +5,8 @@ class CraftRecipes extends Table {
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
   IntColumn get requiredMinutes => integer()();
-  TextColumn get ingredientCostsJson => text().withDefault(const Constant('{}'))();
+  TextColumn get ingredientCostsJson =>
+      text().withDefault(const Constant('{}'))();
   TextColumn get outputItemId => text()();
   IntColumn get outputQuantity => integer().withDefault(const Constant(1))();
   TextColumn get artworkPath => text().nullable()();
@@ -21,7 +22,8 @@ class CraftJobs extends Table {
   TextColumn get status => text()();
   DateTimeColumn get startedAt => dateTime()();
   DateTimeColumn get completedAt => dateTime().nullable()();
-  BoolColumn get rewardClaimed => boolean().withDefault(const Constant(false))();
+  BoolColumn get rewardClaimed =>
+      boolean().withDefault(const Constant(false))();
   TextColumn get sessionId => text().nullable()();
 
   @override
@@ -40,8 +42,8 @@ class InventoryItems extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {userId, itemId}
-  ];
+        {userId, itemId}
+      ];
 }
 
 class RoomItems extends Table {

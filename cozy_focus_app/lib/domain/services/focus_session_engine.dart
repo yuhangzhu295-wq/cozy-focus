@@ -92,8 +92,8 @@ class FocusSessionEngine {
     // Close the open pause interval
     final intervals = session.pauseIntervals.toList();
     if (intervals.isNotEmpty && intervals.last.pauseEnd == null) {
-      intervals[intervals.length - 1] =
-          PauseInterval(pauseStart: intervals.last.pauseStart, pauseEnd: _clock.now());
+      intervals[intervals.length - 1] = PauseInterval(
+          pauseStart: intervals.last.pauseStart, pauseEnd: _clock.now());
     }
     final updated = session.copyWith(
       pauseIntervals: intervals,
@@ -226,4 +226,3 @@ class FocusSessionEngine {
     return intervals;
   }
 }
-

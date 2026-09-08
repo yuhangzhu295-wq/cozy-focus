@@ -5,7 +5,7 @@ import 'enums.dart';
 class Pet {
   final String id;
   final String userId;
-  final String characterId;  // e.g. "mochi"
+  final String characterId; // e.g. "mochi"
   final PetSpecies species;
   final String name;
   final DateTime adoptedAt;
@@ -23,10 +23,10 @@ class Pet {
 class PetProgress {
   final String id;
   final String petId;
-  final int level;             // 1-based
+  final int level; // 1-based
   final int experiencePoints;
   final int totalFocusMinutes;
-  final int happinessScore;    // 0-100
+  final int happinessScore; // 0-100
   final DateTime updatedAt;
 
   const PetProgress({
@@ -43,7 +43,7 @@ class PetProgress {
 class PetMemory {
   final String id;
   final String petId;
-  final String memoryType;  // e.g. "first_focus", "level_up", "long_session"
+  final String memoryType; // e.g. "first_focus", "level_up", "long_session"
   final String content;
   final DateTime happenedAt;
 
