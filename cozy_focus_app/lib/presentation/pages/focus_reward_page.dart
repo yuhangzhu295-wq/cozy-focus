@@ -7,13 +7,9 @@ import '../controllers/providers.dart';
 import '../theme/app_theme.dart';
 
 /// Screen 04B: Reward Screen (04B 奖励页面)
-/// Displays:
-/// - Real reward fetched from RewardLedgerRepository using current/last session ID
-/// - Real Focus Coins and XP earned
-/// - Crafted item or crafting progress
-/// - Two real action paths:
-///   * "Place Now" (摆放到房间) -> Goes to Home (Room)
-///   * "View in Inventory" (查看背包) -> Goes to Home (Room inventory)
+///
+/// Shows real Focus Coins and Pet XP from RewardLedger.
+/// Craft / Room / Inventory are Phase 4+ and shown as legitimately locked.
 class FocusRewardPage extends ConsumerWidget {
   const FocusRewardPage({super.key});
 
@@ -27,7 +23,10 @@ class FocusRewardPage extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.go('/'),
+          onPressed: () {
+            ref.read(homeControllerProvider.notifier).loadHomeData();
+            context.go('/');
+          },
         ),
         title: const Text('获得奖励'),
       ),
@@ -49,7 +48,7 @@ class FocusRewardPage extends ConsumerWidget {
 
                   // Header
                   const Text(
-                    'New Item Crafted!',
+                    '专注完成！',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -58,63 +57,21 @@ class FocusRewardPage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    '专注时间转化为了温暖的家具与经验',
+                    '专注时间转化为了经验值与专注币',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
-                  // Crafted Item Card / Visual
-                  Container(
-                    width: 200,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      border: Border.all(color: AppColors.border),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primarySage.withValues(alpha: 0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('🪑', style: TextStyle(fontSize: 72)),
-                        SizedBox(height: 8),
-                        Text(
-                          'Wooden Chair',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          '手工木质小椅子',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Reward stats chips
+                  // Real reward chips from RewardLedger
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildRewardChip(
                         icon: '🪙',
-                        label: '+$coins Focus Coins',
+                        label: '+$coins 专注币',
                         color: AppColors.accentGoldLight,
                         textColor: const Color(0xFFB07D1C),
                       ),
@@ -127,10 +84,51 @@ class FocusRewardPage extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 32),
+
+                  // Craft / Room section — Phase 4 not yet implemented
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: const Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.lock_outline_rounded,
+                                size: 18, color: AppColors.textTertiary),
+                            SizedBox(width: 8),
+                            Text(
+                              '制作工坊',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          '制作系统将在 Phase 4 解锁。\n专注币已积累，届时可用于制作家具。',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textTertiary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                   const Spacer(flex: 2),
 
-                  // Action 1: Place Now (摆放到房间)
+                  // Single honest action: return to home
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -140,30 +138,9 @@ class FocusRewardPage extends ConsumerWidget {
                         context.go('/');
                       },
                       child: const Text(
-                        'Place Now (摆放至房间)',
+                        '返回首页',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Action 2: View in Inventory (收入背包)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textSecondary,
-                        side: const BorderSide(color: AppColors.border),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                        ),
-                      ),
-                      onPressed: () {
-                        ref.read(homeControllerProvider.notifier).loadHomeData();
-                        context.go('/');
-                      },
-                      child: const Text('View in Inventory (暂存背包)'),
                     ),
                   ),
                   const SizedBox(height: 24),

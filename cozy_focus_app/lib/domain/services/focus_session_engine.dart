@@ -49,12 +49,14 @@ class FocusSessionEngine {
     required int plannedSeconds,
     required FocusMode mode,
     String? categoryId,
+    String? taskName,
   }) async {
     _assertIdle();
     final session = FocusSession(
       id: _uuid.v4(),
       userId: userId,
       categoryId: categoryId,
+      taskName: taskName,
       plannedSeconds: plannedSeconds,
       mode: mode,
       startAt: _clock.now(),
@@ -133,9 +135,23 @@ class FocusSessionEngine {
 
   // ── save (user confirms and record is written) ─────────────────────────────
 
-  Future<FocusSession> save({String? note}) async {
+  /// [categoryId] allows overriding the session's original category (user may
+  /// change it on the save page).  Defaults to the session's categoryId.
+  Future<FocusSession> save({
+    String? note,
+    String? taskName,
+    String? categoryId,
+    String? mood,
+  }) async {
     final session = _requireSession();
     _assertStatus(session, FocusSessionStatus.finishing);
+
+    final effectiveCategoryId = categoryId ?? session.categoryId;
+    final effectiveTaskName = taskName ?? session.taskName;
+    final now = _clock.now();
+
+    // elapsed is deterministic because endAt is set by FocusClock in complete()
+    final elapsed = session.elapsedSecondsAt(now);
 
     // Write immutable FocusRecord
     await _recordRepo.insert(
@@ -143,11 +159,13 @@ class FocusSessionEngine {
         id: _uuid.v4(),
         sessionId: session.id,
         userId: session.userId,
-        categoryId: session.categoryId,
-        durationSeconds: session.elapsedSeconds,
+        categoryId: effectiveCategoryId,
+        taskName: effectiveTaskName,
+        mood: mood,
+        durationSeconds: elapsed,
         startAt: session.startAt,
         endAt: session.endAt!,
-        recordedAt: _clock.now(),
+        recordedAt: now,
         isCountedForReward: true,
         note: note,
       ),

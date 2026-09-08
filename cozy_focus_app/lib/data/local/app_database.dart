@@ -50,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -59,7 +59,13 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (m, from, to) async {
-        // Future migrations go here, keyed by version.
+        // v1 -> v2: add taskName to focus_sessions and focus_records;
+        //           add mood to focus_records.
+        if (from < 2) {
+          await m.addColumn(focusSessions, focusSessions.taskName);
+          await m.addColumn(focusRecords, focusRecords.taskName);
+          await m.addColumn(focusRecords, focusRecords.mood);
+        }
       },
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');

@@ -2,9 +2,11 @@
 /// This is the fact source for all statistics aggregation.
 class FocusRecord {
   final String id; // UUIDv4, idempotency key
-  final String sessionId; // FK → focus_sessions.id
+  final String sessionId; // FK -> focus_sessions.id
   final String userId;
   final String? categoryId;
+  final String? taskName; // denormalized for history reads without joining sessions
+  final String? mood; // emoji string, e.g. "😊"
   final int durationSeconds; // actual elapsed, never planned
   final DateTime startAt;
   final DateTime endAt;
@@ -17,6 +19,8 @@ class FocusRecord {
     required this.sessionId,
     required this.userId,
     this.categoryId,
+    this.taskName,
+    this.mood,
     required this.durationSeconds,
     required this.startAt,
     required this.endAt,

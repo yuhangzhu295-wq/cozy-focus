@@ -18,6 +18,7 @@ class FocusSessionDao extends DatabaseAccessor<AppDatabase>
         id: Value(session.id),
         userId: Value(session.userId),
         categoryId: Value(session.categoryId),
+        taskName: Value(session.taskName),
         plannedSeconds: Value(session.plannedSeconds),
         mode: Value(session.mode.name),
         startAt: Value(session.startAt),
@@ -58,15 +59,12 @@ class FocusSessionDao extends DatabaseAccessor<AppDatabase>
     await (delete(focusSessions)..where((t) => t.id.equals(id))).go();
   }
 
-  // Drift generates row type as FocusSession (same name as our domain model).
-  // We reference it from the generated mixin via the type alias in the .g.dart part.
-  // The 'hide FocusSession' on app_database.dart import ensures the domain type wins
-  // in this file; the Drift row type is referenced as the positional type in .get() etc.
   domain.FocusSession _map(dynamic row) {
     return domain.FocusSession(
       id: row.id as String,
       userId: row.userId as String,
       categoryId: row.categoryId as String?,
+      taskName: row.taskName as String?,
       plannedSeconds: row.plannedSeconds as int,
       mode: FocusMode.values.firstWhere((e) => e.name == row.mode),
       startAt: row.startAt as DateTime,

@@ -5,6 +5,8 @@ class FocusRecords extends Table {
   TextColumn get sessionId => text()();
   TextColumn get userId => text()();
   TextColumn get categoryId => text().nullable()();
+  TextColumn get taskName => text().nullable()();
+  TextColumn get mood => text().nullable()();
   IntColumn get durationSeconds => integer()();
   DateTimeColumn get startAt => dateTime()();
   DateTimeColumn get endAt => dateTime()();

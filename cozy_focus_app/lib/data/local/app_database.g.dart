@@ -25,6 +25,12 @@ class $FocusSessionsTable extends FocusSessions
   late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
       'category_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _taskNameMeta =
+      const VerificationMeta('taskName');
+  @override
+  late final GeneratedColumn<String> taskName = GeneratedColumn<String>(
+      'task_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _plannedSecondsMeta =
       const VerificationMeta('plannedSeconds');
   @override
@@ -71,6 +77,7 @@ class $FocusSessionsTable extends FocusSessions
         id,
         userId,
         categoryId,
+        taskName,
         plannedSeconds,
         mode,
         startAt,
@@ -105,6 +112,10 @@ class $FocusSessionsTable extends FocusSessions
           _categoryIdMeta,
           categoryId.isAcceptableOrUnknown(
               data['category_id']!, _categoryIdMeta));
+    }
+    if (data.containsKey('task_name')) {
+      context.handle(_taskNameMeta,
+          taskName.isAcceptableOrUnknown(data['task_name']!, _taskNameMeta));
     }
     if (data.containsKey('planned_seconds')) {
       context.handle(
@@ -165,6 +176,8 @@ class $FocusSessionsTable extends FocusSessions
           .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
       categoryId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}category_id']),
+      taskName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}task_name']),
       plannedSeconds: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}planned_seconds'])!,
       mode: attachedDatabase.typeMapping
@@ -192,6 +205,7 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
   final String id;
   final String userId;
   final String? categoryId;
+  final String? taskName;
   final int plannedSeconds;
   final String mode;
   final DateTime startAt;
@@ -203,6 +217,7 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
       {required this.id,
       required this.userId,
       this.categoryId,
+      this.taskName,
       required this.plannedSeconds,
       required this.mode,
       required this.startAt,
@@ -217,6 +232,9 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
     map['user_id'] = Variable<String>(userId);
     if (!nullToAbsent || categoryId != null) {
       map['category_id'] = Variable<String>(categoryId);
+    }
+    if (!nullToAbsent || taskName != null) {
+      map['task_name'] = Variable<String>(taskName);
     }
     map['planned_seconds'] = Variable<int>(plannedSeconds);
     map['mode'] = Variable<String>(mode);
@@ -237,6 +255,9 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
       categoryId: categoryId == null && nullToAbsent
           ? const Value.absent()
           : Value(categoryId),
+      taskName: taskName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskName),
       plannedSeconds: Value(plannedSeconds),
       mode: Value(mode),
       startAt: Value(startAt),
@@ -255,6 +276,7 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
       id: serializer.fromJson<String>(json['id']),
       userId: serializer.fromJson<String>(json['userId']),
       categoryId: serializer.fromJson<String?>(json['categoryId']),
+      taskName: serializer.fromJson<String?>(json['taskName']),
       plannedSeconds: serializer.fromJson<int>(json['plannedSeconds']),
       mode: serializer.fromJson<String>(json['mode']),
       startAt: serializer.fromJson<DateTime>(json['startAt']),
@@ -273,6 +295,7 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
       'id': serializer.toJson<String>(id),
       'userId': serializer.toJson<String>(userId),
       'categoryId': serializer.toJson<String?>(categoryId),
+      'taskName': serializer.toJson<String?>(taskName),
       'plannedSeconds': serializer.toJson<int>(plannedSeconds),
       'mode': serializer.toJson<String>(mode),
       'startAt': serializer.toJson<DateTime>(startAt),
@@ -287,6 +310,7 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
           {String? id,
           String? userId,
           Value<String?> categoryId = const Value.absent(),
+          Value<String?> taskName = const Value.absent(),
           int? plannedSeconds,
           String? mode,
           DateTime? startAt,
@@ -298,6 +322,7 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
         id: id ?? this.id,
         userId: userId ?? this.userId,
         categoryId: categoryId.present ? categoryId.value : this.categoryId,
+        taskName: taskName.present ? taskName.value : this.taskName,
         plannedSeconds: plannedSeconds ?? this.plannedSeconds,
         mode: mode ?? this.mode,
         startAt: startAt ?? this.startAt,
@@ -313,6 +338,7 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
       userId: data.userId.present ? data.userId.value : this.userId,
       categoryId:
           data.categoryId.present ? data.categoryId.value : this.categoryId,
+      taskName: data.taskName.present ? data.taskName.value : this.taskName,
       plannedSeconds: data.plannedSeconds.present
           ? data.plannedSeconds.value
           : this.plannedSeconds,
@@ -335,6 +361,7 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
           ..write('id: $id, ')
           ..write('userId: $userId, ')
           ..write('categoryId: $categoryId, ')
+          ..write('taskName: $taskName, ')
           ..write('plannedSeconds: $plannedSeconds, ')
           ..write('mode: $mode, ')
           ..write('startAt: $startAt, ')
@@ -347,8 +374,18 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
   }
 
   @override
-  int get hashCode => Object.hash(id, userId, categoryId, plannedSeconds, mode,
-      startAt, pauseIntervalsJson, endAt, status, timezoneOffsetMinutes);
+  int get hashCode => Object.hash(
+      id,
+      userId,
+      categoryId,
+      taskName,
+      plannedSeconds,
+      mode,
+      startAt,
+      pauseIntervalsJson,
+      endAt,
+      status,
+      timezoneOffsetMinutes);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -356,6 +393,7 @@ class FocusSession extends DataClass implements Insertable<FocusSession> {
           other.id == this.id &&
           other.userId == this.userId &&
           other.categoryId == this.categoryId &&
+          other.taskName == this.taskName &&
           other.plannedSeconds == this.plannedSeconds &&
           other.mode == this.mode &&
           other.startAt == this.startAt &&
@@ -369,6 +407,7 @@ class FocusSessionsCompanion extends UpdateCompanion<FocusSession> {
   final Value<String> id;
   final Value<String> userId;
   final Value<String?> categoryId;
+  final Value<String?> taskName;
   final Value<int> plannedSeconds;
   final Value<String> mode;
   final Value<DateTime> startAt;
@@ -381,6 +420,7 @@ class FocusSessionsCompanion extends UpdateCompanion<FocusSession> {
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
     this.categoryId = const Value.absent(),
+    this.taskName = const Value.absent(),
     this.plannedSeconds = const Value.absent(),
     this.mode = const Value.absent(),
     this.startAt = const Value.absent(),
@@ -394,6 +434,7 @@ class FocusSessionsCompanion extends UpdateCompanion<FocusSession> {
     required String id,
     required String userId,
     this.categoryId = const Value.absent(),
+    this.taskName = const Value.absent(),
     required int plannedSeconds,
     required String mode,
     required DateTime startAt,
@@ -413,6 +454,7 @@ class FocusSessionsCompanion extends UpdateCompanion<FocusSession> {
     Expression<String>? id,
     Expression<String>? userId,
     Expression<String>? categoryId,
+    Expression<String>? taskName,
     Expression<int>? plannedSeconds,
     Expression<String>? mode,
     Expression<DateTime>? startAt,
@@ -426,6 +468,7 @@ class FocusSessionsCompanion extends UpdateCompanion<FocusSession> {
       if (id != null) 'id': id,
       if (userId != null) 'user_id': userId,
       if (categoryId != null) 'category_id': categoryId,
+      if (taskName != null) 'task_name': taskName,
       if (plannedSeconds != null) 'planned_seconds': plannedSeconds,
       if (mode != null) 'mode': mode,
       if (startAt != null) 'start_at': startAt,
@@ -443,6 +486,7 @@ class FocusSessionsCompanion extends UpdateCompanion<FocusSession> {
       {Value<String>? id,
       Value<String>? userId,
       Value<String?>? categoryId,
+      Value<String?>? taskName,
       Value<int>? plannedSeconds,
       Value<String>? mode,
       Value<DateTime>? startAt,
@@ -455,6 +499,7 @@ class FocusSessionsCompanion extends UpdateCompanion<FocusSession> {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       categoryId: categoryId ?? this.categoryId,
+      taskName: taskName ?? this.taskName,
       plannedSeconds: plannedSeconds ?? this.plannedSeconds,
       mode: mode ?? this.mode,
       startAt: startAt ?? this.startAt,
@@ -478,6 +523,9 @@ class FocusSessionsCompanion extends UpdateCompanion<FocusSession> {
     }
     if (categoryId.present) {
       map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (taskName.present) {
+      map['task_name'] = Variable<String>(taskName.value);
     }
     if (plannedSeconds.present) {
       map['planned_seconds'] = Variable<int>(plannedSeconds.value);
@@ -513,6 +561,7 @@ class FocusSessionsCompanion extends UpdateCompanion<FocusSession> {
           ..write('id: $id, ')
           ..write('userId: $userId, ')
           ..write('categoryId: $categoryId, ')
+          ..write('taskName: $taskName, ')
           ..write('plannedSeconds: $plannedSeconds, ')
           ..write('mode: $mode, ')
           ..write('startAt: $startAt, ')
@@ -553,6 +602,17 @@ class $FocusRecordsTable extends FocusRecords
   @override
   late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
       'category_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _taskNameMeta =
+      const VerificationMeta('taskName');
+  @override
+  late final GeneratedColumn<String> taskName = GeneratedColumn<String>(
+      'task_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _moodMeta = const VerificationMeta('mood');
+  @override
+  late final GeneratedColumn<String> mood = GeneratedColumn<String>(
+      'mood', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _durationSecondsMeta =
       const VerificationMeta('durationSeconds');
@@ -598,6 +658,8 @@ class $FocusRecordsTable extends FocusRecords
         sessionId,
         userId,
         categoryId,
+        taskName,
+        mood,
         durationSeconds,
         startAt,
         endAt,
@@ -637,6 +699,14 @@ class $FocusRecordsTable extends FocusRecords
           _categoryIdMeta,
           categoryId.isAcceptableOrUnknown(
               data['category_id']!, _categoryIdMeta));
+    }
+    if (data.containsKey('task_name')) {
+      context.handle(_taskNameMeta,
+          taskName.isAcceptableOrUnknown(data['task_name']!, _taskNameMeta));
+    }
+    if (data.containsKey('mood')) {
+      context.handle(
+          _moodMeta, mood.isAcceptableOrUnknown(data['mood']!, _moodMeta));
     }
     if (data.containsKey('duration_seconds')) {
       context.handle(
@@ -693,6 +763,10 @@ class $FocusRecordsTable extends FocusRecords
           .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
       categoryId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}category_id']),
+      taskName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}task_name']),
+      mood: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}mood']),
       durationSeconds: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}duration_seconds'])!,
       startAt: attachedDatabase.typeMapping
@@ -719,6 +793,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
   final String sessionId;
   final String userId;
   final String? categoryId;
+  final String? taskName;
+  final String? mood;
   final int durationSeconds;
   final DateTime startAt;
   final DateTime endAt;
@@ -730,6 +806,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
       required this.sessionId,
       required this.userId,
       this.categoryId,
+      this.taskName,
+      this.mood,
       required this.durationSeconds,
       required this.startAt,
       required this.endAt,
@@ -744,6 +822,12 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
     map['user_id'] = Variable<String>(userId);
     if (!nullToAbsent || categoryId != null) {
       map['category_id'] = Variable<String>(categoryId);
+    }
+    if (!nullToAbsent || taskName != null) {
+      map['task_name'] = Variable<String>(taskName);
+    }
+    if (!nullToAbsent || mood != null) {
+      map['mood'] = Variable<String>(mood);
     }
     map['duration_seconds'] = Variable<int>(durationSeconds);
     map['start_at'] = Variable<DateTime>(startAt);
@@ -764,6 +848,10 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
       categoryId: categoryId == null && nullToAbsent
           ? const Value.absent()
           : Value(categoryId),
+      taskName: taskName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskName),
+      mood: mood == null && nullToAbsent ? const Value.absent() : Value(mood),
       durationSeconds: Value(durationSeconds),
       startAt: Value(startAt),
       endAt: Value(endAt),
@@ -781,6 +869,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
       sessionId: serializer.fromJson<String>(json['sessionId']),
       userId: serializer.fromJson<String>(json['userId']),
       categoryId: serializer.fromJson<String?>(json['categoryId']),
+      taskName: serializer.fromJson<String?>(json['taskName']),
+      mood: serializer.fromJson<String?>(json['mood']),
       durationSeconds: serializer.fromJson<int>(json['durationSeconds']),
       startAt: serializer.fromJson<DateTime>(json['startAt']),
       endAt: serializer.fromJson<DateTime>(json['endAt']),
@@ -797,6 +887,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
       'sessionId': serializer.toJson<String>(sessionId),
       'userId': serializer.toJson<String>(userId),
       'categoryId': serializer.toJson<String?>(categoryId),
+      'taskName': serializer.toJson<String?>(taskName),
+      'mood': serializer.toJson<String?>(mood),
       'durationSeconds': serializer.toJson<int>(durationSeconds),
       'startAt': serializer.toJson<DateTime>(startAt),
       'endAt': serializer.toJson<DateTime>(endAt),
@@ -811,6 +903,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
           String? sessionId,
           String? userId,
           Value<String?> categoryId = const Value.absent(),
+          Value<String?> taskName = const Value.absent(),
+          Value<String?> mood = const Value.absent(),
           int? durationSeconds,
           DateTime? startAt,
           DateTime? endAt,
@@ -822,6 +916,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
         sessionId: sessionId ?? this.sessionId,
         userId: userId ?? this.userId,
         categoryId: categoryId.present ? categoryId.value : this.categoryId,
+        taskName: taskName.present ? taskName.value : this.taskName,
+        mood: mood.present ? mood.value : this.mood,
         durationSeconds: durationSeconds ?? this.durationSeconds,
         startAt: startAt ?? this.startAt,
         endAt: endAt ?? this.endAt,
@@ -836,6 +932,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
       userId: data.userId.present ? data.userId.value : this.userId,
       categoryId:
           data.categoryId.present ? data.categoryId.value : this.categoryId,
+      taskName: data.taskName.present ? data.taskName.value : this.taskName,
+      mood: data.mood.present ? data.mood.value : this.mood,
       durationSeconds: data.durationSeconds.present
           ? data.durationSeconds.value
           : this.durationSeconds,
@@ -857,6 +955,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
           ..write('sessionId: $sessionId, ')
           ..write('userId: $userId, ')
           ..write('categoryId: $categoryId, ')
+          ..write('taskName: $taskName, ')
+          ..write('mood: $mood, ')
           ..write('durationSeconds: $durationSeconds, ')
           ..write('startAt: $startAt, ')
           ..write('endAt: $endAt, ')
@@ -868,8 +968,19 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
   }
 
   @override
-  int get hashCode => Object.hash(id, sessionId, userId, categoryId,
-      durationSeconds, startAt, endAt, recordedAt, isCountedForReward, note);
+  int get hashCode => Object.hash(
+      id,
+      sessionId,
+      userId,
+      categoryId,
+      taskName,
+      mood,
+      durationSeconds,
+      startAt,
+      endAt,
+      recordedAt,
+      isCountedForReward,
+      note);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -878,6 +989,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
           other.sessionId == this.sessionId &&
           other.userId == this.userId &&
           other.categoryId == this.categoryId &&
+          other.taskName == this.taskName &&
+          other.mood == this.mood &&
           other.durationSeconds == this.durationSeconds &&
           other.startAt == this.startAt &&
           other.endAt == this.endAt &&
@@ -891,6 +1004,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
   final Value<String> sessionId;
   final Value<String> userId;
   final Value<String?> categoryId;
+  final Value<String?> taskName;
+  final Value<String?> mood;
   final Value<int> durationSeconds;
   final Value<DateTime> startAt;
   final Value<DateTime> endAt;
@@ -903,6 +1018,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
     this.sessionId = const Value.absent(),
     this.userId = const Value.absent(),
     this.categoryId = const Value.absent(),
+    this.taskName = const Value.absent(),
+    this.mood = const Value.absent(),
     this.durationSeconds = const Value.absent(),
     this.startAt = const Value.absent(),
     this.endAt = const Value.absent(),
@@ -916,6 +1033,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
     required String sessionId,
     required String userId,
     this.categoryId = const Value.absent(),
+    this.taskName = const Value.absent(),
+    this.mood = const Value.absent(),
     required int durationSeconds,
     required DateTime startAt,
     required DateTime endAt,
@@ -935,6 +1054,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
     Expression<String>? sessionId,
     Expression<String>? userId,
     Expression<String>? categoryId,
+    Expression<String>? taskName,
+    Expression<String>? mood,
     Expression<int>? durationSeconds,
     Expression<DateTime>? startAt,
     Expression<DateTime>? endAt,
@@ -948,6 +1069,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
       if (sessionId != null) 'session_id': sessionId,
       if (userId != null) 'user_id': userId,
       if (categoryId != null) 'category_id': categoryId,
+      if (taskName != null) 'task_name': taskName,
+      if (mood != null) 'mood': mood,
       if (durationSeconds != null) 'duration_seconds': durationSeconds,
       if (startAt != null) 'start_at': startAt,
       if (endAt != null) 'end_at': endAt,
@@ -964,6 +1087,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
       Value<String>? sessionId,
       Value<String>? userId,
       Value<String?>? categoryId,
+      Value<String?>? taskName,
+      Value<String?>? mood,
       Value<int>? durationSeconds,
       Value<DateTime>? startAt,
       Value<DateTime>? endAt,
@@ -976,6 +1101,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
       sessionId: sessionId ?? this.sessionId,
       userId: userId ?? this.userId,
       categoryId: categoryId ?? this.categoryId,
+      taskName: taskName ?? this.taskName,
+      mood: mood ?? this.mood,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       startAt: startAt ?? this.startAt,
       endAt: endAt ?? this.endAt,
@@ -1000,6 +1127,12 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
     }
     if (categoryId.present) {
       map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (taskName.present) {
+      map['task_name'] = Variable<String>(taskName.value);
+    }
+    if (mood.present) {
+      map['mood'] = Variable<String>(mood.value);
     }
     if (durationSeconds.present) {
       map['duration_seconds'] = Variable<int>(durationSeconds.value);
@@ -1032,6 +1165,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
           ..write('sessionId: $sessionId, ')
           ..write('userId: $userId, ')
           ..write('categoryId: $categoryId, ')
+          ..write('taskName: $taskName, ')
+          ..write('mood: $mood, ')
           ..write('durationSeconds: $durationSeconds, ')
           ..write('startAt: $startAt, ')
           ..write('endAt: $endAt, ')
@@ -5737,6 +5872,7 @@ typedef $$FocusSessionsTableCreateCompanionBuilder = FocusSessionsCompanion
   required String id,
   required String userId,
   Value<String?> categoryId,
+  Value<String?> taskName,
   required int plannedSeconds,
   required String mode,
   required DateTime startAt,
@@ -5751,6 +5887,7 @@ typedef $$FocusSessionsTableUpdateCompanionBuilder = FocusSessionsCompanion
   Value<String> id,
   Value<String> userId,
   Value<String?> categoryId,
+  Value<String?> taskName,
   Value<int> plannedSeconds,
   Value<String> mode,
   Value<DateTime> startAt,
@@ -5778,6 +5915,9 @@ class $$FocusSessionsTableFilterComposer
 
   ColumnFilters<String> get categoryId => $composableBuilder(
       column: $table.categoryId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get taskName => $composableBuilder(
+      column: $table.taskName, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get plannedSeconds => $composableBuilder(
       column: $table.plannedSeconds,
@@ -5822,6 +5962,9 @@ class $$FocusSessionsTableOrderingComposer
   ColumnOrderings<String> get categoryId => $composableBuilder(
       column: $table.categoryId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get taskName => $composableBuilder(
+      column: $table.taskName, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get plannedSeconds => $composableBuilder(
       column: $table.plannedSeconds,
       builder: (column) => ColumnOrderings(column));
@@ -5864,6 +6007,9 @@ class $$FocusSessionsTableAnnotationComposer
 
   GeneratedColumn<String> get categoryId => $composableBuilder(
       column: $table.categoryId, builder: (column) => column);
+
+  GeneratedColumn<String> get taskName =>
+      $composableBuilder(column: $table.taskName, builder: (column) => column);
 
   GeneratedColumn<int> get plannedSeconds => $composableBuilder(
       column: $table.plannedSeconds, builder: (column) => column);
@@ -5916,6 +6062,7 @@ class $$FocusSessionsTableTableManager extends RootTableManager<
             Value<String> id = const Value.absent(),
             Value<String> userId = const Value.absent(),
             Value<String?> categoryId = const Value.absent(),
+            Value<String?> taskName = const Value.absent(),
             Value<int> plannedSeconds = const Value.absent(),
             Value<String> mode = const Value.absent(),
             Value<DateTime> startAt = const Value.absent(),
@@ -5929,6 +6076,7 @@ class $$FocusSessionsTableTableManager extends RootTableManager<
             id: id,
             userId: userId,
             categoryId: categoryId,
+            taskName: taskName,
             plannedSeconds: plannedSeconds,
             mode: mode,
             startAt: startAt,
@@ -5942,6 +6090,7 @@ class $$FocusSessionsTableTableManager extends RootTableManager<
             required String id,
             required String userId,
             Value<String?> categoryId = const Value.absent(),
+            Value<String?> taskName = const Value.absent(),
             required int plannedSeconds,
             required String mode,
             required DateTime startAt,
@@ -5955,6 +6104,7 @@ class $$FocusSessionsTableTableManager extends RootTableManager<
             id: id,
             userId: userId,
             categoryId: categoryId,
+            taskName: taskName,
             plannedSeconds: plannedSeconds,
             mode: mode,
             startAt: startAt,
@@ -5992,6 +6142,8 @@ typedef $$FocusRecordsTableCreateCompanionBuilder = FocusRecordsCompanion
   required String sessionId,
   required String userId,
   Value<String?> categoryId,
+  Value<String?> taskName,
+  Value<String?> mood,
   required int durationSeconds,
   required DateTime startAt,
   required DateTime endAt,
@@ -6006,6 +6158,8 @@ typedef $$FocusRecordsTableUpdateCompanionBuilder = FocusRecordsCompanion
   Value<String> sessionId,
   Value<String> userId,
   Value<String?> categoryId,
+  Value<String?> taskName,
+  Value<String?> mood,
   Value<int> durationSeconds,
   Value<DateTime> startAt,
   Value<DateTime> endAt,
@@ -6035,6 +6189,12 @@ class $$FocusRecordsTableFilterComposer
 
   ColumnFilters<String> get categoryId => $composableBuilder(
       column: $table.categoryId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get taskName => $composableBuilder(
+      column: $table.taskName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mood => $composableBuilder(
+      column: $table.mood, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get durationSeconds => $composableBuilder(
       column: $table.durationSeconds,
@@ -6078,6 +6238,12 @@ class $$FocusRecordsTableOrderingComposer
   ColumnOrderings<String> get categoryId => $composableBuilder(
       column: $table.categoryId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get taskName => $composableBuilder(
+      column: $table.taskName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mood => $composableBuilder(
+      column: $table.mood, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get durationSeconds => $composableBuilder(
       column: $table.durationSeconds,
       builder: (column) => ColumnOrderings(column));
@@ -6119,6 +6285,12 @@ class $$FocusRecordsTableAnnotationComposer
 
   GeneratedColumn<String> get categoryId => $composableBuilder(
       column: $table.categoryId, builder: (column) => column);
+
+  GeneratedColumn<String> get taskName =>
+      $composableBuilder(column: $table.taskName, builder: (column) => column);
+
+  GeneratedColumn<String> get mood =>
+      $composableBuilder(column: $table.mood, builder: (column) => column);
 
   GeneratedColumn<int> get durationSeconds => $composableBuilder(
       column: $table.durationSeconds, builder: (column) => column);
@@ -6169,6 +6341,8 @@ class $$FocusRecordsTableTableManager extends RootTableManager<
             Value<String> sessionId = const Value.absent(),
             Value<String> userId = const Value.absent(),
             Value<String?> categoryId = const Value.absent(),
+            Value<String?> taskName = const Value.absent(),
+            Value<String?> mood = const Value.absent(),
             Value<int> durationSeconds = const Value.absent(),
             Value<DateTime> startAt = const Value.absent(),
             Value<DateTime> endAt = const Value.absent(),
@@ -6182,6 +6356,8 @@ class $$FocusRecordsTableTableManager extends RootTableManager<
             sessionId: sessionId,
             userId: userId,
             categoryId: categoryId,
+            taskName: taskName,
+            mood: mood,
             durationSeconds: durationSeconds,
             startAt: startAt,
             endAt: endAt,
@@ -6195,6 +6371,8 @@ class $$FocusRecordsTableTableManager extends RootTableManager<
             required String sessionId,
             required String userId,
             Value<String?> categoryId = const Value.absent(),
+            Value<String?> taskName = const Value.absent(),
+            Value<String?> mood = const Value.absent(),
             required int durationSeconds,
             required DateTime startAt,
             required DateTime endAt,
@@ -6208,6 +6386,8 @@ class $$FocusRecordsTableTableManager extends RootTableManager<
             sessionId: sessionId,
             userId: userId,
             categoryId: categoryId,
+            taskName: taskName,
+            mood: mood,
             durationSeconds: durationSeconds,
             startAt: startAt,
             endAt: endAt,

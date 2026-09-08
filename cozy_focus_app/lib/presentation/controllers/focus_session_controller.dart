@@ -15,6 +15,7 @@ class FocusSessionUIState {
   final PetVisualState petState;
   final String? taskName;
   final String? categoryName;
+  final String? categoryId;
 
   const FocusSessionUIState({
     this.session,
@@ -24,6 +25,7 @@ class FocusSessionUIState {
     this.petState = PetVisualState.idle,
     this.taskName,
     this.categoryName,
+    this.categoryId,
   });
 
   FocusSessionUIState copyWith({
@@ -34,6 +36,7 @@ class FocusSessionUIState {
     PetVisualState? petState,
     String? taskName,
     String? categoryName,
+    String? categoryId,
   }) {
     return FocusSessionUIState(
       session: session ?? this.session,
@@ -43,6 +46,7 @@ class FocusSessionUIState {
       petState: petState ?? this.petState,
       taskName: taskName ?? this.taskName,
       categoryName: categoryName ?? this.categoryName,
+      categoryId: categoryId ?? this.categoryId,
     );
   }
 }
@@ -118,17 +122,7 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
   }
 
   int _computeElapsed(FocusSession session, DateTime now) {
-    final effectiveEnd = session.endAt ?? now;
-    final raw = effectiveEnd.difference(session.startAt).inSeconds;
-    final paused = session.pauseIntervals.fold<int>(0, (acc, p) {
-      if (p.pauseEnd != null) {
-        return acc + p.pauseEnd!.difference(p.pauseStart).inSeconds;
-      } else {
-        // Open pause: interval ongoing until now
-        return acc + effectiveEnd.difference(p.pauseStart).inSeconds;
-      }
-    });
-    return (raw - paused).clamp(0, raw);
+    return session.elapsedSecondsAt(now);
   }
 
   void _startTicker() {
@@ -177,10 +171,12 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
       plannedSeconds: plannedSeconds,
       mode: mode,
       categoryId: categoryId,
+      taskName: taskName,
     );
     state = state.copyWith(
       taskName: taskName ?? '专注任务',
       categoryName: categoryName ?? '学习',
+      categoryId: categoryId,
     );
     _syncFromEngine();
     return session;
@@ -213,9 +209,20 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
     _syncFromEngine();
   }
 
-  /// Save completed session with note & mood -> generates FocusRecord & settles rewards
-  Future<FocusSession> saveSession({String? note}) async {
-    final result = await _engine.save(note: note);
+  /// Save completed session — all metadata is persisted to FocusRecord.
+  /// [categoryId] overrides the original session category if changed on the save page.
+  Future<FocusSession> saveSession({
+    String? note,
+    String? taskName,
+    String? categoryId,
+    String? mood,
+  }) async {
+    final result = await _engine.save(
+      note: note,
+      taskName: taskName ?? state.taskName,
+      categoryId: categoryId ?? state.categoryId,
+      mood: mood,
+    );
     _syncFromEngine();
     return result;
   }

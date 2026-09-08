@@ -11,10 +11,10 @@ import '../widgets/pet_avatar_widget.dart';
 /// Allows user to review and customize:
 /// - Task Name
 /// - Category (学习 / 工作 / 阅读 / 生活 / 其他)
-/// - Mood (5 cozy emojis)
+/// - Mood (emoji picker — stored as a structured field, NOT concatenated into note)
 /// - Notes / Reflections (up to 200 chars)
-/// - Summary cards: Actual duration & Estimated Reward
-/// On save: Calls FocusSessionEngine.save() -> writes immutable FocusRecord -> settles RewardLedger -> routes to 04B.
+/// On save: calls FocusSessionEngine.save() with taskName, categoryId, mood, note
+/// -> writes immutable FocusRecord -> settles RewardLedger -> routes to 04B.
 class FocusSavePage extends ConsumerStatefulWidget {
   const FocusSavePage({super.key});
 
@@ -26,15 +26,16 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
   late TextEditingController _taskController;
   final TextEditingController _noteController = TextEditingController();
   String _selectedCategory = '学习';
-  int _selectedMoodIndex = 2; // Default cheerful/content
+  String _selectedCategoryId = 'study';
+  int _selectedMoodIndex = 2;
   bool _isSaving = false;
 
   final List<Map<String, dynamic>> _categories = [
-    {'name': '学习', 'color': AppColors.catStudy},
-    {'name': '工作', 'color': AppColors.catWork},
-    {'name': '阅读', 'color': AppColors.catReading},
-    {'name': '生活', 'color': AppColors.catLife},
-    {'name': '其他', 'color': AppColors.catOther},
+    {'name': '学习', 'id': 'study', 'color': AppColors.catStudy},
+    {'name': '工作', 'id': 'work', 'color': AppColors.catWork},
+    {'name': '阅读', 'id': 'reading', 'color': AppColors.catReading},
+    {'name': '生活', 'id': 'life', 'color': AppColors.catLife},
+    {'name': '其他', 'id': 'other', 'color': AppColors.catOther},
   ];
 
   final List<String> _moods = ['😆', '🙂', '😊', '😐', '🥺', '🥰'];
@@ -46,6 +47,9 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
     _taskController = TextEditingController(text: sessionState.taskName ?? '专注任务');
     if (sessionState.categoryName != null) {
       _selectedCategory = sessionState.categoryName!;
+    }
+    if (sessionState.categoryId != null) {
+      _selectedCategoryId = sessionState.categoryId!;
     }
   }
 
@@ -62,13 +66,21 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
 
     try {
       final notifier = ref.read(focusSessionControllerProvider.notifier);
-      final moodStr = _moods[_selectedMoodIndex];
-      final fullNote = _noteController.text.trim().isEmpty
-          ? '心情: $moodStr'
-          : '心情: $moodStr | ${_noteController.text.trim()}';
+      final mood = _moods[_selectedMoodIndex];
+      final noteText = _noteController.text.trim().isEmpty
+          ? null
+          : _noteController.text.trim();
 
-      // Writes immutable FocusRecord and settles RewardLedger
-      await notifier.saveSession(note: fullNote);
+      // All user-edited fields are passed as structured parameters.
+      // mood is stored as its own field, NOT concatenated into note.
+      await notifier.saveSession(
+        taskName: _taskController.text.trim().isEmpty
+            ? '专注任务'
+            : _taskController.text.trim(),
+        categoryId: _selectedCategoryId,
+        mood: mood,
+        note: noteText,
+      );
 
       // Refresh home data so today focus reflects immediately
       await ref.read(homeControllerProvider.notifier).loadHomeData();
@@ -202,7 +214,10 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
                           onSelected: (_) {
-                            setState(() => _selectedCategory = cat['name'] as String);
+                            setState(() {
+                              _selectedCategory = cat['name'] as String;
+                              _selectedCategoryId = cat['id'] as String;
+                            });
                           },
                         );
                       }).toList(),
@@ -353,7 +368,7 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  '获得奖励',
+                                  '预计奖励',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: AppColors.textSecondary,
@@ -362,7 +377,7 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    const Text('🪵', style: TextStyle(fontSize: 18)),
+                                    const Text('⭐', style: TextStyle(fontSize: 18)),
                                     const SizedBox(width: 6),
                                     Text(
                                       '+$earnedXp XP',
@@ -376,7 +391,7 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                                 ),
                                 const SizedBox(height: 6),
                                 const Text(
-                                  '制作进度已同步积累 ♡',
+                                  '将在保存后正式结算 ♡',
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: AppColors.textTertiary,

@@ -127,9 +127,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('获得奖励'), findsOneWidget);
-      expect(find.text('New Item Crafted!'), findsOneWidget);
-      expect(find.text('Place Now (摆放至房间)'), findsOneWidget);
+     expect(find.text('获得奖励'), findsOneWidget);
+      expect(find.text('制作工坊'), findsOneWidget);
+      expect(find.text('返回首页'), findsOneWidget);
     });
   });
 }
