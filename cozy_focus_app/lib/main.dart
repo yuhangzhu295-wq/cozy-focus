@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'presentation/navigation/app_router.dart';
+import 'presentation/theme/app_theme.dart';
 
-/// Phase 1 entry point — placeholder shell.
-/// UI pages will be wired in Phase 2.
 void main() {
-  runApp(const CozyFocusApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    const ProviderScope(
+      child: CozyFocusApp(),
+    ),
+  );
 }
 
 class CozyFocusApp extends StatelessWidget {
@@ -11,15 +17,11 @@ class CozyFocusApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Cozy Focus',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6B9E78)),
-        useMaterial3: true,
-      ),
-      home: const Scaffold(
-        body: Center(child: Text('Cozy Focus — Phase 1 scaffold')),
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      routerConfig: appRouter,
     );
   }
 }

@@ -71,7 +71,10 @@ class FocusSessionEngine {
 
   Future<FocusSession> pause() async {
     final session = _requireSession();
-    _assertStatus(session, FocusSessionStatus.running);
+    if (session.status != FocusSessionStatus.running &&
+        session.status != FocusSessionStatus.restored) {
+      throw StateError('Expected session status running but got ${session.status}');
+    }
     final updated = session.copyWith(
       pauseIntervals: [
         ...session.pauseIntervals,
@@ -88,7 +91,10 @@ class FocusSessionEngine {
 
   Future<FocusSession> resume() async {
     final session = _requireSession();
-    _assertStatus(session, FocusSessionStatus.paused);
+    if (session.status != FocusSessionStatus.paused &&
+        session.status != FocusSessionStatus.restored) {
+      throw StateError('Expected session status paused but got ${session.status}');
+    }
     // Close the open pause interval
     final intervals = session.pauseIntervals.toList();
     if (intervals.isNotEmpty && intervals.last.pauseEnd == null) {
@@ -109,7 +115,8 @@ class FocusSessionEngine {
   Future<FocusSession> complete() async {
     final session = _requireSession();
     if (session.status != FocusSessionStatus.running &&
-        session.status != FocusSessionStatus.paused) {
+        session.status != FocusSessionStatus.paused &&
+        session.status != FocusSessionStatus.restored) {
       throw StateError('Cannot complete session in status: ${session.status}');
     }
     // Close any open pause
@@ -160,7 +167,8 @@ class FocusSessionEngine {
   Future<FocusSession> cancel() async {
     final session = _requireSession();
     if (session.status != FocusSessionStatus.running &&
-        session.status != FocusSessionStatus.paused) {
+        session.status != FocusSessionStatus.paused &&
+        session.status != FocusSessionStatus.restored) {
       throw StateError('Cannot cancel session in status: ${session.status}');
     }
     final intervals = _closeOpenPause(session.pauseIntervals);

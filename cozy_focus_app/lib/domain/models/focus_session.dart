@@ -49,7 +49,8 @@ class FocusSession {
 
   bool get isActive =>
       status == FocusSessionStatus.running ||
-      status == FocusSessionStatus.paused;
+      status == FocusSessionStatus.paused ||
+      status == FocusSessionStatus.restored;
 
   FocusSession copyWith({
     List<PauseInterval>? pauseIntervals,
