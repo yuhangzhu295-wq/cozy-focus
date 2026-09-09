@@ -108,36 +108,27 @@ void main() {
         );
 
     test('1. first settle returns true', () async {
-      final p = await seedPet();
+      await seedPet();
       final result = await settlement.settleAtomically(
         entry: ledger(_uuid.v4(), 1800),
-        currentProgress: p,
         addedFocusSeconds: 1800,
-        activeJob: null,
-        activeRecipe: null,
         now: clock.now(),
       );
       expect(result, isTrue);
     });
 
     test('2. duplicate settle on same session_id returns false', () async {
-      final p = await seedPet();
+      await seedPet();
       final sid = _uuid.v4();
       final e = ledger(sid, 1800);
       final first = await settlement.settleAtomically(
         entry: e,
-        currentProgress: p,
         addedFocusSeconds: 1800,
-        activeJob: null,
-        activeRecipe: null,
         now: clock.now(),
       );
       final second = await settlement.settleAtomically(
         entry: e,
-        currentProgress: p,
         addedFocusSeconds: 1800,
-        activeJob: null,
-        activeRecipe: null,
         now: clock.now(),
       );
       expect(first, isTrue);
@@ -146,23 +137,17 @@ void main() {
 
     test('3. pet XP increases exactly once after two settle attempts',
         () async {
-      final p = await seedPet();
+      await seedPet();
       final sid = _uuid.v4();
       final e = ledger(sid, 1800); // 30 min => +150 XP
       await settlement.settleAtomically(
         entry: e,
-        currentProgress: p,
         addedFocusSeconds: 1800,
-        activeJob: null,
-        activeRecipe: null,
         now: clock.now(),
       );
       await settlement.settleAtomically(
         entry: e,
-        currentProgress: p,
         addedFocusSeconds: 1800,
-        activeJob: null,
-        activeRecipe: null,
         now: clock.now(),
       );
       final pet = await petRepo.findPetByUser(userId);
@@ -172,7 +157,7 @@ void main() {
 
     test('4. craft progress accumulated exactly once on duplicate settle',
         () async {
-      final p = await seedPet();
+      await seedPet();
       final recipe = await craftRepo.findRecipeById('sofa');
       expect(recipe, isNotNull);
       final job = CraftJob(
@@ -189,18 +174,12 @@ void main() {
       final e = ledger(sid, 600); // 10 min, below sofa threshold
       await settlement.settleAtomically(
         entry: e,
-        currentProgress: p,
         addedFocusSeconds: 600,
-        activeJob: job,
-        activeRecipe: recipe,
         now: clock.now(),
       );
       await settlement.settleAtomically(
         entry: e,
-        currentProgress: p,
         addedFocusSeconds: 600,
-        activeJob: job,
-        activeRecipe: recipe,
         now: clock.now(),
       );
       final updated = await craftRepo.findJobById(job.id);
@@ -208,7 +187,7 @@ void main() {
     });
 
     test('5. craft completion + inventory write are atomic', () async {
-      final p = await seedPet();
+      await seedPet();
       final recipe = await craftRepo.findRecipeById('sofa');
       expect(recipe, isNotNull);
       final job = CraftJob(
@@ -223,10 +202,7 @@ void main() {
       await craftRepo.saveJob(job);
       await settlement.settleAtomically(
         entry: ledger(_uuid.v4(), recipe!.requiredSeconds),
-        currentProgress: p,
         addedFocusSeconds: recipe.requiredSeconds,
-        activeJob: job,
-        activeRecipe: recipe,
         now: clock.now(),
       );
       final updatedJob = await craftRepo.findJobById(job.id);
@@ -239,7 +215,7 @@ void main() {
 
     test('6. second craft completion increments inventory quantity to 2',
         () async {
-      final p = await seedPet();
+      await seedPet();
       final recipe = await craftRepo.findRecipeById('sofa');
       expect(recipe, isNotNull);
 
@@ -255,14 +231,12 @@ void main() {
       await craftRepo.saveJob(job1);
       await settlement.settleAtomically(
         entry: ledger(_uuid.v4(), recipe!.requiredSeconds),
-        currentProgress: p,
         addedFocusSeconds: recipe.requiredSeconds,
-        activeJob: job1,
-        activeRecipe: recipe,
         now: clock.now(),
       );
 
       final pet = await petRepo.findPetByUser(userId);
+      // ignore: unused_local_variable
       final p2 = await petRepo.findPetProgress(pet!.id);
 
       final job2 = CraftJob(
@@ -277,10 +251,7 @@ void main() {
       await craftRepo.saveJob(job2);
       await settlement.settleAtomically(
         entry: ledger(_uuid.v4(), recipe.requiredSeconds),
-        currentProgress: p2,
         addedFocusSeconds: recipe.requiredSeconds,
-        activeJob: job2,
-        activeRecipe: recipe,
         now: clock.now(),
       );
 

@@ -6,8 +6,10 @@ part of 'settlement_dao.dart';
 mixin _$SettlementDaoMixin on DatabaseAccessor<AppDatabase> {
   $RewardLedgerTableTable get rewardLedgerTable =>
       attachedDatabase.rewardLedgerTable;
+  $PetsTable get pets => attachedDatabase.pets;
   $PetProgressTableTable get petProgressTable =>
       attachedDatabase.petProgressTable;
+  $CraftRecipesTable get craftRecipes => attachedDatabase.craftRecipes;
   $CraftJobsTable get craftJobs => attachedDatabase.craftJobs;
   $InventoryItemsTable get inventoryItems => attachedDatabase.inventoryItems;
 }

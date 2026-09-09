@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/focus_record.dart';
 import '../../domain/repositories/i_focus_record_repository.dart';
 import '../../domain/services/statistics_engine.dart';
@@ -94,6 +94,7 @@ class RecordsController extends StateNotifier<RecordsState> {
     required IFocusRecordRepository recordRepo,
     required StatisticsEngine statsEngine,
     String userId = 'default_user',
+    // Default kept for unit tests; production uses currentUserIdProvider.
   })  : _recordRepo = recordRepo,
         _statsEngine = statsEngine,
         _userId = userId,
@@ -193,8 +194,10 @@ final recordsControllerProvider =
     StateNotifierProvider<RecordsController, RecordsState>((ref) {
   final recordRepo = ref.watch(focusRecordRepositoryProvider);
   final statsEngine = ref.watch(statisticsEngineProvider);
+  final userId = ref.watch(currentUserIdProvider);
   return RecordsController(
     recordRepo: recordRepo,
     statsEngine: statsEngine,
+    userId: userId,
   );
 });

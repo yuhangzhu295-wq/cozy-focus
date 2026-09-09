@@ -128,3 +128,51 @@ All P0 and P1 review issues have been identified, remediated with architectural 
 
 **Final Status**: **`PHASE_4_REVIEW_APPROVED`**  
 **Readiness for Phase 5 (Pet Progression)**: **READY UPON USER CONFIRMATION**
+
+
+---
+
+## 7. Phase 4.2 P0 Final Closure
+
+### Root Cause Fixed: SettlementDao Idempotency Gate
+
+**Problem:** Drift's typed InsertMode.insertOrIgnore returns the existing rowId on PK conflict
+(never -1). The previous owId == -1 ownership check always evaluated false -- every concurrent
+caller believed it owned the settlement. This caused duplicate XP, duplicate coin grants, and
+duplicate craft progress accumulation when the same session was settled concurrently.
+
+**Fix applied to lib/data/local/daos/settlement_dao.dart:**
+- Replaced typed insert with customStatement('INSERT OR IGNORE INTO reward_ledger ...')
+- Followed by customSelect('SELECT changes() AS c').getSingle()
+- changes() == 1 -> this caller owns settlement, proceed with Pet XP + Craft progress
+- changes() == 0 -> another caller already settled, return false immediately
+
+**DateTime encoding:** Drift stores DateTimeColumn as Unix seconds
+(millisecondsSinceEpoch ~/ 1000), not microseconds. Raw SQL parameters corrected accordingly.
+
+### Additional Closures Completed in This Session
+
+| Item | Action |
+|---|---|
+| User identity | Verified all controllers use currentUserIdProvider in production; 0 hits for 'local_user' |
+| DateTime.now() scan | All remaining hits are VALID (clock abstraction, UI presentation init, Phase 7 stub) |
+| Fake implementation scan | 0 new findings |
+| CI | .github/workflows/flutter-ci.yml present and valid |
+| PHASE_4_AUTO_AUDIT.md | Created |
+| MANUAL_VERIFICATION_BACKLOG.md | Created (10 items, all requiring real device) |
+
+### Final Test Results
+
+- lutter analyze: 0 issues
+- lutter test: 166/166 PASS
+- lutter build apk --debug: SUCCESS (app-debug.apk, ~128 MB, 2026-09-09)
+- iOS build: NOT_RUN (Windows environment)
+
+---
+
+## 8. Final Status
+
+CODE_STATUS: PHASE_4_CODE_APPROVED
+MANUAL_STATUS: MANUAL_PENDING (10 items in MANUAL_VERIFICATION_BACKLOG.md require real device)
+
+Phase 5 (Pet Progression) may proceed upon user confirmation.

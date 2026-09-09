@@ -13,7 +13,15 @@ import 'package:cozy_focus_app/data/repositories/drift_craft_repository.dart';
 import 'package:cozy_focus_app/domain/models/craft_models.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/services/craft_engine.dart';
+import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
+
+class _ControllerClock implements FocusClock {
+  final DateTime _t;
+  _ControllerClock(this._t);
+  @override
+  DateTime now() => _t;
+}
 
 void main() {
   group('CraftController Tests', () {
@@ -31,6 +39,7 @@ void main() {
       controller = CraftController(
         repo: repo,
         engine: engine,
+        clock: _ControllerClock(DateTime(2026, 6, 1, 9)),
         userId: testUserId,
       );
     });
@@ -70,6 +79,14 @@ void main() {
     });
 
     test('4. placeItem persists RoomItem and updates state', () async {
+      // Seed inventory so domain guard passes.
+      await repo.upsertInventoryItem(InventoryItem(
+        id: 'inv-sofa-1',
+        userId: testUserId,
+        itemId: 'sofa',
+        quantity: 1,
+        updatedAt: DateTime(2026, 6, 1, 9),
+      ));
       await controller.loadAll();
       await controller.placeItem('sofa', 0.25, 0.5);
 
@@ -85,6 +102,13 @@ void main() {
     });
 
     test('5. moveRoomItem updates coordinates in state and DB', () async {
+      await repo.upsertInventoryItem(InventoryItem(
+        id: 'inv-sofa-2',
+        userId: testUserId,
+        itemId: 'sofa',
+        quantity: 1,
+        updatedAt: DateTime(2026, 6, 1, 9),
+      ));
       await controller.loadAll();
       await controller.placeItem('sofa', 0.1, 0.1);
       final itemId = controller.debugState.roomItems.first.id;
@@ -100,6 +124,13 @@ void main() {
     });
 
     test('6. removeRoomItem deletes placement from state and DB', () async {
+      await repo.upsertInventoryItem(InventoryItem(
+        id: 'inv-sofa-3',
+        userId: testUserId,
+        itemId: 'sofa',
+        quantity: 1,
+        updatedAt: DateTime(2026, 6, 1, 9),
+      ));
       await controller.loadAll();
       await controller.placeItem('sofa', 0.5, 0.5);
       expect(controller.debugState.roomItems.length, equals(1));

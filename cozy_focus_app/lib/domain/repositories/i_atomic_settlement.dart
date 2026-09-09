@@ -1,23 +1,22 @@
 import '../models/sync_models.dart';
-import '../models/pet_models.dart';
-import '../models/craft_models.dart';
 
-/// Optional interface injected into [RewardService] to wrap the ledger +
-/// pet XP + craft progress writes in a single atomic DB transaction.
+/// Atomic settlement interface — all reads happen INSIDE the transaction.
 ///
-/// Production code provides a [SettlementDao]-backed implementation.
-/// Unit tests that do not need transaction semantics may omit this.
+/// The caller passes only primitive/value-type inputs. The implementation is
+/// responsible for reading the latest PetProgress, CraftJob and CraftRecipe
+/// from the database within the same transaction, preventing lost-update races.
 abstract interface class IAtomicSettlement {
-  /// Settle reward atomically.
+  /// Settle reward for [entry.sessionId] atomically.
+  ///
+  /// [addedFocusSeconds] — the actual elapsed focus seconds from the session.
+  /// [now]               — clock value supplied by the caller (FocusClock).
   ///
   /// Returns [true] if this call performed the settlement (session was not
-  /// previously settled), [false] if the session was already settled.
+  /// previously settled), [false] if the session was already settled (safe
+  /// no-op; all writes are skipped).
   Future<bool> settleAtomically({
     required RewardLedger entry,
-    required PetProgress? currentProgress,
     required int addedFocusSeconds,
-    required CraftJob? activeJob,
-    required CraftRecipe? activeRecipe,
     required DateTime now,
   });
 }

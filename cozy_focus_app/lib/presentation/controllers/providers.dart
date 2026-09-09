@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/local/app_database.dart';
 import '../../data/repositories/drift_focus_session_repository.dart';
 import '../../data/repositories/drift_focus_record_repository.dart';
@@ -16,19 +16,22 @@ import '../../domain/services/reward_service.dart';
 import '../../domain/services/craft_engine.dart';
 import '../../domain/services/statistics_engine.dart';
 
-/// Single database instance for the application
+// Re-export so other files can import currentUserIdProvider from here.
+export '../../core/auth/current_user.dart' show currentUserIdProvider;
+
+/// Single database instance for the application.
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
   ref.onDispose(() => db.close());
   return db;
 });
 
-/// Injectable Focus Clock
+/// Injectable Focus Clock.
 final focusClockProvider = Provider<FocusClock>((ref) {
   return const SystemFocusClock();
 });
 
-/// Repositories
+/// Repositories.
 final focusSessionRepositoryProvider = Provider<IFocusSessionRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return DriftFocusSessionRepository(db.focusSessionDao);
@@ -54,14 +57,14 @@ final craftRepositoryProvider = Provider<ICraftRepository>((ref) {
   return DriftCraftRepository(db.craftDao);
 });
 
-/// CraftEngine
+/// CraftEngine.
 final craftEngineProvider = Provider<CraftEngine>((ref) {
   final craftRepo = ref.watch(craftRepositoryProvider);
   final clock = ref.watch(focusClockProvider);
   return CraftEngine(craftRepo: craftRepo, clock: clock);
 });
 
-/// Reward Service
+/// Reward Service.
 final rewardServiceProvider = Provider<RewardService>((ref) {
   final ledgerRepo = ref.watch(rewardLedgerRepositoryProvider);
   final petRepo = ref.watch(petRepositoryProvider);
@@ -77,7 +80,7 @@ final rewardServiceProvider = Provider<RewardService>((ref) {
   );
 });
 
-/// FocusSessionEngine — the single business authority on session lifecycle
+/// FocusSessionEngine — single business authority on session lifecycle.
 final focusSessionEngineProvider = Provider<FocusSessionEngine>((ref) {
   final sessionRepo = ref.watch(focusSessionRepositoryProvider);
   final recordRepo = ref.watch(focusRecordRepositoryProvider);
@@ -91,7 +94,7 @@ final focusSessionEngineProvider = Provider<FocusSessionEngine>((ref) {
   );
 });
 
-/// StatisticsEngine — single authority for report aggregations
+/// StatisticsEngine — single authority for report aggregations.
 final statisticsEngineProvider = Provider<StatisticsEngine>((ref) {
   final recordRepo = ref.watch(focusRecordRepositoryProvider);
   return StatisticsEngine(recordRepo);

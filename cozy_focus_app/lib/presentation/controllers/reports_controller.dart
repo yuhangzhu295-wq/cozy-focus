@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/pet_models.dart';
 import '../../domain/repositories/i_pet_repository.dart';
 import '../../domain/services/statistics_engine.dart';
@@ -95,6 +95,7 @@ class ReportsController extends StateNotifier<ReportsState> {
     required StatisticsEngine statsEngine,
     required IPetRepository petRepo,
     this.userId = 'default_user',
+    // Default kept for unit tests; production uses currentUserIdProvider.
   })  : _statsEngine = statsEngine,
         _petRepo = petRepo,
         super(ReportsState(
@@ -216,5 +217,7 @@ final reportsControllerProvider =
     StateNotifierProvider<ReportsController, ReportsState>((ref) {
   final statsEngine = ref.watch(statisticsEngineProvider);
   final petRepo = ref.watch(petRepositoryProvider);
-  return ReportsController(statsEngine: statsEngine, petRepo: petRepo);
+  final userId = ref.watch(currentUserIdProvider);
+  return ReportsController(
+      statsEngine: statsEngine, petRepo: petRepo, userId: userId);
 });

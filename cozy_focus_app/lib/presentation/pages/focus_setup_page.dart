@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/focus_session_controller.dart';
+import '../controllers/providers.dart';
 import '../theme/app_theme.dart';
 
 /// Screen 02: Focus Setup / Task Setup
@@ -58,8 +59,9 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
         : _taskController.text.trim();
 
     try {
+      final userId = ref.read(currentUserIdProvider);
       await ref.read(focusSessionControllerProvider.notifier).startSession(
-            userId: 'default_user',
+            userId: userId,
             plannedSeconds: _plannedSeconds,
             mode: _focusMode,
             taskName: taskName,

@@ -1,7 +1,6 @@
 import '../models/focus_session.dart';
 import '../models/sync_models.dart';
 import '../models/pet_models.dart';
-import '../models/craft_models.dart';
 import '../repositories/i_reward_ledger_repository.dart';
 import '../repositories/i_pet_repository.dart';
 import '../repositories/i_atomic_settlement.dart';
@@ -10,12 +9,11 @@ import 'craft_engine.dart';
 
 /// RewardService — idempotent, atomic reward settlement keyed by session_id.
 ///
-/// When [atomicSettlement] is provided (production), the ledger insert + pet
-/// XP + craft progress are written in a single SQLite transaction, preventing
-/// partially-applied rewards on crash.
+/// Production path: [IAtomicSettlement] handles all DB reads and writes in a
+/// single SQLite transaction. No state is pre-fetched outside the transaction.
 ///
-/// When [atomicSettlement] is null (unit tests), a sequential non-atomic path
-/// is used; the idempotency gate is still enforced via [_ledgerRepo].
+/// Test / fallback path: sequential non-atomic writes (when [atomicSettlement]
+/// is null). Idempotency is still enforced via [_ledgerRepo].
 class RewardService {
   final IRewardLedgerRepository _ledgerRepo;
   final IPetRepository _petRepo;
@@ -57,30 +55,16 @@ class RewardService {
     );
 
     if (_atomicSettlement != null) {
-      // --- Production path: single transaction ---
-      final pet = await _petRepo.findPetByUser(session.userId);
-      PetProgress? progress;
-      if (pet != null) progress = await _petRepo.findPetProgress(pet.id);
-
-      CraftJob? activeJob;
-      CraftRecipe? activeRecipe;
-      if (_craftEngine != null && session.elapsedSeconds > 0) {
-        final active = await _craftEngine.getActiveCraftJob(session.userId);
-        activeJob = active?.job;
-        activeRecipe = active?.recipe;
-      }
-
+      // Production path: SettlementDao reads PetProgress, CraftJob and Recipe
+      // INSIDE the transaction. We pass only primitive inputs.
       return _atomicSettlement.settleAtomically(
         entry: entry,
-        currentProgress: progress,
         addedFocusSeconds: session.elapsedSeconds,
-        activeJob: activeJob,
-        activeRecipe: activeRecipe,
         now: now,
       );
     }
 
-    // --- Test / fallback path: sequential writes ---
+    // ── Test / fallback path: sequential writes ──────────────────────────
     final existing = await _ledgerRepo.findBySessionId(session.id);
     if (existing != null) return false;
 

@@ -1,26 +1,31 @@
 import 'package:drift/drift.dart';
 import '../../../domain/models/sync_models.dart' show RewardLedger;
-import '../../../domain/models/pet_models.dart' show PetProgress;
-import '../../../domain/models/craft_models.dart' show CraftJob, CraftRecipe;
 import '../../../domain/models/enums.dart';
 import '../../../domain/repositories/i_atomic_settlement.dart';
 import '../tables/sync_tables.dart';
 import '../tables/pet_tables.dart';
 import '../tables/craft_tables.dart';
-import '../app_database.dart' hide CraftJob, CraftRecipe;
+import '../app_database.dart' hide CraftJob, CraftRecipe, Pet;
 
 part 'settlement_dao.g.dart';
 
-/// Implements [IAtomicSettlement] via a single Drift transaction that writes:
-///   1. RewardLedger (idempotency gate — unique on session_id)
-///   2. PetProgress  (XP + focus minutes + happiness)
-///   3. CraftJob     (progress accumulation, completion flag)
-///   4. InventoryItem (quantity increment on job completion)
+/// Implements [IAtomicSettlement] via a single Drift transaction.
 ///
-/// SQLite serialises all callers inside the transaction, so concurrent
-/// settle() calls cannot both pass the idempotency check.
-@DriftAccessor(
-    tables: [RewardLedgerTable, PetProgressTable, CraftJobs, InventoryItems])
+/// ALL database reads happen INSIDE the transaction:
+///   * RewardLedger idempotency gate -- uses raw SQL INSERT OR IGNORE + changes()
+///     because Drift typed insert() returns the existing rowId (not -1) on conflict.
+///   * PetProgress  -- re-read fresh, then written atomically
+///   * CraftJob     -- re-read fresh; only inProgress jobs accumulate
+///   * CraftRecipe  -- re-read to get requiredSeconds
+///   * InventoryItem -- incremented atomically on job completion
+@DriftAccessor(tables: [
+  RewardLedgerTable,
+  Pets,
+  PetProgressTable,
+  CraftRecipes,
+  CraftJobs,
+  InventoryItems,
+])
 class SettlementDao extends DatabaseAccessor<AppDatabase>
     with _$SettlementDaoMixin
     implements IAtomicSettlement {
@@ -29,66 +34,98 @@ class SettlementDao extends DatabaseAccessor<AppDatabase>
   @override
   Future<bool> settleAtomically({
     required RewardLedger entry,
-    required PetProgress? currentProgress,
     required int addedFocusSeconds,
-    required CraftJob? activeJob,
-    required CraftRecipe? activeRecipe,
     required DateTime now,
   }) async {
     return transaction(() async {
-      // --- 1. Idempotency gate (serialised by surrounding transaction) ---
-      final existing = await (select(rewardLedgerTable)
-            ..where((t) => t.sessionId.equals(entry.sessionId)))
-          .getSingleOrNull();
-      if (existing != null) return false;
-
-      // --- 2. Insert ledger entry ---
-      await into(rewardLedgerTable).insert(
-        RewardLedgerTableCompanion.insert(
-          sessionId: entry.sessionId,
-          userId: entry.userId,
-          focusCoinsEarned: entry.focusCoinsEarned,
-          experienceEarned: entry.experienceEarned,
-          craftRecipeUnlocked: Value(entry.craftRecipeUnlocked),
-          settledAt: entry.settledAt,
-        ),
+      // 1. Idempotency gate via raw SQL INSERT OR IGNORE + changes().
+      //
+      // Drift typed insert() with InsertMode.insertOrIgnore returns the
+      // *existing* rowId on PK conflict -- it does NOT return -1. Using raw
+      // SQL followed by SELECT changes() is the only reliable approach:
+      //   changes() == 0 => row already existed, we are NOT the owner
+      //   changes() == 1 => row was just inserted, we ARE the settlement owner
+      //
+      // Drift stores DateTimeColumn as microseconds since epoch (integer).
+      await customStatement(
+        'INSERT OR IGNORE INTO reward_ledger '
+        '(session_id, user_id, focus_coins_earned, experience_earned, '
+        'craft_recipe_unlocked, settled_at) '
+        'VALUES (?, ?, ?, ?, ?, ?)',
+        [
+          entry.sessionId,
+          entry.userId,
+          entry.focusCoinsEarned,
+          entry.experienceEarned,
+          entry.craftRecipeUnlocked,
+          entry.settledAt.millisecondsSinceEpoch ~/ 1000,
+        ],
       );
 
-      // --- 3. Update pet XP ---
-      if (currentProgress != null) {
-        final addedMinutes = (addedFocusSeconds / 60).floor();
-        await (update(petProgressTable)
-              ..where((t) => t.id.equals(currentProgress.id)))
-            .write(PetProgressTableCompanion(
-          experiencePoints:
-              Value(currentProgress.experiencePoints + entry.experienceEarned),
-          totalFocusMinutes:
-              Value(currentProgress.totalFocusMinutes + addedMinutes),
-          happinessScore: Value(
-              ((currentProgress.happinessScore + 5).clamp(0, 100) as num)
-                  .toInt()),
-          updatedAt: Value(now),
-        ));
+      final changesRow =
+          await customSelect('SELECT changes() AS c').getSingle();
+      final wasInserted = changesRow.read<int>('c') == 1;
+      if (!wasInserted) return false;
+
+      final addedMinutes = (addedFocusSeconds / 60).floor();
+
+      // 2. Pet XP -- re-read inside transaction, write atomically.
+      // PetProgressTable is keyed by petId, not userId; resolve via Pets first.
+      final petRow = await (select(pets)
+            ..where((t) => t.userId.equals(entry.userId)))
+          .getSingleOrNull();
+      if (petRow != null) {
+        final progressRows = await (select(petProgressTable)
+              ..where((t) => t.petId.equals(petRow.id)))
+            .get();
+        if (progressRows.isNotEmpty) {
+          final progress = progressRows.first;
+          await (update(petProgressTable)
+                ..where((t) => t.id.equals(progress.id)))
+              .write(PetProgressTableCompanion(
+            experiencePoints:
+                Value(progress.experiencePoints + entry.experienceEarned),
+            totalFocusMinutes: Value(progress.totalFocusMinutes + addedMinutes),
+            happinessScore: Value((progress.happinessScore + 5).clamp(0, 100)),
+            updatedAt: Value(now),
+          ));
+        }
       }
 
-      // --- 4. Accumulate craft progress ---
-      if (activeJob != null && activeRecipe != null) {
-        final newProgress = activeJob.progressSeconds + addedFocusSeconds;
-        final required = activeRecipe.requiredSeconds;
-        final completed = newProgress >= required;
+      // 3. Craft progress -- re-read inside transaction.
+      if (addedFocusSeconds > 0) {
+        final activeJobs = await (select(craftJobs)
+              ..where((t) =>
+                  t.userId.equals(entry.userId) &
+                  t.status.equals(CraftJobStatus.inProgress.name)))
+            .get();
 
-        await (update(craftJobs)..where((t) => t.id.equals(activeJob.id)))
-            .write(CraftJobsCompanion(
-          progressSeconds: Value(newProgress),
-          status: Value(completed
-              ? CraftJobStatus.completed.name
-              : activeJob.status.name),
-          completedAt: completed ? Value(now) : const Value.absent(),
-        ));
+        if (activeJobs.isNotEmpty) {
+          final job = activeJobs.first;
+          final recipeRows = await (select(craftRecipes)
+                ..where((t) => t.id.equals(job.recipeId)))
+              .get();
 
-        if (completed) {
-          await _atomicInventoryIncrement(
-              activeJob.userId, activeRecipe.outputItemId, now);
+          if (recipeRows.isNotEmpty) {
+            final recipe = recipeRows.first;
+            final newProgress = job.progressSeconds + addedFocusSeconds;
+            // CraftRecipes stores requiredMinutes; convert to seconds here.
+            final requiredSecs = recipe.requiredMinutes * 60;
+            final completed = newProgress >= requiredSecs;
+
+            await (update(craftJobs)..where((t) => t.id.equals(job.id)))
+                .write(CraftJobsCompanion(
+              progressSeconds: Value(newProgress),
+              status: Value(completed
+                  ? CraftJobStatus.completed.name
+                  : CraftJobStatus.inProgress.name),
+              completedAt: completed ? Value(now) : const Value.absent(),
+            ));
+
+            if (completed) {
+              await _incrementInventory(entry.userId, recipe.outputItemId, now);
+            }
+          }
         }
       }
 
@@ -96,7 +133,8 @@ class SettlementDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
-  Future<void> _atomicInventoryIncrement(
+  /// Increment (or create) an inventory slot within the enclosing transaction.
+  Future<void> _incrementInventory(
       String userId, String itemId, DateTime now) async {
     final existing = await (select(inventoryItems)
           ..where((t) => t.userId.equals(userId) & t.itemId.equals(itemId)))

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/focus_session_controller.dart';
+import '../controllers/providers.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pet_avatar_widget.dart';
 
@@ -37,7 +38,7 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
     if (state == AppLifecycleState.resumed) {
       ref
           .read(focusSessionControllerProvider.notifier)
-          .restoreSession('default_user');
+          .restoreSession(ref.read(currentUserIdProvider));
     }
   }
 

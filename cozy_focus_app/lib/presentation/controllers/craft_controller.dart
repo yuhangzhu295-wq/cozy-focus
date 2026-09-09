@@ -1,8 +1,9 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/craft_models.dart';
 import '../../domain/repositories/i_craft_repository.dart';
 import '../../domain/services/craft_engine.dart';
+import '../../domain/services/focus_clock.dart';
 import 'providers.dart';
 
 class CraftState {
@@ -50,15 +51,18 @@ class CraftState {
 class CraftController extends StateNotifier<CraftState> {
   final ICraftRepository _repo;
   final CraftEngine _engine;
+  final FocusClock _clock;
   final String _userId;
   static const _uuid = Uuid();
 
   CraftController({
     required ICraftRepository repo,
     required CraftEngine engine,
-    String userId = 'local_user',
+    required FocusClock clock,
+    required String userId,
   })  : _repo = repo,
         _engine = engine,
+        _clock = clock,
         _userId = userId,
         super(const CraftState());
 
@@ -108,8 +112,32 @@ class CraftController extends StateNotifier<CraftState> {
     }
   }
 
+  /// Place an inventory item in the room.
+  ///
+  /// Domain-level validation:
+  ///   • The item must exist in inventory with quantity > 0.
+  ///   • The number of already-placed instances must be < inventory quantity.
+  ///
+  /// The timestamp is provided by [_clock] (never DateTime.now()).
   Future<void> placeItem(String itemId, double x, double y) async {
     try {
+      // Domain validation: re-read inventory from DB.
+      final invItem = await _repo.findInventoryItem(_userId, itemId);
+      if (invItem == null || invItem.quantity <= 0) {
+        state = state.copyWith(error: 'Item not available in inventory');
+        return;
+      }
+
+      // Count current placements for this item.
+      final placedCount =
+          state.roomItems.where((r) => r.itemId == itemId).length;
+      if (placedCount >= invItem.quantity) {
+        state =
+            state.copyWith(error: 'All copies of this item are already placed');
+        return;
+      }
+
+      final now = _clock.now();
       final roomItem = RoomItem(
         id: _uuid.v4(),
         userId: _userId,
@@ -119,7 +147,7 @@ class CraftController extends StateNotifier<CraftState> {
         scale: 1.0,
         zIndex: state.roomItems.length,
         isVisible: true,
-        placedAt: DateTime.now(),
+        placedAt: now,
       );
       await _repo.placeRoomItem(roomItem);
       final updated = [...state.roomItems, roomItem];
@@ -129,6 +157,7 @@ class CraftController extends StateNotifier<CraftState> {
     }
   }
 
+  /// Persist the final position of a room item (called on drag end only).
   Future<void> moveRoomItem(String id, double x, double y) async {
     try {
       final idx = state.roomItems.indexWhere((r) => r.id == id);
@@ -175,5 +204,12 @@ final craftControllerProvider =
     StateNotifierProvider<CraftController, CraftState>((ref) {
   final repo = ref.watch(craftRepositoryProvider);
   final engine = ref.watch(craftEngineProvider);
-  return CraftController(repo: repo, engine: engine);
+  final clock = ref.watch(focusClockProvider);
+  final userId = ref.watch(currentUserIdProvider);
+  return CraftController(
+    repo: repo,
+    engine: engine,
+    clock: clock,
+    userId: userId,
+  );
 });

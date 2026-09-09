@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/pet_models.dart';
 import '../../domain/models/enums.dart';
 import 'providers.dart';
+import '../../core/auth/current_user.dart';
 
 /// State for the Home screen (01)
 class HomeUIState {
@@ -44,7 +45,7 @@ class HomeUIState {
 
 class HomeController extends StateNotifier<HomeUIState> {
   final Ref _ref;
-  static const String defaultUserId = 'default_user';
+  static String get defaultUserId => localMvpUserId;
 
   HomeController(this._ref) : super(const HomeUIState()) {
     loadHomeData();
