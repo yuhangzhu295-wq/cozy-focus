@@ -236,3 +236,32 @@ CODE_STATUS: PHASE_4_CODE_APPROVED
 MANUAL_STATUS: MANUAL_PENDING
 
 Phase 5: ALLOWED pending user confirmation after GitHub review.
+
+---
+
+## Phase 4.4 CI Format Closure
+
+**Date**: 2026-09-09
+**Baseline commit**: 2985f1b16e9c83920a5ff6594b0a68a8b7eba5c3
+
+### Issue
+GitHub Actions CI for Phase 4.3 commit failed at dart format gate.
+Root cause: 4 new files added in Phase 4.3 were not formatted before commit.
+Additionally, flutter analyze surfaced 5 minor issues in new test files (unused imports, prefer_const_declarations).
+All fixed — no business logic change.
+
+### Local Verification
+
+| Gate | Result |
+|---|---|
+| dart format gate | PASS (exit 0, 0 changed) |
+| flutter analyze | PASS (0 issues) |
+| flutter test | 177 / 177 PASS |
+| flutter build apk --debug | PASS |
+
+### Final Status
+
+- CODE_STATUS: PHASE_4_CODE_APPROVED
+- MANUAL_STATUS: MANUAL_PENDING
+- CI_STATUS: PENDING (awaiting GitHub Actions post-push)
+- PHASE_5_ALLOWED: YES (after CI confirms)

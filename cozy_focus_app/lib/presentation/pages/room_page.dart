@@ -302,7 +302,7 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
       itemHeight: renderedSize,
     );
     final left = clampedDrag.x * widget.canvasWidth - renderedSize / 2;
-    final top  = clampedDrag.y * widget.canvasHeight - renderedSize / 2;
+    final top = clampedDrag.y * widget.canvasHeight - renderedSize / 2;
 
     return Positioned(
       left: left,

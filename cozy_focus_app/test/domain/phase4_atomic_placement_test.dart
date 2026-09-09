@@ -3,8 +3,6 @@
 // Verifies that placeRoomItemIfAvailable() enforces inventory limits inside
 // a single DB transaction, preventing concurrent over-placement.
 
-import 'dart:async';
-
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uuid/uuid.dart';
@@ -13,7 +11,6 @@ import 'package:cozy_focus_app/data/local/app_database.dart'
     hide FocusSession, Pet, CraftJob, CraftRecipe, InventoryItem, RoomItem;
 import 'package:cozy_focus_app/data/repositories/drift_craft_repository.dart';
 import 'package:cozy_focus_app/domain/models/craft_models.dart';
-import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/repositories/i_craft_repository.dart';
 
 const _uuid = Uuid();
@@ -70,8 +67,9 @@ void main() {
 
       final placed =
           results.where((r) => r == RoomPlacementResult.placed).length;
-      final exhausted =
-          results.where((r) => r == RoomPlacementResult.inventoryExhausted).length;
+      final exhausted = results
+          .where((r) => r == RoomPlacementResult.inventoryExhausted)
+          .length;
 
       expect(placed, 1, reason: 'exactly one placement should succeed');
       expect(exhausted, 1, reason: 'second attempt must be rejected');
@@ -91,8 +89,9 @@ void main() {
 
       final placed =
           results.where((r) => r == RoomPlacementResult.placed).length;
-      final exhausted =
-          results.where((r) => r == RoomPlacementResult.inventoryExhausted).length;
+      final exhausted = results
+          .where((r) => r == RoomPlacementResult.inventoryExhausted)
+          .length;
 
       expect(placed, 3);
       expect(exhausted, 7);
