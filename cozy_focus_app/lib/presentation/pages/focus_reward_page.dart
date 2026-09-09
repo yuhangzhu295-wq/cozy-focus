@@ -3,19 +3,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/home_controller.dart';
+import '../controllers/craft_controller.dart';
 import '../controllers/providers.dart';
 import '../theme/app_theme.dart';
 
-/// Screen 04B: Reward Screen (04B 奖励页面)
-///
+/// Screen 04B: Reward Screen
 /// Shows real Focus Coins and Pet XP from RewardLedger.
-/// Craft / Room / Inventory are Phase 4+ and shown as legitimately locked.
-class FocusRewardPage extends ConsumerWidget {
+/// Shows real active craft job progress if one exists (Phase 4).
+class FocusRewardPage extends ConsumerStatefulWidget {
   const FocusRewardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FocusRewardPage> createState() => _FocusRewardPageState();
+}
+
+class _FocusRewardPageState extends ConsumerState<FocusRewardPage> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() =>
+        ref.read(craftControllerProvider.notifier).refreshInventoryAndRoom());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final sessionState = ref.watch(focusSessionControllerProvider);
+    final craft = ref.watch(craftControllerProvider);
     final sessionId = sessionState.session?.id;
 
     return Scaffold(
@@ -88,49 +101,12 @@ class FocusRewardPage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 32),
 
-                  // Craft / Room section — Phase 4 not yet implemented
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: const Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.lock_outline_rounded,
-                                size: 18, color: AppColors.textTertiary),
-                            SizedBox(width: 8),
-                            Text(
-                              '制作工坊',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          '制作系统将在 Phase 4 解锁。\n专注币已积累，届时可用于制作家具。',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textTertiary,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Craft progress section — real data from CraftEngine
+                  _buildCraftSection(context, craft),
 
                   const Spacer(flex: 2),
 
-                  // Single honest action: return to home
+                  // Return home
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -154,6 +130,132 @@ class FocusRewardPage extends ConsumerWidget {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildCraftSection(BuildContext context, CraftState craft) {
+    // Active job exists — show real progress
+    if (craft.activeJob != null && craft.activeRecipe != null) {
+      final job = craft.activeJob!;
+      final recipe = craft.activeRecipe!;
+      final progress = recipe.requiredSeconds > 0
+          ? (job.progressSeconds / recipe.requiredSeconds).clamp(0.0, 1.0)
+          : 0.0;
+      final progressMin = (job.progressSeconds / 60).floor();
+
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.accentGoldLight,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border:
+              Border.all(color: AppColors.accentGold.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Text(recipe.icon, style: const TextStyle(fontSize: 24)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '正在制作：${recipe.name}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        '$progressMin / ${recipe.requiredMinutes} min',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: AppColors.border,
+                color: AppColors.accentGold,
+                minHeight: 8,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 36,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                ),
+                onPressed: () => context.go('/craft/detail/${job.recipeId}'),
+                child: const Text('查看制作进度'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // No active job — show craft workshop entry (not locked, Phase 4 available)
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.handyman_outlined,
+                  size: 18, color: AppColors.textSecondary),
+              SizedBox(width: 8),
+              Text(
+                '制作工坊',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '用专注时间制作家具，装饰 Mochi 的小房间',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textTertiary,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 36,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.handyman_outlined, size: 16),
+              label: const Text('前往制作工坊'),
+              onPressed: () => context.go('/craft'),
+            ),
+          ),
+        ],
       ),
     );
   }

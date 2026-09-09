@@ -29,7 +29,14 @@ void main() {
 
       // Simulate valid PNG header.
       final fakePng = Uint8List.fromList([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A,
         ...List.filled(100, 0),
       ]);
 
@@ -44,7 +51,8 @@ void main() {
       expect(isPng(Uint8List.fromList([0x00, 0x01])), isFalse);
     });
 
-    test('null bytes input to saveToGallery is handled via capture returning null',
+    test(
+        'null bytes input to saveToGallery is handled via capture returning null',
         () async {
       // WrappedExportService.captureCardAsBytes returns null when no
       // RenderRepaintBoundary is attached — pages must check null and NOT
@@ -86,7 +94,9 @@ void main() {
       expect(int.parse(hours), greaterThanOrEqualTo(10));
     });
 
-    test('"365 日" hardcoded string must NOT appear in WrappedShareCard stats row', () {
+    test(
+        '"365 日" hardcoded string must NOT appear in WrappedShareCard stats row',
+        () {
       // Since WrappedShareCard derives all values from parameters, check
       // that when activeDays != 365, the stat value is not "365 天".
       const activeDays = 42;
@@ -99,22 +109,19 @@ void main() {
   group('C. Mood null handling', () {
     test('mood null maps to "未记录" display text', () {
       const String? mood = null;
-      final display =
-          mood != null && mood.isNotEmpty ? mood : '未记录';
+      final display = mood != null && mood.isNotEmpty ? mood : '未记录';
       expect(display, equals('未记录'));
     });
 
     test('mood empty string maps to "未记录" display text', () {
       const String? mood = '';
-      final display =
-          mood != null && mood.isNotEmpty ? mood : '未记录';
+      final display = mood != null && mood.isNotEmpty ? mood : '未记录';
       expect(display, equals('未记录'));
     });
 
     test('mood emoji maps to itself', () {
       const String? mood = '😊';
-      final display =
-          mood != null && mood.isNotEmpty ? mood : '未记录';
+      final display = mood != null && mood.isNotEmpty ? mood : '未记录';
       expect(display, equals('😊'));
     });
 
@@ -147,7 +154,8 @@ void main() {
       expect(daysInFeb, equals(29));
     });
 
-    test('February 2100 has 28 days (divisible by 100 but not 400 — not leap)', () {
+    test('February 2100 has 28 days (divisible by 100 but not 400 — not leap)',
+        () {
       final year = 2100;
       final month = 2;
       final daysInFeb = DateTime(year, month + 1, 0).day;
@@ -189,13 +197,14 @@ void main() {
       const currentSeconds = 3600.0;
       // Safe percentage change when previous is 0: treat as +100% or special casing.
       final changePct = previousSeconds == 0
-          ? null  // null means "new this period" — not NaN
+          ? null // null means "new this period" — not NaN
           : ((currentSeconds - previousSeconds) / previousSeconds * 100);
       // Must not be NaN.
       expect(changePct, isNull); // handled as "new period" special case.
     });
 
-    test('Week cross-year: 2026-12-28 to 2027-01-03 spans two calendar years', () {
+    test('Week cross-year: 2026-12-28 to 2027-01-03 spans two calendar years',
+        () {
       final weekStart = DateTime(2026, 12, 28);
       final weekEnd = DateTime(2027, 1, 3);
       expect(weekEnd.year, greaterThan(weekStart.year));
@@ -248,8 +257,7 @@ void main() {
       const sessions = 25;
       const days = 20;
       const year = 2026;
-      final text =
-          '✨ My $year Focus Journey with Cozy Focus ✨\n'
+      final text = '✨ My $year Focus Journey with Cozy Focus ✨\n'
           '这一年，我和 Mochi 一起坚持专注了 $hours 小时，累计 $sessions 次，达成 $days 个专注日！\n'
           '#CozyFocus #FocusWithMochi';
       expect(text.contains('note'), isFalse);

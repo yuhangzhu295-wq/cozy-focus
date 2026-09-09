@@ -2095,6 +2095,14 @@ class $CraftJobsTable extends CraftJobs
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
       'status', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _progressSecondsMeta =
+      const VerificationMeta('progressSeconds');
+  @override
+  late final GeneratedColumn<int> progressSeconds = GeneratedColumn<int>(
+      'progress_seconds', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   static const VerificationMeta _startedAtMeta =
       const VerificationMeta('startedAt');
   @override
@@ -2129,6 +2137,7 @@ class $CraftJobsTable extends CraftJobs
         userId,
         recipeId,
         status,
+        progressSeconds,
         startedAt,
         completedAt,
         rewardClaimed,
@@ -2166,6 +2175,12 @@ class $CraftJobsTable extends CraftJobs
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
     } else if (isInserting) {
       context.missing(_statusMeta);
+    }
+    if (data.containsKey('progress_seconds')) {
+      context.handle(
+          _progressSecondsMeta,
+          progressSeconds.isAcceptableOrUnknown(
+              data['progress_seconds']!, _progressSecondsMeta));
     }
     if (data.containsKey('started_at')) {
       context.handle(_startedAtMeta,
@@ -2206,6 +2221,8 @@ class $CraftJobsTable extends CraftJobs
           .read(DriftSqlType.string, data['${effectivePrefix}recipe_id'])!,
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      progressSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}progress_seconds'])!,
       startedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}started_at'])!,
       completedAt: attachedDatabase.typeMapping
@@ -2228,6 +2245,9 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
   final String userId;
   final String recipeId;
   final String status;
+
+  /// Accumulated focus seconds contributed to this craft job.
+  final int progressSeconds;
   final DateTime startedAt;
   final DateTime? completedAt;
   final bool rewardClaimed;
@@ -2237,6 +2257,7 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
       required this.userId,
       required this.recipeId,
       required this.status,
+      required this.progressSeconds,
       required this.startedAt,
       this.completedAt,
       required this.rewardClaimed,
@@ -2248,6 +2269,7 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
     map['user_id'] = Variable<String>(userId);
     map['recipe_id'] = Variable<String>(recipeId);
     map['status'] = Variable<String>(status);
+    map['progress_seconds'] = Variable<int>(progressSeconds);
     map['started_at'] = Variable<DateTime>(startedAt);
     if (!nullToAbsent || completedAt != null) {
       map['completed_at'] = Variable<DateTime>(completedAt);
@@ -2265,6 +2287,7 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
       userId: Value(userId),
       recipeId: Value(recipeId),
       status: Value(status),
+      progressSeconds: Value(progressSeconds),
       startedAt: Value(startedAt),
       completedAt: completedAt == null && nullToAbsent
           ? const Value.absent()
@@ -2284,6 +2307,7 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
       userId: serializer.fromJson<String>(json['userId']),
       recipeId: serializer.fromJson<String>(json['recipeId']),
       status: serializer.fromJson<String>(json['status']),
+      progressSeconds: serializer.fromJson<int>(json['progressSeconds']),
       startedAt: serializer.fromJson<DateTime>(json['startedAt']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       rewardClaimed: serializer.fromJson<bool>(json['rewardClaimed']),
@@ -2298,6 +2322,7 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
       'userId': serializer.toJson<String>(userId),
       'recipeId': serializer.toJson<String>(recipeId),
       'status': serializer.toJson<String>(status),
+      'progressSeconds': serializer.toJson<int>(progressSeconds),
       'startedAt': serializer.toJson<DateTime>(startedAt),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
       'rewardClaimed': serializer.toJson<bool>(rewardClaimed),
@@ -2310,6 +2335,7 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
           String? userId,
           String? recipeId,
           String? status,
+          int? progressSeconds,
           DateTime? startedAt,
           Value<DateTime?> completedAt = const Value.absent(),
           bool? rewardClaimed,
@@ -2319,6 +2345,7 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
         userId: userId ?? this.userId,
         recipeId: recipeId ?? this.recipeId,
         status: status ?? this.status,
+        progressSeconds: progressSeconds ?? this.progressSeconds,
         startedAt: startedAt ?? this.startedAt,
         completedAt: completedAt.present ? completedAt.value : this.completedAt,
         rewardClaimed: rewardClaimed ?? this.rewardClaimed,
@@ -2330,6 +2357,9 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
       userId: data.userId.present ? data.userId.value : this.userId,
       recipeId: data.recipeId.present ? data.recipeId.value : this.recipeId,
       status: data.status.present ? data.status.value : this.status,
+      progressSeconds: data.progressSeconds.present
+          ? data.progressSeconds.value
+          : this.progressSeconds,
       startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
       completedAt:
           data.completedAt.present ? data.completedAt.value : this.completedAt,
@@ -2347,6 +2377,7 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
           ..write('userId: $userId, ')
           ..write('recipeId: $recipeId, ')
           ..write('status: $status, ')
+          ..write('progressSeconds: $progressSeconds, ')
           ..write('startedAt: $startedAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('rewardClaimed: $rewardClaimed, ')
@@ -2356,8 +2387,8 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
   }
 
   @override
-  int get hashCode => Object.hash(id, userId, recipeId, status, startedAt,
-      completedAt, rewardClaimed, sessionId);
+  int get hashCode => Object.hash(id, userId, recipeId, status, progressSeconds,
+      startedAt, completedAt, rewardClaimed, sessionId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2366,6 +2397,7 @@ class CraftJob extends DataClass implements Insertable<CraftJob> {
           other.userId == this.userId &&
           other.recipeId == this.recipeId &&
           other.status == this.status &&
+          other.progressSeconds == this.progressSeconds &&
           other.startedAt == this.startedAt &&
           other.completedAt == this.completedAt &&
           other.rewardClaimed == this.rewardClaimed &&
@@ -2377,6 +2409,7 @@ class CraftJobsCompanion extends UpdateCompanion<CraftJob> {
   final Value<String> userId;
   final Value<String> recipeId;
   final Value<String> status;
+  final Value<int> progressSeconds;
   final Value<DateTime> startedAt;
   final Value<DateTime?> completedAt;
   final Value<bool> rewardClaimed;
@@ -2387,6 +2420,7 @@ class CraftJobsCompanion extends UpdateCompanion<CraftJob> {
     this.userId = const Value.absent(),
     this.recipeId = const Value.absent(),
     this.status = const Value.absent(),
+    this.progressSeconds = const Value.absent(),
     this.startedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.rewardClaimed = const Value.absent(),
@@ -2398,6 +2432,7 @@ class CraftJobsCompanion extends UpdateCompanion<CraftJob> {
     required String userId,
     required String recipeId,
     required String status,
+    this.progressSeconds = const Value.absent(),
     required DateTime startedAt,
     this.completedAt = const Value.absent(),
     this.rewardClaimed = const Value.absent(),
@@ -2413,6 +2448,7 @@ class CraftJobsCompanion extends UpdateCompanion<CraftJob> {
     Expression<String>? userId,
     Expression<String>? recipeId,
     Expression<String>? status,
+    Expression<int>? progressSeconds,
     Expression<DateTime>? startedAt,
     Expression<DateTime>? completedAt,
     Expression<bool>? rewardClaimed,
@@ -2424,6 +2460,7 @@ class CraftJobsCompanion extends UpdateCompanion<CraftJob> {
       if (userId != null) 'user_id': userId,
       if (recipeId != null) 'recipe_id': recipeId,
       if (status != null) 'status': status,
+      if (progressSeconds != null) 'progress_seconds': progressSeconds,
       if (startedAt != null) 'started_at': startedAt,
       if (completedAt != null) 'completed_at': completedAt,
       if (rewardClaimed != null) 'reward_claimed': rewardClaimed,
@@ -2437,6 +2474,7 @@ class CraftJobsCompanion extends UpdateCompanion<CraftJob> {
       Value<String>? userId,
       Value<String>? recipeId,
       Value<String>? status,
+      Value<int>? progressSeconds,
       Value<DateTime>? startedAt,
       Value<DateTime?>? completedAt,
       Value<bool>? rewardClaimed,
@@ -2447,6 +2485,7 @@ class CraftJobsCompanion extends UpdateCompanion<CraftJob> {
       userId: userId ?? this.userId,
       recipeId: recipeId ?? this.recipeId,
       status: status ?? this.status,
+      progressSeconds: progressSeconds ?? this.progressSeconds,
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
       rewardClaimed: rewardClaimed ?? this.rewardClaimed,
@@ -2469,6 +2508,9 @@ class CraftJobsCompanion extends UpdateCompanion<CraftJob> {
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
+    }
+    if (progressSeconds.present) {
+      map['progress_seconds'] = Variable<int>(progressSeconds.value);
     }
     if (startedAt.present) {
       map['started_at'] = Variable<DateTime>(startedAt.value);
@@ -2495,6 +2537,7 @@ class CraftJobsCompanion extends UpdateCompanion<CraftJob> {
           ..write('userId: $userId, ')
           ..write('recipeId: $recipeId, ')
           ..write('status: $status, ')
+          ..write('progressSeconds: $progressSeconds, ')
           ..write('startedAt: $startedAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('rewardClaimed: $rewardClaimed, ')
@@ -5846,6 +5889,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       RewardLedgerDao(this as AppDatabase);
   late final SyncOutboxDao syncOutboxDao = SyncOutboxDao(this as AppDatabase);
   late final PetDao petDao = PetDao(this as AppDatabase);
+  late final CraftDao craftDao = CraftDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6867,6 +6911,7 @@ typedef $$CraftJobsTableCreateCompanionBuilder = CraftJobsCompanion Function({
   required String userId,
   required String recipeId,
   required String status,
+  Value<int> progressSeconds,
   required DateTime startedAt,
   Value<DateTime?> completedAt,
   Value<bool> rewardClaimed,
@@ -6878,6 +6923,7 @@ typedef $$CraftJobsTableUpdateCompanionBuilder = CraftJobsCompanion Function({
   Value<String> userId,
   Value<String> recipeId,
   Value<String> status,
+  Value<int> progressSeconds,
   Value<DateTime> startedAt,
   Value<DateTime?> completedAt,
   Value<bool> rewardClaimed,
@@ -6905,6 +6951,10 @@ class $$CraftJobsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get progressSeconds => $composableBuilder(
+      column: $table.progressSeconds,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get startedAt => $composableBuilder(
       column: $table.startedAt, builder: (column) => ColumnFilters(column));
@@ -6940,6 +6990,10 @@ class $$CraftJobsTableOrderingComposer
   ColumnOrderings<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get progressSeconds => $composableBuilder(
+      column: $table.progressSeconds,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get startedAt => $composableBuilder(
       column: $table.startedAt, builder: (column) => ColumnOrderings(column));
 
@@ -6974,6 +7028,9 @@ class $$CraftJobsTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get progressSeconds => $composableBuilder(
+      column: $table.progressSeconds, builder: (column) => column);
 
   GeneratedColumn<DateTime> get startedAt =>
       $composableBuilder(column: $table.startedAt, builder: (column) => column);
@@ -7015,6 +7072,7 @@ class $$CraftJobsTableTableManager extends RootTableManager<
             Value<String> userId = const Value.absent(),
             Value<String> recipeId = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<int> progressSeconds = const Value.absent(),
             Value<DateTime> startedAt = const Value.absent(),
             Value<DateTime?> completedAt = const Value.absent(),
             Value<bool> rewardClaimed = const Value.absent(),
@@ -7026,6 +7084,7 @@ class $$CraftJobsTableTableManager extends RootTableManager<
             userId: userId,
             recipeId: recipeId,
             status: status,
+            progressSeconds: progressSeconds,
             startedAt: startedAt,
             completedAt: completedAt,
             rewardClaimed: rewardClaimed,
@@ -7037,6 +7096,7 @@ class $$CraftJobsTableTableManager extends RootTableManager<
             required String userId,
             required String recipeId,
             required String status,
+            Value<int> progressSeconds = const Value.absent(),
             required DateTime startedAt,
             Value<DateTime?> completedAt = const Value.absent(),
             Value<bool> rewardClaimed = const Value.absent(),
@@ -7048,6 +7108,7 @@ class $$CraftJobsTableTableManager extends RootTableManager<
             userId: userId,
             recipeId: recipeId,
             status: status,
+            progressSeconds: progressSeconds,
             startedAt: startedAt,
             completedAt: completedAt,
             rewardClaimed: rewardClaimed,

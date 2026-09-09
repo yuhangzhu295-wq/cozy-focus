@@ -71,8 +71,7 @@ class _YearlyWrappedSharePageState
     if (_isSharing) return;
     setState(() => _isSharing = true);
     try {
-      final shareText =
-          '✨ My $year Focus Journey with Cozy Focus ✨\n'
+      final shareText = '✨ My $year Focus Journey with Cozy Focus ✨\n'
           '这一年，我和 Mochi 一起坚持专注了 $hours 小时，'
           '累计 $sessions 次，达成 $days 个专注日！\n'
           '每一次平静专注的时光，都在成为更温暖坚定的自己。♡\n'
@@ -216,7 +215,7 @@ class _YearlyWrappedSharePageState
                       onPressed: _isSharing
                           ? null
                           : () => _shareCard(
-                                year, totalHours, activeDays, sessionCount),
+                              year, totalHours, activeDays, sessionCount),
                       child: _isSharing
                           ? const SizedBox(
                               width: 20,
@@ -258,8 +257,7 @@ class _YearlyWrappedSharePageState
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.textPrimary),
+                                  strokeWidth: 2, color: AppColors.textPrimary),
                             )
                           : const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -390,8 +388,7 @@ class WrappedShareCard extends StatelessWidget {
           const SizedBox(height: 24),
           // Key milestone stats — all derived from real data, no hardcoded numbers.
           Container(
-            padding:
-                const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             decoration: BoxDecoration(
               color: AppColors.backgroundWarm,
               borderRadius: BorderRadius.circular(AppRadius.md),
@@ -400,11 +397,9 @@ class WrappedShareCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildStatItem('专注天数', '$activeDays 天'),
-                Container(
-                    width: 1, height: 28, color: AppColors.borderLight),
+                Container(width: 1, height: 28, color: AppColors.borderLight),
                 _buildStatItem('累计专注', '$sessionCount 次'),
-                Container(
-                    width: 1, height: 28, color: AppColors.borderLight),
+                Container(width: 1, height: 28, color: AppColors.borderLight),
                 // Pet level comes from real PetProgress; defaults to Lv.1 when
                 // Phase 5 is not yet implemented — never a fake high number.
                 _buildStatItem('Mochi 等级', 'Lv.$petLevel'),
@@ -427,8 +422,7 @@ class WrappedShareCard extends StatelessWidget {
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.pets_rounded,
-                  size: 14, color: AppColors.primarySage),
+              Icon(Icons.pets_rounded, size: 14, color: AppColors.primarySage),
               SizedBox(width: 6),
               Text(
                 'Cozy Focus · 你的温柔专注空间',

@@ -20,6 +20,9 @@ class CraftJobs extends Table {
   TextColumn get userId => text()();
   TextColumn get recipeId => text()();
   TextColumn get status => text()();
+
+  /// Accumulated focus seconds contributed to this craft job.
+  IntColumn get progressSeconds => integer().withDefault(const Constant(0))();
   DateTimeColumn get startedAt => dateTime()();
   DateTimeColumn get completedAt => dateTime().nullable()();
   BoolColumn get rewardClaimed =>

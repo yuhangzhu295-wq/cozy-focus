@@ -1,0 +1,179 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+import '../../domain/models/craft_models.dart';
+import '../../domain/repositories/i_craft_repository.dart';
+import '../../domain/services/craft_engine.dart';
+import 'providers.dart';
+
+class CraftState {
+  final List<CraftRecipe> recipes;
+  final CraftJob? activeJob;
+  final CraftRecipe? activeRecipe;
+  final List<InventoryItem> inventory;
+  final List<RoomItem> roomItems;
+  final bool isLoading;
+  final String? error;
+
+  const CraftState({
+    this.recipes = const [],
+    this.activeJob,
+    this.activeRecipe,
+    this.inventory = const [],
+    this.roomItems = const [],
+    this.isLoading = false,
+    this.error,
+  });
+
+  CraftState copyWith({
+    List<CraftRecipe>? recipes,
+    CraftJob? activeJob,
+    CraftRecipe? activeRecipe,
+    List<InventoryItem>? inventory,
+    List<RoomItem>? roomItems,
+    bool? isLoading,
+    String? error,
+    bool clearActiveJob = false,
+    bool clearError = false,
+  }) {
+    return CraftState(
+      recipes: recipes ?? this.recipes,
+      activeJob: clearActiveJob ? null : (activeJob ?? this.activeJob),
+      activeRecipe: clearActiveJob ? null : (activeRecipe ?? this.activeRecipe),
+      inventory: inventory ?? this.inventory,
+      roomItems: roomItems ?? this.roomItems,
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+    );
+  }
+}
+
+class CraftController extends StateNotifier<CraftState> {
+  final ICraftRepository _repo;
+  final CraftEngine _engine;
+  final String _userId;
+  static const _uuid = Uuid();
+
+  CraftController({
+    required ICraftRepository repo,
+    required CraftEngine engine,
+    String userId = 'local_user',
+  })  : _repo = repo,
+        _engine = engine,
+        _userId = userId,
+        super(const CraftState());
+
+  Future<void> loadAll() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final recipes = await _repo.findAllRecipes();
+      final active = await _engine.getActiveCraftJob(_userId);
+      final inventory = await _repo.findInventory(_userId);
+      final roomItems = await _repo.findRoomItems(_userId);
+      state = state.copyWith(
+        recipes: recipes,
+        activeJob: active?.job,
+        activeRecipe: active?.recipe,
+        inventory: inventory,
+        roomItems: roomItems,
+        isLoading: false,
+        clearActiveJob: active == null,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> startJob(String recipeId) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final job = await _engine.startJob(_userId, recipeId);
+      final recipe = await _repo.findRecipeById(recipeId);
+      state = state.copyWith(
+        activeJob: job,
+        activeRecipe: recipe,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> cancelJob() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _engine.cancelActiveJob(_userId);
+      state = state.copyWith(isLoading: false, clearActiveJob: true);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> placeItem(String itemId, double x, double y) async {
+    try {
+      final roomItem = RoomItem(
+        id: _uuid.v4(),
+        userId: _userId,
+        itemId: itemId,
+        positionX: x,
+        positionY: y,
+        scale: 1.0,
+        zIndex: state.roomItems.length,
+        isVisible: true,
+        placedAt: DateTime.now(),
+      );
+      await _repo.placeRoomItem(roomItem);
+      final updated = [...state.roomItems, roomItem];
+      state = state.copyWith(roomItems: updated);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> moveRoomItem(String id, double x, double y) async {
+    try {
+      final idx = state.roomItems.indexWhere((r) => r.id == id);
+      if (idx < 0) return;
+      final updated = state.roomItems[idx].copyWith(positionX: x, positionY: y);
+      await _repo.updateRoomItem(updated);
+      final list = [...state.roomItems];
+      list[idx] = updated;
+      state = state.copyWith(roomItems: list);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> removeRoomItem(String id) async {
+    try {
+      await _repo.removeRoomItem(id);
+      state = state.copyWith(
+        roomItems: state.roomItems.where((r) => r.id != id).toList(),
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  /// Reload inventory + room after external changes (e.g. after focus reward).
+  Future<void> refreshInventoryAndRoom() async {
+    try {
+      final inventory = await _repo.findInventory(_userId);
+      final roomItems = await _repo.findRoomItems(_userId);
+      final active = await _engine.getActiveCraftJob(_userId);
+      state = state.copyWith(
+        inventory: inventory,
+        roomItems: roomItems,
+        activeJob: active?.job,
+        activeRecipe: active?.recipe,
+        clearActiveJob: active == null,
+      );
+    } catch (_) {}
+  }
+}
+
+final craftControllerProvider =
+    StateNotifierProvider<CraftController, CraftState>((ref) {
+  final repo = ref.watch(craftRepositoryProvider);
+  final engine = ref.watch(craftEngineProvider);
+  return CraftController(repo: repo, engine: engine);
+});

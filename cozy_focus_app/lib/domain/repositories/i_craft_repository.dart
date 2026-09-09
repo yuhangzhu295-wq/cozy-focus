@@ -10,6 +10,7 @@ abstract interface class ICraftRepository {
   Future<void> updateJob(CraftJob job);
   Future<CraftJob?> findJobById(String id);
   Future<List<CraftJob>> findJobsByUser(String userId);
+  Future<CraftJob?> findActiveJobByUser(String userId);
 
   // Inventory
   Future<void> upsertInventoryItem(InventoryItem item);

@@ -163,27 +163,27 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
                 _buildHeroBanner(currentYear),
                 const SizedBox(height: 16),
 
-               // 3 Metric Cards
+                // 3 Metric Cards
                 RepaintBoundary(
                   key: _summaryKey,
                   child: Column(
                     children: [
-                _buildMetricCardsRow(
-                  totalHours: totalHours,
-                  hoursDiffPct: comp?.durationChangePercentage,
-                  sessionCount: sessionCount,
-                  sessionCountDiff: comp?.sessionCountDiff,
-                  activeDays: activeDays,
-                  dayPercentage: dayPercentage,
-                ),
-                const SizedBox(height: 16),
+                      _buildMetricCardsRow(
+                        totalHours: totalHours,
+                        hoursDiffPct: comp?.durationChangePercentage,
+                        sessionCount: sessionCount,
+                        sessionCountDiff: comp?.sessionCountDiff,
+                        activeDays: activeDays,
+                        dayPercentage: dayPercentage,
+                      ),
+                      const SizedBox(height: 16),
 
-                // Best Month & Peak Time Slot Cards
-                _buildHighlightsRow(bestMonth, peakSlot),
-                const SizedBox(height: 16),
+                      // Best Month & Peak Time Slot Cards
+                      _buildHighlightsRow(bestMonth, peakSlot),
+                      const SizedBox(height: 16),
 
-                // 365-day Calendar Heatmap
-                _buildYearlyHeatmapCard(report, currentYear),
+                      // 365-day Calendar Heatmap
+                      _buildYearlyHeatmapCard(report, currentYear),
                     ],
                   ),
                 ),
@@ -539,9 +539,8 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
         : '0';
 
     // Fixed: was ' ()' — string interpolation was empty due to missing dollar signs. — string interpolation was empty due to missing dollar signs.
-    final slotLabel = peakSlot != null
-        ? '${peakSlot.name} (${peakSlot.timeRange})'
-        : '暂无数据';
+    final slotLabel =
+        peakSlot != null ? '${peakSlot.name} (${peakSlot.timeRange})' : '暂无数据';
 
     return Row(
       children: [

@@ -515,7 +515,9 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                               color: AppColors.textSecondary,
                             )),
                         Text(
-                          r.mood != null && r.mood!.isNotEmpty ? r.mood! : '未记录',
+                          r.mood != null && r.mood!.isNotEmpty
+                              ? r.mood!
+                              : '未记录',
                           style: const TextStyle(fontSize: 24),
                         ),
                       ],

@@ -4,17 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/focus_session_controller.dart';
+import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pet_avatar_widget.dart';
 
-/// Screen 01: Home Page / Pet Room (01 首页 / 宠物房间)
-/// Shows:
-/// - Real pet progress (Level, Name) from PetRepository
-/// - Real today focus duration & session count aggregated from FocusRecordRepository
-/// - Active Session resume banner if session in progress
-/// - Mochi companion room with reactive visual state (idle/greeting)
-/// - "Start Focus" CTA navigating to Screen 02 (Focus Setup)
-/// - Bottom navigation bar (with disabled/placeholder indicators for Phase 3/4/5)
+/// Screen 01: Home Page / Pet Room
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
@@ -30,6 +24,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.initState();
     Future.microtask(() {
       ref.read(homeControllerProvider.notifier).loadHomeData();
+      ref.read(craftControllerProvider.notifier).loadAll();
     });
   }
 
@@ -37,6 +32,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final homeState = ref.watch(homeControllerProvider);
     final sessionUI = ref.watch(focusSessionControllerProvider);
+    final craft = ref.watch(craftControllerProvider);
     final hasActiveSession = sessionUI.session?.isActive ?? false;
 
     final pet = homeState.pet;
@@ -76,8 +72,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                     ],
                   ),
-
-                  // Level Badge (Screen 01)
+                  // Level Badge
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -113,7 +108,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
 
-            // Today focus stats badge
+            // Today focus stats
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
               child: Container(
@@ -153,7 +148,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
 
-            // Active Session Resume Banner (if session in progress)
+            // Active Session Resume Banner
             if (hasActiveSession)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -203,14 +198,75 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ),
 
-            // Center Pet Room Area
+            // Active craft job banner (Phase 4)
+            if (craft.activeJob != null && craft.activeRecipe != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  onTap: () =>
+                      context.go('/craft/detail/${craft.activeJob!.recipeId}'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentGoldLight,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(
+                          color: AppColors.accentGold.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(craft.activeRecipe!.icon,
+                            style: const TextStyle(fontSize: 20)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '正在制作：${craft.activeRecipe!.name}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              ClipRRect(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.pill),
+                                child: LinearProgressIndicator(
+                                  value: craft.activeRecipe!.requiredSeconds > 0
+                                      ? (craft.activeJob!.progressSeconds /
+                                              craft.activeRecipe!
+                                                  .requiredSeconds)
+                                          .clamp(0.0, 1.0)
+                                      : 0.0,
+                                  backgroundColor: AppColors.border,
+                                  color: AppColors.accentGold,
+                                  minHeight: 4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward_ios_rounded,
+                            size: 14, color: AppColors.textTertiary),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            // Center Pet Room
             Expanded(
               child: Center(
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Room Illustration Decor / Soft container
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 24),
                         padding: const EdgeInsets.symmetric(
@@ -240,7 +296,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
 
-            // Start Focus Button (Screen 01 Hero Action)
+            // Start Focus Button
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
               child: SizedBox(
@@ -295,16 +351,18 @@ class _HomePageState extends ConsumerState<HomePage> {
                 unselectedItemColor: AppColors.textTertiary,
                 type: BottomNavigationBarType.fixed,
                 onTap: (index) {
-                  if (index == 1) {
-                    // Quick Start focus
+                  if (index == 0) {
+                    setState(() => _currentNavIndex = 0);
+                  } else if (index == 1) {
                     context.go('/focus/setup');
                   } else if (index == 2) {
-                    // Phase 3: Progress & Reports
                     context.push('/progress');
-                  } else if (index == 0) {
-                    setState(() => _currentNavIndex = 0);
+                  } else if (index == 3) {
+                    // Phase 4: Room
+                    setState(() => _currentNavIndex = 3);
+                    context.push('/room');
                   } else {
-                    // Phase 4, 5 placeholder notification
+                    // Phase 5+ placeholder
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('该功能将在后续版本开放，先和 Mochi 专注吧 ♡'),

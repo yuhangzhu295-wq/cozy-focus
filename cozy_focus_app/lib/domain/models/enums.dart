@@ -42,6 +42,7 @@ enum CraftJobStatus {
   pending,
   inProgress,
   completed,
+  cancelled,
   failed,
 }
 

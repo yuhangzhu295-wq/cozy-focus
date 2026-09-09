@@ -11,6 +11,10 @@ import '../pages/weekly_report_page.dart';
 import '../pages/monthly_report_page.dart';
 import '../pages/yearly_report_page.dart';
 import '../pages/yearly_wrapped_share_page.dart';
+import '../pages/craft_list_page.dart';
+import '../pages/craft_detail_page.dart';
+import '../pages/inventory_page.dart';
+import '../pages/room_page.dart';
 
 /// App routing table powered by GoRouter for Cozy Focus
 final appRouter = GoRouter(
@@ -65,6 +69,24 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/reports/yearly/wrapped',
       builder: (context, state) => const YearlyWrappedSharePage(),
+    ),
+    // Phase 4: Craft, Inventory, Room
+    GoRoute(
+      path: '/craft',
+      builder: (context, state) => const CraftListPage(),
+    ),
+    GoRoute(
+      path: '/craft/detail/:recipeId',
+      builder: (context, state) =>
+          CraftDetailPage(recipeId: state.pathParameters['recipeId']!),
+    ),
+    GoRoute(
+      path: '/inventory',
+      builder: (context, state) => const InventoryPage(),
+    ),
+    GoRoute(
+      path: '/room',
+      builder: (context, state) => const RoomPage(),
     ),
   ],
 );
