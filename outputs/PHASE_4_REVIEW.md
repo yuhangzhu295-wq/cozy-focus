@@ -176,3 +176,63 @@ CODE_STATUS: PHASE_4_CODE_APPROVED
 MANUAL_STATUS: MANUAL_PENDING (10 items in MANUAL_VERIFICATION_BACKLOG.md require real device)
 
 Phase 5 (Pet Progression) may proceed upon user confirmation.
+
+---
+
+## Phase 4.3 Final Closure (2026-09-09)
+
+Base commit: 58fffe009851481552d66dacd7bb6578773d98ff
+
+### Fixes Applied in Phase 4.3
+
+**Blocker 1 — Atomic Room Placement:**
+- RoomPlacementResult enum added to ICraftRepository
+- placeRoomItemIfAvailable() implemented as Drift 	ransaction() in CraftDao
+- DB transaction: SELECT inventory → COUNT placed → validate → INSERT (with MAX zIndex)
+- Controller simplified: removed stale-state checks, reloads from DB on success
+- Result: PASS
+
+**Blocker 2 — RoomGeometry Wired into RoomPage:**
+- oom_page.dart now imports and uses clampNormalizedPosition() from oom_geometry.dart
+- Both onPanUpdate and onPanEnd apply geometry-aware clamping
+- Scale-aware: enderedSize = _itemSize * scale used for bounds calculation
+- Result: PASS
+
+**Blocker 3 — GitHub CI:**
+- CI workflow already configured from Phase 4.2
+- New push will trigger fresh run
+- Result: PENDING
+
+### Concurrent Placement Test Results
+- quantity=1, concurrent 2 → success=1, exhausted=1, DB=1: PASS
+- quantity=3, concurrent 10 → success=3, exhausted=7, DB=3: PASS
+- quantity=0 / missing → inventoryMissing: PASS
+- place → remove → re-place → success: PASS
+- zIndex assigned atomically: PASS
+
+### Screen Size Geometry Tests
+- 320x640: PASS
+- 390x844: PASS
+- 430x932: PASS
+- scale=0.5, 1.0, 1.5, 2.0: PASS
+
+### Drag Persistence
+- 100 drag update events → DB writes: 1 (onPanEnd only): PASS
+
+### Final Verification
+- local_user hits in lib/: 0
+- clampNormalizedPosition wired in room_page.dart: YES
+- .clamp(0.0, 1.0) remaining drag boundary logic: 0 (only layout positioning uses clamp)
+
+### Metrics
+- flutter analyze: 0 issues
+- flutter test: 177/177 PASS (was 166, +11 new tests)
+- local Android APK: PASS (134 MB)
+- GitHub CI: PENDING (new push triggers fresh run)
+
+### Final Gate Decision
+
+CODE_STATUS: PHASE_4_CODE_APPROVED
+MANUAL_STATUS: MANUAL_PENDING
+
+Phase 5: ALLOWED pending user confirmation after GitHub review.

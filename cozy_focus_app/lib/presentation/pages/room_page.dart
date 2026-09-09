@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models/craft_models.dart';
 import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
+import '../../core/geometry/room_geometry.dart';
 
 /// Screen 09: Room Decoration Page (房间装饰).
 ///
@@ -273,7 +274,6 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
   double _dyOffset = 0;
 
   static const double _itemSize = 60.0;
-  static const double _halfItem = _itemSize / 2;
 
   @override
   void didUpdateWidget(_PlacedItemWidget oldWidget) {
@@ -291,8 +291,18 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
     // Convert normalised coords to canvas pixels.
     final baseLeft = widget.roomItem.positionX * widget.canvasWidth;
     final baseTop = widget.roomItem.positionY * widget.canvasHeight;
-    final left = baseLeft + _dxOffset - _halfItem;
-    final top = baseTop + _dyOffset - _halfItem;
+    // Clamp the transient drag centre so the item stays inside canvas visually.
+    final renderedSize = _itemSize * widget.roomItem.scale;
+    final clampedDrag = clampNormalizedPosition(
+      rawX: (baseLeft + _dxOffset) / widget.canvasWidth,
+      rawY: (baseTop + _dyOffset) / widget.canvasHeight,
+      canvasWidth: widget.canvasWidth,
+      canvasHeight: widget.canvasHeight,
+      itemWidth: renderedSize,
+      itemHeight: renderedSize,
+    );
+    final left = clampedDrag.x * widget.canvasWidth - renderedSize / 2;
+    final top  = clampedDrag.y * widget.canvasHeight - renderedSize / 2;
 
     return Positioned(
       left: left,
@@ -307,13 +317,20 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
           });
         },
         onPanEnd: (_) {
-          // Compute final normalised position clamped to canvas.
-          final finalLeft = baseLeft + _dxOffset;
-          final finalTop = baseTop + _dyOffset;
-          final nx = (finalLeft / widget.canvasWidth).clamp(0.0, 1.0);
-          final ny = (finalTop / widget.canvasHeight).clamp(0.0, 1.0);
+          // Compute final normalised position, clamped so the item stays
+          // fully inside the canvas (accounts for item rendered size).
+          final finalCentreX = baseLeft + _dxOffset;
+          final finalCentreY = baseTop + _dyOffset;
+          final clamped = clampNormalizedPosition(
+            rawX: finalCentreX / widget.canvasWidth,
+            rawY: finalCentreY / widget.canvasHeight,
+            canvasWidth: widget.canvasWidth,
+            canvasHeight: widget.canvasHeight,
+            itemWidth: renderedSize,
+            itemHeight: renderedSize,
+          );
           // Single DB persist.
-          widget.onMoveEnd(nx, ny);
+          widget.onMoveEnd(clamped.x, clamped.y);
           // Reset transient offset — the parent will rebuild with new DB coords.
           setState(() {
             _dxOffset = 0;
@@ -321,8 +338,8 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
           });
         },
         child: Container(
-          width: _itemSize,
-          height: _itemSize,
+          width: renderedSize,
+          height: renderedSize,
           decoration: BoxDecoration(
             color:
                 widget.isSelected ? AppColors.primaryLight : Colors.transparent,

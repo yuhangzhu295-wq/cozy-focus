@@ -88,6 +88,22 @@ class FakeCraftRepository implements ICraftRepository {
 
   @override
   Future<void> removeRoomItem(String id) async => _roomItems.remove(id);
+
+  @override
+  Future<RoomPlacementResult> placeRoomItemIfAvailable(RoomItem item) async {
+    final key = '${item.userId}:${item.itemId}';
+    final inv = _inventory[key];
+    if (inv == null || inv.quantity <= 0) {
+      return RoomPlacementResult.inventoryMissing;
+    }
+    final placedCount =
+        _roomItems.values.where((r) => r.itemId == item.itemId).length;
+    if (placedCount >= inv.quantity) {
+      return RoomPlacementResult.inventoryExhausted;
+    }
+    _roomItems[item.id] = item;
+    return RoomPlacementResult.placed;
+  }
 }
 
 // ── Fixed Clock ──────────────────────────────────────────────────────────────

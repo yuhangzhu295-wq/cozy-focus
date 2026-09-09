@@ -114,29 +114,14 @@ class CraftController extends StateNotifier<CraftState> {
 
   /// Place an inventory item in the room.
   ///
-  /// Domain-level validation:
-  ///   • The item must exist in inventory with quantity > 0.
-  ///   • The number of already-placed instances must be < inventory quantity.
+  /// Delegates to [ICraftRepository.placeRoomItemIfAvailable] which performs
+  /// inventory + placed-count checks inside a single DB transaction.
+  /// After a successful placement the room list is reloaded from the DB so
+  /// the UI always reflects the authoritative persisted state.
   ///
   /// The timestamp is provided by [_clock] (never DateTime.now()).
   Future<void> placeItem(String itemId, double x, double y) async {
     try {
-      // Domain validation: re-read inventory from DB.
-      final invItem = await _repo.findInventoryItem(_userId, itemId);
-      if (invItem == null || invItem.quantity <= 0) {
-        state = state.copyWith(error: 'Item not available in inventory');
-        return;
-      }
-
-      // Count current placements for this item.
-      final placedCount =
-          state.roomItems.where((r) => r.itemId == itemId).length;
-      if (placedCount >= invItem.quantity) {
-        state =
-            state.copyWith(error: 'All copies of this item are already placed');
-        return;
-      }
-
       final now = _clock.now();
       final roomItem = RoomItem(
         id: _uuid.v4(),
@@ -145,13 +130,22 @@ class CraftController extends StateNotifier<CraftState> {
         positionX: x,
         positionY: y,
         scale: 1.0,
-        zIndex: state.roomItems.length,
+        zIndex: 0, // overwritten by the DAO inside the transaction
         isVisible: true,
         placedAt: now,
       );
-      await _repo.placeRoomItem(roomItem);
-      final updated = [...state.roomItems, roomItem];
-      state = state.copyWith(roomItems: updated);
+      final result = await _repo.placeRoomItemIfAvailable(roomItem);
+      switch (result) {
+        case RoomPlacementResult.placed:
+          // Re-read from DB so UI reflects authoritative persisted state.
+          final fresh = await _repo.findRoomItems(_userId);
+          state = state.copyWith(roomItems: fresh, clearError: true);
+        case RoomPlacementResult.inventoryExhausted:
+          state = state.copyWith(
+              error: 'All copies of this item are already placed');
+        case RoomPlacementResult.inventoryMissing:
+          state = state.copyWith(error: 'Item not available in inventory');
+      }
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }

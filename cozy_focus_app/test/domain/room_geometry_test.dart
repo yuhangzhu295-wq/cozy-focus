@@ -114,5 +114,82 @@ void main() {
       expect(r.x, equals(0.5));
       expect(r.y, equals(0.5));
     });
+
+    // ── Scale-aware bounds ────────────────────────────────────────────────
+    // Rendered size = _itemSize * scale; larger scale ⟹ smaller allowed range.
+
+    test('12. scale=0.5 allows more room than scale=1.0', () {
+      // At scale 0.5 the rendered item is 30px on a 390x844 canvas.
+      final rSmall = clampNormalizedPosition(
+        rawX: 0.0, rawY: 0.5,
+        canvasWidth: 390, canvasHeight: 844,
+        itemWidth: 60 * 0.5, itemHeight: 60 * 0.5,
+      );
+      final rNormal = clampNormalizedPosition(
+        rawX: 0.0, rawY: 0.5,
+        canvasWidth: 390, canvasHeight: 844,
+        itemWidth: 60 * 1.0, itemHeight: 60 * 1.0,
+      );
+      // Smaller item → centre can be closer to 0.
+      expect(rSmall.x, lessThan(rNormal.x));
+    });
+
+    test('13. scale=2.0 produces larger clamp margin than scale=1.0', () {
+      final rBig = clampNormalizedPosition(
+        rawX: 0.0, rawY: 0.5,
+        canvasWidth: 390, canvasHeight: 844,
+        itemWidth: 60 * 2.0, itemHeight: 60 * 2.0,
+      );
+      final rNormal = clampNormalizedPosition(
+        rawX: 0.0, rawY: 0.5,
+        canvasWidth: 390, canvasHeight: 844,
+        itemWidth: 60 * 1.0, itemHeight: 60 * 1.0,
+      );
+      // Bigger item → centre must stay further from edge.
+      expect(rBig.x, greaterThan(rNormal.x));
+    });
+
+    test('14. scale=1.5: item edges stay within canvas bounds', () {
+      const canvas = 390.0;
+      const itemW = 60.0 * 1.5; // 90px
+      final rMin = clampNormalizedPosition(
+        rawX: -1.0, rawY: 0.5,
+        canvasWidth: canvas, canvasHeight: 844,
+        itemWidth: itemW, itemHeight: itemW,
+      );
+      final rMax = clampNormalizedPosition(
+        rawX: 2.0, rawY: 0.5,
+        canvasWidth: canvas, canvasHeight: 844,
+        itemWidth: itemW, itemHeight: itemW,
+      );
+      final halfNorm = (itemW / 2) / canvas;
+      // Left edge = centre - halfNorm >= 0
+      expect(rMin.x - halfNorm, greaterThanOrEqualTo(-0.001));
+      // Right edge = centre + halfNorm <= 1
+      expect(rMax.x + halfNorm, lessThanOrEqualTo(1.001));
+    });
+
+    test('15. scale=2.0 canvas 320x640: item edges within bounds', () {
+      const cW = 320.0;
+      const cH = 640.0;
+      const itemW = 60.0 * 2.0; // 120px
+      for (final raw in [-5.0, 0.0, 0.5, 1.0, 5.0]) {
+        final r = clampNormalizedPosition(
+          rawX: raw, rawY: raw,
+          canvasWidth: cW, canvasHeight: cH,
+          itemWidth: itemW, itemHeight: itemW,
+        );
+        final halfNormX = (itemW / 2) / cW;
+        final halfNormY = (itemW / 2) / cH;
+        expect(r.x - halfNormX, greaterThanOrEqualTo(-0.001),
+            reason: 'left edge out for raw=$raw');
+        expect(r.x + halfNormX, lessThanOrEqualTo(1.001),
+            reason: 'right edge out for raw=$raw');
+        expect(r.y - halfNormY, greaterThanOrEqualTo(-0.001),
+            reason: 'top edge out for raw=$raw');
+        expect(r.y + halfNormY, lessThanOrEqualTo(1.001),
+            reason: 'bottom edge out for raw=$raw');
+      }
+    });
   });
 }

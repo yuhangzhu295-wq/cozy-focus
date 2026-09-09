@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../../../domain/models/craft_models.dart' as domain;
 import '../../../domain/models/enums.dart';
+import '../../../domain/repositories/i_craft_repository.dart';
 import '../tables/craft_tables.dart';
 import '../app_database.dart';
 
@@ -154,6 +155,64 @@ class CraftDao extends DatabaseAccessor<AppDatabase> with _$CraftDaoMixin {
           ..orderBy([(t) => OrderingTerm.asc(t.zIndex)]))
         .get();
     return rows.map(_mapRoom).toList();
+  }
+
+  /// Atomically place [item] in the room, checking inventory availability.
+  ///
+  /// Inside a single SQLite transaction:
+  ///   1. Reads the latest InventoryItem for this user + itemId.
+  ///   2. Counts existing RoomItems for this user + itemId.
+  ///   3. Rejects if inventory missing or all copies already placed.
+  ///   4. Assigns zIndex = MAX(z_index)+1 from current room items.
+  ///   5. Inserts the new RoomItem.
+  Future<RoomPlacementResult> placeRoomItemIfAvailable(
+      domain.RoomItem item) async {
+    return transaction(() async {
+      // 1. Verify inventory ownership.
+      final invRow = await (select(inventoryItems)
+            ..where((t) =>
+                t.userId.equals(item.userId) & t.itemId.equals(item.itemId)))
+          .getSingleOrNull();
+      if (invRow == null || invRow.quantity <= 0) {
+        return RoomPlacementResult.inventoryMissing;
+      }
+
+      // 2. Count how many copies are already placed.
+      final countExpr = roomItems.id.count();
+      final placedCountRow = await (selectOnly(roomItems)
+            ..addColumns([countExpr])
+            ..where(roomItems.userId.equals(item.userId) &
+                roomItems.itemId.equals(item.itemId)))
+          .getSingle();
+      final placedCount = placedCountRow.read(countExpr) ?? 0;
+
+      if (placedCount >= invRow.quantity) {
+        return RoomPlacementResult.inventoryExhausted;
+      }
+
+      // 3. Compute next zIndex = MAX(z_index) + 1 (0 when room is empty).
+      final zExpr = roomItems.zIndex.max();
+      final zRow = await (selectOnly(roomItems)
+            ..addColumns([zExpr])
+            ..where(roomItems.userId.equals(item.userId)))
+          .getSingle();
+      final nextZIndex = (zRow.read(zExpr) ?? -1) + 1;
+
+      // 4. Insert the new RoomItem with the DB-assigned zIndex.
+      await into(roomItems).insert(RoomItemsCompanion(
+        id: Value(item.id),
+        userId: Value(item.userId),
+        itemId: Value(item.itemId),
+        positionX: Value(item.positionX),
+        positionY: Value(item.positionY),
+        scale: Value(item.scale),
+        zIndex: Value(nextZIndex),
+        isVisible: Value(item.isVisible),
+        placedAt: Value(item.placedAt),
+      ));
+
+      return RoomPlacementResult.placed;
+    });
   }
 
   // ── Mappers ──────────────────────────────────────────────

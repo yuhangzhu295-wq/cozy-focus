@@ -166,3 +166,63 @@ Status: DEFERRED (VISUAL_ASSET_GAP)
 | Migration                         | VALID      |
 | CI                                | CONFIGURED |
 | Visual asset gap (emoji icons)    | DEFERRED   |
+
+---
+
+## Phase 4.3 Corrections and Findings (2026-09-09)
+
+### PREVIOUS_AUDIT_CLAIM_INCORRECT
+Previous audit in Phase 4 Review claimed CraftEngine.placeItemInRoom() already
+performed DB transaction validation. This was FALSE — no such method existed.
+The raw placeRoomItem() DAO call had no inventory check inside a transaction.
+
+### Room Placement Atomic: FIXED
+- Added RoomPlacementResult enum to ICraftRepository
+- Added placeRoomItemIfAvailable() interface method
+- Implemented as real Drift 	ransaction() in CraftDao:
+  1. SELECTs latest InventoryItem inside transaction
+  2. COUNTs existing RoomItems via countExpr
+  3. Rejects if missing/exhausted
+  4. Computes MAX(z_index)+1 atomically
+  5. INSERTs RoomItem only if quota allows
+- DriftCraftRepository delegates to DAO
+- CraftController.placeItem() removed all stale Controller-state checks;
+  calls placeRoomItemIfAvailable() and reloads from DB on success
+Status: FIXED
+
+### RoomGeometry Wiring: FIXED
+- oom_page.dart imports oom_geometry.dart
+- onPanEnd uses clampNormalizedPosition() with scale-aware itemWidth/itemHeight
+- onPanUpdate also applies clamp for visual transient position (no DB write)
+- Container size updated to enderedSize = _itemSize * scale
+- Coordinate contract confirmed: positionX/Y = normalized center [0.0–1.0]
+  relative to Room Canvas (not full screen)
+Status: FIXED
+
+### Concurrent Placement Tests: ADDED
+- quantity=1, concurrent 2 attempts → success=1, exhausted=1, DB count=1: PASS
+- quantity=3, concurrent 10 attempts → success=3, exhausted=7, DB count=3: PASS
+- quantity=0 / missing → inventoryMissing, 0 room items: PASS
+- place → remove → re-place → succeeds: PASS
+- zIndex assigned strictly ascending by DB MAX+1: PASS
+
+### local_user scan: 0 hits in lib/
+### DateTime.now() in production Domain/Controllers: 0 new hits
+
+### Updated Summary
+
+| Item                              | Status     |
+|-----------------------------------|------------|
+| User ID unified                   | VALID      |
+| DateTime.now() business usage     | VALID      |
+| Fake implementation scan          | VALID      |
+| Reward same-session concurrency   | FIXED      |
+| Reward different-session concurr  | FIXED      |
+| Craft lost-update (diff sessions) | FIXED      |
+| Room placement atomic (DB txn)    | FIXED      |
+| Room geometry wired to RoomPage   | FIXED      |
+| Scale-aware bounds                | FIXED      |
+| Concurrent placement guard        | FIXED      |
+| Migration                         | VALID      |
+| CI                                | CONFIGURED |
+| Visual asset gap (emoji icons)    | DEFERRED   |

@@ -57,4 +57,8 @@ class DriftCraftRepository implements ICraftRepository {
   @override
   Future<List<RoomItem>> findRoomItems(String userId) =>
       _dao.findRoomItems(userId);
+
+  @override
+  Future<RoomPlacementResult> placeRoomItemIfAvailable(RoomItem item) =>
+      _dao.placeRoomItemIfAvailable(item);
 }
