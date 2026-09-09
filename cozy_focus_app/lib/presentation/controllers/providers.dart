@@ -67,11 +67,13 @@ final rewardServiceProvider = Provider<RewardService>((ref) {
   final petRepo = ref.watch(petRepositoryProvider);
   final clock = ref.watch(focusClockProvider);
   final craftEngine = ref.watch(craftEngineProvider);
+  final db = ref.watch(appDatabaseProvider);
   return RewardService(
     ledgerRepo: ledgerRepo,
     petRepo: petRepo,
     clock: clock,
     craftEngine: craftEngine,
+    atomicSettlement: db.settlementDao,
   );
 });
 

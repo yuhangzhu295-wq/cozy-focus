@@ -17,6 +17,7 @@ import 'daos/reward_ledger_dao.dart';
 import 'daos/sync_outbox_dao.dart';
 import 'daos/pet_dao.dart';
 import 'daos/craft_dao.dart';
+import 'daos/settlement_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -43,6 +44,7 @@ part 'app_database.g.dart';
     SyncOutboxDao,
     PetDao,
     CraftDao,
+    SettlementDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

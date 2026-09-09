@@ -1,22 +1,28 @@
 import '../models/focus_session.dart';
 import '../models/sync_models.dart';
 import '../models/pet_models.dart';
+import '../models/craft_models.dart';
 import '../repositories/i_reward_ledger_repository.dart';
 import '../repositories/i_pet_repository.dart';
+import '../repositories/i_atomic_settlement.dart';
 import 'focus_clock.dart';
 import 'craft_engine.dart';
 
-/// RewardService — idempotent reward settlement keyed by session_id.
+/// RewardService — idempotent, atomic reward settlement keyed by session_id.
 ///
-/// Invariant: one and only one RewardLedger entry per session_id.
-/// Calling settle() twice with the same session produces no second reward.
+/// When [atomicSettlement] is provided (production), the ledger insert + pet
+/// XP + craft progress are written in a single SQLite transaction, preventing
+/// partially-applied rewards on crash.
+///
+/// When [atomicSettlement] is null (unit tests), a sequential non-atomic path
+/// is used; the idempotency gate is still enforced via [_ledgerRepo].
 class RewardService {
   final IRewardLedgerRepository _ledgerRepo;
   final IPetRepository _petRepo;
   final FocusClock _clock;
   final CraftEngine? _craftEngine;
+  final IAtomicSettlement? _atomicSettlement;
 
-  // Reward constants — adjust in a config file later.
   static const int _coinsPerMinute = 2;
   static const int _xpPerMinute = 5;
 
@@ -25,33 +31,61 @@ class RewardService {
     required IPetRepository petRepo,
     FocusClock? clock,
     CraftEngine? craftEngine,
+    IAtomicSettlement? atomicSettlement,
   })  : _ledgerRepo = ledgerRepo,
         _petRepo = petRepo,
         _clock = clock ?? const SystemFocusClock(),
-        _craftEngine = craftEngine;
+        _craftEngine = craftEngine,
+        _atomicSettlement = atomicSettlement;
 
-  /// Settle reward for a completed session.
-  /// Returns false (no-op) if already settled.
+  /// Settle reward for a completed [session].
+  ///
+  /// Returns [true] if this call performed the settlement.
+  /// Returns [false] if the session was already settled (safe no-op).
   Future<bool> settle(FocusSession session) async {
-    // Idempotency check
-    final existing = await _ledgerRepo.findBySessionId(session.id);
-    if (existing != null) return false;
-
     final focusMinutes = (session.elapsedSeconds / 60).floor();
     final coins = focusMinutes * _coinsPerMinute;
     final xp = focusMinutes * _xpPerMinute;
+    final now = _clock.now();
 
     final entry = RewardLedger(
       sessionId: session.id,
       userId: session.userId,
       focusCoinsEarned: coins,
       experienceEarned: xp,
-      settledAt: _clock.now(),
+      settledAt: now,
     );
+
+    if (_atomicSettlement != null) {
+      // --- Production path: single transaction ---
+      final pet = await _petRepo.findPetByUser(session.userId);
+      PetProgress? progress;
+      if (pet != null) progress = await _petRepo.findPetProgress(pet.id);
+
+      CraftJob? activeJob;
+      CraftRecipe? activeRecipe;
+      if (_craftEngine != null && session.elapsedSeconds > 0) {
+        final active = await _craftEngine.getActiveCraftJob(session.userId);
+        activeJob = active?.job;
+        activeRecipe = active?.recipe;
+      }
+
+      return _atomicSettlement.settleAtomically(
+        entry: entry,
+        currentProgress: progress,
+        addedFocusSeconds: session.elapsedSeconds,
+        activeJob: activeJob,
+        activeRecipe: activeRecipe,
+        now: now,
+      );
+    }
+
+    // --- Test / fallback path: sequential writes ---
+    final existing = await _ledgerRepo.findBySessionId(session.id);
+    if (existing != null) return false;
 
     await _ledgerRepo.settleReward(entry);
 
-    // Update pet XP
     final pet = await _petRepo.findPetByUser(session.userId);
     if (pet != null) {
       final progress = await _petRepo.findPetProgress(pet.id);
@@ -63,13 +97,12 @@ class RewardService {
           experiencePoints: progress.experiencePoints + xp,
           totalFocusMinutes: progress.totalFocusMinutes + focusMinutes,
           happinessScore: (progress.happinessScore + 5).clamp(0, 100),
-          updatedAt: _clock.now(),
+          updatedAt: now,
         );
         await _petRepo.savePetProgress(updated);
       }
     }
 
-    // Accumulate craft progress (best-effort: craft engine may not be present)
     if (_craftEngine != null && session.elapsedSeconds > 0) {
       await _craftEngine.accumulateProgress(
           session.userId, session.elapsedSeconds);

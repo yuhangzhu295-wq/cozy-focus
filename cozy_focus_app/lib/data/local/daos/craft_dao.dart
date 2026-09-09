@@ -74,6 +74,35 @@ class CraftDao extends DatabaseAccessor<AppDatabase> with _$CraftDaoMixin {
     return row == null ? null : _mapJob(row);
   }
 
+  /// Atomically inserts [newJob] only when no active job exists for [userId].
+  /// All reads and writes run inside a single Drift transaction so concurrent
+  /// callers cannot both pass the active-job check simultaneously.
+  Future<bool> startJobIfNoneActive(
+      String userId, domain.CraftJob newJob) async {
+    return transaction(() async {
+      final existing = await (select(craftJobs)
+            ..where((t) =>
+                t.userId.equals(userId) &
+                t.status.isIn(['pending', 'inProgress']))
+            ..limit(1))
+          .getSingleOrNull();
+      if (existing != null) return false;
+
+      await into(craftJobs).insert(CraftJobsCompanion(
+        id: Value(newJob.id),
+        userId: Value(newJob.userId),
+        recipeId: Value(newJob.recipeId),
+        status: Value(newJob.status.name),
+        progressSeconds: Value(newJob.progressSeconds),
+        startedAt: Value(newJob.startedAt),
+        completedAt: Value(newJob.completedAt),
+        rewardClaimed: Value(newJob.rewardClaimed),
+        sessionId: Value(newJob.sessionId),
+      ));
+      return true;
+    });
+  }
+
   // ── Inventory ─────────────────────────────────────────────
   Future<void> upsertInventoryItem(domain.InventoryItem item) async {
     await into(inventoryItems).insertOnConflictUpdate(InventoryItemsCompanion(

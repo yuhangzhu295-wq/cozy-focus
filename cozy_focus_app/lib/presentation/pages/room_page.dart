@@ -5,10 +5,12 @@ import '../../domain/models/craft_models.dart';
 import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
 
-/// Screen 09: Room Decoration Page (房间)
-/// Allows placing, moving, and removing inventory items in the room.
-/// Positions are persisted via CraftController -> ICraftRepository.
-/// No fake furniture — only items from real InventoryItems.
+/// Screen 09: Room Decoration Page (房间装饰).
+///
+/// Furniture positions are stored as normalised coordinates [0.0, 1.0]
+/// relative to the **room canvas** (not the full screen), computed via
+/// [LayoutBuilder].  During a drag only local UI state is updated; a single
+/// DB persist happens on [GestureDetector.onPanEnd].
 class RoomPage extends ConsumerStatefulWidget {
   const RoomPage({super.key});
 
@@ -55,86 +57,88 @@ class _RoomPageState extends ConsumerState<RoomPage> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Room canvas
+                // Room canvas — fills available space; LayoutBuilder provides
+                // real canvas dimensions for normalised coordinate mapping.
                 Expanded(
-                  child: Stack(
-                    children: [
-                      // Room background
-                      _buildRoomBackground(),
-                      // Placed items
-                      ...craft.roomItems.map((item) {
-                        final recipe = craft.recipes
-                            .where((r) => r.outputItemId == item.itemId)
-                            .firstOrNull;
-                        return _PlacedItemWidget(
-                          key: ValueKey(item.id),
-                          roomItem: item,
-                          recipe: recipe,
-                          isSelected: _selectedRoomItemId == item.id,
-                          onSelect: () {
-                            setState(() {
-                              _selectedRoomItemId =
-                                  _selectedRoomItemId == item.id
-                                      ? null
-                                      : item.id;
-                            });
-                          },
-                          onMove: (dx, dy) async {
-                            final size = MediaQuery.of(context).size;
-                            final newX = (item.positionX + dx / size.width)
-                                .clamp(0.0, 1.0);
-                            final newY = (item.positionY + dy / size.height)
-                                .clamp(0.0, 1.0);
-                            await ref
-                                .read(craftControllerProvider.notifier)
-                                .moveRoomItem(item.id, newX, newY);
-                          },
-                        );
-                      }),
-                      // Selection toolbar
-                      if (_selectedRoomItemId != null)
-                        Positioned(
-                          top: 12,
-                          right: 12,
-                          child: _SelectionToolbar(
-                            onDelete: () async {
-                              await ref
-                                  .read(craftControllerProvider.notifier)
-                                  .removeRoomItem(_selectedRoomItemId!);
-                              setState(() => _selectedRoomItemId = null);
-                            },
-                            onDeselect: () =>
-                                setState(() => _selectedRoomItemId = null),
-                          ),
-                        ),
-                      // Empty state
-                      if (craft.roomItems.isEmpty)
-                        Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text('🏠', style: TextStyle(fontSize: 56)),
-                              const SizedBox(height: 12),
-                              const Text(
-                                '房间空空的，先去制作些家具吧',
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textSecondary),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final canvasWidth = constraints.maxWidth;
+                      final canvasHeight = constraints.maxHeight;
+
+                      return Stack(
+                        children: [
+                          _buildRoomBackground(),
+                          ...craft.roomItems.map((item) {
+                            final recipe = craft.recipes
+                                .where((r) => r.outputItemId == item.itemId)
+                                .firstOrNull;
+                            return _PlacedItemWidget(
+                              key: ValueKey(item.id),
+                              roomItem: item,
+                              recipe: recipe,
+                              canvasWidth: canvasWidth,
+                              canvasHeight: canvasHeight,
+                              isSelected: _selectedRoomItemId == item.id,
+                              onSelect: () {
+                                setState(() {
+                                  _selectedRoomItemId =
+                                      _selectedRoomItemId == item.id
+                                          ? null
+                                          : item.id;
+                                });
+                              },
+                              // Called once on drag-end with final normalised coords.
+                              onMoveEnd: (nx, ny) async {
+                                await ref
+                                    .read(craftControllerProvider.notifier)
+                                    .moveRoomItem(item.id, nx, ny);
+                              },
+                            );
+                          }),
+                          if (_selectedRoomItemId != null)
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: _SelectionToolbar(
+                                onDelete: () async {
+                                  await ref
+                                      .read(craftControllerProvider.notifier)
+                                      .removeRoomItem(_selectedRoomItemId!);
+                                  setState(() => _selectedRoomItemId = null);
+                                },
+                                onDeselect: () =>
+                                    setState(() => _selectedRoomItemId = null),
                               ),
-                              const SizedBox(height: 16),
-                              OutlinedButton.icon(
-                                icon: const Icon(Icons.handyman_outlined),
-                                label: const Text('前往制作工坊'),
-                                onPressed: () => context.go('/craft'),
+                            ),
+                          if (craft.roomItems.isEmpty)
+                            Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('🏠',
+                                      style: TextStyle(fontSize: 56)),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    '房间空空的，先去制作些家具吧',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.textSecondary),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  OutlinedButton.icon(
+                                    icon: const Icon(Icons.handyman_outlined),
+                                    label: const Text('前往制作工坊'),
+                                    onPressed: () => context.go('/craft'),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                    ],
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
 
-                // Add furniture panel toggle
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   height: _showInventoryPanel ? 180 : 0,
@@ -142,7 +146,6 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                       ? _InventoryPanel(
                           craft: craft,
                           onPlace: (recipe) async {
-                            // Place near center with slight offset
                             final count = craft.roomItems.length;
                             final x = 0.3 + (count * 0.05).clamp(0.0, 0.4);
                             final y = 0.3 + (count * 0.05).clamp(0.0, 0.4);
@@ -155,7 +158,6 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                       : const SizedBox.shrink(),
                 ),
 
-                // Bottom action bar
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -216,7 +218,6 @@ class _RoomPageState extends ConsumerState<RoomPage> {
   }
 }
 
-/// Simple floor-perspective floor painter
 class _RoomFloorPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -236,20 +237,30 @@ class _RoomFloorPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+/// Displays a single placed furniture item and handles drag interaction.
+///
+/// Positions are stored as normalised coords [0.0, 1.0] relative to the room
+/// canvas.  During drag, a local transient offset is maintained purely in
+/// widget state (no DB writes).  [onMoveEnd] is called **once** with the
+/// final normalised position when the finger lifts.
 class _PlacedItemWidget extends StatefulWidget {
   final RoomItem roomItem;
   final CraftRecipe? recipe;
   final bool isSelected;
+  final double canvasWidth;
+  final double canvasHeight;
   final VoidCallback onSelect;
-  final void Function(double dx, double dy) onMove;
+  final void Function(double nx, double ny) onMoveEnd;
 
   const _PlacedItemWidget({
     required super.key,
     required this.roomItem,
     required this.recipe,
     required this.isSelected,
+    required this.canvasWidth,
+    required this.canvasHeight,
     required this.onSelect,
-    required this.onMove,
+    required this.onMoveEnd,
   });
 
   @override
@@ -257,43 +268,76 @@ class _PlacedItemWidget extends StatefulWidget {
 }
 
 class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
-  Offset _dragStart = Offset.zero;
+  // Transient drag offset in pixels (not persisted until onPanEnd).
+  double _dxOffset = 0;
+  double _dyOffset = 0;
+
+  static const double _itemSize = 60.0;
+  static const double _halfItem = _itemSize / 2;
+
+  @override
+  void didUpdateWidget(_PlacedItemWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reset transient offset when the persisted position changes externally.
+    if (oldWidget.roomItem.positionX != widget.roomItem.positionX ||
+        oldWidget.roomItem.positionY != widget.roomItem.positionY) {
+      _dxOffset = 0;
+      _dyOffset = 0;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final left = widget.roomItem.positionX * size.width;
-    final top = widget.roomItem.positionY * size.height * 0.7;
+    // Convert normalised coords to canvas pixels.
+    final baseLeft = widget.roomItem.positionX * widget.canvasWidth;
+    final baseTop = widget.roomItem.positionY * widget.canvasHeight;
+    final left = baseLeft + _dxOffset - _halfItem;
+    final top = baseTop + _dyOffset - _halfItem;
 
     return Positioned(
-      left: left - 30,
-      top: top - 30,
+      left: left,
+      top: top,
       child: GestureDetector(
         onTap: widget.onSelect,
-        onPanStart: (d) => _dragStart = d.globalPosition,
         onPanUpdate: (d) {
-          final delta = d.globalPosition - _dragStart;
-          _dragStart = d.globalPosition;
-          widget.onMove(delta.dx, delta.dy);
+          // Update local UI only — no DB write here.
+          setState(() {
+            _dxOffset += d.delta.dx;
+            _dyOffset += d.delta.dy;
+          });
+        },
+        onPanEnd: (_) {
+          // Compute final normalised position clamped to canvas.
+          final finalLeft = baseLeft + _dxOffset;
+          final finalTop = baseTop + _dyOffset;
+          final nx = (finalLeft / widget.canvasWidth).clamp(0.0, 1.0);
+          final ny = (finalTop / widget.canvasHeight).clamp(0.0, 1.0);
+          // Single DB persist.
+          widget.onMoveEnd(nx, ny);
+          // Reset transient offset — the parent will rebuild with new DB coords.
+          setState(() {
+            _dxOffset = 0;
+            _dyOffset = 0;
+          });
         },
         child: Container(
-          width: 60,
-          height: 60,
+          width: _itemSize,
+          height: _itemSize,
           decoration: BoxDecoration(
             color:
                 widget.isSelected ? AppColors.primaryLight : Colors.transparent,
             border: widget.isSelected
-                ? Border.all(
-                    color: AppColors.primarySage,
-                    width: 2,
-                  )
+                ? Border.all(color: AppColors.primarySage, width: 2)
                 : null,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Center(
-            child: Text(
-              widget.recipe?.icon ?? '📦',
-              style: TextStyle(fontSize: widget.roomItem.scale * 32),
+            child: Tooltip(
+              message: widget.recipe?.name ?? widget.roomItem.itemId,
+              child: Text(
+                widget.recipe?.icon ?? '📦',
+                style: TextStyle(fontSize: widget.roomItem.scale * 32),
+              ),
             ),
           ),
         ),
@@ -354,7 +398,6 @@ class _InventoryPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Only show items that have been crafted (in inventory)
     final placedCounts = <String, int>{};
     for (final r in craft.roomItems) {
       placedCounts[r.itemId] = (placedCounts[r.itemId] ?? 0) + 1;

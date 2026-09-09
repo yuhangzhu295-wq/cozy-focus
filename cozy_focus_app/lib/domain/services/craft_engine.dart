@@ -22,11 +22,6 @@ class CraftEngine {
   /// Start a new craft job for [userId] on [recipeId].
   /// Throws [StateError] if user already has an active job.
   Future<CraftJob> startJob(String userId, String recipeId) async {
-    final existing = await _repo.findActiveJobByUser(userId);
-    if (existing != null) {
-      throw StateError(
-          'User $userId already has active craft job ${existing.id}');
-    }
     final recipe = await _repo.findRecipeById(recipeId);
     if (recipe == null) throw ArgumentError('Recipe not found: $recipeId');
 
@@ -39,7 +34,10 @@ class CraftEngine {
       startedAt: _clock.now(),
       rewardClaimed: false,
     );
-    await _repo.saveJob(job);
+    final inserted = await _repo.startJobIfNoneActive(userId, job);
+    if (!inserted) {
+      throw StateError('User $userId already has an active craft job');
+    }
     return job;
   }
 

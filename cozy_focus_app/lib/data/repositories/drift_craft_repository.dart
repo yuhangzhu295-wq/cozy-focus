@@ -30,6 +30,10 @@ class DriftCraftRepository implements ICraftRepository {
       _dao.findActiveJobByUser(userId);
 
   @override
+  Future<bool> startJobIfNoneActive(String userId, CraftJob newJob) =>
+      _dao.startJobIfNoneActive(userId, newJob);
+
+  @override
   Future<void> upsertInventoryItem(InventoryItem item) =>
       _dao.upsertInventoryItem(item);
 

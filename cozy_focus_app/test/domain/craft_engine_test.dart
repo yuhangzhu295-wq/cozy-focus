@@ -47,6 +47,19 @@ class FakeCraftRepository implements ICraftRepository {
   Future<void> updateJob(CraftJob job) async => _jobs[job.id] = job;
 
   @override
+  Future<bool> startJobIfNoneActive(String userId, CraftJob newJob) async {
+    for (final j in _jobs.values) {
+      if (j.userId == userId &&
+          (j.status == CraftJobStatus.inProgress ||
+              j.status == CraftJobStatus.pending)) {
+        return false;
+      }
+    }
+    _jobs[newJob.id] = newJob;
+    return true;
+  }
+
+  @override
   Future<InventoryItem?> findInventoryItem(String userId, String itemId) async {
     final key = '$userId:$itemId';
     return _inventory[key];
