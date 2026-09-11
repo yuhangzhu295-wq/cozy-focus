@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:flutter/material.dart';
 import '../pages/home_page.dart';
 import '../pages/focus_setup_page.dart';
 import '../pages/focus_active_page.dart';
@@ -15,6 +16,19 @@ import '../pages/craft_list_page.dart';
 import '../pages/craft_detail_page.dart';
 import '../pages/inventory_page.dart';
 import '../pages/room_page.dart';
+
+/// Minimal placeholder page for growth route
+class GrowthPlaceholderPage extends StatelessWidget {
+  const GrowthPlaceholderPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('成长')),
+      body: const Center(child: Text('成长')),
+    );
+  }
+}
 
 /// App routing table powered by GoRouter for Cozy Focus
 final appRouter = GoRouter(
@@ -48,6 +62,14 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/progress',
       builder: (context, state) => const ProgressOverviewPage(),
+    ),
+    GoRoute(
+      path: '/records',
+      builder: (context, state) => const ProgressOverviewPage(),
+    ),
+    GoRoute(
+      path: '/growth',
+      builder: (context, state) => const GrowthPlaceholderPage(),
     ),
     GoRoute(
       path: '/records/:id',

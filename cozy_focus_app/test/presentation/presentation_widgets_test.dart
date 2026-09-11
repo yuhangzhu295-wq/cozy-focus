@@ -61,9 +61,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Cozy Focus'), findsOneWidget);
-      expect(find.textContaining('今日尚未开启专注'), findsOneWidget);
-      expect(find.text('开始专注 >'), findsOneWidget);
+      expect(find.textContaining('和 Mochi 一起'), findsOneWidget);
+      expect(find.text('专注时长'), findsOneWidget);
+      expect(find.text('开始专注'), findsOneWidget);
     });
 
     testWidgets('Screen 02: FocusSetupPage renders categories and mode options',
@@ -72,12 +72,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('设置专注'), findsOneWidget);
-      expect(find.text('选择分类'), findsOneWidget);
-      expect(find.text('学习'), findsWidgets);
-      expect(find.text('工作'), findsWidgets);
-      expect(find.text('阅读'), findsWidgets);
-      expect(find.text('生活'), findsWidgets);
+      // V4.1: no AppBar title; shows duration chips and start button
+      expect(find.text('选择专注时长'), findsOneWidget);
+      expect(find.textContaining('25'), findsWidgets); // default duration chip
       expect(find.text('开始专注'), findsOneWidget);
     });
 
@@ -97,9 +94,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('专注中'), findsOneWidget);
+      // V4.1: '专注中 🌱' header + 'Mochi 专注中' subtitle, large timer, pause button
+      expect(find.textContaining('专注中'), findsWidgets);
       expect(find.text('25:00'), findsOneWidget);
-      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
       expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
 
       // Cancel session to stop ticker

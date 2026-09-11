@@ -1,0 +1,622 @@
+[
+  {
+    "path": "00_旧包废止与使用方法.md",
+    "size": 750,
+    "sha256": "2e59c97fdf9c1263eb7150d050b88e7bd0c8e09d338c593cbe0f7d36d2c0d61d"
+  },
+  {
+    "path": "01_Codex切换到V4_1总提示词.md",
+    "size": 7254,
+    "sha256": "efedf57dcc6519108f9fa83b37668e50359a6932a512d86f5dcc12a948fc0d0b"
+  },
+  {
+    "path": "02_当前GitHub与V4_1迁移表.md",
+    "size": 785,
+    "sha256": "705445c9c81b35986527eeb21e93fb3161c3eed565c59075f12c9c1a68c8df68"
+  },
+  {
+    "path": "03_设计与交互硬规则.md",
+    "size": 666,
+    "sha256": "86f562d105006d011306e213014486d1c835ae36b8e1eeb8e65f4dc1c0a3c7fe"
+  },
+  {
+    "path": "04_V4_1视觉返工清单.md",
+    "size": 904,
+    "sha256": "8385c3f8a361ec4cb5640ef00413bf690d244b49b43b53ebac3ec220a0ae9e6e"
+  },
+  {
+    "path": "LEGACY_01_Codex切换到V4总提示词.md",
+    "size": 4210,
+    "sha256": "c0a088653ba3d2aa964cc7556371dadd56896f9daf5cdf9b3994c119bd0318bc"
+  },
+  {
+    "path": "LEGACY_02_当前GitHub与V4迁移表.md",
+    "size": 889,
+    "sha256": "a8d2f292a5fff36658e890bfeea23e1a95e4f867b97bf3a0df8ce3208292d177"
+  },
+  {
+    "path": "LEGACY_execution_order_v4.json",
+    "size": 956,
+    "sha256": "f8ece471f1b632cbc793c462844f6bc2f1672e3d29d2faea885aa8d04a55e98f"
+  },
+  {
+    "path": "LEGACY_manifest_v4.json",
+    "size": 4751,
+    "sha256": "114a1a65333d4f832b7aef01a50dc69fb43a6d4995d80b40b30cb1a9b96a12d0"
+  },
+  {
+    "path": "README.md",
+    "size": 1474,
+    "sha256": "16e48c0faa58d00f6f9ad219da32ad79d6b4090bea19a0312d8336413139facc"
+  },
+  {
+    "path": "execution_order_v4_1.json",
+    "size": 978,
+    "sha256": "9341ed565165681f112fedb5b508c0e73d8214af3d65bf192a1ea8b1022de59e"
+  },
+  {
+    "path": "file_index.json",
+    "size": 18810,
+    "sha256": "cc6f68286337a8f85fa0ef5211a197062d8611f3bc1f77a31284c072557bd25b"
+  },
+  {
+    "path": "manifest_v4_1.json",
+    "size": 5482,
+    "sha256": "2bc594f1624aeb66d829d1c9557da5e08ba63672e4eda581dcbc6de7611f384f"
+  },
+  {
+    "path": "qa/00_V4迁移验收矩阵.md",
+    "size": 428,
+    "sha256": "3e4c8dfa838ceaf89868f9813242c0274dfabf396e3d0c6e53294b25d9e739e8"
+  },
+  {
+    "path": "qa/01_旧包错误回归.md",
+    "size": 293,
+    "sha256": "9046a79367fbc015212a296adfa09b6ff1481a6d69f8bf4a945ae9ef0613a28c"
+  },
+  {
+    "path": "qa/02_人工视觉Backlog.md",
+    "size": 234,
+    "sha256": "c4275c7be0f8c662cdd929cdeb1869a89b9055bf45cf45f631b22989ecd40b01"
+  },
+  {
+    "path": "reference/00_视觉SourceOfTruth.md",
+    "size": 252,
+    "sha256": "b34008763c4dc5d7cde55c1cbc5cc2cabafc487f3026decb7b19fad951b0729b"
+  },
+  {
+    "path": "reference/01_设计Token.md",
+    "size": 270,
+    "sha256": "2db4afcf8f0b906a7ff3f981e2b1d1b8837cc42b28a81dccab6008e46c940159"
+  },
+  {
+    "path": "reference/02_动效架构.md",
+    "size": 334,
+    "sha256": "7dbeef6477fe94f9c90a9f4f61b32535ed7a5c4e1fdc259f00d9fab29d415e82"
+  },
+  {
+    "path": "designs/pages_ascii/01_home.png",
+    "size": 2218522,
+    "sha256": "c6375a95924925eda06dbd70a0efee7796623815842e3a2c54dd5706c4a7f13d"
+  },
+  {
+    "path": "designs/pages_ascii/02_focus_setup.png",
+    "size": 2147306,
+    "sha256": "873525a9c4f3d982531384c92dc0bb816ea7bb9b798e52e60ebf603b8a92ef0c"
+  },
+  {
+    "path": "designs/pages_ascii/03A_pause.png",
+    "size": 2130565,
+    "sha256": "5571b59b3a31fe482c6bb705766c7871ba367b8e58bd1bea57175282e9c6a257"
+  },
+  {
+    "path": "designs/pages_ascii/03B_lock_recovery.png",
+    "size": 2251054,
+    "sha256": "f469b689147b62c1af361f7c71e329a9d51fb0e7536a5c4afd31c451884ef68e"
+  },
+  {
+    "path": "designs/pages_ascii/03C_end_early_confirm.png",
+    "size": 1994991,
+    "sha256": "ac4206e4d31c61422045d6e8a1702a6bb3856349f02501c98332f8b2d6ee8aa0"
+  },
+  {
+    "path": "designs/pages_ascii/03_focus_active.png",
+    "size": 1953819,
+    "sha256": "4f72dd0f5bc7a3f0a3fbfa1eb3aab4f97a4967ba52b120b7b20af7ad1a96b242"
+  },
+  {
+    "path": "designs/pages_ascii/04A_optional_note.png",
+    "size": 1956632,
+    "sha256": "02feea0edf37f15def12ff59ac9eeb2a03b28bcccb238fcd32b9cf3391d4d281"
+  },
+  {
+    "path": "designs/pages_ascii/04B_reward_feedback.png",
+    "size": 2260841,
+    "sha256": "25565c805258f3efac18bac23d16e09e8855db03808295fe8a52211eef5a0be4"
+  },
+  {
+    "path": "designs/pages_ascii/04_focus_complete.png",
+    "size": 2048442,
+    "sha256": "67c6ab5b3fd5a6182c30c6f1c7c51c120287bbca7b86a674fc58fef304543ab1"
+  },
+  {
+    "path": "designs/pages_ascii/05A_records_today.png",
+    "size": 2239906,
+    "sha256": "7f0d0cc7f368e21fea2656fe1cf022c315efc80c06c03dd618d82657c6844af3"
+  },
+  {
+    "path": "designs/pages_ascii/05B_records_history.png",
+    "size": 2222037,
+    "sha256": "10d51f12e7b04b564aaf08c29b6b092c7d7d57e7faf4f88b7ca02a77f952424c"
+  },
+  {
+    "path": "designs/pages_ascii/05C_record_detail.png",
+    "size": 399829,
+    "sha256": "5bee2fad81a10a9b357305cc8f2197d72759bbf79e7bff135508fc80e91598a8"
+  },
+  {
+    "path": "designs/pages_ascii/05D_records_calendar.png",
+    "size": 2301424,
+    "sha256": "7823eb48de521e3f29982266e495d743f3b71543db5b1175395a3028b3cc7ccd"
+  },
+  {
+    "path": "designs/pages_ascii/05_records_hub.png",
+    "size": 2239906,
+    "sha256": "7f0d0cc7f368e21fea2656fe1cf022c315efc80c06c03dd618d82657c6844af3"
+  },
+  {
+    "path": "designs/pages_ascii/06_weekly_report.png",
+    "size": 1426850,
+    "sha256": "883b083e5a2941fc3ac5861be0261f1e05579f8ee4b3e4e0b939d089242439d8"
+  },
+  {
+    "path": "designs/pages_ascii/07_monthly_report.png",
+    "size": 1687192,
+    "sha256": "f80d1c8b4408e0aec8f27ec1e0a8353d0b8c8f6bf39f6e173ff59ebda88c40d2"
+  },
+  {
+    "path": "designs/pages_ascii/08A_wrapped.png",
+    "size": 645273,
+    "sha256": "f21470bc219d12e8e3372a56779bffb4b69408ecce99fbe56df530cda2fb1800"
+  },
+  {
+    "path": "designs/pages_ascii/08_yearly_report.png",
+    "size": 1979526,
+    "sha256": "b869a414eb1a8cc75ac1f79c7a22eced0345b6eda463c4803e55cdfed0f7ef67"
+  },
+  {
+    "path": "designs/pages_ascii/09A_craft_list.png",
+    "size": 231949,
+    "sha256": "ef707f83859fa679fa1ab6e5ad7e220e3242defb6f41f5fc7ca7e27c9def242d"
+  },
+  {
+    "path": "designs/pages_ascii/09B_craft_detail.png",
+    "size": 1817839,
+    "sha256": "ce160370f396e7cde8de46edf5a7585b8f6776bfbf41445c19807ec5bd474ec7"
+  },
+  {
+    "path": "designs/pages_ascii/09C_room_inventory_panel.png",
+    "size": 2221063,
+    "sha256": "688807967a2a862fb7a740e2dbf61695afcbe5489bd9c3862f7c554682781ad7"
+  },
+  {
+    "path": "designs/pages_ascii/09_room.png",
+    "size": 2519700,
+    "sha256": "0fd8f143aa2105d4435088d2dfbc7585707ee77ed43043a1c5127c94383449d1"
+  },
+  {
+    "path": "designs/pages_ascii/10A_pet_outfit.png",
+    "size": 2394536,
+    "sha256": "69c4eaee37a5da07779e0659b5b6d53f33ca6950532371abfa78dfe75f855f80"
+  },
+  {
+    "path": "designs/pages_ascii/10B_collection.png",
+    "size": 2417086,
+    "sha256": "fe8d0148c8212e406e7ff8b48208f152aebf8af148c5b6fb013d43b2a288b5f7"
+  },
+  {
+    "path": "designs/pages_ascii/10_mochi_growth.png",
+    "size": 2145167,
+    "sha256": "1280a86c156b6b5a66e865af03247450a2cbec6e7daa21efebea5a8f7d2d56d3"
+  },
+  {
+    "path": "designs/pages_ascii/12_settings.png",
+    "size": 427090,
+    "sha256": "565b0f97d4c1d1a7a417c64712ee7bc8bc930c50ab0b1d3a3049e50a41e0bd3b"
+  },
+  {
+    "path": "designs/pages_ascii/13_notifications.png",
+    "size": 1665901,
+    "sha256": "72b4ed4eec38a19966568726c3a8dc458e94e19ba3125155de80e4d4264e6fc5"
+  },
+  {
+    "path": "designs/pages_ascii/14_records_empty.png",
+    "size": 1496606,
+    "sha256": "d4284369a760caf78238ba562554866c23e043805a4f09933860fe0ae6be7053"
+  },
+  {
+    "path": "designs/pages_ascii/15_sync.png",
+    "size": 1799910,
+    "sha256": "1e5bfcedb6fb9d11ffe23a1bdd9a3d60d760e58e2cc29ea138ef3a19b8914ebc"
+  },
+  {
+    "path": "designs/overview/00B_信息架构.png",
+    "size": 157291,
+    "sha256": "bab3b6dc34944179a041fe3e9fa3b36d9614ea1d9dd5b73fe4b13fe33e3ee076"
+  },
+  {
+    "path": "designs/overview/00_页面视觉索引.png",
+    "size": 1705669,
+    "sha256": "cbfcc63758cb47cdf551810312b5dcde29a7636fdb52e42faa53cc560e19b100"
+  },
+  {
+    "path": "designs/motion/11A_Idle_Breathe.png",
+    "size": 91143,
+    "sha256": "a225b65695c503bb79e8ee4ce816eb7ba6f47da7a60d3609384462704cfc014e"
+  },
+  {
+    "path": "designs/motion/11B_Idle_Sway.png",
+    "size": 87543,
+    "sha256": "423782b6f40c632284a9e4d39afbdeed8b58d5bf55d76087be15b95c3ea26191"
+  },
+  {
+    "path": "designs/motion/11C_Blink.png",
+    "size": 87176,
+    "sha256": "56612ac206758befd7a40fabf225c0a5a8e144cc5335f5ef77659cc9e469ec5f"
+  },
+  {
+    "path": "designs/motion/11D_Ear_Twitch.png",
+    "size": 86064,
+    "sha256": "4a691bbbbc4d78f9e7a7fddd83ca8a6560cf08b8834c717dcf4eac5554de2be9"
+  },
+  {
+    "path": "designs/motion/11E_Tail_Wag.png",
+    "size": 88997,
+    "sha256": "9b41f2ee8228b4117f57156cbaaa573df80ef58f373fe70f5956942b3259fc1b"
+  },
+  {
+    "path": "designs/motion/11F_Focus_Work.png",
+    "size": 96407,
+    "sha256": "407225001ea7dae8e907c1d004bc7ff1f0d0b514c1b38ed0c58750efe3d00dde"
+  },
+  {
+    "path": "designs/motion/11G_Craft.png",
+    "size": 94154,
+    "sha256": "750e04c8f0fb96815a6d30adf560aad3253e7275756980485e940cd1b9a413a3"
+  },
+  {
+    "path": "designs/motion/11H_Pause.png",
+    "size": 88276,
+    "sha256": "ffaccc7d3eac80ecd3a3fc7479887fb7ccc577653feef199794de7c068d72282"
+  },
+  {
+    "path": "designs/motion/11I_Celebrate.png",
+    "size": 98153,
+    "sha256": "21d481f548f5dc8f659d4bee1e3b5770637487004ade95a6cfff4dbd21dbd772"
+  },
+  {
+    "path": "designs/motion/11J_Sleep.png",
+    "size": 88920,
+    "sha256": "2e07671aec2cbeb2bca5cdb4ad43d465e6b56bb5f301eb3d73d9f8477c40091f"
+  },
+  {
+    "path": "designs/motion/11K_Greeting.png",
+    "size": 95533,
+    "sha256": "a4468b3675b0455ccdca4d2a46b484b330d23883268ab52abe2592df18445119"
+  },
+  {
+    "path": "designs/motion/11_宠物动效总览.png",
+    "size": 79427,
+    "sha256": "044d696d19758a1ef9e9cd48de5dd4036b57c43906066966414658d099af51f1"
+  },
+  {
+    "path": "designs/pages/01_首页.png",
+    "size": 2218522,
+    "sha256": "c6375a95924925eda06dbd70a0efee7796623815842e3a2c54dd5706c4a7f13d"
+  },
+  {
+    "path": "designs/pages/02_专注设置.png",
+    "size": 2147306,
+    "sha256": "873525a9c4f3d982531384c92dc0bb816ea7bb9b798e52e60ebf603b8a92ef0c"
+  },
+  {
+    "path": "designs/pages/03A_暂停状态.png",
+    "size": 2130565,
+    "sha256": "5571b59b3a31fe482c6bb705766c7871ba367b8e58bd1bea57175282e9c6a257"
+  },
+  {
+    "path": "designs/pages/03B_后台锁屏恢复.png",
+    "size": 2251054,
+    "sha256": "f469b689147b62c1af361f7c71e329a9d51fb0e7536a5c4afd31c451884ef68e"
+  },
+  {
+    "path": "designs/pages/03C_提前结束确认.png",
+    "size": 1994991,
+    "sha256": "ac4206e4d31c61422045d6e8a1702a6bb3856349f02501c98332f8b2d6ee8aa0"
+  },
+  {
+    "path": "designs/pages/03_专注中.png",
+    "size": 1953819,
+    "sha256": "4f72dd0f5bc7a3f0a3fbfa1eb3aab4f97a4967ba52b120b7b20af7ad1a96b242"
+  },
+  {
+    "path": "designs/pages/04A_记录感受.png",
+    "size": 1956632,
+    "sha256": "02feea0edf37f15def12ff59ac9eeb2a03b28bcccb238fcd32b9cf3391d4d281"
+  },
+  {
+    "path": "designs/pages/04B_奖励反馈.png",
+    "size": 2260841,
+    "sha256": "25565c805258f3efac18bac23d16e09e8855db03808295fe8a52211eef5a0be4"
+  },
+  {
+    "path": "designs/pages/04_专注完成.png",
+    "size": 2048442,
+    "sha256": "67c6ab5b3fd5a6182c30c6f1c7c51c120287bbca7b86a674fc58fef304543ab1"
+  },
+  {
+    "path": "designs/pages/05A_今日记录.png",
+    "size": 2239906,
+    "sha256": "7f0d0cc7f368e21fea2656fe1cf022c315efc80c06c03dd618d82657c6844af3"
+  },
+  {
+    "path": "designs/pages/05B_历史记录.png",
+    "size": 2222037,
+    "sha256": "10d51f12e7b04b564aaf08c29b6b092c7d7d57e7faf4f88b7ca02a77f952424c"
+  },
+  {
+    "path": "designs/pages/05C_记录详情.png",
+    "size": 399829,
+    "sha256": "5bee2fad81a10a9b357305cc8f2197d72759bbf79e7bff135508fc80e91598a8"
+  },
+  {
+    "path": "designs/pages/05D_日历记录.png",
+    "size": 2301424,
+    "sha256": "7823eb48de521e3f29982266e495d743f3b71543db5b1175395a3028b3cc7ccd"
+  },
+  {
+    "path": "designs/pages/05_记录中心.png",
+    "size": 2239906,
+    "sha256": "7f0d0cc7f368e21fea2656fe1cf022c315efc80c06c03dd618d82657c6844af3"
+  },
+  {
+    "path": "designs/pages/06_周报.png",
+    "size": 1426850,
+    "sha256": "883b083e5a2941fc3ac5861be0261f1e05579f8ee4b3e4e0b939d089242439d8"
+  },
+  {
+    "path": "designs/pages/07_月报.png",
+    "size": 1687192,
+    "sha256": "f80d1c8b4408e0aec8f27ec1e0a8353d0b8c8f6bf39f6e173ff59ebda88c40d2"
+  },
+  {
+    "path": "designs/pages/08A_Wrapped分享.png",
+    "size": 645273,
+    "sha256": "f21470bc219d12e8e3372a56779bffb4b69408ecce99fbe56df530cda2fb1800"
+  },
+  {
+    "path": "designs/pages/08_年度报告.png",
+    "size": 1979526,
+    "sha256": "b869a414eb1a8cc75ac1f79c7a22eced0345b6eda463c4803e55cdfed0f7ef67"
+  },
+  {
+    "path": "designs/pages/09A_制作列表.png",
+    "size": 231949,
+    "sha256": "ef707f83859fa679fa1ab6e5ad7e220e3242defb6f41f5fc7ca7e27c9def242d"
+  },
+  {
+    "path": "designs/pages/09B_制作详情.png",
+    "size": 1817839,
+    "sha256": "ce160370f396e7cde8de46edf5a7585b8f6776bfbf41445c19807ec5bd474ec7"
+  },
+  {
+    "path": "designs/pages/09C_房间库存面板.png",
+    "size": 2221063,
+    "sha256": "688807967a2a862fb7a740e2dbf61695afcbe5489bd9c3862f7c554682781ad7"
+  },
+  {
+    "path": "designs/pages/09_房间.png",
+    "size": 2519700,
+    "sha256": "0fd8f143aa2105d4435088d2dfbc7585707ee77ed43043a1c5127c94383449d1"
+  },
+  {
+    "path": "designs/pages/10A_宠物装扮.png",
+    "size": 2394536,
+    "sha256": "69c4eaee37a5da07779e0659b5b6d53f33ca6950532371abfa78dfe75f855f80"
+  },
+  {
+    "path": "designs/pages/10B_收藏图鉴.png",
+    "size": 2417086,
+    "sha256": "fe8d0148c8212e406e7ff8b48208f152aebf8af148c5b6fb013d43b2a288b5f7"
+  },
+  {
+    "path": "designs/pages/10_Mochi成长.png",
+    "size": 2145167,
+    "sha256": "1280a86c156b6b5a66e865af03247450a2cbec6e7daa21efebea5a8f7d2d56d3"
+  },
+  {
+    "path": "designs/pages/12_设置.png",
+    "size": 427090,
+    "sha256": "565b0f97d4c1d1a7a417c64712ee7bc8bc930c50ab0b1d3a3049e50a41e0bd3b"
+  },
+  {
+    "path": "designs/pages/13_通知设置.png",
+    "size": 1665901,
+    "sha256": "72b4ed4eec38a19966568726c3a8dc458e94e19ba3125155de80e4d4264e6fc5"
+  },
+  {
+    "path": "designs/pages/14_记录空状态.png",
+    "size": 1496606,
+    "sha256": "d4284369a760caf78238ba562554866c23e043805a4f09933860fe0ae6be7053"
+  },
+  {
+    "path": "designs/pages/15_数据与同步.png",
+    "size": 1799910,
+    "sha256": "1e5bfcedb6fb9d11ffe23a1bdd9a3d60d760e58e2cc29ea138ef3a19b8914ebc"
+  },
+  {
+    "path": "implementation/00_KEEP清单.md",
+    "size": 239,
+    "sha256": "dd39bf9da56caed79359d93cb81b828af21dfd6c31280ec095490c8ea31d7e44"
+  },
+  {
+    "path": "implementation/01_UI_RECONCILE清单.md",
+    "size": 185,
+    "sha256": "61b6e5e80bc0bde1504d5e294569d394e5894e3f0d2ca4727b11ddb5215bb21b"
+  },
+  {
+    "path": "implementation/02_禁止事项.md",
+    "size": 250,
+    "sha256": "f9519aad894866f5f6e3d3e82de8d783c0818681bd14ac82b8bbf5b9f7aac520"
+  },
+  {
+    "path": "prompts/00_总控强提示词_Codex_V4.md",
+    "size": 4210,
+    "sha256": "c0a088653ba3d2aa964cc7556371dadd56896f9daf5cdf9b3994c119bd0318bc"
+  },
+  {
+    "path": "prompts/01_页面实施提示词.md",
+    "size": 349,
+    "sha256": "44191ad83eb6761f0dda0c92feb361e7d5259f67372844a921d5ab6b1ff8ac85"
+  },
+  {
+    "path": "prompts/02_页面实施提示词.md",
+    "size": 342,
+    "sha256": "3a95cb0dfcaa087685d533b8c6782e3024180eb63a503de16f7ef6a21663ac10"
+  },
+  {
+    "path": "prompts/03A_页面实施提示词.md",
+    "size": 320,
+    "sha256": "2e31f38a809639e41525b23bf69019fdfaa6440690e5968a8668d6e7735c24e1"
+  },
+  {
+    "path": "prompts/03B_页面实施提示词.md",
+    "size": 329,
+    "sha256": "cd6503981b00928bf94749d612ab2ec25ab2ac68ddb29546fea5ccbb070dedcf"
+  },
+  {
+    "path": "prompts/03C_页面实施提示词.md",
+    "size": 311,
+    "sha256": "2ea4b8272e3177cd4944bd7f10cd2dbd924ac4cb0b5220d65ce5356b56d7d579"
+  },
+  {
+    "path": "prompts/03_页面实施提示词.md",
+    "size": 343,
+    "sha256": "2c2ccf458b8e67a02e7bed22778208c3cb68ffb681d6ae8a3ae99c90eeec7b98"
+  },
+  {
+    "path": "prompts/04A_页面实施提示词.md",
+    "size": 311,
+    "sha256": "565496f8fa993c86991ba65cab63a0f4fbc364334c88d85e929d778437220e38"
+  },
+  {
+    "path": "prompts/04B_页面实施提示词.md",
+    "size": 311,
+    "sha256": "70e05c59528a545719304ebb96766b1ea7013581297de1fbc74e62386da34a54"
+  },
+  {
+    "path": "prompts/04_页面实施提示词.md",
+    "size": 304,
+    "sha256": "a909360c9b77d9a6e43b1ad723400cd678ff6be5e9c8175898aa1a63e61797ee"
+  },
+  {
+    "path": "prompts/05A_页面实施提示词.md",
+    "size": 302,
+    "sha256": "d3f6ef409dc4e5bc5320d438db4106802ed8311906140821210cd18c09034ff9"
+  },
+  {
+    "path": "prompts/05B_页面实施提示词.md",
+    "size": 304,
+    "sha256": "8c1fd191a5cc5ba6791bf74e9e0d104b43249cc0f20795fd395118ccc1ba32a3"
+  },
+  {
+    "path": "prompts/05C_页面实施提示词.md",
+    "size": 306,
+    "sha256": "801d6c4821ec8393ae5d49a61e6339a8741c5eb94d6cd236df57dc13ae9681af"
+  },
+  {
+    "path": "prompts/05D_页面实施提示词.md",
+    "size": 305,
+    "sha256": "c9c48caf3aa44beeb3c050b1a1805dfd28c02e2869a32bc9da360a93aa1db40c"
+  },
+  {
+    "path": "prompts/05_页面实施提示词.md",
+    "size": 303,
+    "sha256": "8f43a47de298bbb3676d45483bee564086cac73292e0d9d70a16cd1b6a062f4c"
+  },
+  {
+    "path": "prompts/06_页面实施提示词.md",
+    "size": 305,
+    "sha256": "6f419dd89967f7126b04f9a6040e533a529a76d49d78181c7ec37d07cdcac3dc"
+  },
+  {
+    "path": "prompts/07_页面实施提示词.md",
+    "size": 306,
+    "sha256": "7b06465257a721912ee1a06cb47f4d5f97656f2a18e38c8e259b89f3270c14b7"
+  },
+  {
+    "path": "prompts/08A_页面实施提示词.md",
+    "size": 310,
+    "sha256": "6160d898d32932cb738fd5841345207e0d8eff8f15ba411615bd857f1d2d23c0"
+  },
+  {
+    "path": "prompts/08_页面实施提示词.md",
+    "size": 305,
+    "sha256": "029c46b0592fdaf05700688fcf5dea513354a7ed4d0f01afba80c0492e6bb6ac"
+  },
+  {
+    "path": "prompts/09A_页面实施提示词.md",
+    "size": 303,
+    "sha256": "a11d0051ac4d62fcc6841908b98e9c1fb0e460dd052a191c5056e37d7b770a4d"
+  },
+  {
+    "path": "prompts/09B_页面实施提示词.md",
+    "size": 305,
+    "sha256": "ed277f998e7e163b4617eb97229c0f86562fb1964b0532eebd6e8b9677e9a754"
+  },
+  {
+    "path": "prompts/09C_页面实施提示词.md",
+    "size": 313,
+    "sha256": "b07a7e6fe3a5fd8d211d18545227e614b598f7ff3ef8ba40bc88b66a19d51ea3"
+  },
+  {
+    "path": "prompts/09_页面实施提示词.md",
+    "size": 305,
+    "sha256": "4a26db583749696bccba79020a2641d1f25b8efd73c45044739dd1cd0c2594aa"
+  },
+  {
+    "path": "prompts/10A_页面实施提示词.md",
+    "size": 307,
+    "sha256": "d973770aec017f9368a991d6f78ed298af4c0c0d849e16f6b29c0e998a6bbab0"
+  },
+  {
+    "path": "prompts/10B_页面实施提示词.md",
+    "size": 312,
+    "sha256": "681f3ec20993c565d9641233cb22ec54d0f65784b39853342787cc20ddff1137"
+  },
+  {
+    "path": "prompts/10_页面实施提示词.md",
+    "size": 306,
+    "sha256": "8129626b2414950b3ae708308d447ed43c21924a2be2adf36409f63c1c9e2fc6"
+  },
+  {
+    "path": "prompts/12_页面实施提示词.md",
+    "size": 305,
+    "sha256": "da649177303142cd8395753c661601f0a6b63d6d801b2ad6b22cebfccdd5c421"
+  },
+  {
+    "path": "prompts/13_页面实施提示词.md",
+    "size": 305,
+    "sha256": "8dd9c6a3a601568f416458165007e0c88c295619c3d9299bca0e1280033af792"
+  },
+  {
+    "path": "prompts/14_页面实施提示词.md",
+    "size": 311,
+    "sha256": "b0e3c5ed41c7272a8ba1a353e5a4540554b95f536e8c812e2f0df2d4366cc002"
+  },
+  {
+    "path": "prompts/15_页面实施提示词.md",
+    "size": 303,
+    "sha256": "942a01aed8816c8dd1cb90246d75a490272518e2fadff38f40e5367667b4120a"
+  }
+]

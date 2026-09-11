@@ -1,0 +1,22 @@
+{
+  "version": "4.1-subagent-final-full",
+  "root_reviewer": "Claude Sonnet 4.6",
+  "writer_agent": "gemini_implementer",
+  "writer_model_id": "11/gemini-3.8-flash-high",
+  "max_concurrent_subagents": 1,
+  "max_repair_rounds": 2,
+  "one_goal_per_stage": true,
+  "claude_pre_review_read_budget": 12,
+  "claude_diff_review_read_budget": 10,
+  "gemini_first_edit_read_budget": 10,
+  "gemini_fix_first_edit_read_budget": 6,
+  "recovery_anchor": "outputs/ai_handoff/CURRENT_STAGE.json",
+  "stage_order": [
+    "V4.1-S1",
+    "V4.1-S2A",
+    "V4.1-S2B",
+    "V4.1-S3A",
+    "V4.1-S3B",
+    "V4.1-S4"
+  ]
+}

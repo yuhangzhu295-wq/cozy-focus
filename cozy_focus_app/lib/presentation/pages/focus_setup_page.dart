@@ -5,9 +5,10 @@ import '../../domain/models/enums.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/providers.dart';
 import '../theme/app_theme.dart';
+import '../widgets/pet_avatar_widget.dart';
 
-/// Screen 02: Focus Setup / Task Setup
-/// Directly aligned with designs/02_开始专注_任务设置.png and prompts/02*
+/// Screen 02: Focus Setup — V4.1 visual redesign
+/// Design ref: docs/cozy_focus_v4_1/designs/pages_ascii/02_focus_setup.png
 class FocusSetupPage extends ConsumerStatefulWidget {
   const FocusSetupPage({super.key});
 
@@ -17,25 +18,10 @@ class FocusSetupPage extends ConsumerStatefulWidget {
 
 class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
   final TextEditingController _taskController = TextEditingController();
-  String _selectedCategory = '学习';
-  int _selectedModeIndex = 1; // 0 = Flow, 1 = Pomodoro (25/5), 2 = Custom
-  final int _customMinutes = 30;
-  int _minGoalMinutes = 5;
+  int _selectedMinutes = 25;
+  bool _reminderOn = true;
 
-  final List<Map<String, dynamic>> _categories = [
-    {'name': '学习', 'icon': Icons.school_rounded, 'color': AppColors.catStudy},
-    {
-      'name': '工作',
-      'icon': Icons.business_center_rounded,
-      'color': AppColors.catWork
-    },
-    {
-      'name': '阅读',
-      'icon': Icons.menu_book_rounded,
-      'color': AppColors.catReading
-    },
-    {'name': '生活', 'icon': Icons.spa_rounded, 'color': AppColors.catLife},
-  ];
+  static const List<int> _quickDurations = [5, 25, 50, 90];
 
   @override
   void dispose() {
@@ -43,21 +29,13 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
     super.dispose();
   }
 
-  int get _plannedSeconds {
-    if (_selectedModeIndex == 0) return 0; // Flow: open ended
-    if (_selectedModeIndex == 1) return 25 * 60; // Pomodoro: 25 min
-    return _customMinutes * 60;
-  }
-
-  FocusMode get _focusMode {
-    return FocusMode.focus;
-  }
+  int get _plannedSeconds => _selectedMinutes * 60;
+  FocusMode get _focusMode => FocusMode.focus;
 
   Future<void> _startFocus() async {
     final taskName = _taskController.text.trim().isEmpty
         ? '专注任务'
         : _taskController.text.trim();
-
     try {
       final userId = ref.read(currentUserIdProvider);
       await ref.read(focusSessionControllerProvider.notifier).startSession(
@@ -65,11 +43,8 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
             plannedSeconds: _plannedSeconds,
             mode: _focusMode,
             taskName: taskName,
-            categoryName: _selectedCategory,
           );
-      if (mounted) {
-        context.go('/focus/active');
-      }
+      if (mounted) context.go('/focus/active');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -83,343 +58,380 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: AppColors.textPrimary),
-          onPressed: () => context.go('/'),
-        ),
-        title: const Text('设置专注'),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
+      body: Column(
+        children: [
+          // ── Hero area ──────────────────────────────────────────
+          Expanded(
+            flex: 45,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Warm gradient background
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [AppColors.backgroundWarm, AppColors.background],
+                    ),
+                  ),
+                ),
+                // Back button
+                Positioned(
+                  top: 44,
+                  left: 8,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                        color: AppColors.textPrimary, size: 20),
+                    onPressed: () => context.go('/'),
+                  ),
+                ),
+                // Centre top title
+                const Positioned(
+                  top: 44,
+                  left: 0,
+                  right: 0,
+                  child: Column(
+                    children: [
+                      Text(
+                        '专注设置',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        '为这一次专注做一个轻轻的开始',
+                        style: TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                // Left hero text
+                const Positioned(
+                  left: 20,
+                  top: 100,
+                  child: Text(
+                    '和 Mochi 一起\n专注吧！🌱',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+                const Positioned(
+                  left: 20,
+                  top: 158,
+                  child: Text(
+                    '专注当下，\n让更好的自己慢慢长大。',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        height: 1.5),
+                  ),
+                ),
+                // Sticky note – top right
+                Positioned(
+                  right: 20,
+                  top: 96,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      '选一个时间\n我们开始吧！♡',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primaryDark,
+                          height: 1.4),
+                    ),
+                  ),
+                ),
+                // Pet avatar
+                const Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: PetAvatarWidget(visualState: PetVisualState.idle, size: 130, message: '选好了我们就出发！'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Settings panel ─────────────────────────────────────
+          Expanded(
+            flex: 55,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+              ),
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Mochi Greeting Banner
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceMuted,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              '选一个适合你的方式吧！\nMochi 会一直陪着你！♡',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textPrimary,
-                                height: 1.4,
+                    // Duration header
+                    Row(
+                      children: [
+                        const Text('🌱 ', style: TextStyle(fontSize: 16)),
+                        const Text(
+                          '选择专注时长',
+                          style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primarySage,
+                            padding: EdgeInsets.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () {},
+                          child: const Text('自定义 >',
+                              style: TextStyle(fontSize: 13)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Quick duration chips
+                    Row(
+                      children: _quickDurations.asMap().entries.map((entry) {
+                        final mins = entry.value;
+                        final isLast =
+                            entry.key == _quickDurations.length - 1;
+                        final isSelected = _selectedMinutes == mins;
+                        return Expanded(
+                          child: Padding(
+                            padding:
+                                EdgeInsets.only(right: isLast ? 0 : 8),
+                            child: GestureDetector(
+                              onTap: () =>
+                                  setState(() => _selectedMinutes = mins),
+                              child: AnimatedContainer(
+                                duration:
+                                    const Duration(milliseconds: 180),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppColors.primaryLight
+                                      : AppColors.background,
+                                  borderRadius: BorderRadius.circular(
+                                      AppRadius.sm),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppColors.primarySage
+                                        : AppColors.border,
+                                    width: isSelected ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '$mins',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: isSelected
+                                            ? AppColors.primaryDark
+                                            : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '分钟',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isSelected
+                                            ? AppColors.primarySage
+                                            : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: AppColors.accentPeachLight,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.accentPeach),
-                            ),
-                            child: const Icon(
-                              Icons.pets_rounded,
-                              color: AppColors.accentPeach,
-                              size: 26,
-                            ),
-                          ),
-                        ],
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Task input
+                    const Row(
+                      children: [
+                        Text('🌱 ', style: TextStyle(fontSize: 16)),
+                        Text(
+                          '专注任务（可选）',
+                          style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _taskController,
+                      style: const TextStyle(
+                          fontSize: 14, color: AppColors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: '例如：写作、看书、准备考试…',
+                        hintStyle: const TextStyle(
+                            color: AppColors.textTertiary, fontSize: 14),
+                        filled: true,
+                        fillColor: AppColors.background,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.sm),
+                          borderSide:
+                              const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.sm),
+                          borderSide:
+                              const BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.sm),
+                          borderSide: const BorderSide(
+                              color: AppColors.primarySage, width: 1.5),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
 
-                    // Task Content Input Card
-                    _buildCard(
-                      title: '任务内容',
-                      child: TextField(
-                        controller: _taskController,
-                        decoration: InputDecoration(
-                          hintText: '输入你要专注的任务...',
-                          hintStyle: const TextStyle(
-                            color: AppColors.textTertiary,
-                            fontSize: 14,
-                          ),
-                          prefixIcon: const Icon(Icons.edit_note_rounded,
-                              color: AppColors.primarySage),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                            borderSide:
-                                const BorderSide(color: AppColors.border),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                            borderSide:
-                                const BorderSide(color: AppColors.border),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                            borderSide: const BorderSide(
-                                color: AppColors.primarySage, width: 1.5),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
+                    // White noise row (UI only)
+                    InkWell(
+                      borderRadius:
+                          BorderRadius.circular(AppRadius.sm),
+                      onTap: () {},
+                      child: const Padding(
+                        padding:
+                            EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            Icon(Icons.music_note_rounded,
+                                color: AppColors.primarySage, size: 20),
+                            SizedBox(width: 10),
+                            Text('专注白噪音',
+                                style: TextStyle(
+                                    fontSize: 15,
+                                    color: AppColors.textPrimary)),
+                            Spacer(),
+                            Text('森林  >',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textSecondary)),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const Divider(color: AppColors.borderLight),
 
-                    // Select Category Card
-                    _buildCard(
-                      title: '选择分类',
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _categories.map((cat) {
-                          final isSelected = _selectedCategory == cat['name'];
-                          final Color catColor = cat['color'] as Color;
-                          return ChoiceChip(
-                            label: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  cat['icon'] as IconData,
-                                  size: 15,
-                                  color: isSelected ? Colors.white : catColor,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  cat['name'] as String,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : AppColors.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            selected: isSelected,
-                            selectedColor: catColor,
-                            backgroundColor: catColor.withValues(alpha: 0.12),
-                            side: BorderSide(
-                              color: isSelected ? catColor : Colors.transparent,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                            onSelected: (_) {
-                              setState(() =>
-                                  _selectedCategory = cat['name'] as String);
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Focus Mode Card
-                    _buildCard(
-                      title: '专注时长模式',
+                    // Reminder toggle (UI only)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
                         children: [
-                          Expanded(
-                            child: _buildModeOption(
-                              index: 0,
-                              title: '正计时\n(Flow)',
-                              subtitle: '不设上限',
-                              icon: Icons.all_inclusive_rounded,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildModeOption(
-                              index: 1,
-                              title: '番茄钟\n25 / 5',
-                              subtitle: '经典专注',
-                              icon: Icons.timer_rounded,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildModeOption(
-                              index: 2,
-                              title: '自定义\n时长',
-                              subtitle: '$_customMinutes 分钟',
-                              icon: Icons.tune_rounded,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Min Goal Dropdown
-                    _buildCard(
-                      title: '最小目标 (可选)',
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: AppColors.backgroundWarm,
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<int>(
-                                value: _minGoalMinutes,
-                                items: const [
-                                  DropdownMenuItem(
-                                      value: 5, child: Text('⏳ 5 分钟')),
-                                  DropdownMenuItem(
-                                      value: 10, child: Text('⏳ 10 分钟')),
-                                  DropdownMenuItem(
-                                      value: 15, child: Text('⏳ 15 分钟')),
-                                ],
-                                onChanged: (val) {
-                                  if (val != null) {
-                                    setState(() => _minGoalMinutes = val);
-                                  }
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              '不用追求完美，\n先专注 5 分钟也很棒！♡',
+                          const Icon(Icons.notifications_outlined,
+                              color: AppColors.primarySage, size: 20),
+                          const SizedBox(width: 10),
+                          const Text('专注结束提醒',
                               style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
+                                  fontSize: 15,
+                                  color: AppColors.textPrimary)),
+                          const Spacer(),
+                          Switch(
+                            value: _reminderOn,
+                            activeColor: AppColors.primarySage,
+                            onChanged: (v) =>
+                                setState(() => _reminderOn = v),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 16),
+
+                    // Start button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.play_arrow_rounded,
+                            size: 24),
+                        label: const Text('开始专注',
+                            style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold)),
+                        onPressed: _startFocus,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Center(
+                      child: Text(
+                        '"专注的每一分钟，都是在靠近更好的自己。"',
+                        style: TextStyle(
+                            fontSize: 12, color: AppColors.textTertiary),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
             ),
-
-            // Start Button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.play_arrow_rounded, size: 24),
-                  label: const Text(
-                    '开始专注',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                  ),
-                  onPressed: _startFocus,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCard({required String title, required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
 
-  Widget _buildModeOption({
-    required int index,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-  }) {
-    final isSelected = _selectedModeIndex == index;
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      onTap: () {
-        setState(() => _selectedModeIndex = index);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryLight : AppColors.background,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(
-            color: isSelected ? AppColors.primarySage : AppColors.border,
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 22,
-              color:
-                  isSelected ? AppColors.primarySage : AppColors.textSecondary,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color:
-                    isSelected ? AppColors.primaryDark : AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
+      // ── Bottom nav (3 tabs) ────────────────────────────────────
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+        selectedItemColor: AppColors.primarySage,
+        unselectedItemColor: AppColors.textTertiary,
+        backgroundColor: AppColors.surface,
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle:
+            const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(fontSize: 11),
+        onTap: (idx) {
+          if (idx == 1) context.go('/records');
+          if (idx == 2) context.go('/growth');
+        },
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded), label: '首页'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_rounded), label: '记录'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.eco_outlined), label: '成长'),
+        ],
       ),
     );
   }

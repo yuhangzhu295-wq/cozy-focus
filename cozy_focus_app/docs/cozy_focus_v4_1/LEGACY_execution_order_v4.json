@@ -1,0 +1,57 @@
+{
+  "version": "4.0",
+  "steps": [
+    {
+      "id": "V4-0",
+      "task": "audit current UI/routes, no code changes"
+    },
+    {
+      "id": "V4-1",
+      "task": "simplify AppShell to 3 tabs"
+    },
+    {
+      "id": "V4-2",
+      "task": "reconcile Focus presentation",
+      "pages": [
+        "01",
+        "02",
+        "03",
+        "03A",
+        "03B",
+        "03C",
+        "04",
+        "04A",
+        "04B"
+      ]
+    },
+    {
+      "id": "V4-3",
+      "task": "reconcile Records/Reports",
+      "pages": [
+        "05",
+        "05A",
+        "05B",
+        "05C",
+        "05D",
+        "06",
+        "07",
+        "08",
+        "08A"
+      ]
+    },
+    {
+      "id": "V4-4",
+      "task": "reconcile existing Growth/Room presentation",
+      "pages": [
+        "09",
+        "09A",
+        "09B",
+        "09C"
+      ]
+    },
+    {
+      "id": "STOP",
+      "task": "push, full regression, wait for user review before Phase 5"
+    }
+  ]
+}

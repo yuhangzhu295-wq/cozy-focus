@@ -1,0 +1,266 @@
+{
+  "version": "4.0-corrected-visual",
+  "date": "2026-09-10",
+  "repository": "yuhangzhu295-wq/cozy-focus",
+  "repository_head": "e7df460193ea799b2e0c0eba0b7010c120671834",
+  "page_source_of_truth": "designs/pages",
+  "ascii_fallback": "designs/pages_ascii",
+  "legacy_visuals": [
+    "V2/designs",
+    "previous V3/designs"
+  ],
+  "bottom_navigation": [
+    "首页",
+    "记录",
+    "成长"
+  ],
+  "settings_entry": "top-right gear",
+  "pages": [
+    {
+      "cn": "01_首页.png",
+      "ascii": "01_home.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "02_专注设置.png",
+      "ascii": "02_focus_setup.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "03_专注中.png",
+      "ascii": "03_focus_active.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "03A_暂停状态.png",
+      "ascii": "03A_pause.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "03B_后台锁屏恢复.png",
+      "ascii": "03B_lock_recovery.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "03C_提前结束确认.png",
+      "ascii": "03C_end_early_confirm.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "04_专注完成.png",
+      "ascii": "04_focus_complete.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "04A_记录感受.png",
+      "ascii": "04A_optional_note.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "04B_奖励反馈.png",
+      "ascii": "04B_reward_feedback.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "05_记录中心.png",
+      "ascii": "05_records_hub.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "05A_今日记录.png",
+      "ascii": "05A_records_today.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "05B_历史记录.png",
+      "ascii": "05B_records_history.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "05C_记录详情.png",
+      "ascii": "05C_record_detail.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "05D_日历记录.png",
+      "ascii": "05D_records_calendar.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "06_周报.png",
+      "ascii": "06_weekly_report.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "07_月报.png",
+      "ascii": "07_monthly_report.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "08_年度报告.png",
+      "ascii": "08_yearly_report.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "08A_Wrapped分享.png",
+      "ascii": "08A_wrapped.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "09_房间.png",
+      "ascii": "09_room.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "09A_制作列表.png",
+      "ascii": "09A_craft_list.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "09B_制作详情.png",
+      "ascii": "09B_craft_detail.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "09C_房间库存面板.png",
+      "ascii": "09C_room_inventory_panel.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "10_Mochi成长.png",
+      "ascii": "10_mochi_growth.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "10A_宠物装扮.png",
+      "ascii": "10A_pet_outfit.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "10B_收藏图鉴.png",
+      "ascii": "10B_collection.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "12_设置.png",
+      "ascii": "12_settings.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "13_通知设置.png",
+      "ascii": "13_notifications.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "14_记录空状态.png",
+      "ascii": "14_records_empty.png",
+      "size": [
+        1170,
+        2532
+      ]
+    },
+    {
+      "cn": "15_数据与同步.png",
+      "ascii": "15_sync.png",
+      "size": [
+        1170,
+        2532
+      ]
+    }
+  ],
+  "motion": [
+    "11_宠物动效总览.png",
+    "11A_Idle_Breathe.png",
+    "11B_Idle_Sway.png",
+    "11C_Blink.png",
+    "11D_Ear_Twitch.png",
+    "11E_Tail_Wag.png",
+    "11F_Focus_Work.png",
+    "11G_Craft.png",
+    "11H_Pause.png",
+    "11I_Celebrate.png",
+    "11J_Sleep.png",
+    "11K_Greeting.png"
+  ]
+}

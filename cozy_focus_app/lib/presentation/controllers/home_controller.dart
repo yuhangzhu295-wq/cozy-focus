@@ -8,6 +8,7 @@ import '../../core/auth/current_user.dart';
 class HomeUIState {
   final int todayFocusSeconds;
   final int sessionCountToday;
+  final int streakDays;
   final Pet? pet;
   final PetProgress? petProgress;
   final bool hasActiveSession;
@@ -16,6 +17,7 @@ class HomeUIState {
   const HomeUIState({
     this.todayFocusSeconds = 0,
     this.sessionCountToday = 0,
+    this.streakDays = 0,
     this.pet,
     this.petProgress,
     this.hasActiveSession = false,
@@ -27,6 +29,7 @@ class HomeUIState {
   HomeUIState copyWith({
     int? todayFocusSeconds,
     int? sessionCountToday,
+    int? streakDays,
     Pet? pet,
     PetProgress? petProgress,
     bool? hasActiveSession,
@@ -35,6 +38,7 @@ class HomeUIState {
     return HomeUIState(
       todayFocusSeconds: todayFocusSeconds ?? this.todayFocusSeconds,
       sessionCountToday: sessionCountToday ?? this.sessionCountToday,
+      streakDays: streakDays ?? this.streakDays,
       pet: pet ?? this.pet,
       petProgress: petProgress ?? this.petProgress,
       hasActiveSession: hasActiveSession ?? this.hasActiveSession,
@@ -70,6 +74,18 @@ class HomeController extends StateNotifier<HomeUIState> {
       to: dayEnd,
     );
 
+    // Calculate streak days (consecutive days with totalSecondsForDay > 0, up to 30 days)
+    int streak = 0;
+    for (int i = 0; i < 30; i++) {
+      final checkDate = now.subtract(Duration(days: i));
+      final sec = await recordRepo.totalSecondsForDay(defaultUserId, checkDate);
+      if (sec > 0) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
     // Check or initialize default Mochi dog
     var pet = await petRepo.findPetByUser(defaultUserId);
     if (pet == null) {
@@ -103,6 +119,7 @@ class HomeController extends StateNotifier<HomeUIState> {
     state = state.copyWith(
       todayFocusSeconds: todaySec,
       sessionCountToday: todayRecords.length,
+      streakDays: streak,
       pet: pet,
       petProgress: progress,
       hasActiveSession: activeSessions.isNotEmpty,

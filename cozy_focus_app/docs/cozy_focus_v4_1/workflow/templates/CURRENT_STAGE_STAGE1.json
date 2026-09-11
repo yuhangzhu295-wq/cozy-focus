@@ -1,0 +1,17 @@
+{
+  "workflow_version": "4.1-subagent-final",
+  "stage": "V4.1-S1",
+  "title": "AppShell + Home",
+  "status": "NOT_STARTED",
+  "base_sha": "e7df460193ea799b2e0c0eba0b7010c120671834",
+  "current_sha": "e7df460193ea799b2e0c0eba0b7010c120671834",
+  "implementation_sha": null,
+  "repair_round": 0,
+  "max_repair_rounds": 2,
+  "owner": "claude_root",
+  "next_owner": "claude_root",
+  "designs": [
+    "designs/pages_ascii/01_home.png"
+  ],
+  "next_stage": "V4.1-S2A"
+}

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../domain/models/craft_models.dart';
 import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
 
@@ -80,7 +81,7 @@ class _CraftDetailPageState extends ConsumerState<CraftDetailPage> {
                 ),
                 child: Column(
                   children: [
-                    Text(recipe.icon, style: const TextStyle(fontSize: 64)),
+                    _DetailArtwork(recipe: recipe),
                     const SizedBox(height: 12),
                     Text(
                       recipe.name,
@@ -101,6 +102,16 @@ class _CraftDetailPageState extends ConsumerState<CraftDetailPage> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 10),
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _DetailTag(label: '家具', color: AppColors.primaryLight),
+                        SizedBox(width: 8),
+                        _DetailTag(
+                            label: '温馨', color: AppColors.accentPeachLight),
+                      ],
+                    ),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -121,6 +132,17 @@ class _CraftDetailPageState extends ConsumerState<CraftDetailPage> {
                 ),
               ),
               const SizedBox(height: 24),
+
+              const Text(
+                '制作材料',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 8),
+              _MaterialsSummary(recipe: recipe),
+              const SizedBox(height: 20),
 
               // Progress section
               if (isCompleted) ...[
@@ -170,6 +192,26 @@ class _CraftDetailPageState extends ConsumerState<CraftDetailPage> {
                   ],
                 ),
                 const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: const Row(
+                    children: [
+                      Text('☁', style: TextStyle(fontSize: 24)),
+                      SizedBox(width: 10),
+                      Expanded(
+                          child: Text('每一次专注，都会让这件家具离完成更近一点。',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.primaryDark,
+                                  height: 1.4))),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   height: 48,
@@ -299,6 +341,95 @@ class _CraftDetailPageState extends ConsumerState<CraftDetailPage> {
                   style: TextStyle(color: AppColors.accentPeach))),
         ],
       ),
+    );
+  }
+}
+
+class _DetailArtwork extends StatelessWidget {
+  final CraftRecipe recipe;
+  const _DetailArtwork({required this.recipe});
+
+  @override
+  Widget build(BuildContext context) {
+    final path = recipe.artworkPath;
+    return Container(
+      width: 120,
+      height: 120,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.accentPeachLight,
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: path == null || path.isEmpty
+          ? Text(recipe.icon, style: const TextStyle(fontSize: 56))
+          : Image.asset(path,
+              width: 78,
+              height: 78,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) =>
+                  Text(recipe.icon, style: const TextStyle(fontSize: 56))),
+    );
+  }
+}
+
+class _DetailTag extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _DetailTag({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+            color: color, borderRadius: BorderRadius.circular(AppRadius.pill)),
+        child: Text(label,
+            style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600)),
+      );
+}
+
+class _MaterialsSummary extends StatelessWidget {
+  final CraftRecipe recipe;
+  const _MaterialsSummary({required this.recipe});
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = recipe.ingredientCosts.entries.toList();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border)),
+      child: entries.isEmpty
+          ? const Row(children: [
+              Icon(Icons.auto_awesome, size: 18, color: AppColors.accentGold),
+              SizedBox(width: 8),
+              Text('材料会在专注中慢慢准备好',
+                  style:
+                      TextStyle(fontSize: 13, color: AppColors.textSecondary))
+            ])
+          : Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: entries
+                  .map(
+                      (entry) => Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.circle,
+                                size: 7, color: AppColors.accentGold),
+                            const SizedBox(width: 6),
+                            Text(entry.key),
+                            const SizedBox(width: 6),
+                            Text('x${entry.value}',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryDark))
+                          ]))
+                  .toList()),
     );
   }
 }

@@ -1,0 +1,27 @@
+执行 Cozy Focus V4.1 Visual Polish 当前 Stage。
+
+你是 Claude Sonnet 4.6 主线程。
+
+严格遵守：
+- AGENTS.md
+- 01_Claude主控_总提示词.md
+- 02_审查时机与返修状态机.md
+- 03_防反复运行熔断规则.md
+
+读取 outputs/ai_handoff/CURRENT_STAGE.json。
+若不存在，用 workflow/templates/CURRENT_STAGE_STAGE1.json 初始化。
+
+只执行当前 Stage：
+
+Claude PRE-REVIEW
+→ spawn gemini_implementer
+→ Claude DIFF REVIEW
+→ 如有 P0/P1，Gemini REVIEW FIX ONLY
+→ Claude 再审
+→ 最多两轮 Gemini 修复
+→ Claude FINAL GATE
+
+APPROVED 或 BLOCKED 后立即 STOP。
+
+禁止自动进入下一 Stage。
+禁止重新做全仓库审计。

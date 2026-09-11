@@ -1,0 +1,16 @@
+# OPTIONAL FALLBACK.
+# Recommended mode: Claude Sonnet 4.6 is the PRIMARY/root model.
+# Only rename this to claude_reviewer.toml if you want another model as root.
+
+name = "claude_reviewer"
+description = "Read-only architecture/code reviewer and final gate."
+model = "REPLACE_WITH_EXACT_CLAUDE_MODEL_ID_FROM_CODEX"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+
+developer_instructions = """
+Review only the bounded current stage and actual diff.
+Do not edit application code.
+Do not redo whole-repository audits.
+Classify P0/P1/P2/P3; P0/P1 block.
+"""

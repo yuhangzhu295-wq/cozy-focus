@@ -39,7 +39,18 @@ class _RoomPageState extends ConsumerState<RoomPage> {
       appBar: AppBar(
         backgroundColor: AppColors.backgroundWarm,
         elevation: 0,
-        title: const Text('Mochi 的小房间'),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Mochi 的小房间'),
+            Text('把专注过的时间，留在这里',
+                style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.normal)),
+          ],
+        ),
         leading: BackButton(onPressed: () => context.go('/')),
         actions: [
           IconButton(
@@ -142,7 +153,7 @@ class _RoomPageState extends ConsumerState<RoomPage> {
 
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  height: _showInventoryPanel ? 180 : 0,
+                  height: _showInventoryPanel ? 220 : 0,
                   child: _showInventoryPanel
                       ? _InventoryPanel(
                           craft: craft,
@@ -212,26 +223,55 @@ class _RoomPageState extends ConsumerState<RoomPage> {
         ),
       ),
       child: CustomPaint(
-        painter: _RoomFloorPainter(),
+        painter: _RoomScenePainter(),
         child: const SizedBox.expand(),
       ),
     );
   }
 }
 
-class _RoomFloorPainter extends CustomPainter {
+class _RoomScenePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final floorPaint = Paint()
-      ..color = const Color(0xFFD9CDBB).withValues(alpha: 0.4)
-      ..style = PaintingStyle.fill;
-    final path = Path()
-      ..moveTo(0, size.height * 0.55)
-      ..lineTo(size.width, size.height * 0.55)
+    final wall = Paint()..color = const Color(0xFFF7F0E5);
+    canvas.drawRect(Offset.zero & size, wall);
+    final sunlight = Paint()
+      ..color = const Color(0xFFFFE7A9).withValues(alpha: 0.28);
+    final beam = Path()
+      ..moveTo(size.width * .12, 0)
+      ..lineTo(size.width * .43, 0)
+      ..lineTo(size.width * .66, size.height * .64)
+      ..lineTo(size.width * .34, size.height * .64)
+      ..close();
+    canvas.drawPath(beam, sunlight);
+    final windowPaint = Paint()..color = const Color(0xFFBFE0D6);
+    final window = RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * .1, size.height * .1, size.width * .28,
+            size.height * .27),
+        const Radius.circular(12));
+    canvas.drawRRect(window, windowPaint);
+    final frame = Paint()
+      ..color = Colors.white.withValues(alpha: 0.8)
+      ..strokeWidth = 3;
+    canvas.drawLine(Offset(size.width * .24, size.height * .1),
+        Offset(size.width * .24, size.height * .37), frame);
+    canvas.drawLine(Offset(size.width * .1, size.height * .235),
+        Offset(size.width * .38, size.height * .235), frame);
+    final floorPaint = Paint()..color = const Color(0xFFDCCBB6);
+    final floor = Path()
+      ..moveTo(0, size.height * .64)
+      ..lineTo(size.width, size.height * .64)
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height)
       ..close();
-    canvas.drawPath(path, floorPaint);
+    canvas.drawPath(floor, floorPaint);
+    final line = Paint()
+      ..color = const Color(0xFFCAB79D).withValues(alpha: 0.35)
+      ..strokeWidth = 1;
+    for (var i = 1; i < 7; i++) {
+      final y = size.height * .64 + i * size.height * .06;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), line);
+    }
   }
 
   @override
@@ -351,10 +391,8 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
           child: Center(
             child: Tooltip(
               message: widget.recipe?.name ?? widget.roomItem.itemId,
-              child: Text(
-                widget.recipe?.icon ?? '📦',
-                style: TextStyle(fontSize: widget.roomItem.scale * 32),
-              ),
+              child: _RoomArtwork(
+                  recipe: widget.recipe, size: widget.roomItem.scale * 54),
             ),
           ),
         ),
@@ -444,47 +482,98 @@ class _InventoryPanel extends StatelessWidget {
 
     return Container(
       color: AppColors.surface,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        itemCount: placeable.length,
-        itemBuilder: (context, i) {
-          final inv = placeable[i];
-          final recipe = craft.recipes
-              .where((r) => r.outputItemId == inv.itemId)
-              .firstOrNull;
-          final icon = recipe?.icon ?? '📦';
-          final name = recipe?.name ?? inv.itemId;
-          return GestureDetector(
-            onTap: () => recipe != null ? onPlace(recipe) : null,
-            child: Container(
-              width: 80,
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.backgroundWarm,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(icon, style: const TextStyle(fontSize: 28)),
-                  const SizedBox(height: 4),
-                  Text(
-                    name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontSize: 10, color: AppColors.textSecondary),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Row(children: [
+              Icon(Icons.home_work_outlined,
+                  size: 16, color: AppColors.primarySage),
+              SizedBox(width: 6),
+              Text('选择家具摆放',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary))
+            ]),
+          ),
+          Expanded(
+              child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            itemCount: placeable.length,
+            itemBuilder: (context, i) {
+              final inv = placeable[i];
+              final recipe = craft.recipes
+                  .where((r) => r.outputItemId == inv.itemId)
+                  .firstOrNull;
+              final icon = recipe?.icon ?? '□';
+              final name = recipe?.name ?? inv.itemId;
+              return GestureDetector(
+                onTap: () => recipe != null ? onPlace(recipe) : null,
+                child: Container(
+                  width: 104,
+                  margin: const EdgeInsets.only(right: 10),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.backgroundWarm,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    border: Border.all(color: AppColors.border),
                   ),
-                ],
-              ),
-            ),
-          );
-        },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                          width: 44,
+                          height: 44,
+                          child: recipe?.artworkPath == null
+                              ? Text(icon,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontSize: 28))
+                              : Image.asset(recipe!.artworkPath!,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Text(icon,
+                                      style: const TextStyle(fontSize: 28)))),
+                      const SizedBox(height: 4),
+                      Text(
+                        name,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontSize: 10, color: AppColors.textSecondary),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          )),
+        ],
       ),
     );
   }
+}
+
+class _RoomArtwork extends StatelessWidget {
+  final CraftRecipe? recipe;
+  final double size;
+  const _RoomArtwork({required this.recipe, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    if (recipe?.artworkPath != null && recipe!.artworkPath!.isNotEmpty) {
+      return Image.asset(recipe!.artworkPath!,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => _fallback());
+    }
+    return _fallback();
+  }
+
+  Widget _fallback() =>
+      Text(recipe?.icon ?? '□', style: TextStyle(fontSize: size * .62));
 }

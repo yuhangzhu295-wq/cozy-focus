@@ -1,0 +1,57 @@
+{
+  "version": "4.1-final",
+  "steps": [
+    {
+      "id": "V4.1-0",
+      "task": "Audit current routes/UI; no code changes"
+    },
+    {
+      "id": "V4.1-1",
+      "task": "Simplify AppShell to Home/Records/Growth"
+    },
+    {
+      "id": "V4.1-2",
+      "task": "Reconcile Focus UI",
+      "pages": [
+        "01",
+        "02",
+        "03",
+        "03A",
+        "03B",
+        "03C",
+        "04",
+        "04A",
+        "04B"
+      ]
+    },
+    {
+      "id": "V4.1-3",
+      "task": "Reconcile Records/Reports UI",
+      "pages": [
+        "05",
+        "05A",
+        "05B",
+        "05C",
+        "05D",
+        "06",
+        "07",
+        "08",
+        "08A"
+      ]
+    },
+    {
+      "id": "V4.1-4",
+      "task": "Reconcile existing Room/Craft UI",
+      "pages": [
+        "09",
+        "09A",
+        "09B",
+        "09C"
+      ]
+    },
+    {
+      "id": "STOP",
+      "task": "Run full regression, push main, wait for GitHub review before Phase 5"
+    }
+  ]
+}
