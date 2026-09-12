@@ -1,21 +1,21 @@
 {
   "status": "APPROVED",
-  "stage": "PHASE-5-PET-GROWTH",
+  "stage": "PHASE-5-PET-DRESS",
   "next_stage": "PHASE-5-NEXT-SLICE",
   "review_findings": [],
-  "base_sha": "ee51b1500fbc16b17e6c3c08261fa0ea5f1cb203",
+  "base_sha": "5bcdf5e2d3f6ec18990dbdf744497ae3fa565d22",
   "local_gate": {
     "format": "PASS",
     "analyze": "PASS: 0 issues (flutter analyze --fatal-infos --no-pub)",
-    "tests": "PASS: 191/191",
+    "tests": "PASS: 198/198",
     "apk": "PASS",
     "diff_check": "PASS",
     "p0_open": 0,
     "p1_open": 0,
-    "review": "PASS: P0=0, P1=0; pet-without-progress state is truthful",
-    "remote_ci": "PASS: Flutter CI run 34684908205; all required steps green"
+    "review": "PASS: P0=0, P1=0; missing-pet and outfit states are truthful",
+    "remote_ci": "PENDING: verify exact pushed HEAD"
   },
-  "phase_5_slice": "PET_GROWTH",
-  "phase_5_plan": "outputs/ai_handoff/PHASE_5_PET_GROWTH_PLAN.md",
-  "phase_5_report": "outputs/ai_handoff/PHASE_5_PET_GROWTH_REPORT.md"
+  "phase_5_slice": "PET_DRESS",
+  "phase_5_plan": "outputs/ai_handoff/PHASE_5_SCOPE_AND_PLAN.md",
+  "phase_5_report": "outputs/ai_handoff/GEMINI_PET_DRESS_REPORT.md"
 }
