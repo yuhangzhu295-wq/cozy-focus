@@ -1,26 +1,20 @@
 {
-  "status": "APPROVED",
-  "stage": "V4.1-CLOSURE",
-  "next_stage": "PHASE-5-READY",
-  "base_sha": "513d9de5f1461b998428cef8c9f4fd5ebf1dbf56",
-  "final_sha": "1871ad4247b869c1f8e498a58d5f5f061375e88a",
+  "status": "LOCAL_APPROVED_WAITING_REMOTE_CI",
+  "stage": "PHASE-5-PET-GROWTH",
+  "next_stage": "REMOTE_CI",
+  "review_findings": [],
+  "base_sha": "ee51b1500fbc16b17e6c3c08261fa0ea5f1cb203",
   "local_gate": {
     "format": "PASS",
     "analyze": "PASS: 0 issues (flutter analyze --fatal-infos --no-pub)",
-    "tests": "PASS: 185/185",
+    "tests": "PASS: 191/191",
     "apk": "PASS",
     "diff_check": "PASS",
     "p0_open": 0,
-    "p1_open": 0
+    "p1_open": 0,
+    "review": "PASS: P0=0, P1=0; pet-without-progress state is truthful"
   },
-  "remote_ci": {
-    "run_id": "34675146414",
-    "url": "https://github.com/yuhangzhu295-wq/cozy-focus/actions/runs/34675146414",
-    "format": "PASS",
-    "analyze": "PASS",
-    "tests": "PASS: 185/185",
-    "apk": "PASS",
-    "conclusion": "SUCCESS"
-  },
-  "v4_1_closure": "APPROVED"
+  "phase_5_slice": "PET_GROWTH",
+  "phase_5_plan": "outputs/ai_handoff/PHASE_5_PET_GROWTH_PLAN.md",
+  "phase_5_report": "outputs/ai_handoff/PHASE_5_PET_GROWTH_REPORT.md"
 }
