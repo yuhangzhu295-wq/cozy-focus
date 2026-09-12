@@ -1,8 +1,17 @@
 # Cozy Focus V4.1 Visual Polish — Required Agent Workflow
 
+## Active execution contract
+
+MAIN REVIEW MODEL: 11/gpt-5.6-sol
+IMPLEMENTATION SUBAGENT: 11/gemini-3.8-flash-high
+SPAWN: multi_agent_v1__spawn_agent with an explicit model string
+
+The .codex/agents/gemini_implementer.toml file is LEGACY / NOT ACTIVE for
+runtime by-name loading. It may remain as historical metadata.
+
 ## Ownership
 
-PRIMARY / ROOT: Claude Sonnet 4.6
+PRIMARY / ROOT: 11/gpt-5.6-sol
 - orchestrator
 - bounded pre-review
 - architecture owner

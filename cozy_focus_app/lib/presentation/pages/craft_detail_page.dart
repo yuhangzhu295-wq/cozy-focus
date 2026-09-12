@@ -43,8 +43,11 @@ class _CraftDetailPageState extends ConsumerState<CraftDetailPage> {
     }
 
     final isActive = craft.activeJob?.recipeId == recipe.id;
-    final isCompleted = craft.inventory
-        .any((i) => i.itemId == recipe.outputItemId && i.quantity > 0);
+    final ownedQuantity = craft.inventory
+            .where((i) => i.itemId == recipe.outputItemId)
+            .firstOrNull
+            ?.quantity ??
+        0;
     final hasOtherActiveJob =
         craft.activeJob != null && craft.activeJob!.recipeId != recipe.id;
 
@@ -65,7 +68,7 @@ class _CraftDetailPageState extends ConsumerState<CraftDetailPage> {
         leading: BackButton(onPressed: () => context.pop()),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,14 +148,7 @@ class _CraftDetailPageState extends ConsumerState<CraftDetailPage> {
               const SizedBox(height: 20),
 
               // Progress section
-              if (isCompleted) ...[
-                _statusCard(
-                  '🎉 已制作完成',
-                  '该家具已加入你的库存，可前往房间摆放',
-                  AppColors.primaryLight,
-                  AppColors.primarySage,
-                ),
-              ] else if (isActive) ...[
+              if (isActive) ...[
                 const Text(
                   '制作进度',
                   style: TextStyle(
@@ -251,12 +247,21 @@ class _CraftDetailPageState extends ConsumerState<CraftDetailPage> {
                   AppColors.accentGold,
                 ),
               ] else ...[
-                _statusCard(
-                  '尚未开始制作',
-                  '开始专注后，专注时间将自动转化为制作进度',
-                  AppColors.surfaceMuted,
-                  AppColors.textSecondary,
-                ),
+                if (ownedQuantity > 0) ...[
+                  _statusCard(
+                    '已拥有 x$ownedQuantity',
+                    '该家具已加入你的库存，可前往房间摆放，也可以再次制作。',
+                    AppColors.primaryLight,
+                    AppColors.primaryDark,
+                  ),
+                ] else ...[
+                  _statusCard(
+                    '尚未开始制作',
+                    '开始专注后，专注时间将自动转化为制作进度',
+                    AppColors.surfaceMuted,
+                    AppColors.textSecondary,
+                  ),
+                ],
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
@@ -275,18 +280,18 @@ class _CraftDetailPageState extends ConsumerState<CraftDetailPage> {
                         ),
                       );
                     },
-                    child: const Text(
-                      '开始制作',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    child: Text(
+                      ownedQuantity > 0 ? '再次制作' : '开始制作',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
               ],
-              const Spacer(),
+              const SizedBox(height: 24),
 
               // Inventory shortcut
-              if (isCompleted)
+              if (ownedQuantity > 0)
                 SizedBox(
                   width: double.infinity,
                   height: 48,

@@ -1,1 +1,15 @@
-{"status":"APPROVED","stage":"V4.1-S4","next_stage":"STOP","approved_at":"2026-09-11T04:20:00+08:00","approved_by":"claude-sonnet-4-6","tests":"178/178"}
+{
+  "status": "LOCAL_APPROVED_WAITING_REMOTE_CI",
+  "stage": "V4.1-CLOSURE-FIX",
+  "next_stage": "REMOTE_CI",
+  "base_sha": "52a91b119d518c2529c4d49722403ec1c41bdc67",
+  "local_gate": {
+    "format": "PASS",
+    "analyze": "PASS: 0 errors, 0 warnings, 11 pre-existing info issues",
+    "tests": "PASS: 185/185",
+    "apk": "PASS",
+    "diff_check": "PASS",
+    "p0_open": 0,
+    "p1_open": 0
+  }
+}

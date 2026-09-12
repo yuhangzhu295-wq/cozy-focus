@@ -123,15 +123,8 @@ class _CraftListPageState extends ConsumerState<CraftListPage> {
     final inProgressRecipes = craft.activeJob != null
         ? craft.recipes.where((r) => r.id == craft.activeJob!.recipeId).toList()
         : <CraftRecipe>[];
-    final completedItemIds = craft.inventory.map((i) => i.itemId).toSet();
-    final availableRecipes = craft.recipes
-        .where((r) =>
-            r.id != craft.activeJob?.recipeId &&
-            !completedItemIds.contains(r.outputItemId))
-        .toList();
-    final completedRecipes = craft.recipes
-        .where((r) => completedItemIds.contains(r.outputItemId))
-        .toList();
+    final availableRecipes =
+        craft.recipes.where((r) => r.id != craft.activeJob?.recipeId).toList();
 
     return ListView(
       physics: const BouncingScrollPhysics(),
@@ -153,14 +146,6 @@ class _CraftListPageState extends ConsumerState<CraftListPage> {
             subtitle: '选择一件喜欢的物品，开始你的下一段专注。',
             color: AppColors.primarySage,
             recipes: availableRecipes,
-            craft: craft,
-          ),
-        if (completedRecipes.isNotEmpty)
-          _RecipeSection(
-            title: '已获得',
-            subtitle: '这些物品已经在你的收藏里。',
-            color: AppColors.textSecondary,
-            recipes: completedRecipes,
             craft: craft,
           ),
         const Padding(
@@ -335,7 +320,9 @@ class _RecipeCard extends StatelessWidget {
       required this.inventoryItem});
 
   bool get _isActive => activeJob != null && activeJob!.recipeId == recipe.id;
-  bool get _isCompleted => inventoryItem != null;
+  int get _ownedQuantity => inventoryItem != null && inventoryItem!.quantity > 0
+      ? inventoryItem!.quantity
+      : 0;
 
   @override
   Widget build(BuildContext context) {
@@ -426,12 +413,8 @@ class _RecipeCard extends StatelessWidget {
                                   fontWeight: FontWeight.w600,
                                 )),
                             const Spacer(),
-                            Icon(
-                                _isCompleted
-                                    ? Icons.check_circle_rounded
-                                    : Icons.arrow_forward_rounded,
-                                size: 18,
-                                color: AppColors.primarySage),
+                            const Icon(Icons.arrow_forward_rounded,
+                                size: 18, color: AppColors.primarySage),
                           ],
                         ),
                     ],
@@ -446,20 +429,20 @@ class _RecipeCard extends StatelessWidget {
   }
 
   String get _statusLabel {
-    if (_isCompleted) return '已获得';
     if (_isActive) return '制作中';
+    if (_ownedQuantity > 0) return '已拥有 x$_ownedQuantity';
     return '可制作';
   }
 
   Color get _statusForeground {
-    if (_isCompleted) return AppColors.primaryDark;
     if (_isActive) return AppColors.accentPeach;
+    if (_ownedQuantity > 0) return AppColors.primaryDark;
     return AppColors.primaryDark;
   }
 
   Color get _statusBackground {
-    if (_isCompleted) return AppColors.primaryLight;
     if (_isActive) return AppColors.accentPeachLight;
+    if (_ownedQuantity > 0) return AppColors.primaryLight;
     return AppColors.primaryLight;
   }
 }

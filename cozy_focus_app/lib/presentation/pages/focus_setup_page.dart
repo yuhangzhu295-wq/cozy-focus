@@ -169,7 +169,10 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: PetAvatarWidget(visualState: PetVisualState.idle, size: 130, message: '选好了我们就出发！'),
+                    child: PetAvatarWidget(
+                        visualState: PetVisualState.idle,
+                        size: 130,
+                        message: '选好了我们就出发！'),
                   ),
                 ),
               ],
@@ -208,7 +211,7 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                             padding: EdgeInsets.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          onPressed: () {},
+                          onPressed: null,
                           child: const Text('自定义 >',
                               style: TextStyle(fontSize: 13)),
                         ),
@@ -219,27 +222,24 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                     Row(
                       children: _quickDurations.asMap().entries.map((entry) {
                         final mins = entry.value;
-                        final isLast =
-                            entry.key == _quickDurations.length - 1;
+                        final isLast = entry.key == _quickDurations.length - 1;
                         final isSelected = _selectedMinutes == mins;
                         return Expanded(
                           child: Padding(
-                            padding:
-                                EdgeInsets.only(right: isLast ? 0 : 8),
+                            padding: EdgeInsets.only(right: isLast ? 0 : 8),
                             child: GestureDetector(
                               onTap: () =>
                                   setState(() => _selectedMinutes = mins),
                               child: AnimatedContainer(
-                                duration:
-                                    const Duration(milliseconds: 180),
+                                duration: const Duration(milliseconds: 180),
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? AppColors.primaryLight
                                       : AppColors.background,
-                                  borderRadius: BorderRadius.circular(
-                                      AppRadius.sm),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
                                   border: Border.all(
                                     color: isSelected
                                         ? AppColors.primarySage
@@ -306,20 +306,15 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.sm),
-                          borderSide:
-                              const BorderSide(color: AppColors.border),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          borderSide: const BorderSide(color: AppColors.border),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.sm),
-                          borderSide:
-                              const BorderSide(color: AppColors.border),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          borderSide: const BorderSide(color: AppColors.border),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.sm),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                           borderSide: const BorderSide(
                               color: AppColors.primarySage, width: 1.5),
                         ),
@@ -327,30 +322,23 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // White noise row (UI only)
-                    InkWell(
-                      borderRadius:
-                          BorderRadius.circular(AppRadius.sm),
-                      onTap: () {},
-                      child: const Padding(
-                        padding:
-                            EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          children: [
-                            Icon(Icons.music_note_rounded,
-                                color: AppColors.primarySage, size: 20),
-                            SizedBox(width: 10),
-                            Text('专注白噪音',
-                                style: TextStyle(
-                                    fontSize: 15,
-                                    color: AppColors.textPrimary)),
-                            Spacer(),
-                            Text('森林  >',
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.textSecondary)),
-                          ],
-                        ),
+                    // White noise row (honestly non-interactive UI)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.music_note_rounded,
+                              color: AppColors.primarySage, size: 20),
+                          SizedBox(width: 10),
+                          Text('专注白噪音',
+                              style: TextStyle(
+                                  fontSize: 15, color: AppColors.textPrimary)),
+                          Spacer(),
+                          Text('森林  >',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary)),
+                        ],
                       ),
                     ),
                     const Divider(color: AppColors.borderLight),
@@ -365,14 +353,12 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                           const SizedBox(width: 10),
                           const Text('专注结束提醒',
                               style: TextStyle(
-                                  fontSize: 15,
-                                  color: AppColors.textPrimary)),
+                                  fontSize: 15, color: AppColors.textPrimary)),
                           const Spacer(),
                           Switch(
                             value: _reminderOn,
                             activeColor: AppColors.primarySage,
-                            onChanged: (v) =>
-                                setState(() => _reminderOn = v),
+                            onChanged: (v) => setState(() => _reminderOn = v),
                           ),
                         ],
                       ),
@@ -384,12 +370,10 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton.icon(
-                        icon: const Icon(Icons.play_arrow_rounded,
-                            size: 24),
+                        icon: const Icon(Icons.play_arrow_rounded, size: 24),
                         label: const Text('开始专注',
                             style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold)),
+                                fontSize: 17, fontWeight: FontWeight.bold)),
                         onPressed: _startFocus,
                       ),
                     ),
@@ -425,12 +409,10 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
           if (idx == 2) context.go('/growth');
         },
         items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded), label: '首页'),
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: '首页'),
           BottomNavigationBarItem(
               icon: Icon(Icons.bar_chart_rounded), label: '记录'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.eco_outlined), label: '成长'),
+          BottomNavigationBarItem(icon: Icon(Icons.eco_outlined), label: '成长'),
         ],
       ),
     );

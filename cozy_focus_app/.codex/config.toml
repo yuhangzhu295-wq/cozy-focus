@@ -1,6 +1,8 @@
-# Cozy Focus V4.1 Visual Polish — Subagent-safe mode
-# Primary/root model: Claude Sonnet 4.6 (select in Codex UI)
-# Writer child: gemini_implementer
+# Cozy Focus V4.1 Visual Polish — native subagent mode
+# Active review model: 11/gpt-5.6-sol
+# Implementation child: 11/gemini-3.8-flash-high via multi_agent_v1__spawn_agent
+# The gemini_implementer TOML is retained as legacy metadata, not a required
+# by-name loading mechanism for the active workflow.
 #
 # One child at a time is deliberate: no parallel writers, no duplicated audits.
 

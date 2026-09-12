@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
@@ -118,13 +118,13 @@ class _HomePageState extends ConsumerState<HomePage> {
               ],
             ),
           ),
-          Positioned(
+          const Positioned(
             top: 20,
             right: 16,
             child: IconButton(
-              icon: const Icon(Icons.settings_outlined),
+              icon: Icon(Icons.settings_outlined),
               color: AppColors.textSecondary,
-              onPressed: () {},
+              onPressed: null,
             ),
           ),
           Positioned(
