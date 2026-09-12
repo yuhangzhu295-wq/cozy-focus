@@ -143,27 +143,27 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(children: [
                       Text('记录',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
                               color: AppColors.primaryDark,
                               height: 1.1)),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.eco_rounded,
+                      SizedBox(width: 6),
+                      Icon(Icons.eco_rounded,
                           color: AppColors.primarySage, size: 24),
                     ]),
-                    const SizedBox(height: 4),
-                    const Text('每一次专注，都是更靠近理想生活的一步。',
+                    SizedBox(height: 4),
+                    Text('每一次专注，都是更靠近理想生活的一步。',
                         style: TextStyle(
                             fontSize: 12, color: AppColors.textSecondary)),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -621,12 +621,13 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
             date.day == selDate.day;
         final sec = heat[DateTime(date.year, date.month, date.day)] ?? 0;
         Color bg = Colors.transparent;
-        if (sec > 0)
+        if (sec > 0) {
           bg = sec < 1800
               ? const Color(0xFFD4E5D9)
               : sec < 5400
                   ? const Color(0xFFA3CDB0)
                   : AppColors.primarySage;
+        }
         return GestureDetector(
           onTap: () => ref
               .read(recordsControllerProvider.notifier)
@@ -772,9 +773,9 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.md)),
           itemBuilder: (ctx) => [
-            PopupMenuItem(
+            const PopupMenuItem(
                 value: 'detail',
-                child: Row(children: const [
+                child: Row(children: [
                   Icon(Icons.open_in_new_rounded,
                       size: 16, color: AppColors.textSecondary),
                   SizedBox(width: 8),
@@ -897,9 +898,11 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
       unselectedItemColor: AppColors.textTertiary,
       backgroundColor: AppColors.surface,
       onTap: (i) {
-        if (i == 0)
+        if (i == 0) {
           context.go('/');
-        else if (i == 2) context.go('/growth');
+        } else if (i == 2) {
+          context.go('/growth');
+        }
       },
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: '首页'),

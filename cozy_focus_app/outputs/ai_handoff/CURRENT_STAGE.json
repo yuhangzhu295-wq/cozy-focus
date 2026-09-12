@@ -1,15 +1,17 @@
 {
-  "status": "LOCAL_APPROVED_WAITING_REMOTE_CI",
-  "stage": "V4.1-CLOSURE-FIX",
-  "next_stage": "REMOTE_CI",
-  "base_sha": "52a91b119d518c2529c4d49722403ec1c41bdc67",
+  "status": "V4_1_CI_LINT_FIXED",
+  "stage": "V4.1-CLOSURE-CI-LINT-FIX",
+  "next_stage": "GATE_VERIFICATION",
+  "base_sha": "513d9de5f1461b998428cef8c9f4fd5ebf1dbf56",
   "local_gate": {
     "format": "PASS",
-    "analyze": "PASS: 0 errors, 0 warnings, 11 pre-existing info issues",
+    "analyze": "PASS: 0 issues (flutter analyze --fatal-infos --no-pub)",
     "tests": "PASS: 185/185",
     "apk": "PASS",
     "diff_check": "PASS",
+    "lints_fixed": 11,
     "p0_open": 0,
     "p1_open": 0
-  }
+  },
+  "blocker": null
 }
