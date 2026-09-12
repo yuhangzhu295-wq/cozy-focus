@@ -17,6 +17,7 @@ import '../pages/inventory_page.dart';
 import '../pages/room_page.dart';
 import '../pages/mochi_growth_page.dart';
 import '../pages/pet_dress_page.dart';
+import '../pages/pet_collection_page.dart';
 
 /// App routing table powered by GoRouter for Cozy Focus
 final appRouter = GoRouter(
@@ -66,6 +67,14 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/dress',
       builder: (context, state) => const PetDressPage(),
+    ),
+    GoRoute(
+      path: '/growth/collection',
+      builder: (context, state) => const PetCollectionPage(),
+    ),
+    GoRoute(
+      path: '/collection',
+      builder: (context, state) => const PetCollectionPage(),
     ),
     GoRoute(
       path: '/records/:id',

@@ -165,6 +165,42 @@ void main() {
       expect(find.byType(MochiGrowthPage), findsOneWidget);
     });
 
+    testWidgets(
+        '4b. Collection entry exists in Growth page and navigates to /growth/collection',
+        (tester) async {
+      final petRepo = container.read(petRepositoryProvider);
+      final pet = Pet(
+        id: 'pet_mochi_1',
+        userId: localMvpUserId,
+        characterId: 'mochi',
+        species: PetSpecies.dog,
+        name: 'Mochi',
+        adoptedAt: clock.now(),
+      );
+      await petRepo.savePet(pet);
+
+      await tester.pumpWidget(createRouterTestApp(container));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      appRouter.go('/growth');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final buttonFinder = find.byKey(const Key('growth_collection_button'));
+      expect(buttonFinder, findsOneWidget);
+      expect(find.text('图鉴'), findsOneWidget);
+
+      await tester.tap(buttonFinder);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        appRouter.routerDelegate.currentConfiguration.uri.toString(),
+        equals('/growth/collection'),
+      );
+    });
+
     testWidgets('5. XP calculation handles boundary values properly',
         (tester) async {
       final petRepo = container.read(petRepositoryProvider);

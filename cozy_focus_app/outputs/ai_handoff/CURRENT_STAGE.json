@@ -1,21 +1,21 @@
 {
-  "status": "APPROVED",
-  "stage": "PHASE-5-PET-DRESS",
-  "next_stage": "PHASE-5-NEXT-SLICE",
+  "status": "LOCAL_APPROVED_WAITING_REMOTE_CI",
+  "stage": "PHASE-5-COLLECTION",
+  "next_stage": "REMOTE_CI",
   "review_findings": [],
-  "base_sha": "5bcdf5e2d3f6ec18990dbdf744497ae3fa565d22",
+  "base_sha": "d5b1026f0fe20ff4f5c9fd853442c6dd5294668c",
   "local_gate": {
     "format": "PASS",
     "analyze": "PASS: 0 issues (flutter analyze --fatal-infos --no-pub)",
-    "tests": "PASS: 198/198",
+    "tests": "PASS: 206/206",
     "apk": "PASS",
     "diff_check": "PASS",
     "p0_open": 0,
     "p1_open": 0,
-    "review": "PASS: P0=0, P1=0; missing-pet and outfit states are truthful",
-    "remote_ci": "PASS: Flutter CI run 34689522387; exact implementation HEAD 0983a250a3feda8c97e6c50cffd32ba0b9dace2f"
+    "review": "PASS: P0=0, P1=0; inventory ownership, Growth entry, missing-pet and unavailable achievement states are truthful",
+    "remote_ci": "PENDING: Collection implementation not yet pushed"
   },
-  "phase_5_slice": "PET_DRESS",
-  "phase_5_plan": "outputs/ai_handoff/PHASE_5_SCOPE_AND_PLAN.md",
-  "phase_5_report": "outputs/ai_handoff/GEMINI_PET_DRESS_REPORT.md"
+  "phase_5_slice": "COLLECTION",
+  "phase_5_plan": "outputs/ai_handoff/PHASE_5_COLLECTION_PLAN.md",
+  "phase_5_report": "outputs/ai_handoff/GEMINI_COLLECTION_REPORT.md"
 }

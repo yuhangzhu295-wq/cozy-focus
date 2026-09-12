@@ -49,7 +49,7 @@ class MochiGrowthPage extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
-          child: _buildHeader(pet.name),
+          child: _buildHeader(context, pet.name),
         ),
         SliverToBoxAdapter(
           child: _buildPetHero(pet.name, progress),
@@ -67,7 +67,7 @@ class MochiGrowthPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(String petName) {
+  Widget _buildHeader(BuildContext context, String petName) {
     return Container(
       color: AppColors.backgroundWarm,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -95,6 +95,32 @@ class MochiGrowthPage extends ConsumerWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: AppColors.primaryDark,
+              ),
+            ),
+          ),
+          const Spacer(),
+          TextButton.icon(
+            key: const Key('growth_collection_button'),
+            onPressed: () => context.go('/growth/collection'),
+            icon: const Icon(
+              Icons.collections_bookmark_outlined,
+              size: 18,
+              color: AppColors.primaryDark,
+            ),
+            label: const Text(
+              '图鉴',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryDark,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.surface,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                side: const BorderSide(color: AppColors.border),
               ),
             ),
           ),
@@ -427,7 +453,7 @@ class MochiGrowthPage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildHeader(pet.name),
+        _buildHeader(context, pet.name),
         Expanded(
           child: Center(
             child: SingleChildScrollView(
