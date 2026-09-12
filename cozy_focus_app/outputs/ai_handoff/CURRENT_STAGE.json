@@ -1,17 +1,26 @@
 {
-  "status": "V4_1_CI_LINT_FIXED",
-  "stage": "V4.1-CLOSURE-CI-LINT-FIX",
-  "next_stage": "GATE_VERIFICATION",
+  "status": "APPROVED",
+  "stage": "V4.1-CLOSURE",
+  "next_stage": "PHASE-5-READY",
   "base_sha": "513d9de5f1461b998428cef8c9f4fd5ebf1dbf56",
+  "final_sha": "1871ad4247b869c1f8e498a58d5f5f061375e88a",
   "local_gate": {
     "format": "PASS",
     "analyze": "PASS: 0 issues (flutter analyze --fatal-infos --no-pub)",
     "tests": "PASS: 185/185",
     "apk": "PASS",
     "diff_check": "PASS",
-    "lints_fixed": 11,
     "p0_open": 0,
     "p1_open": 0
   },
-  "blocker": null
+  "remote_ci": {
+    "run_id": "34675146414",
+    "url": "https://github.com/yuhangzhu295-wq/cozy-focus/actions/runs/34675146414",
+    "format": "PASS",
+    "analyze": "PASS",
+    "tests": "PASS: 185/185",
+    "apk": "PASS",
+    "conclusion": "SUCCESS"
+  },
+  "v4_1_closure": "APPROVED"
 }
