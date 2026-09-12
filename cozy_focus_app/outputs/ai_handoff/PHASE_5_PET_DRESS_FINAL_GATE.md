@@ -1,8 +1,8 @@
 # Phase 5 Pet Dress Final Gate
 
-- STATUS: APPROVED_PENDING_REMOTE_CI
+- STATUS: APPROVED
 - BASE_SHA: 5bcdf5e2d3f6ec18990dbdf744497ae3fa565d22
-- FINAL_SHA: PENDING_COMMIT
+- FINAL_SHA: 0983a250a3feda8c97e6c50cffd32ba0b9dace2f
 - IMPLEMENTATION: READY_FOR_PRIMARY_REVIEW
 - FORMAT: PASS
 - ANALYZE: PASS (0 issues)
@@ -13,7 +13,9 @@
 - P0_OPEN: 0
 - P1_OPEN: 0
 - KNOWN_P2: None blocking
-- REMOTE_CI: PENDING exact pushed HEAD
+- REMOTE_CI: SUCCESS
+- GITHUB_ACTIONS_RUN: Flutter CI #34689522387
+- GITHUB_ACTIONS_URL: https://github.com/yuhangzhu295-wq/cozy-focus/actions/runs/34689522387
 
 ## Review Result
 

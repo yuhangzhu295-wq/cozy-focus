@@ -13,7 +13,7 @@
     "p0_open": 0,
     "p1_open": 0,
     "review": "PASS: P0=0, P1=0; missing-pet and outfit states are truthful",
-    "remote_ci": "PENDING: verify exact pushed HEAD"
+    "remote_ci": "PASS: Flutter CI run 34689522387; exact implementation HEAD 0983a250a3feda8c97e6c50cffd32ba0b9dace2f"
   },
   "phase_5_slice": "PET_DRESS",
   "phase_5_plan": "outputs/ai_handoff/PHASE_5_SCOPE_AND_PLAN.md",
