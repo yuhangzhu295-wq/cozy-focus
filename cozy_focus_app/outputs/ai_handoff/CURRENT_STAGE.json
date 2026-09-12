@@ -1,7 +1,7 @@
 {
-  "status": "LOCAL_APPROVED_WAITING_REMOTE_CI",
+  "status": "APPROVED",
   "stage": "PHASE-5-COLLECTION",
-  "next_stage": "REMOTE_CI",
+  "next_stage": "PHASE-5-COMPLETE-REVIEW",
   "review_findings": [],
   "base_sha": "d5b1026f0fe20ff4f5c9fd853442c6dd5294668c",
   "local_gate": {
@@ -13,7 +13,7 @@
     "p0_open": 0,
     "p1_open": 0,
     "review": "PASS: P0=0, P1=0; inventory ownership, Growth entry, missing-pet and unavailable achievement states are truthful",
-    "remote_ci": "PENDING: Collection implementation not yet pushed"
+    "remote_ci": "PASS: Flutter CI run 34699206920; exact HEAD a45211c32cdf9cad7a191effdd715c529746de53"
   },
   "phase_5_slice": "COLLECTION",
   "phase_5_plan": "outputs/ai_handoff/PHASE_5_COLLECTION_PLAN.md",
