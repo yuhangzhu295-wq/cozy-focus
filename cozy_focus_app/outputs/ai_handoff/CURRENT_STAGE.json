@@ -1,19 +1,19 @@
 {
   "status": "APPROVED",
-  "stage": "PHASE-6A",
-  "next_stage": "PHASE-6B-FOCUS-PAUSE-SLEEP",
+  "stage": "PHASE-6B",
+  "next_stage": "PHASE-6C-CELEBRATE-CRAFT-GREETING",
   "review_findings": [],
-  "base_sha": "9c1665d74044a1cc89de8b3d94514e9c57ec1c5e",
+  "base_sha": "0feef18b2b56fcab4fb080b0116043cba6ed1cd7",
   "local_gate": {
     "format": "PASS",
     "analyze": "PASS: 0 issues (flutter analyze --fatal-infos --no-pub)",
-    "tests": "PASS: 220/220",
+    "tests": "PASS: 226/226",
     "apk": "PASS",
     "diff_check": "PASS",
     "p0_open": 0,
     "p1_open": 0,
-    "review": "PASS: P0=0, P1=0, P2=1; P1-1..P1-4 closed; idle motions active, Rive fallback safe, controller owner verified",
-    "remote_ci": "PASS: Flutter CI run 34760148849; exact HEAD 4fef7a8bf69a9344dd91c17cd466229c5b43173f"
+    "review": "PASS: P0=0, P1=0, P2=3; focus, pause, sleep motions implemented, Rive fallback safe, controller owner verified",
+    "remote_ci": "PASS: Flutter CI run 34772404335; exact HEAD a23d92da16eda6d04bacda88bbc27e4c24637d46"
   },
   "phase_5_slice": "COLLECTION",
   "phase_5_plan": "outputs/ai_handoff/PHASE_5_COLLECTION_PLAN.md",
@@ -21,5 +21,7 @@
   "rive_asset_status": "PENDING_AUTHORING",
   "phase_6a_report": "outputs/ai_handoff/GEMINI_PHASE_6A_REPORT.md",
   "phase_6a_repair_report": "outputs/ai_handoff/GEMINI_PHASE_6A_REPAIR_REPORT.md",
-  "phase_6a_gate": "outputs/ai_handoff/PHASE_6A_FINAL_GATE.md"
+  "phase_6a_gate": "outputs/ai_handoff/PHASE_6A_FINAL_GATE.md",
+  "phase_6b_report": "outputs/ai_handoff/GEMINI_PHASE_6B_REPORT.md",
+  "phase_6b_gate": "outputs/ai_handoff/PHASE_6B_FINAL_GATE.md"
 }
