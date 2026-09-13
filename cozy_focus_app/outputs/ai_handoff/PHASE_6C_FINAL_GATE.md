@@ -1,8 +1,9 @@
-﻿# Phase 6C Final Gate (Mochi Pet Celebrate, Craft, Greeting Motion)
+# Phase 6C Final Gate (Mochi Pet Celebrate, Craft, Greeting Motion)
 
 - PROJECT: COZY_FOCUS
 - BASE_SHA: ef90233da8df47ec6e42d647303255f48935cef5
-- FINAL_SHA: 382a9ad732562bf384b2ab5b63d1a78367aa4e6b
+- IMPLEMENTATION_SHA: 382a9ad732562bf384b2ab5b63d1a78367aa4e6b
+- FINAL_SHA: df1ad82bb406f46fd23c08c86e175e1477d27e29
 - STAGE: PHASE-6C
 - CELEBRATE: Joyful bounce (1200ms cycle, -6.0px dy), scale up to 1.04, synchronized ear/tail tilt (+/-3.0 deg), happy gaze (eyeScaleY = 1.0), badge \ 太棒啦!\
 - CRAFT: Calm rhythmic crafting breath (1800ms cycle, -1.2px dy, 1.015 scale), subtle craft tilt (1.8 deg), focused gaze, badge \Mochi 制作中\
@@ -16,8 +17,8 @@
 - RUNTIME_VISUAL_SMOKE: NOT_RUN
 - RIVE_ASSET_STATUS: PENDING_AUTHORING
 - RIVE_RUNTIME_STATUS: DECOUPLED_AND_SAFE (Catches missing asset and routes to visible fallback without crash/hang for all states: idle, focus, pause, sleep, celebrate, craft, greeting)
-- CI_RUN: 34780370514
-- CI_HEAD_SHA: 382a9ad732562bf384b2ab5b63d1a78367aa4e6b
+- CI_RUN: 34783601461
+- CI_HEAD_SHA: df1ad82bb406f46fd23c08c86e175e1477d27e29
 - CI_CONCLUSION: SUCCESS
 - P0: 0
 - P1: 0
@@ -30,5 +31,6 @@
 - Idle, Focus, Pause, and Sleep loops strictly stopped and reset when entering celebrate/craft/greeting.
 - Reduced motion support verified across all states with disableAnimations.
 - Test suite expanded to 231 tests (+5 new dedicated Phase 6C tests), all passing.
-- CI verified green on exact implementation SHA 382a9ad732562bf384b2ab5b63d1a78367aa4e6b (Run 34780370514).
+- Implementation commit verified green on SHA 382a9ad732562bf384b2ab5b63d1a78367aa4e6b (CI Run 34780370514).
+- Final metadata closure verified green on exact SHA df1ad82bb406f46fd23c08c86e175e1477d27e29 (CI Run 34783601461).
 - Reviewer Terra approved implementation with DECISION=APPROVED, P0=0, P1=0, P2=1 (non-blocking: Greeting repeat() loop boundary scale behavior noted for future polish).
