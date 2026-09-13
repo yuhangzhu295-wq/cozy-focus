@@ -269,7 +269,7 @@ void main() {
     // --- P1-1 & P1-4 Behavioral Tests: Idle Motion Active vs Static Non-Idle ---
 
     testWidgets(
-        '9. Behavioral: Idle motion transforms tick over time, while non-idle remains static',
+        '9. Behavioral: Idle motion transforms tick over time, while static non-motion state (celebrate) remains static',
         (tester) async {
       // Mount in Idle
       await tester.pumpWidget(
@@ -305,33 +305,33 @@ void main() {
       expect(anyTransformChanged, isTrue,
           reason: 'Idle state must actively animate transforms over time');
 
-      // Now switch to non-idle: focus
+      // Now switch to static non-motion state: celebrate
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: PetAvatarWidget(visualState: PetVisualState.focus),
+            body: PetAvatarWidget(visualState: PetVisualState.celebrate),
           ),
         ),
       );
       await tester.pump(); // frame update
 
-      final focusTransformsT0 = tester
+      final celebrateTransformsT0 = tester
           .widgetList<Transform>(find.byType(Transform))
           .map((t) => t.transform)
           .toList();
 
-      // Advance by 1200ms in non-idle
+      // Advance by 1200ms in celebrate
       await tester.pump(const Duration(milliseconds: 1200));
 
-      final focusTransformsT1 = tester
+      final celebrateTransformsT1 = tester
           .widgetList<Transform>(find.byType(Transform))
           .map((t) => t.transform)
           .toList();
 
-      // Verify non-idle stays completely static over time
-      for (int i = 0; i < focusTransformsT0.length; i++) {
-        expect(focusTransformsT1[i], equals(focusTransformsT0[i]),
-            reason: 'Non-idle state must remain completely static over time');
+      // Verify celebrate stays completely static over time
+      for (int i = 0; i < celebrateTransformsT0.length; i++) {
+        expect(celebrateTransformsT1[i], equals(celebrateTransformsT0[i]),
+            reason: 'Celebrate state must remain completely static over time');
       }
     });
 
@@ -516,7 +516,7 @@ void main() {
     // --- P1-4 (Round 2): Authoritative Controller State Updates Mounted Widget ---
 
     testWidgets(
-        '13. Behavioral: controller.updateState(focus) visibly updates already-mounted PetAvatarWidget without replacement and stays static, then resumes idle',
+        '13. Behavioral: controller.updateState(focus) visibly updates already-mounted PetAvatarWidget without replacement and animates focus motion, then resumes idle',
         (tester) async {
       const scheduler = FakeDeterministicScheduler(
         blinkInterval: Duration(milliseconds: 300),
@@ -585,12 +585,17 @@ void main() {
           .map((t) => t.transform)
           .toList();
 
-      // Assert focus presentation remains completely static over time
+      // In Phase 6B: Focus state has subtle micro-nod and breathing animation over time
+      bool focusAnimated = false;
       for (int i = 0; i < focusT0.length; i++) {
-        expect(focusT1[i], equals(focusT0[i]),
-            reason:
-                'Focus state must remain static over time without transforms ticking');
+        if (focusT0[i] != focusT1[i]) {
+          focusAnimated = true;
+          break;
+        }
       }
+      expect(focusAnimated, isTrue,
+          reason:
+              'Focus state in Phase 6B must actively animate subtle work motion');
 
       // Call controller.updateState(idle) to verify idle resumes on the same mounted widget
       controller.updateState(PetVisualState.idle);
@@ -737,6 +742,346 @@ void main() {
       expect(controller.isAttached, isFalse);
       expect(controller.activeTimerCount, equals(0));
       expect(controller.listenerCount, equals(0));
+    });
+
+    // =========================================================================
+    // Phase 6B: Focus, Pause, Sleep Dedicated Motion & Gating Tests
+    // =========================================================================
+
+    testWidgets(
+        '15. Phase 6B: Focus state animates subtle breathing and micro-nod, stops idle loops',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: PetAvatarWidget(visualState: PetVisualState.focus),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Mochi \u4e13\u6ce8\u4e2d'), findsOneWidget);
+
+      final fallbackState = tester.state<PetIdleFallbackViewState>(
+        find.byType(PetIdleFallbackView),
+      );
+
+      // Verify idle continuous loops and timers are strictly stopped
+      expect(fallbackState.breatheController.isAnimating, isFalse);
+      expect(fallbackState.swayController.isAnimating, isFalse);
+      expect(fallbackState.tailController.isAnimating, isFalse);
+      expect(fallbackState.blinkController.isAnimating, isFalse);
+      expect(fallbackState.earTwitchController.isAnimating, isFalse);
+
+      // Verify focus controller is animating
+      expect(fallbackState.focusController.isAnimating, isTrue);
+      expect(fallbackState.pauseController.isAnimating, isFalse);
+      expect(fallbackState.sleepController.isAnimating, isFalse);
+
+      // Verify transforms animate over time
+      final t0 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      await tester.pump(const Duration(milliseconds: 1000));
+
+      final t1 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      bool animated = false;
+      for (int i = 0; i < t0.length; i++) {
+        if (t0[i] != t1[i]) {
+          animated = true;
+          break;
+        }
+      }
+      expect(animated, isTrue,
+          reason: 'Focus motion transforms must tick over time');
+    });
+
+    testWidgets(
+        '16. Phase 6B: Pause state animates restful breathing, stops idle and focus loops',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: PetAvatarWidget(visualState: PetVisualState.pause),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Mochi \u4f11\u606f\u4e2d'), findsOneWidget);
+
+      final fallbackState = tester.state<PetIdleFallbackViewState>(
+        find.byType(PetIdleFallbackView),
+      );
+
+      // Idle loops stopped
+      expect(fallbackState.breatheController.isAnimating, isFalse);
+      expect(fallbackState.swayController.isAnimating, isFalse);
+      expect(fallbackState.tailController.isAnimating, isFalse);
+      expect(fallbackState.blinkController.isAnimating, isFalse);
+      expect(fallbackState.earTwitchController.isAnimating, isFalse);
+
+      // Pause controller animating
+      expect(fallbackState.focusController.isAnimating, isFalse);
+      expect(fallbackState.pauseController.isAnimating, isTrue);
+      expect(fallbackState.sleepController.isAnimating, isFalse);
+
+      // Verify transforms animate over time
+      final t0 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      await tester.pump(const Duration(milliseconds: 1000));
+
+      final t1 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      bool animated = false;
+      for (int i = 0; i < t0.length; i++) {
+        if (t0[i] != t1[i]) {
+          animated = true;
+          break;
+        }
+      }
+      expect(animated, isTrue,
+          reason: 'Pause motion transforms must tick over time');
+    });
+
+    testWidgets(
+        '17. Phase 6B: Sleep state shows floating Zzz indicator and closed eyes, animates deep breathing',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: PetAvatarWidget(visualState: PetVisualState.sleep),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('晚安 Mochi'), findsOneWidget);
+      // Floating Zzz indicator is rendered in sleep
+      expect(find.text('Zzz'), findsOneWidget);
+
+      final fallbackState = tester.state<PetIdleFallbackViewState>(
+        find.byType(PetIdleFallbackView),
+      );
+
+      // Idle loops stopped
+      expect(fallbackState.breatheController.isAnimating, isFalse);
+      expect(fallbackState.swayController.isAnimating, isFalse);
+      expect(fallbackState.tailController.isAnimating, isFalse);
+      expect(fallbackState.blinkController.isAnimating, isFalse);
+      expect(fallbackState.earTwitchController.isAnimating, isFalse);
+
+      // Sleep controller animating
+      expect(fallbackState.focusController.isAnimating, isFalse);
+      expect(fallbackState.pauseController.isAnimating, isFalse);
+      expect(fallbackState.sleepController.isAnimating, isTrue);
+
+      // Verify transforms animate over time
+      final t0 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      await tester.pump(const Duration(milliseconds: 1000));
+
+      final t1 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      bool animated = false;
+      for (int i = 0; i < t0.length; i++) {
+        if (t0[i] != t1[i]) {
+          animated = true;
+          break;
+        }
+      }
+      expect(animated, isTrue,
+          reason: 'Sleep motion transforms must tick over time');
+    });
+
+    testWidgets(
+        '18. Phase 6B: Reduced motion (disableAnimations) freezes transforms in focus, pause, and sleep while keeping visuals intact',
+        (tester) async {
+      // Test sleep with reduced motion: Zzz still visible, transforms static
+      await tester.pumpWidget(
+        const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Scaffold(
+              body: PetAvatarWidget(visualState: PetVisualState.sleep),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('晚安 Mochi'), findsOneWidget);
+      expect(find.text('Zzz'), findsOneWidget);
+
+      final t0 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      await tester.pump(const Duration(milliseconds: 1200));
+
+      final t1 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      for (int i = 0; i < t0.length; i++) {
+        expect(t1[i], equals(t0[i]),
+            reason:
+                'Reduced motion must freeze all transforms over time in sleep');
+      }
+
+      // Test focus with reduced motion: label visible, transforms static
+      await tester.pumpWidget(
+        const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Scaffold(
+              body: PetAvatarWidget(visualState: PetVisualState.focus),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Mochi \u4e13\u6ce8\u4e2d'), findsOneWidget);
+
+      final focusT0 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      await tester.pump(const Duration(milliseconds: 1200));
+
+      final focusT1 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      for (int i = 0; i < focusT0.length; i++) {
+        expect(focusT1[i], equals(focusT0[i]),
+            reason:
+                'Reduced motion must freeze all transforms over time in focus');
+      }
+    });
+
+    testWidgets(
+        '19. Phase 6B: State transitions cleanly stop and switch active animation controllers without leaks',
+        (tester) async {
+      final controller = PetMotionController(visualState: PetVisualState.idle);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PetAvatarWidget(
+              visualState: PetVisualState.idle,
+              controller: controller,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final fallbackState = tester.state<PetIdleFallbackViewState>(
+        find.byType(PetIdleFallbackView),
+      );
+
+      expect(fallbackState.breatheController.isAnimating, isTrue);
+      expect(fallbackState.focusController.isAnimating, isFalse);
+
+      // Switch to focus
+      controller.updateState(PetVisualState.focus);
+      await tester.pump();
+      expect(fallbackState.breatheController.isAnimating, isFalse);
+      expect(fallbackState.focusController.isAnimating, isTrue);
+      expect(fallbackState.pauseController.isAnimating, isFalse);
+      expect(fallbackState.sleepController.isAnimating, isFalse);
+
+      // Switch to pause
+      controller.updateState(PetVisualState.pause);
+      await tester.pump();
+      expect(fallbackState.focusController.isAnimating, isFalse);
+      expect(fallbackState.pauseController.isAnimating, isTrue);
+      expect(fallbackState.sleepController.isAnimating, isFalse);
+
+      // Switch to sleep
+      controller.updateState(PetVisualState.sleep);
+      await tester.pump();
+      expect(fallbackState.pauseController.isAnimating, isFalse);
+      expect(fallbackState.sleepController.isAnimating, isTrue);
+
+      // Switch to static celebrate state
+      controller.updateState(PetVisualState.celebrate);
+      await tester.pump();
+      expect(fallbackState.breatheController.isAnimating, isFalse);
+      expect(fallbackState.focusController.isAnimating, isFalse);
+      expect(fallbackState.pauseController.isAnimating, isFalse);
+      expect(fallbackState.sleepController.isAnimating, isFalse);
+
+      // Switch back to idle
+      controller.updateState(PetVisualState.idle);
+      await tester.pump();
+      expect(fallbackState.breatheController.isAnimating, isTrue);
+      expect(fallbackState.swayController.isAnimating, isTrue);
+      expect(fallbackState.focusController.isAnimating, isFalse);
+
+      // Unmount & dispose
+      await tester.pumpWidget(
+          const MaterialApp(home: Scaffold(body: SizedBox.shrink())));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(
+          () => fallbackState.focusController.forward(), throwsAssertionError);
+      expect(
+          () => fallbackState.pauseController.forward(), throwsAssertionError);
+      expect(
+          () => fallbackState.sleepController.forward(), throwsAssertionError);
+
+      controller.dispose();
+    });
+
+    testWidgets(
+        '20. Phase 6B: PetMotionView with enableRive and missing asset truthfully renders focus, pause, sleep fallback',
+        (tester) async {
+      for (final state in [
+        PetVisualState.focus,
+        PetVisualState.pause,
+        PetVisualState.sleep
+      ]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: PetMotionView(
+                visualState: state,
+                enableRive: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.byType(PetIdleFallbackView), findsOneWidget);
+        expect(find.byType(PetMotionView), findsOneWidget);
+      }
     });
   });
 }

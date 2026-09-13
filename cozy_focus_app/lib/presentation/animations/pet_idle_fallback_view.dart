@@ -15,9 +15,10 @@ import 'pet_motion_spec.dart';
 /// - Accessibility / Reduced Motion support
 ///
 /// Strictly gated to [PetVisualState.idle]:
-/// - All idle loop controllers and timers only run when in [PetVisualState.idle].
-/// - Non-idle states remain completely safe and static.
-/// - Transitions from idle to non-idle stop all motion; returning resumes without leaks.
+/// - In Phase 6B: Focus, Pause, and Sleep each have dedicated subtle motion loops.
+/// - Idle loop controllers and timers only run when in [PetVisualState.idle].
+/// - Outside active motion states, other states (e.g. celebrate, craft) remain static.
+/// - Switching states stops inactive loops; returning resumes without leaks.
 class PetIdleFallbackView extends StatefulWidget {
   final PetVisualState visualState;
   final double size;
@@ -62,6 +63,20 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   late AnimationController _earTwitchController;
   late Animation<double> _earTwitchAnimation;
 
+  // Phase 6B: State-specific controllers
+  late AnimationController _focusController;
+  late Animation<double> _focusScaleAnimation;
+  late Animation<double> _focusBreatheDyAnimation;
+  late Animation<double> _focusAngleAnimation;
+
+  late AnimationController _pauseController;
+  late Animation<double> _pauseBreatheDyAnimation;
+
+  late AnimationController _sleepController;
+  late Animation<double> _sleepBreatheDyAnimation;
+  late Animation<double> _sleepZzzDyAnimation;
+  late Animation<double> _sleepZzzOpacityAnimation;
+
   /// Testing accessors to observe animation controllers and their cleanup status
   @visibleForTesting
   AnimationController get breatheController => _breatheController;
@@ -73,6 +88,12 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   AnimationController get blinkController => _blinkController;
   @visibleForTesting
   AnimationController get earTwitchController => _earTwitchController;
+  @visibleForTesting
+  AnimationController get focusController => _focusController;
+  @visibleForTesting
+  AnimationController get pauseController => _pauseController;
+  @visibleForTesting
+  AnimationController get sleepController => _sleepController;
 
   @override
   void initState() {
@@ -172,6 +193,66 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       CurvedAnimation(parent: _earTwitchController, curve: Curves.easeInOut),
     );
 
+    // 6. Phase 6B: Focus Work Controller
+    _focusController = AnimationController(
+      vsync: this,
+      duration: PetMotionSpec.focusWorkCycle,
+    );
+    _focusScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: PetMotionSpec.focusScaleMax,
+    ).animate(
+      CurvedAnimation(parent: _focusController, curve: Curves.easeInOutSine),
+    );
+    _focusBreatheDyAnimation = Tween<double>(
+      begin: 0.0,
+      end: PetMotionSpec.focusBreatheDyMax,
+    ).animate(
+      CurvedAnimation(parent: _focusController, curve: Curves.easeInOutSine),
+    );
+    _focusAngleAnimation = Tween<double>(
+      begin: -PetMotionSpec.focusWorkMicroAngleDegrees * math.pi / 180,
+      end: PetMotionSpec.focusWorkMicroAngleDegrees * math.pi / 180,
+    ).animate(
+      CurvedAnimation(parent: _focusController, curve: Curves.easeInOutSine),
+    );
+
+    // 7. Phase 6B: Pause Controller
+    _pauseController = AnimationController(
+      vsync: this,
+      duration: PetMotionSpec.pauseBreatheCycle,
+    );
+    _pauseBreatheDyAnimation = Tween<double>(
+      begin: 0.0,
+      end: PetMotionSpec.pauseBreatheDyMax,
+    ).animate(
+      CurvedAnimation(parent: _pauseController, curve: Curves.easeInOutSine),
+    );
+
+    // 8. Phase 6B: Sleep Controller
+    _sleepController = AnimationController(
+      vsync: this,
+      duration: PetMotionSpec.sleepBreatheCycle,
+    );
+    _sleepBreatheDyAnimation = Tween<double>(
+      begin: 0.0,
+      end: PetMotionSpec.sleepBreatheDyMax,
+    ).animate(
+      CurvedAnimation(parent: _sleepController, curve: Curves.easeInOutSine),
+    );
+    _sleepZzzDyAnimation = Tween<double>(
+      begin: 0.0,
+      end: PetMotionSpec.sleepZzzDyMax,
+    ).animate(
+      CurvedAnimation(parent: _sleepController, curve: Curves.easeInOutSine),
+    );
+    _sleepZzzOpacityAnimation = Tween<double>(
+      begin: 0.35,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(parent: _sleepController, curve: Curves.easeInOutSine),
+    );
+
     _effectiveController.attach(
       onTriggerBlink: _onBlinkTrigger,
       onTriggerEarTwitch: _onEarTwitchTrigger,
@@ -179,9 +260,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       onStopContinuousLoops: _stopAllAnimations,
     );
 
-    if (widget.visualState == PetVisualState.idle) {
-      _startContinuousLoops();
-    }
+    _syncStateAnimations(widget.visualState);
   }
 
   void _startContinuousLoops() {
@@ -211,6 +290,63 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
 
     if (_earTwitchController.isAnimating) _earTwitchController.stop();
     _earTwitchController.reset();
+
+    if (_focusController.isAnimating) _focusController.stop();
+    _focusController.reset();
+
+    if (_pauseController.isAnimating) _pauseController.stop();
+    _pauseController.reset();
+
+    if (_sleepController.isAnimating) _sleepController.stop();
+    _sleepController.reset();
+  }
+
+  void _syncStateAnimations(PetVisualState state) {
+    // If not idle, stop idle continuous loops and one-shot controllers
+    if (state != PetVisualState.idle) {
+      if (_breatheController.isAnimating) _breatheController.stop();
+      _breatheController.reset();
+      if (_swayController.isAnimating) _swayController.stop();
+      _swayController.reset();
+      if (_tailController.isAnimating) _tailController.stop();
+      _tailController.reset();
+      if (_blinkController.isAnimating) _blinkController.stop();
+      _blinkController.reset();
+      if (_earTwitchController.isAnimating) _earTwitchController.stop();
+      _earTwitchController.reset();
+    } else {
+      _startContinuousLoops();
+    }
+
+    // Focus
+    if (state == PetVisualState.focus) {
+      if (!_focusController.isAnimating) {
+        _focusController.repeat(reverse: true);
+      }
+    } else {
+      if (_focusController.isAnimating) _focusController.stop();
+      _focusController.reset();
+    }
+
+    // Pause
+    if (state == PetVisualState.pause) {
+      if (!_pauseController.isAnimating) {
+        _pauseController.repeat(reverse: true);
+      }
+    } else {
+      if (_pauseController.isAnimating) _pauseController.stop();
+      _pauseController.reset();
+    }
+
+    // Sleep
+    if (state == PetVisualState.sleep) {
+      if (!_sleepController.isAnimating) {
+        _sleepController.repeat(reverse: true);
+      }
+    } else {
+      if (_sleepController.isAnimating) _sleepController.stop();
+      _sleepController.reset();
+    }
   }
 
   void _onBlinkTrigger() {
@@ -229,11 +365,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
 
   void _onControllerStateChanged() {
     if (!mounted) return;
-    if (_effectiveController.isIdle) {
-      _startContinuousLoops();
-    } else {
-      _stopAllAnimations();
-    }
+    _syncStateAnimations(_effectiveController.visualState);
     setState(() {});
   }
 
@@ -268,11 +400,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
 
     if (oldWidget.visualState != widget.visualState) {
       _effectiveController.updateState(widget.visualState);
-      if (widget.visualState == PetVisualState.idle) {
-        _startContinuousLoops();
-      } else {
-        _stopAllAnimations();
-      }
+      _syncStateAnimations(widget.visualState);
     }
   }
 
@@ -291,6 +419,9 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     _tailController.dispose();
     _blinkController.dispose();
     _earTwitchController.dispose();
+    _focusController.dispose();
+    _pauseController.dispose();
+    _sleepController.dispose();
     super.dispose();
   }
 
@@ -298,6 +429,9 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   Widget build(BuildContext context) {
     final currentVisualState = _effectiveController.visualState;
     final isIdle = currentVisualState == PetVisualState.idle;
+    final isFocus = currentVisualState == PetVisualState.focus;
+    final isPause = currentVisualState == PetVisualState.pause;
+    final isSleep = currentVisualState == PetVisualState.sleep;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
@@ -310,24 +444,50 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         _tailController,
         _blinkController,
         _earTwitchController,
+        _focusController,
+        _pauseController,
+        _sleepController,
       ]),
       builder: (context, child) {
-        // Compose transforms: strictly gated to idle and reduced motion
-        final scale =
-            (isIdle && !reduceMotion) ? _breatheScaleAnimation.value : 1.0;
-        final dy = isIdle
-            ? (reduceMotion
-                ? (PetMotionSpec.breatheReducedDyMax * 0.5)
-                : _breatheDyAnimation.value)
-            : 0.0;
-        final swayRotation =
-            (isIdle && !reduceMotion) ? _swayAnimation.value : 0.0;
-        final earRotation =
-            (isIdle && !reduceMotion) ? _earTwitchAnimation.value : 0.0;
-        final tailRotation =
-            (isIdle && !reduceMotion) ? _tailAnimation.value : 0.0;
-        final eyeScaleY =
-            (isIdle && !reduceMotion) ? _blinkAnimation.value : 1.0;
+        // Compose transforms: state-gated and respects reduced motion
+        double scale = 1.0;
+        double dy = 0.0;
+        double rotation = 0.0;
+        double earRotation = 0.0;
+        double tailRotation = 0.0;
+        double eyeScaleY = 1.0;
+
+        if (isIdle) {
+          scale = reduceMotion ? 1.0 : _breatheScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.breatheReducedDyMax * 0.5)
+              : _breatheDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _swayAnimation.value;
+          earRotation = reduceMotion ? 0.0 : _earTwitchAnimation.value;
+          tailRotation = reduceMotion ? 0.0 : _tailAnimation.value;
+          eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+        } else if (isFocus) {
+          scale = reduceMotion ? 1.0 : _focusScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.focusBreatheDyMax * 0.5)
+              : _focusBreatheDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _focusAngleAnimation.value;
+          eyeScaleY = 1.0; // Steady focused gaze
+        } else if (isPause) {
+          scale = 1.0;
+          dy = reduceMotion
+              ? (PetMotionSpec.pauseBreatheDyMax * 0.5)
+              : _pauseBreatheDyAnimation.value;
+          rotation = 0.0;
+          eyeScaleY = 1.0; // Restful gaze
+        } else if (isSleep) {
+          scale = 1.0;
+          dy = reduceMotion
+              ? (PetMotionSpec.sleepBreatheDyMax * 0.5)
+              : _sleepBreatheDyAnimation.value;
+          rotation = 0.0;
+          eyeScaleY = 0.10; // Eyes closed in sleep
+        }
 
         return Transform.translate(
           offset: Offset(0, dy),
@@ -335,7 +495,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
             scale: scale,
             alignment: Alignment.center,
             child: Transform.rotate(
-              angle: swayRotation,
+              angle: rotation,
               alignment: Alignment.bottomCenter,
               child: Container(
                 width: widget.size,
@@ -355,6 +515,32 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
+                    // Sleep Zzz floating animation indicator
+                    if (isSleep)
+                      Positioned(
+                        top: widget.size * 0.14,
+                        right: widget.size * 0.20,
+                        child: Transform.translate(
+                          offset: Offset(
+                            0,
+                            reduceMotion ? 0.0 : _sleepZzzDyAnimation.value,
+                          ),
+                          child: Opacity(
+                            opacity: reduceMotion
+                                ? 1.0
+                                : _sleepZzzOpacityAnimation.value,
+                            child: Text(
+                              'Zzz',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: config.iconColor.withValues(alpha: 0.85),
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     // Tail
                     Positioned(
                       bottom: widget.size * 0.25,

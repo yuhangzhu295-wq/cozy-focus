@@ -26,4 +26,20 @@ class PetMotionSpec {
   // Tail Wag / Tail Idle
   static const Duration tailCycle = Duration(milliseconds: 2400);
   static const double tailIdleAngleDegrees = 5.0;
+
+  // --- Phase 6B: Focus Work ---
+  static const Duration focusWorkCycle = Duration(milliseconds: 4500);
+  static const double focusBreatheDyMax = -1.5;
+  static const double focusScaleMax = 1.012;
+  static const double focusWorkMicroAngleDegrees = 0.8;
+
+  // --- Phase 6B: Pause ---
+  static const Duration pauseTransitionDuration = Duration(milliseconds: 350);
+  static const Duration pauseBreatheCycle = Duration(milliseconds: 4000);
+  static const double pauseBreatheDyMax = -0.8;
+
+  // --- Phase 6B: Sleep ---
+  static const Duration sleepBreatheCycle = Duration(milliseconds: 3500);
+  static const double sleepBreatheDyMax = -2.5;
+  static const double sleepZzzDyMax = -4.0;
 }
