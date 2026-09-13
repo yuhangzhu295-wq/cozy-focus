@@ -1,19 +1,20 @@
 {
   "status": "APPROVED",
-  "stage": "PHASE-6B",
-  "next_stage": "PHASE-6C-CELEBRATE-CRAFT-GREETING",
+  "stage": "PHASE-6C",
+  "next_stage": "PHASE-6D",
   "review_findings": [],
-  "base_sha": "0feef18b2b56fcab4fb080b0116043cba6ed1cd7",
+  "base_sha": "ef90233da8df47ec6e42d647303255f48935cef5",
   "local_gate": {
     "format": "PASS",
     "analyze": "PASS: 0 issues (flutter analyze --fatal-infos --no-pub)",
-    "tests": "PASS: 226/226",
+    "tests": "PASS: 231/231",
     "apk": "PASS",
     "diff_check": "PASS",
     "p0_open": 0,
     "p1_open": 0,
-    "review": "PASS: P0=0, P1=0, P2=3; focus, pause, sleep motions implemented, Rive fallback safe, controller owner verified",
-    "remote_ci": "PASS: Flutter CI run 34772404335; exact HEAD a23d92da16eda6d04bacda88bbc27e4c24637d46"
+    "p2_open": 1,
+    "review": "PASS: P0=0, P1=0, P2=1; celebrate, craft, greeting motions implemented, Rive fallback safe, controller owner verified",
+    "remote_ci": "PASS: Flutter CI run 34780370514; exact HEAD 382a9ad732562bf384b2ab5b63d1a78367aa4e6b"
   },
   "phase_5_slice": "COLLECTION",
   "phase_5_plan": "outputs/ai_handoff/PHASE_5_COLLECTION_PLAN.md",
@@ -23,5 +24,7 @@
   "phase_6a_repair_report": "outputs/ai_handoff/GEMINI_PHASE_6A_REPAIR_REPORT.md",
   "phase_6a_gate": "outputs/ai_handoff/PHASE_6A_FINAL_GATE.md",
   "phase_6b_report": "outputs/ai_handoff/GEMINI_PHASE_6B_REPORT.md",
-  "phase_6b_gate": "outputs/ai_handoff/PHASE_6B_FINAL_GATE.md"
+  "phase_6b_gate": "outputs/ai_handoff/PHASE_6B_FINAL_GATE.md",
+  "phase_6c_report": "outputs/ai_handoff/GEMINI_PHASE_6C_REPORT.md",
+  "phase_6c_gate": "outputs/ai_handoff/PHASE_6C_FINAL_GATE.md"
 }
