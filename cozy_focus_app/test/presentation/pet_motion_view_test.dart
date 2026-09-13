@@ -269,7 +269,7 @@ void main() {
     // --- P1-1 & P1-4 Behavioral Tests: Idle Motion Active vs Static Non-Idle ---
 
     testWidgets(
-        '9. Behavioral: Idle motion transforms tick over time, while static non-motion state (celebrate) remains static',
+        '9. Behavioral: Idle motion transforms tick over time, while static non-motion state (interact) remains static',
         (tester) async {
       // Mount in Idle
       await tester.pumpWidget(
@@ -305,33 +305,33 @@ void main() {
       expect(anyTransformChanged, isTrue,
           reason: 'Idle state must actively animate transforms over time');
 
-      // Now switch to static non-motion state: celebrate
+      // Now switch to static non-motion state: interact
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: PetAvatarWidget(visualState: PetVisualState.celebrate),
+            body: PetAvatarWidget(visualState: PetVisualState.interact),
           ),
         ),
       );
       await tester.pump(); // frame update
 
-      final celebrateTransformsT0 = tester
+      final interactTransformsT0 = tester
           .widgetList<Transform>(find.byType(Transform))
           .map((t) => t.transform)
           .toList();
 
-      // Advance by 1200ms in celebrate
+      // Advance by 1200ms in interact
       await tester.pump(const Duration(milliseconds: 1200));
 
-      final celebrateTransformsT1 = tester
+      final interactTransformsT1 = tester
           .widgetList<Transform>(find.byType(Transform))
           .map((t) => t.transform)
           .toList();
 
-      // Verify celebrate stays completely static over time
-      for (int i = 0; i < celebrateTransformsT0.length; i++) {
-        expect(celebrateTransformsT1[i], equals(celebrateTransformsT0[i]),
-            reason: 'Celebrate state must remain completely static over time');
+      // Verify interact stays completely static over time
+      for (int i = 0; i < interactTransformsT0.length; i++) {
+        expect(interactTransformsT1[i], equals(interactTransformsT0[i]),
+            reason: 'Interact state must remain completely static over time');
       }
     });
 
@@ -1028,13 +1028,14 @@ void main() {
       expect(fallbackState.pauseController.isAnimating, isFalse);
       expect(fallbackState.sleepController.isAnimating, isTrue);
 
-      // Switch to static celebrate state
+      // Switch to celebrate state (Phase 6C active motion)
       controller.updateState(PetVisualState.celebrate);
       await tester.pump();
       expect(fallbackState.breatheController.isAnimating, isFalse);
       expect(fallbackState.focusController.isAnimating, isFalse);
       expect(fallbackState.pauseController.isAnimating, isFalse);
       expect(fallbackState.sleepController.isAnimating, isFalse);
+      expect(fallbackState.celebrateController.isAnimating, isTrue);
 
       // Switch back to idle
       controller.updateState(PetVisualState.idle);
@@ -1042,6 +1043,7 @@ void main() {
       expect(fallbackState.breatheController.isAnimating, isTrue);
       expect(fallbackState.swayController.isAnimating, isTrue);
       expect(fallbackState.focusController.isAnimating, isFalse);
+      expect(fallbackState.celebrateController.isAnimating, isFalse);
 
       // Unmount & dispose
       await tester.pumpWidget(
@@ -1054,6 +1056,12 @@ void main() {
           () => fallbackState.pauseController.forward(), throwsAssertionError);
       expect(
           () => fallbackState.sleepController.forward(), throwsAssertionError);
+      expect(() => fallbackState.celebrateController.forward(),
+          throwsAssertionError);
+      expect(
+          () => fallbackState.craftController.forward(), throwsAssertionError);
+      expect(() => fallbackState.greetingController.forward(),
+          throwsAssertionError);
 
       controller.dispose();
     });
@@ -1065,6 +1073,239 @@ void main() {
         PetVisualState.focus,
         PetVisualState.pause,
         PetVisualState.sleep
+      ]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: PetMotionView(
+                visualState: state,
+                enableRive: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.byType(PetIdleFallbackView), findsOneWidget);
+        expect(find.byType(PetMotionView), findsOneWidget);
+      }
+    });
+
+    // --- Phase 6C: Celebrate, Craft, Greeting Dedicated Tests ---
+
+    testWidgets(
+        '21. Phase 6C: Celebrate state animates joyful bounce, scale, and tilt; stops idle and other loops',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: PetAvatarWidget(visualState: PetVisualState.celebrate),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('太棒啦!'), findsOneWidget);
+
+      final fallbackState = tester.state<PetIdleFallbackViewState>(
+        find.byType(PetIdleFallbackView),
+      );
+
+      // Idle and other loops stopped
+      expect(fallbackState.breatheController.isAnimating, isFalse);
+      expect(fallbackState.swayController.isAnimating, isFalse);
+      expect(fallbackState.tailController.isAnimating, isFalse);
+      expect(fallbackState.blinkController.isAnimating, isFalse);
+      expect(fallbackState.earTwitchController.isAnimating, isFalse);
+      expect(fallbackState.focusController.isAnimating, isFalse);
+      expect(fallbackState.pauseController.isAnimating, isFalse);
+      expect(fallbackState.sleepController.isAnimating, isFalse);
+      expect(fallbackState.craftController.isAnimating, isFalse);
+      expect(fallbackState.greetingController.isAnimating, isFalse);
+
+      // Celebrate controller animating
+      expect(fallbackState.celebrateController.isAnimating, isTrue);
+
+      // Verify transforms animate over time
+      final t0 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final t1 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      bool animated = false;
+      for (int i = 0; i < t0.length; i++) {
+        if (t0[i] != t1[i]) {
+          animated = true;
+          break;
+        }
+      }
+      expect(animated, isTrue,
+          reason: 'Celebrate motion transforms must tick over time');
+    });
+
+    testWidgets(
+        '22. Phase 6C: Craft state animates rhythmic craft work motion; stops non-craft loops',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: PetAvatarWidget(visualState: PetVisualState.craft),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Mochi 制作中'), findsOneWidget);
+
+      final fallbackState = tester.state<PetIdleFallbackViewState>(
+        find.byType(PetIdleFallbackView),
+      );
+
+      // Idle and other loops stopped
+      expect(fallbackState.breatheController.isAnimating, isFalse);
+      expect(fallbackState.swayController.isAnimating, isFalse);
+      expect(fallbackState.focusController.isAnimating, isFalse);
+      expect(fallbackState.pauseController.isAnimating, isFalse);
+      expect(fallbackState.sleepController.isAnimating, isFalse);
+      expect(fallbackState.celebrateController.isAnimating, isFalse);
+      expect(fallbackState.greetingController.isAnimating, isFalse);
+
+      // Craft controller animating
+      expect(fallbackState.craftController.isAnimating, isTrue);
+
+      // Verify transforms animate over time
+      final t0 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      await tester.pump(const Duration(milliseconds: 600));
+
+      final t1 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      bool animated = false;
+      for (int i = 0; i < t0.length; i++) {
+        if (t0[i] != t1[i]) {
+          animated = true;
+          break;
+        }
+      }
+      expect(animated, isTrue,
+          reason: 'Craft motion transforms must tick over time');
+    });
+
+    testWidgets(
+        '23. Phase 6C: Greeting state animates welcoming nod and bounce; stops non-greeting loops',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: PetAvatarWidget(visualState: PetVisualState.greeting),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Mochi 陪伴中'), findsOneWidget);
+
+      final fallbackState = tester.state<PetIdleFallbackViewState>(
+        find.byType(PetIdleFallbackView),
+      );
+
+      // Idle and other loops stopped
+      expect(fallbackState.breatheController.isAnimating, isFalse);
+      expect(fallbackState.swayController.isAnimating, isFalse);
+      expect(fallbackState.focusController.isAnimating, isFalse);
+      expect(fallbackState.pauseController.isAnimating, isFalse);
+      expect(fallbackState.sleepController.isAnimating, isFalse);
+      expect(fallbackState.celebrateController.isAnimating, isFalse);
+      expect(fallbackState.craftController.isAnimating, isFalse);
+
+      // Greeting controller animating
+      expect(fallbackState.greetingController.isAnimating, isTrue);
+
+      // Verify transforms animate over time
+      final t0 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final t1 = tester
+          .widgetList<Transform>(find.byType(Transform))
+          .map((t) => t.transform)
+          .toList();
+
+      bool animated = false;
+      for (int i = 0; i < t0.length; i++) {
+        if (t0[i] != t1[i]) {
+          animated = true;
+          break;
+        }
+      }
+      expect(animated, isTrue,
+          reason: 'Greeting motion transforms must tick over time');
+    });
+
+    testWidgets(
+        '24. Phase 6C: Reduced motion (disableAnimations) freezes transforms in celebrate, craft, and greeting while keeping visuals intact',
+        (tester) async {
+      for (final state in [
+        PetVisualState.celebrate,
+        PetVisualState.craft,
+        PetVisualState.greeting,
+      ]) {
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: MaterialApp(
+              home: Scaffold(
+                body: PetAvatarWidget(visualState: state),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final t0 = tester
+            .widgetList<Transform>(find.byType(Transform))
+            .map((t) => t.transform)
+            .toList();
+
+        await tester.pump(const Duration(milliseconds: 600));
+
+        final t1 = tester
+            .widgetList<Transform>(find.byType(Transform))
+            .map((t) => t.transform)
+            .toList();
+
+        for (int i = 0; i < t0.length; i++) {
+          expect(t1[i], equals(t0[i]),
+              reason:
+                  'Reduced motion must freeze all transforms over time in $state');
+        }
+      }
+    });
+
+    testWidgets(
+        '25. Phase 6C: PetMotionView with enableRive and missing asset truthfully renders celebrate, craft, greeting fallback',
+        (tester) async {
+      for (final state in [
+        PetVisualState.celebrate,
+        PetVisualState.craft,
+        PetVisualState.greeting,
       ]) {
         await tester.pumpWidget(
           MaterialApp(

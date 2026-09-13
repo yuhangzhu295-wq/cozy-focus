@@ -42,4 +42,22 @@ class PetMotionSpec {
   static const Duration sleepBreatheCycle = Duration(milliseconds: 3500);
   static const double sleepBreatheDyMax = -2.5;
   static const double sleepZzzDyMax = -4.0;
+
+  // --- Phase 6C: Celebrate ---
+  static const Duration celebrateCycle = Duration(milliseconds: 1200);
+  static const double celebrateBounceDyMax = -6.0;
+  static const double celebrateScaleMax = 1.04;
+  static const double celebrateAngleDegrees = 3.0;
+
+  // --- Phase 6C: Craft ---
+  static const Duration craftCycle = Duration(milliseconds: 1800);
+  static const double craftBreatheDyMax = -1.2;
+  static const double craftScaleMax = 1.015;
+  static const double craftTiltAngleDegrees = 1.8;
+
+  // --- Phase 6C: Greeting ---
+  static const Duration greetingCycle = Duration(milliseconds: 1500);
+  static const double greetingBounceDyMax = -3.0;
+  static const double greetingScaleMax = 1.02;
+  static const double greetingTiltAngleDegrees = 2.5;
 }

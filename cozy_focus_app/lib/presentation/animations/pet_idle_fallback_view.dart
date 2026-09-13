@@ -77,6 +77,22 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   late Animation<double> _sleepZzzDyAnimation;
   late Animation<double> _sleepZzzOpacityAnimation;
 
+  // Phase 6C: Celebrate, Craft, Greeting controllers
+  late AnimationController _celebrateController;
+  late Animation<double> _celebrateScaleAnimation;
+  late Animation<double> _celebrateBounceDyAnimation;
+  late Animation<double> _celebrateAngleAnimation;
+
+  late AnimationController _craftController;
+  late Animation<double> _craftScaleAnimation;
+  late Animation<double> _craftBreatheDyAnimation;
+  late Animation<double> _craftTiltAngleAnimation;
+
+  late AnimationController _greetingController;
+  late Animation<double> _greetingScaleAnimation;
+  late Animation<double> _greetingBounceDyAnimation;
+  late Animation<double> _greetingTiltAngleAnimation;
+
   /// Testing accessors to observe animation controllers and their cleanup status
   @visibleForTesting
   AnimationController get breatheController => _breatheController;
@@ -94,6 +110,12 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   AnimationController get pauseController => _pauseController;
   @visibleForTesting
   AnimationController get sleepController => _sleepController;
+  @visibleForTesting
+  AnimationController get celebrateController => _celebrateController;
+  @visibleForTesting
+  AnimationController get craftController => _craftController;
+  @visibleForTesting
+  AnimationController get greetingController => _greetingController;
 
   @override
   void initState() {
@@ -253,6 +275,169 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       CurvedAnimation(parent: _sleepController, curve: Curves.easeInOutSine),
     );
 
+    // 9. Phase 6C: Celebrate Controller
+    _celebrateController = AnimationController(
+      vsync: this,
+      duration: PetMotionSpec.celebrateCycle,
+    );
+    _celebrateBounceDyAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween:
+            Tween<double>(begin: 0.0, end: PetMotionSpec.celebrateBounceDyMax),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween:
+            Tween<double>(begin: PetMotionSpec.celebrateBounceDyMax, end: 0.0),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 0.0),
+        weight: 30,
+      ),
+    ]).animate(
+      CurvedAnimation(parent: _celebrateController, curve: Curves.easeInOut),
+    );
+    _celebrateScaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: PetMotionSpec.celebrateScaleMax),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: PetMotionSpec.celebrateScaleMax, end: 1.0),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.0),
+        weight: 30,
+      ),
+    ]).animate(
+      CurvedAnimation(parent: _celebrateController, curve: Curves.easeInOut),
+    );
+    _celebrateAngleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.0,
+          end: PetMotionSpec.celebrateAngleDegrees * math.pi / 180,
+        ),
+        weight: 25,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: PetMotionSpec.celebrateAngleDegrees * math.pi / 180,
+          end: -PetMotionSpec.celebrateAngleDegrees * math.pi / 180,
+        ),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: -PetMotionSpec.celebrateAngleDegrees * math.pi / 180,
+          end: 0.0,
+        ),
+        weight: 40,
+      ),
+    ]).animate(
+      CurvedAnimation(parent: _celebrateController, curve: Curves.easeInOut),
+    );
+
+    // 10. Phase 6C: Craft Controller
+    _craftController = AnimationController(
+      vsync: this,
+      duration: PetMotionSpec.craftCycle,
+    );
+    _craftBreatheDyAnimation = Tween<double>(
+      begin: 0.0,
+      end: PetMotionSpec.craftBreatheDyMax,
+    ).animate(
+      CurvedAnimation(parent: _craftController, curve: Curves.easeInOutSine),
+    );
+    _craftScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: PetMotionSpec.craftScaleMax,
+    ).animate(
+      CurvedAnimation(parent: _craftController, curve: Curves.easeInOutSine),
+    );
+    _craftTiltAngleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.0,
+          end: PetMotionSpec.craftTiltAngleDegrees * math.pi / 180,
+        ),
+        weight: 30,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: PetMotionSpec.craftTiltAngleDegrees * math.pi / 180,
+          end: -PetMotionSpec.craftTiltAngleDegrees * 0.5 * math.pi / 180,
+        ),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: -PetMotionSpec.craftTiltAngleDegrees * 0.5 * math.pi / 180,
+          end: 0.0,
+        ),
+        weight: 30,
+      ),
+    ]).animate(
+      CurvedAnimation(parent: _craftController, curve: Curves.easeInOut),
+    );
+
+    // 11. Phase 6C: Greeting Controller
+    _greetingController = AnimationController(
+      vsync: this,
+      duration: PetMotionSpec.greetingCycle,
+    );
+    _greetingBounceDyAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween:
+            Tween<double>(begin: 0.0, end: PetMotionSpec.greetingBounceDyMax),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween:
+            Tween<double>(begin: PetMotionSpec.greetingBounceDyMax, end: 0.0),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 0.0),
+        weight: 20,
+      ),
+    ]).animate(
+      CurvedAnimation(parent: _greetingController, curve: Curves.easeInOut),
+    );
+    _greetingScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: PetMotionSpec.greetingScaleMax,
+    ).animate(
+      CurvedAnimation(parent: _greetingController, curve: Curves.easeInOutSine),
+    );
+    _greetingTiltAngleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.0,
+          end: PetMotionSpec.greetingTiltAngleDegrees * math.pi / 180,
+        ),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: PetMotionSpec.greetingTiltAngleDegrees * math.pi / 180,
+          end: -PetMotionSpec.greetingTiltAngleDegrees * 0.5 * math.pi / 180,
+        ),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: -PetMotionSpec.greetingTiltAngleDegrees * 0.5 * math.pi / 180,
+          end: 0.0,
+        ),
+        weight: 30,
+      ),
+    ]).animate(
+      CurvedAnimation(parent: _greetingController, curve: Curves.easeInOut),
+    );
+
     _effectiveController.attach(
       onTriggerBlink: _onBlinkTrigger,
       onTriggerEarTwitch: _onEarTwitchTrigger,
@@ -299,6 +484,15 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
 
     if (_sleepController.isAnimating) _sleepController.stop();
     _sleepController.reset();
+
+    if (_celebrateController.isAnimating) _celebrateController.stop();
+    _celebrateController.reset();
+
+    if (_craftController.isAnimating) _craftController.stop();
+    _craftController.reset();
+
+    if (_greetingController.isAnimating) _greetingController.stop();
+    _greetingController.reset();
   }
 
   void _syncStateAnimations(PetVisualState state) {
@@ -346,6 +540,36 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     } else {
       if (_sleepController.isAnimating) _sleepController.stop();
       _sleepController.reset();
+    }
+
+    // Celebrate
+    if (state == PetVisualState.celebrate) {
+      if (!_celebrateController.isAnimating) {
+        _celebrateController.repeat();
+      }
+    } else {
+      if (_celebrateController.isAnimating) _celebrateController.stop();
+      _celebrateController.reset();
+    }
+
+    // Craft
+    if (state == PetVisualState.craft) {
+      if (!_craftController.isAnimating) {
+        _craftController.repeat(reverse: true);
+      }
+    } else {
+      if (_craftController.isAnimating) _craftController.stop();
+      _craftController.reset();
+    }
+
+    // Greeting
+    if (state == PetVisualState.greeting) {
+      if (!_greetingController.isAnimating) {
+        _greetingController.repeat();
+      }
+    } else {
+      if (_greetingController.isAnimating) _greetingController.stop();
+      _greetingController.reset();
     }
   }
 
@@ -422,6 +646,9 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     _focusController.dispose();
     _pauseController.dispose();
     _sleepController.dispose();
+    _celebrateController.dispose();
+    _craftController.dispose();
+    _greetingController.dispose();
     super.dispose();
   }
 
@@ -432,6 +659,9 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     final isFocus = currentVisualState == PetVisualState.focus;
     final isPause = currentVisualState == PetVisualState.pause;
     final isSleep = currentVisualState == PetVisualState.sleep;
+    final isCelebrate = currentVisualState == PetVisualState.celebrate;
+    final isCraft = currentVisualState == PetVisualState.craft;
+    final isGreeting = currentVisualState == PetVisualState.greeting;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
@@ -447,6 +677,9 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         _focusController,
         _pauseController,
         _sleepController,
+        _celebrateController,
+        _craftController,
+        _greetingController,
       ]),
       builder: (context, child) {
         // Compose transforms: state-gated and respects reduced motion
@@ -487,6 +720,33 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
               : _sleepBreatheDyAnimation.value;
           rotation = 0.0;
           eyeScaleY = 0.10; // Eyes closed in sleep
+        } else if (isCelebrate) {
+          scale = reduceMotion ? 1.0 : _celebrateScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.celebrateBounceDyMax * 0.5)
+              : _celebrateBounceDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _celebrateAngleAnimation.value;
+          earRotation = reduceMotion ? 0.0 : _celebrateAngleAnimation.value;
+          tailRotation = reduceMotion ? 0.0 : -_celebrateAngleAnimation.value;
+          eyeScaleY = 1.0; // Bright joyful gaze
+        } else if (isCraft) {
+          scale = reduceMotion ? 1.0 : _craftScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.craftBreatheDyMax * 0.5)
+              : _craftBreatheDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _craftTiltAngleAnimation.value;
+          earRotation = 0.0;
+          tailRotation = 0.0;
+          eyeScaleY = 1.0; // Attentive crafting gaze
+        } else if (isGreeting) {
+          scale = reduceMotion ? 1.0 : _greetingScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.greetingBounceDyMax * 0.5)
+              : _greetingBounceDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value;
+          earRotation = reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value;
+          tailRotation = 0.0;
+          eyeScaleY = 1.0; // Welcoming cheerful gaze
         }
 
         return Transform.translate(

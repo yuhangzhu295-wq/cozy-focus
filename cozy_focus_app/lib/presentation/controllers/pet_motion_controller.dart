@@ -61,7 +61,17 @@ class PetMotionController extends ChangeNotifier {
   bool get isFocus => _visualState == PetVisualState.focus;
   bool get isPause => _visualState == PetVisualState.pause;
   bool get isSleep => _visualState == PetVisualState.sleep;
-  bool get hasActiveMotion => isIdle || isFocus || isPause || isSleep;
+  bool get isCelebrate => _visualState == PetVisualState.celebrate;
+  bool get isCraft => _visualState == PetVisualState.craft;
+  bool get isGreeting => _visualState == PetVisualState.greeting;
+  bool get hasActiveMotion =>
+      isIdle ||
+      isFocus ||
+      isPause ||
+      isSleep ||
+      isCelebrate ||
+      isCraft ||
+      isGreeting;
   bool get isMotionActive => _isMotionActive;
   bool get isDisposed => _isDisposed;
   int get activeTimerCount =>
