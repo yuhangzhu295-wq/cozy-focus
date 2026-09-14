@@ -7,6 +7,7 @@ import 'package:cozy_focus_app/domain/models/focus_record.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
 import 'package:cozy_focus_app/presentation/controllers/records_controller.dart';
+import 'package:cozy_focus_app/presentation/controllers/reports_controller.dart';
 import 'package:cozy_focus_app/presentation/pages/progress_overview_page.dart';
 import 'package:cozy_focus_app/presentation/pages/record_detail_page.dart';
 import 'package:cozy_focus_app/presentation/pages/weekly_report_page.dart';
@@ -163,6 +164,13 @@ void main() {
     testWidgets(
         'Screen 06: WeeklyReportPage renders weekly stats, Mochi dialogue, and share CTA',
         (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await container
+          .read(reportsControllerProvider.notifier)
+          .loadWeeklyReport(DateTime(2026, 9, 8));
       await tester
           .pumpWidget(createTestApp(container, const WeeklyReportPage()));
       await tester.pump();
