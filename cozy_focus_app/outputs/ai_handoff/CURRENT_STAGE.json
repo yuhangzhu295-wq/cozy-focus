@@ -1,7 +1,7 @@
 {
-  "status": "APPROVED",
-  "stage": "PHASE-6D",
-  "next_stage": "PHASE-6-COMPLETE",
+  "status": "COMPLETED",
+  "stage": "PHASE-6-COMPLETE",
+  "next_stage": "PHASE-7A-SETTINGS",
   "review_findings": [],
   "base_sha": "ef90233da8df47ec6e42d647303255f48935cef5",
   "local_gate": {
@@ -50,5 +50,23 @@
     "business_effects": "NONE",
     "rive": "PENDING_AUTHORING"
   },
-  "phase_6d_auto_started": false
+  "phase_6d_auto_started": false,
+  "phase_6_complete_gate": "outputs/ai_handoff/PHASE_6_COMPLETE_FINAL_GATE.md",
+  "phase_6_complete_implementation_sha": "90a1d82f4318d73759ce3e4a67b0c9c10200804a",
+  "phase_6_complete_ci": {
+    "run_id": "35002989805",
+    "url": "https://github.com/yuhangzhu295-wq/cozy-focus/actions/runs/35002989805",
+    "status": "completed",
+    "conclusion": "success",
+    "head_sha": "90a1d82f4318d73759ce3e4a67b0c9c10200804a",
+    "exact_head_sha_match": true
+  },
+  "phase_6_complete_ci_gates": {
+    "formatting": "PASS",
+    "analyze": "PASS",
+    "tests": "PASS",
+    "apk": "PASS"
+  },
+  "next_goal": "PHASE-7A-SETTINGS",
+  "phase_7_auto_started": false
 }
