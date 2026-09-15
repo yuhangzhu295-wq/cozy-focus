@@ -56,8 +56,7 @@ void main() {
   });
 
   group('V4.1 S4 Focused Regression & Widget Tests', () {
-    testWidgets(
-        '1. HomePage: Settings gear is honestly disabled (onPressed is null)',
+    testWidgets('1. HomePage: Settings gear is enabled (onPressed is not null)',
         (tester) async {
       await tester.pumpWidget(createTestApp(container, const HomePage()));
       await tester.pump();
@@ -67,7 +66,7 @@ void main() {
           find.widgetWithIcon(IconButton, Icons.settings_outlined);
       expect(settingsFinder, findsOneWidget);
       final IconButton button = tester.widget(settingsFinder);
-      expect(button.onPressed, isNull);
+      expect(button.onPressed, isNotNull);
     });
 
     testWidgets('2. HomePage: Has exactly three bottom navigation items',

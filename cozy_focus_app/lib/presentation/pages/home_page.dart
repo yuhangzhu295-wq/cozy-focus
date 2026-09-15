@@ -68,7 +68,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         bottom: false,
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _buildHeroArea(hasActive)),
+            SliverToBoxAdapter(child: _buildHeroArea(context, hasActive)),
             SliverToBoxAdapter(child: _buildFocusPanel(hasActive)),
             SliverToBoxAdapter(
               child: _buildStatsPanel(todayMinutes, streakDays),
@@ -82,7 +82,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildHeroArea(bool hasActive) {
+  Widget _buildHeroArea(BuildContext context, bool hasActive) {
     final mochiState = hasActive ? PetVisualState.focus : PetVisualState.idle;
     if (_petMotionController.visualState != mochiState) {
       _petMotionController.updateState(mochiState);
@@ -132,13 +132,13 @@ class _HomePageState extends ConsumerState<HomePage> {
               ],
             ),
           ),
-          const Positioned(
+          Positioned(
             top: 20,
             right: 16,
             child: IconButton(
-              icon: Icon(Icons.settings_outlined),
+              icon: const Icon(Icons.settings_outlined),
               color: AppColors.textSecondary,
-              onPressed: null,
+              onPressed: () => context.push('/settings'),
             ),
           ),
           Positioned(
