@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../domain/models/enums.dart';
@@ -93,6 +94,17 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   late Animation<double> _greetingBounceDyAnimation;
   late Animation<double> _greetingTiltAngleAnimation;
 
+  // Phase 6D: one-shot idle interact motion.
+  late AnimationController _interactController;
+  late Animation<double> _interactDyAnimation;
+  late Animation<double> _interactScaleAnimation;
+  late Animation<double> _interactBodyTiltAnimation;
+  late Animation<double> _interactEarTiltAnimation;
+  late Animation<double> _interactTailTiltAnimation;
+  late Animation<double> _interactEyeSquintAnimation;
+  Timer? _interactFlashTimer;
+  bool _interactFlash = false;
+
   /// Testing accessors to observe animation controllers and their cleanup status
   @visibleForTesting
   AnimationController get breatheController => _breatheController;
@@ -116,6 +128,22 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   AnimationController get craftController => _craftController;
   @visibleForTesting
   AnimationController get greetingController => _greetingController;
+  @visibleForTesting
+  AnimationController get interactController => _interactController;
+  @visibleForTesting
+  bool get isInteractFlashActive => _interactFlash;
+  @visibleForTesting
+  double get interactDy => _interactDyAnimation.value;
+  @visibleForTesting
+  double get interactScale => _interactScaleAnimation.value;
+  @visibleForTesting
+  double get interactBodyTilt => _interactBodyTiltAnimation.value;
+  @visibleForTesting
+  double get interactEarTilt => _interactEarTiltAnimation.value;
+  @visibleForTesting
+  double get interactTailTilt => _interactTailTiltAnimation.value;
+  @visibleForTesting
+  double get interactEyeScaleY => _interactEyeSquintAnimation.value;
 
   @override
   void initState() {
@@ -438,14 +466,102 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       CurvedAnimation(parent: _greetingController, curve: Curves.easeInOut),
     );
 
+    // 12. Phase 6D: Interact Controller
+    _interactController = AnimationController(
+      vsync: this,
+      duration: PetMotionSpec.interactDuration,
+    );
+    _interactController.addStatusListener(_onInteractStatusChanged);
+    _interactDyAnimation = _interactSequence(
+      0.0,
+      PetMotionSpec.interactBounceDyMax,
+      PetMotionSpec.interactBounceDyMax,
+      0.0,
+      Curves.easeInOutSine,
+    );
+    _interactScaleAnimation = _interactSequence(
+      1.0,
+      PetMotionSpec.interactScaleMax,
+      PetMotionSpec.interactScaleMax,
+      1.0,
+      Curves.easeInOutSine,
+    );
+    _interactBodyTiltAnimation = _interactSequence(
+      0.0,
+      PetMotionSpec.interactTiltDeg * math.pi / 180,
+      -PetMotionSpec.interactTiltDeg * math.pi / 180,
+      0.0,
+      Curves.easeInOut,
+    );
+    _interactEarTiltAnimation = _interactSequence(
+      0.0,
+      PetMotionSpec.interactEarTiltDeg * math.pi / 180,
+      -PetMotionSpec.interactEarTiltDeg * math.pi / 180,
+      0.0,
+      Curves.easeInOut,
+    );
+    _interactTailTiltAnimation = _interactSequence(
+      0.0,
+      PetMotionSpec.interactTailTiltDeg * math.pi / 180,
+      -PetMotionSpec.interactTailTiltDeg * math.pi / 180,
+      0.0,
+      Curves.easeInOut,
+    );
+    _interactEyeSquintAnimation = _interactSequence(
+      1.0,
+      PetMotionSpec.interactEyeSquintMin,
+      PetMotionSpec.interactEyeSquintMin,
+      1.0,
+      Curves.easeInOutSine,
+    );
+
     _effectiveController.attach(
       onTriggerBlink: _onBlinkTrigger,
       onTriggerEarTwitch: _onEarTwitchTrigger,
       onStartContinuousLoops: _startContinuousLoops,
       onStopContinuousLoops: _stopAllAnimations,
+      onTriggerInteract: _onInteractTrigger,
     );
 
     _syncStateAnimations(widget.visualState);
+  }
+
+  Animation<double> _interactSequence(
+    double begin,
+    double peak,
+    double settle,
+    double end,
+    Curve curve,
+  ) {
+    return TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: begin,
+          end: peak,
+        ).chain(CurveTween(curve: curve)),
+        weight: 30,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: peak,
+          end: settle,
+        ).chain(CurveTween(curve: curve)),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: settle,
+          end: end,
+        ).chain(CurveTween(curve: curve)),
+        weight: 30,
+      ),
+    ]).animate(_interactController);
+  }
+
+  void _onInteractStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      _interactController.reset();
+    }
   }
 
   void _startContinuousLoops() {
@@ -493,6 +609,12 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
 
     if (_greetingController.isAnimating) _greetingController.stop();
     _greetingController.reset();
+
+    if (_interactController.isAnimating) _interactController.stop();
+    _interactController.reset();
+    _interactFlashTimer?.cancel();
+    _interactFlashTimer = null;
+    _interactFlash = false;
   }
 
   void _syncStateAnimations(PetVisualState state) {
@@ -587,6 +709,26 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     _earTwitchController.forward(from: 0.0);
   }
 
+  void _onInteractTrigger() {
+    if (!mounted || _effectiveController.visualState != PetVisualState.idle) {
+      return;
+    }
+
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+      _interactFlashTimer?.cancel();
+      setState(() => _interactFlash = true);
+      _interactFlashTimer = Timer(const Duration(milliseconds: 80), () {
+        if (mounted) {
+          setState(() => _interactFlash = false);
+        }
+        _interactFlashTimer = null;
+      });
+      return;
+    }
+
+    _interactController.forward(from: 0.0);
+  }
+
   void _onControllerStateChanged() {
     if (!mounted) return;
     _syncStateAnimations(_effectiveController.visualState);
@@ -619,6 +761,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         onTriggerEarTwitch: _onEarTwitchTrigger,
         onStartContinuousLoops: _startContinuousLoops,
         onStopContinuousLoops: _stopAllAnimations,
+        onTriggerInteract: _onInteractTrigger,
       );
     }
 
@@ -649,6 +792,9 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     _celebrateController.dispose();
     _craftController.dispose();
     _greetingController.dispose();
+    _interactFlashTimer?.cancel();
+    _interactController.removeStatusListener(_onInteractStatusChanged);
+    _interactController.dispose();
     super.dispose();
   }
 
@@ -680,6 +826,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         _celebrateController,
         _craftController,
         _greetingController,
+        _interactController,
       ]),
       builder: (context, child) {
         // Compose transforms: state-gated and respects reduced motion
@@ -747,6 +894,18 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
           earRotation = reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value;
           tailRotation = 0.0;
           eyeScaleY = 1.0; // Welcoming cheerful gaze
+        }
+
+        if (isIdle && _interactFlash) {
+          scale = 1.02;
+          dy = -1.0;
+        } else if (isIdle && !reduceMotion && _interactController.isAnimating) {
+          scale = _interactScaleAnimation.value;
+          dy = _interactDyAnimation.value;
+          rotation = _interactBodyTiltAnimation.value;
+          earRotation = _interactEarTiltAnimation.value;
+          tailRotation = _interactTailTiltAnimation.value;
+          eyeScaleY = _interactEyeSquintAnimation.value;
         }
 
         return Transform.translate(

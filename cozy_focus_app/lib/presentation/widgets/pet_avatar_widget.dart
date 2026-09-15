@@ -70,15 +70,29 @@ class PetAvatarWidget extends StatelessWidget {
               ),
             ),
           ],
-          PetMotionView(
-            visualState: activeState,
-            size: size,
-            controller: controller,
-            scheduler: scheduler,
-            riveRenderer: riveRenderer,
-            enableRive: enableRive,
-            accessory: accessory,
-          ),
+          if (controller != null)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: controller!.triggerInteract,
+              child: PetMotionView(
+                visualState: activeState,
+                size: size,
+                controller: controller,
+                scheduler: scheduler,
+                riveRenderer: riveRenderer,
+                enableRive: enableRive,
+                accessory: accessory,
+              ),
+            )
+          else
+            PetMotionView(
+              visualState: activeState,
+              size: size,
+              scheduler: scheduler,
+              riveRenderer: riveRenderer,
+              enableRive: enableRive,
+              accessory: accessory,
+            ),
         ],
       );
     }

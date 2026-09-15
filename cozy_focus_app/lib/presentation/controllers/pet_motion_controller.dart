@@ -43,8 +43,10 @@ class PetMotionController extends ChangeNotifier {
   VoidCallback? _onTriggerEarTwitch;
   VoidCallback? _onStartContinuousLoops;
   VoidCallback? _onStopContinuousLoops;
+  VoidCallback? _onTriggerInteract;
   Timer? _blinkTimer;
   Timer? _earTwitchTimer;
+  Timer? _interactCooldownTimer;
   bool _isDisposed = false;
   bool _isMotionActive = false;
   int _listenerCount = 0;
@@ -76,19 +78,22 @@ class PetMotionController extends ChangeNotifier {
   bool get isDisposed => _isDisposed;
   int get activeTimerCount =>
       (_blinkTimer != null ? 1 : 0) + (_earTwitchTimer != null ? 1 : 0);
+  bool get isInteractCooldownActive => _interactCooldownTimer != null;
 
   /// Whether presentation callbacks are currently attached.
   bool get isAttached =>
       _onTriggerBlink != null ||
       _onTriggerEarTwitch != null ||
       _onStartContinuousLoops != null ||
-      _onStopContinuousLoops != null;
+      _onStopContinuousLoops != null ||
+      _onTriggerInteract != null;
 
   /// Observable callbacks for behavioral lifecycle verification.
   bool get hasBlinkCallback => _onTriggerBlink != null;
   bool get hasEarTwitchCallback => _onTriggerEarTwitch != null;
   bool get hasStartContinuousLoopsCallback => _onStartContinuousLoops != null;
   bool get hasStopContinuousLoopsCallback => _onStopContinuousLoops != null;
+  bool get hasInteractCallback => _onTriggerInteract != null;
 
   /// Total registered listeners on this controller.
   int get listenerCount => _listenerCount;
@@ -116,12 +121,14 @@ class PetMotionController extends ChangeNotifier {
     VoidCallback? onTriggerEarTwitch,
     VoidCallback? onStartContinuousLoops,
     VoidCallback? onStopContinuousLoops,
+    VoidCallback? onTriggerInteract,
   }) {
     if (_isDisposed) return;
     _onTriggerBlink = onTriggerBlink;
     _onTriggerEarTwitch = onTriggerEarTwitch;
     _onStartContinuousLoops = onStartContinuousLoops;
     _onStopContinuousLoops = onStopContinuousLoops;
+    _onTriggerInteract = onTriggerInteract;
     if (isIdle) {
       startMotion();
     } else {
@@ -132,10 +139,25 @@ class PetMotionController extends ChangeNotifier {
   /// Detaches presentation callbacks and stops active timers without disposing.
   void detach() {
     stopMotion();
+    _cancelInteractCooldown();
     _onTriggerBlink = null;
     _onTriggerEarTwitch = null;
     _onStartContinuousLoops = null;
     _onStopContinuousLoops = null;
+    _onTriggerInteract = null;
+  }
+
+  /// Triggers a one-shot interact animation only while Mochi is idle.
+  ///
+  /// This never changes [visualState]; interact remains a presentation-only
+  /// affordance with no business side effects.
+  bool triggerInteract() {
+    if (_isDisposed || _interactCooldownTimer != null) return false;
+    if (_visualState != PetVisualState.idle) return false;
+
+    _startInteractCooldown();
+    _onTriggerInteract?.call();
+    return true;
   }
 
   /// Updates the pet visual state, managing motion lifecycle transitions.
@@ -173,6 +195,18 @@ class PetMotionController extends ChangeNotifier {
     _blinkTimer = null;
     _earTwitchTimer?.cancel();
     _earTwitchTimer = null;
+  }
+
+  void _startInteractCooldown() {
+    _interactCooldownTimer?.cancel();
+    _interactCooldownTimer = Timer(PetMotionSpec.interactCooldown, () {
+      _interactCooldownTimer = null;
+    });
+  }
+
+  void _cancelInteractCooldown() {
+    _interactCooldownTimer?.cancel();
+    _interactCooldownTimer = null;
   }
 
   void _scheduleNextBlink() {

@@ -60,4 +60,14 @@ class PetMotionSpec {
   static const double greetingBounceDyMax = -3.0;
   static const double greetingScaleMax = 1.02;
   static const double greetingTiltAngleDegrees = 2.5;
+
+  // --- Phase 6D: Interact ---
+  static const Duration interactDuration = Duration(milliseconds: 750);
+  static const double interactBounceDyMax = -8.0;
+  static const double interactScaleMax = 1.06;
+  static const double interactTiltDeg = 4.0;
+  static const double interactEarTiltDeg = 6.0;
+  static const double interactTailTiltDeg = 5.0;
+  static const double interactEyeSquintMin = 0.55;
+  static const Duration interactCooldown = Duration(milliseconds: 1500);
 }
