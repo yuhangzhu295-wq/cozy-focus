@@ -104,6 +104,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   late Animation<double> _interactEyeSquintAnimation;
   Timer? _interactFlashTimer;
   bool _interactFlash = false;
+  bool _reduceMotion = false;
 
   /// Testing accessors to observe animation controllers and their cleanup status
   @visibleForTesting
@@ -526,6 +527,25 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     _syncStateAnimations(widget.visualState);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (_reduceMotion == reduceMotion) return;
+
+    _reduceMotion = reduceMotion;
+    if (_reduceMotion) {
+      _effectiveController.stopMotion();
+      return;
+    }
+
+    _syncStateAnimations(_effectiveController.visualState);
+    if (_effectiveController.isIdle) {
+      _effectiveController.startMotion();
+    }
+  }
+
   Animation<double> _interactSequence(
     double begin,
     double peak,
@@ -618,6 +638,11 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   }
 
   void _syncStateAnimations(PetVisualState state) {
+    if (_reduceMotion) {
+      _effectiveController.stopMotion();
+      return;
+    }
+
     // If not idle, stop idle continuous loops and one-shot controllers
     if (state != PetVisualState.idle) {
       if (_breatheController.isAnimating) _breatheController.stop();
@@ -696,14 +721,18 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   }
 
   void _onBlinkTrigger() {
-    if (!mounted || _effectiveController.visualState != PetVisualState.idle) {
+    if (!mounted ||
+        _reduceMotion ||
+        _effectiveController.visualState != PetVisualState.idle) {
       return;
     }
     _blinkController.forward(from: 0.0);
   }
 
   void _onEarTwitchTrigger() {
-    if (!mounted || _effectiveController.visualState != PetVisualState.idle) {
+    if (!mounted ||
+        _reduceMotion ||
+        _effectiveController.visualState != PetVisualState.idle) {
       return;
     }
     _earTwitchController.forward(from: 0.0);
@@ -763,6 +792,9 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         onStopContinuousLoops: _stopAllAnimations,
         onTriggerInteract: _onInteractTrigger,
       );
+      if (_reduceMotion) {
+        _effectiveController.stopMotion();
+      }
     }
 
     if (oldWidget.visualState != widget.visualState) {

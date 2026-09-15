@@ -1324,5 +1324,56 @@ void main() {
         expect(find.byType(PetMotionView), findsOneWidget);
       }
     });
+
+    testWidgets(
+        '26. Reduced motion stops all loops and idle scheduler timers, then restores them when re-enabled',
+        (tester) async {
+      final controller = PetMotionController(
+        visualState: PetVisualState.idle,
+        scheduler: const FakeDeterministicScheduler(),
+      );
+
+      Widget buildPet(bool disableAnimations) => MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(disableAnimations: disableAnimations),
+              child: Scaffold(
+                body: PetAvatarWidget(
+                  visualState: PetVisualState.idle,
+                  controller: controller,
+                ),
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(buildPet(true));
+      final fallbackState = tester.state<PetIdleFallbackViewState>(
+        find.byType(PetIdleFallbackView),
+      );
+
+      expect(fallbackState.breatheController.isAnimating, isFalse);
+      expect(fallbackState.swayController.isAnimating, isFalse);
+      expect(fallbackState.tailController.isAnimating, isFalse);
+      expect(fallbackState.blinkController.isAnimating, isFalse);
+      expect(fallbackState.earTwitchController.isAnimating, isFalse);
+      expect(fallbackState.focusController.isAnimating, isFalse);
+      expect(fallbackState.pauseController.isAnimating, isFalse);
+      expect(fallbackState.sleepController.isAnimating, isFalse);
+      expect(fallbackState.celebrateController.isAnimating, isFalse);
+      expect(fallbackState.craftController.isAnimating, isFalse);
+      expect(fallbackState.greetingController.isAnimating, isFalse);
+      expect(fallbackState.interactController.isAnimating, isFalse);
+      expect(controller.activeTimerCount, 0);
+
+      await tester.pumpWidget(buildPet(false));
+      await tester.pump();
+
+      expect(fallbackState.breatheController.isAnimating, isTrue);
+      expect(fallbackState.swayController.isAnimating, isTrue);
+      expect(fallbackState.tailController.isAnimating, isTrue);
+      expect(controller.activeTimerCount, 2);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      controller.dispose();
+    });
   });
 }
