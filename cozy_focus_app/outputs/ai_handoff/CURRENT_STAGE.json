@@ -1,7 +1,7 @@
 {
   "status": "APPROVED",
-  "stage": "PHASE-6C",
-  "next_stage": "PHASE-6D",
+  "stage": "PHASE-6D",
+  "next_stage": "PHASE-6-COMPLETE",
   "review_findings": [],
   "base_sha": "ef90233da8df47ec6e42d647303255f48935cef5",
   "local_gate": {
@@ -26,5 +26,29 @@
   "phase_6b_report": "outputs/ai_handoff/GEMINI_PHASE_6B_REPORT.md",
   "phase_6b_gate": "outputs/ai_handoff/PHASE_6B_FINAL_GATE.md",
   "phase_6c_report": "outputs/ai_handoff/GEMINI_PHASE_6C_REPORT.md",
-  "phase_6c_gate": "outputs/ai_handoff/PHASE_6C_FINAL_GATE.md"
+  "phase_6c_gate": "outputs/ai_handoff/PHASE_6C_FINAL_GATE.md",
+  "phase_6d_gate": "outputs/ai_handoff/PHASE_6D_FINAL_GATE.md",
+  "phase_6d_report": "outputs/ai_handoff/GEMINI_PHASE_6D_REPORT.md",
+  "phase_6d_review": "outputs/ai_handoff/CLAUDE_PHASE_6D_REVIEW.md",
+  "phase_6d_implementation_sha": "50338994f2958786366d75bc5a0689fca0f325a9",
+  "phase_6d_ci": {
+    "run_id": "34997023156",
+    "status": "completed",
+    "conclusion": "success",
+    "head_sha": "50338994f2958786366d75bc5a0689fca0f325a9",
+    "exact_head_sha_match": true
+  },
+  "phase_6d_local_gate": {
+    "format": "PASS",
+    "analyze": "PASS",
+    "focused_tests": "PASS: 17/17",
+    "full_tests": "PASS: 248/248",
+    "apk": "PASS",
+    "diff_check": "PASS",
+    "claude_re_review": "P0=0, P1=0, P2=0; READY_FOR_FINAL_GATE",
+    "protected_core": "NO",
+    "business_effects": "NONE",
+    "rive": "PENDING_AUTHORING"
+  },
+  "phase_6d_auto_started": false
 }
