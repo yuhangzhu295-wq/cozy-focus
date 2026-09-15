@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/focus_session_controller.dart';
+import '../controllers/pet_motion_controller.dart';
 import '../../core/auth/current_user.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pet_avatar_widget.dart';
@@ -18,7 +19,15 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   int _selectedMinutes = 25;
   int _currentNavIndex = 0;
+  final PetMotionController _petMotionController = PetMotionController();
   static const List<int> _quickChips = [5, 25, 50, 90];
+
+  @override
+  void dispose() {
+    _petMotionController.dispose();
+    super.dispose();
+  }
+
   void _increment() {
     setState(() {
       _selectedMinutes = (_selectedMinutes + 5).clamp(5, 180);
@@ -74,6 +83,11 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildHeroArea(bool hasActive) {
+    final mochiState = hasActive ? PetVisualState.focus : PetVisualState.idle;
+    if (_petMotionController.visualState != mochiState) {
+      _petMotionController.updateState(mochiState);
+    }
+
     return SizedBox(
       height: 300,
       child: Stack(
@@ -154,8 +168,8 @@ class _HomePageState extends ConsumerState<HomePage> {
             right: 120,
             child: Center(
               child: PetAvatarWidget(
-                visualState:
-                    hasActive ? PetVisualState.focus : PetVisualState.idle,
+                visualState: mochiState,
+                controller: _petMotionController,
                 size: 180,
               ),
             ),
