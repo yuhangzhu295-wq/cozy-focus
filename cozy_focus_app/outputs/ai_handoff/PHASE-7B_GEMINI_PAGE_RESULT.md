@@ -1,0 +1,1 @@
+I have created `cozy_focus_app/lib/presentation/pages/notifications_page.dart` with all specified requirements, imports, non-interactive cards, exact text strings, and back button fallback navigation.
