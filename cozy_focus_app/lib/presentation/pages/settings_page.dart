@@ -101,7 +101,7 @@ class SettingsPage extends StatelessWidget {
                 title: '专注默认',
                 subtitle: '标准 25 分钟番茄专注（内存默认设置，暂不持久化保存）',
               ),
-              const _SettingInfoCard(
+              const _NavigableSettingCard(
                 icon: Icons.notifications_none_outlined,
                 iconColor: AppColors.catStudy,
                 iconBgColor: Color(0xFFEBF1F9),
@@ -226,6 +226,93 @@ class _SettingInfoCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _NavigableSettingCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBgColor;
+  final String title;
+  final String subtitle;
+
+  const _NavigableSettingCard({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBgColor,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/settings/notifications'),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: iconColor,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.textTertiary,
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
   }

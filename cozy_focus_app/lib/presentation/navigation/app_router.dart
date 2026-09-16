@@ -19,6 +19,7 @@ import '../pages/mochi_growth_page.dart';
 import '../pages/pet_dress_page.dart';
 import '../pages/pet_collection_page.dart';
 import '../pages/settings_page.dart';
+import '../pages/notifications_page.dart';
 
 /// App routing table powered by GoRouter for Cozy Focus
 final appRouter = GoRouter(
@@ -119,6 +120,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsPage(),
+    ),
+    GoRoute(
+      path: '/settings/notifications',
+      builder: (context, state) => const NotificationsPage(),
     ),
   ],
 );

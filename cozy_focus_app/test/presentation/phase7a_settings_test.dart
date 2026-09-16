@@ -60,7 +60,7 @@ void main() {
     });
 
     testWidgets(
-        '3. SettingsPage has NO fake toggles, switches, checkboxes, list tiles or chevron icons',
+        '3. SettingsPage has no fake controls and only one notification navigation chevron',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -76,7 +76,7 @@ void main() {
       expect(find.byType(Checkbox), findsNothing);
       expect(find.byType(CheckboxListTile), findsNothing);
       expect(find.byType(ListTile), findsNothing);
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
       expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
       expect(find.byType(BottomNavigationBar), findsNothing);
