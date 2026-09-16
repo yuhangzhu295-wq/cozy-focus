@@ -83,7 +83,7 @@ void main() {
     });
 
     testWidgets(
-        '4. SettingsPage has precisely one chevron_right associated with Notifications',
+        '4. SettingsPage has two chevron_right icons for navigable settings',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -94,7 +94,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
       expect(
         find.widgetWithText(GestureDetector, '通知'),
         findsOneWidget,

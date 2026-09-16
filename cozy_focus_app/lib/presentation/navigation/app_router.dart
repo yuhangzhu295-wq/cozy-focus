@@ -20,6 +20,7 @@ import '../pages/pet_dress_page.dart';
 import '../pages/pet_collection_page.dart';
 import '../pages/settings_page.dart';
 import '../pages/notifications_page.dart';
+import '../pages/data_sync_page.dart';
 
 /// App routing table powered by GoRouter for Cozy Focus
 final appRouter = GoRouter(
@@ -124,6 +125,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings/notifications',
       builder: (context, state) => const NotificationsPage(),
+    ),
+    GoRoute(
+      path: '/settings/data-sync',
+      builder: (context, state) => const DataSyncPage(),
     ),
   ],
 );

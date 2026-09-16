@@ -107,6 +107,7 @@ class SettingsPage extends StatelessWidget {
                 iconBgColor: Color(0xFFEBF1F9),
                 title: '通知',
                 subtitle: '专注结束与休息提醒（当前版本尚未接入系统通知）',
+                route: '/settings/notifications',
               ),
               const _SettingInfoCard(
                 icon: Icons.volume_up_outlined,
@@ -129,12 +130,13 @@ class SettingsPage extends StatelessWidget {
                 title: '语言',
                 subtitle: '简体中文（多语言支持待后续版本规划）',
               ),
-              const _SettingInfoCard(
+              const _NavigableSettingCard(
                 icon: Icons.sync_outlined,
                 iconColor: AppColors.catLife,
                 iconBgColor: Color(0xFFFEF6EB),
                 title: '数据与同步',
                 subtitle: '当前应用为本地离线模式，云端同步暂不可用',
+                route: '/settings/data-sync',
               ),
               const _SettingInfoCard(
                 icon: Icons.security_outlined,
@@ -237,6 +239,7 @@ class _NavigableSettingCard extends StatelessWidget {
   final Color iconBgColor;
   final String title;
   final String subtitle;
+  final String route;
 
   const _NavigableSettingCard({
     required this.icon,
@@ -244,12 +247,13 @@ class _NavigableSettingCard extends StatelessWidget {
     required this.iconBgColor,
     required this.title,
     required this.subtitle,
+    required this.route,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/settings/notifications'),
+      onTap: () => context.push(route),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
