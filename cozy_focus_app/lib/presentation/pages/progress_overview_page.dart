@@ -822,7 +822,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
             icon: const Icon(Icons.play_arrow_rounded),
             label: const Text('开始第一次专注',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            onPressed: () => context.go('/focus'),
+            onPressed: () => context.go('/focus/setup'),
           )),
       const SizedBox(height: 16),
       _buildCalendarBanner(),

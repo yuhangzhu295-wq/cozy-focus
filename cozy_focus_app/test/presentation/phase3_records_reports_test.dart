@@ -8,6 +8,8 @@ import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
 import 'package:cozy_focus_app/presentation/controllers/records_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/reports_controller.dart';
+import 'package:cozy_focus_app/presentation/navigation/app_router.dart';
+import 'package:cozy_focus_app/presentation/pages/focus_setup_page.dart';
 import 'package:cozy_focus_app/presentation/pages/progress_overview_page.dart';
 import 'package:cozy_focus_app/presentation/pages/record_detail_page.dart';
 import 'package:cozy_focus_app/presentation/pages/weekly_report_page.dart';
@@ -97,6 +99,42 @@ void main() {
   });
 
   group('Phase 3 Records & Reports UI & Controller Tests', () {
+    testWidgets(
+        'empty progress state starts focus setup through the registered router',
+        (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final recordRepo = container.read(focusRecordRepositoryProvider);
+      await recordRepo.deleteById('rec-1');
+      await recordRepo.deleteById('rec-2');
+
+      appRouter.go('/progress');
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            theme: AppTheme.lightTheme,
+            routerConfig: appRouter,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(ProgressOverviewPage), findsOneWidget);
+      expect(find.byType(FocusSetupPage), findsNothing);
+      expect(find.text('开始第一次专注'), findsOneWidget);
+
+      await tester.tap(find.text('开始第一次专注'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byType(FocusSetupPage), findsOneWidget);
+      expect(find.byType(ProgressOverviewPage), findsNothing);
+    });
+
     testWidgets(
         'Screen 05: ProgressOverviewPage renders today records and switches tabs',
         (tester) async {
