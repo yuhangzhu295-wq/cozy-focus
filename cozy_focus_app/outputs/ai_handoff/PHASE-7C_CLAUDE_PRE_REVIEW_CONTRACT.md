@@ -184,4 +184,3 @@ The authoritative Page 15 visual is now available and supplies the offline/local
 ## Final Verdict: READY
 
 The visual direction, three exact local-only status-card title/subtitle pairs, six-file scope, existing-test correction, and Settings -> Data & Sync -> Settings GoRouter journey test are unambiguous. Gemini may implement exactly this UI-only contract.
-
