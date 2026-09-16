@@ -3,7 +3,7 @@ description = "Primary write-capable implementation/fix agent for Cozy Focus. Sp
 
 # This matches the model ID visible in the user's current Codex UI.
 # If your selector later shows a different exact ID, edit ONLY this value.
-model = "11/gemini-3.8-flash-high"
+model = "11/gemini-3.6-flash-high"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 

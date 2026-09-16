@@ -3,7 +3,7 @@
 ## Active execution contract
 
 MAIN REVIEW MODEL: 11/gpt-5.6-sol
-IMPLEMENTATION SUBAGENT: 11/gemini-3.8-flash-high
+IMPLEMENTATION SUBAGENT: 11/gemini-3.6-flash-high
 SPAWN: multi_agent_v1__spawn_agent with an explicit model string
 
 The .codex/agents/gemini_implementer.toml file is LEGACY / NOT ACTIVE for
