@@ -1,9 +1,9 @@
 {
   "project": "COZY_FOCUS",
   "base_sha": "55555385bb2af6e9c509bd311246fe0307df9bda",
-  "current_sha": "fb26a12b40e47154f9aeec91673b8e875836fd30",
-  "current_slice": "AUTO-2",
-  "status": "RUNNING",
+  "current_sha": "2697b5b64fb2fe312a5b408eaac8cd7760890169",
+  "current_slice": "AUTO-3 Rive authoring gate",
+  "status": "BLOCKED",
   "completed_slices": [
     "RP-0",
     "RP-1",
@@ -13,18 +13,23 @@
   ],
   "current_findings": {
     "AUTO-1": "BLOCKED_PENDING_PRODUCT_ACQUISITION_RULE",
-    "AUTO-2": "APPROVED_PENDING_COMMIT_PUSH_CI",
+    "AUTO-2": "COMPLETE_LOCAL_AND_EXACT_SHA_CI_PASS",
     "AUTO-2_claude_review": "FINAL_APPROVED_P0_0_P1_0_P2_3",
-    "open_source_reuse_audit": "NOT_DONE"
+    "open_source_reuse_audit": "COMPLETE",
+    "AUTO-2_ci": "RUN_35259670518_SUCCESS_EXACT_SHA",
+    "AUTO-3_asset_discovery": "NO_REAL_RIVE_ASSET_OR_SOURCE_FOUND",
+    "AUTO-3_cli_proof": "RIVE_CLI_1_0_4_OFFLINE_CREATE_VERIFY_BUILD_INSPECT_SCREENSHOT_PASS",
+    "AUTO-3_claude_gate": "P0_DISTRIBUTION_LICENSE_DECISION_REQUIRED",
+    "AUTO-3_naming": "ACTIVE_CONTRACT_MOCHI_STATE_MACHINE_1_HISTORICAL_NAMES_NONAUTHORITATIVE"
   },
   "repair_round": 0,
   "last_test_total": "289/289",
-  "last_ci_run": "35255376779",
-  "last_ci_sha": "fb26a12b40e47154f9aeec91673b8e875836fd30",
-  "rive_asset_status": "BLOCKED_PENDING_AUTHORING",
+  "last_ci_run": "35259670518",
+  "last_ci_sha": "2697b5b64fb2fe312a5b408eaac8cd7760890169",
+  "rive_asset_status": "AUTHORING_PATH_AVAILABLE_ASSET_BLOCKED_PENDING_DISTRIBUTION_LICENSE_DECISION",
   "real_device_status": "NOT_AVAILABLE",
   "runtime_visual_qa": "NOT_AVAILABLE",
   "performance_runtime": "NOT_MEASURED",
   "gpt_substitution_used": "NO",
-  "next_slice": "AUTO-2 commit, push, and exact-SHA CI"
+  "next_slice": "Await product-owner Rive distribution-rights decision; continue only non-Rive release-polish slices"
 }
