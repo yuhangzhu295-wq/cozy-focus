@@ -14,6 +14,7 @@ import 'package:cozy_focus_app/presentation/pages/focus_complete_page.dart';
 import 'package:cozy_focus_app/presentation/pages/focus_save_page.dart';
 import 'package:cozy_focus_app/presentation/pages/focus_reward_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
+import 'package:cozy_focus_app/presentation/widgets/pet_avatar_widget.dart';
 
 class WidgetTestClock implements FocusClock {
   DateTime _now;
@@ -100,6 +101,42 @@ void main() {
       expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
 
       // Cancel session to stop ticker
+      await container
+          .read(focusSessionControllerProvider.notifier)
+          .cancelSession();
+    });
+
+    testWidgets(
+        'FocusActivePage early finish confirmation dialog shows PetAvatarWidget with pause visualState',
+        (tester) async {
+      final engine = container.read(focusSessionEngineProvider);
+      await engine.start(
+        userId: 'widget_user',
+        plannedSeconds: 1500,
+        mode: FocusMode.focus,
+      );
+
+      await tester
+          .pumpWidget(createTestApp(container, const FocusActivePage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('提前结束'), findsOneWidget);
+      await tester.tap(find.text('提前结束'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('提前结束专注吗？'), findsOneWidget);
+
+      final dialogAvatarFinder = find.descendant(
+        of: find.byType(Dialog),
+        matching: find.byType(PetAvatarWidget),
+      );
+      expect(dialogAvatarFinder, findsOneWidget);
+
+      final dialogAvatar = tester.widget<PetAvatarWidget>(dialogAvatarFinder);
+      expect(dialogAvatar.visualState, equals(PetVisualState.pause));
+
       await container
           .read(focusSessionControllerProvider.notifier)
           .cancelSession();

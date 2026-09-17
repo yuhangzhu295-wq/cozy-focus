@@ -76,7 +76,8 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
             mainAxisSize: MainAxisSize.min,
             children: [
               // Pet avatar — small
-              const PetAvatarWidget(visualState: PetVisualState.idle, size: 80),
+              const PetAvatarWidget(
+                  visualState: PetVisualState.pause, size: 80),
               const SizedBox(height: 16),
               const Text(
                 '提前结束专注吗？',
@@ -162,7 +163,7 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
       child: Column(
         children: [
           const Spacer(flex: 2),
-          const PetAvatarWidget(visualState: PetVisualState.idle, size: 120),
+          const PetAvatarWidget(visualState: PetVisualState.focus, size: 120),
           const SizedBox(height: 20),
           // Green checkmark
           Container(
