@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../domain/models/pet_models.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/focus_session_controller.dart';
@@ -59,6 +60,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final homeState = ref.watch(homeControllerProvider);
+    final petProgress = homeState.petProgress;
     final todayMinutes = homeState.todayMinutes;
     final streakDays = homeState.streakDays;
     final hasActive = homeState.hasActiveSession;
@@ -68,7 +70,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         bottom: false,
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _buildHeroArea(context, hasActive)),
+            SliverToBoxAdapter(
+                child: _buildHeroArea(context, hasActive, petProgress)),
             SliverToBoxAdapter(child: _buildFocusPanel(hasActive)),
             SliverToBoxAdapter(
               child: _buildStatsPanel(todayMinutes, streakDays),
@@ -82,14 +85,22 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildHeroArea(BuildContext context, bool hasActive) {
+  Widget _buildHeroArea(
+    BuildContext context,
+    bool hasActive,
+    PetProgress? petProgress,
+  ) {
     final mochiState = hasActive ? PetVisualState.focus : PetVisualState.idle;
     if (_petMotionController.visualState != mochiState) {
       _petMotionController.updateState(mochiState);
     }
 
+    final petMessage = petProgress != null
+        ? 'Lv.${petProgress.level} 累计专注 ${petProgress.totalFocusMinutes} 分钟'
+        : null;
+
     return SizedBox(
-      height: 300,
+      height: petProgress != null ? 350 : 300,
       child: Stack(
         children: [
           Container(
@@ -169,6 +180,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Center(
               child: PetAvatarWidget(
                 visualState: mochiState,
+                message: petMessage,
                 controller: _petMotionController,
                 size: 180,
               ),
@@ -231,13 +243,18 @@ class _HomePageState extends ConsumerState<HomePage> {
             children: [
               _StepButton(icon: Icons.remove, onTap: _decrement),
               const SizedBox(width: 24),
-              Text(
-                '$_selectedMinutes:00',
-                style: const TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                  letterSpacing: 0,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '$_selectedMinutes:00',
+                    style: const TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                      letterSpacing: 0,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 24),
@@ -252,13 +269,14 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           ),
           const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: _quickChips.map((mins) {
-              final selected = _selectedMinutes == mins;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ChoiceChip(
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: _quickChips.map((mins) {
+                final selected = _selectedMinutes == mins;
+                return ChoiceChip(
                   label: Text('$mins 分钟'),
                   selected: selected,
                   onSelected: (_) => setState(() => _selectedMinutes = mins),
@@ -271,9 +289,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                         : AppColors.textSecondary,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(
