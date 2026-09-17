@@ -6,6 +6,7 @@ import '../../domain/models/enums.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/pet_motion_controller.dart';
+import '../controllers/craft_controller.dart';
 import '../../core/auth/current_user.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pet_avatar_widget.dart';
@@ -22,6 +23,13 @@ class _HomePageState extends ConsumerState<HomePage> {
   int _currentNavIndex = 0;
   final PetMotionController _petMotionController = PetMotionController();
   static const List<int> _quickChips = [5, 25, 50, 90];
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+        () => ref.read(craftControllerProvider.notifier).loadAll());
+  }
 
   @override
   void dispose() {
@@ -60,6 +68,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final homeState = ref.watch(homeControllerProvider);
+    final craftState = ref.watch(craftControllerProvider);
     final petProgress = homeState.petProgress;
     final todayMinutes = homeState.todayMinutes;
     final streakDays = homeState.streakDays;
@@ -71,7 +80,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
-                child: _buildHeroArea(context, hasActive, petProgress)),
+                child: _buildHeroArea(
+                    context, hasActive, petProgress, craftState)),
             SliverToBoxAdapter(child: _buildFocusPanel(hasActive)),
             SliverToBoxAdapter(
               child: _buildStatsPanel(todayMinutes, streakDays),
@@ -89,8 +99,13 @@ class _HomePageState extends ConsumerState<HomePage> {
     BuildContext context,
     bool hasActive,
     PetProgress? petProgress,
+    CraftState craftState,
   ) {
-    final mochiState = hasActive ? PetVisualState.focus : PetVisualState.idle;
+    final mochiState = hasActive
+        ? PetVisualState.focus
+        : (craftState.activeJob != null
+            ? PetVisualState.craft
+            : PetVisualState.idle);
     if (_petMotionController.visualState != mochiState) {
       _petMotionController.updateState(mochiState);
     }

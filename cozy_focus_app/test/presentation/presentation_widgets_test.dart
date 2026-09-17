@@ -17,6 +17,8 @@ import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 import 'package:cozy_focus_app/presentation/widgets/pet_avatar_widget.dart';
 import 'package:cozy_focus_app/domain/models/pet_models.dart' as pet_domain;
 import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
+import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
+import 'package:cozy_focus_app/domain/models/craft_models.dart' as craft_domain;
 
 class WidgetTestClock implements FocusClock {
   DateTime _now;
@@ -32,6 +34,24 @@ class _TestHomeController extends HomeController {
 
   @override
   Future<void> loadHomeData() async {
+    state = _presetState;
+  }
+}
+
+class _TestCraftController extends CraftController {
+  final CraftState _presetState;
+  bool loadAllCalled = false;
+  _TestCraftController({
+    required super.repo,
+    required super.engine,
+    required super.clock,
+    required super.userId,
+    required CraftState presetState,
+  }) : _presetState = presetState;
+
+  @override
+  Future<void> loadAll() async {
+    loadAllCalled = true;
     state = _presetState;
   }
 }
@@ -390,6 +410,220 @@ void main() {
       expect(find.text('获得奖励'), findsOneWidget);
       expect(find.text('制作工坊'), findsOneWidget);
       expect(find.text('返回首页'), findsOneWidget);
+    });
+
+    // ── RP-5: Craft state + interact tap ──────────────────────────
+
+    testWidgets(
+        'RP-5: HomePage triggers one-shot loadAll on craftControllerProvider',
+        (tester) async {
+      const homeState = HomeUIState(
+        petProgress: null,
+        todayFocusSeconds: 0,
+        streakDays: 0,
+      );
+
+      final customContainer = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          focusClockProvider.overrideWithValue(testClock),
+          homeControllerProvider.overrideWith(
+            (ref) => _TestHomeController(ref, homeState),
+          ),
+          craftControllerProvider.overrideWith((ref) => _TestCraftController(
+                repo: ref.watch(craftRepositoryProvider),
+                engine: ref.watch(craftEngineProvider),
+                clock: ref.watch(focusClockProvider),
+                userId: 'test_user',
+                presetState: const CraftState(),
+              )),
+        ],
+      );
+      addTearDown(customContainer.dispose);
+
+      final ctrl = customContainer.read(craftControllerProvider.notifier)
+          as _TestCraftController;
+      expect(ctrl.loadAllCalled, isFalse);
+      await tester.pumpWidget(createTestApp(customContainer, const HomePage()));
+      expect(ctrl.loadAllCalled, isTrue);
+    });
+
+    testWidgets(
+        'RP-5: HomePage mochiState = craft when activeJob present and no focus session',
+        (tester) async {
+      const homeState = HomeUIState(
+        petProgress: null,
+        todayFocusSeconds: 0,
+        streakDays: 0,
+      );
+
+      final activeJob = craft_domain.CraftJob(
+        id: 'job_rp5',
+        userId: 'test_user',
+        recipeId: 'sofa',
+        status: CraftJobStatus.inProgress,
+        progressSeconds: 300,
+        startedAt: DateTime(2026, 9, 1),
+        completedAt: null,
+        rewardClaimed: false,
+      );
+      final craftPreset = CraftState(activeJob: activeJob);
+
+      final customContainer = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          focusClockProvider.overrideWithValue(testClock),
+          homeControllerProvider.overrideWith(
+            (ref) => _TestHomeController(ref, homeState),
+          ),
+          craftControllerProvider.overrideWith((ref) => _TestCraftController(
+                repo: ref.watch(craftRepositoryProvider),
+                engine: ref.watch(craftEngineProvider),
+                clock: ref.watch(focusClockProvider),
+                userId: 'test_user',
+                presetState: craftPreset,
+              )),
+        ],
+      );
+      addTearDown(customContainer.dispose);
+
+      await tester.pumpWidget(createTestApp(customContainer, const HomePage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final avatarFinder = find.byType(PetAvatarWidget);
+      expect(avatarFinder, findsOneWidget);
+      final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
+      expect(avatarWidget.visualState, equals(PetVisualState.craft));
+    });
+
+    testWidgets(
+        'RP-5: HomePage mochiState = focus takes priority over craft activeJob',
+        (tester) async {
+      const homeState = HomeUIState(
+        petProgress: null,
+        todayFocusSeconds: 600,
+        streakDays: 1,
+        hasActiveSession: true,
+      );
+
+      final activeJob = craft_domain.CraftJob(
+        id: 'job_rp5_b',
+        userId: 'test_user',
+        recipeId: 'table',
+        status: CraftJobStatus.inProgress,
+        progressSeconds: 600,
+        startedAt: DateTime(2026, 9, 1),
+        completedAt: null,
+        rewardClaimed: false,
+      );
+      final craftPreset = CraftState(activeJob: activeJob);
+
+      final customContainer = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          focusClockProvider.overrideWithValue(testClock),
+          homeControllerProvider.overrideWith(
+            (ref) => _TestHomeController(ref, homeState),
+          ),
+          craftControllerProvider.overrideWith((ref) => _TestCraftController(
+                repo: ref.watch(craftRepositoryProvider),
+                engine: ref.watch(craftEngineProvider),
+                clock: ref.watch(focusClockProvider),
+                userId: 'test_user',
+                presetState: craftPreset,
+              )),
+        ],
+      );
+      addTearDown(customContainer.dispose);
+
+      await tester.pumpWidget(createTestApp(customContainer, const HomePage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final avatarFinder = find.byType(PetAvatarWidget);
+      expect(avatarFinder, findsOneWidget);
+      final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
+      expect(avatarWidget.visualState, equals(PetVisualState.focus));
+    });
+
+    testWidgets(
+        'RP-5: Tapping Mochi in idle state activates interact cooldown while visualState remains idle',
+        (tester) async {
+      const homeState = HomeUIState(
+        petProgress: null,
+        todayFocusSeconds: 0,
+        streakDays: 0,
+      );
+
+      final customContainer = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          focusClockProvider.overrideWithValue(testClock),
+          homeControllerProvider.overrideWith(
+            (ref) => _TestHomeController(ref, homeState),
+          ),
+        ],
+      );
+      addTearDown(customContainer.dispose);
+
+      await tester.pumpWidget(createTestApp(customContainer, const HomePage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final avatarFinder = find.byType(PetAvatarWidget);
+      expect(avatarFinder, findsOneWidget);
+      final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
+      final controller = avatarWidget.controller!;
+
+      expect(controller.visualState, equals(PetVisualState.idle));
+      expect(controller.isInteractCooldownActive, isFalse);
+
+      await tester.tap(avatarFinder);
+      await tester.pump();
+
+      expect(controller.visualState, equals(PetVisualState.idle));
+      expect(controller.isInteractCooldownActive, isTrue);
+    });
+
+    testWidgets(
+        'RP-5: Tapping Mochi in focus state does not activate interact cooldown',
+        (tester) async {
+      const homeState = HomeUIState(
+        petProgress: null,
+        todayFocusSeconds: 600,
+        streakDays: 1,
+        hasActiveSession: true,
+      );
+
+      final customContainer = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          focusClockProvider.overrideWithValue(testClock),
+          homeControllerProvider.overrideWith(
+            (ref) => _TestHomeController(ref, homeState),
+          ),
+        ],
+      );
+      addTearDown(customContainer.dispose);
+
+      await tester.pumpWidget(createTestApp(customContainer, const HomePage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final avatarFinder = find.byType(PetAvatarWidget);
+      expect(avatarFinder, findsOneWidget);
+      final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
+      final controller = avatarWidget.controller!;
+
+      expect(controller.visualState, equals(PetVisualState.focus));
+      expect(controller.isInteractCooldownActive, isFalse);
+
+      await tester.tap(avatarFinder);
+      await tester.pump();
+
+      expect(controller.visualState, equals(PetVisualState.focus));
+      expect(controller.isInteractCooldownActive, isFalse);
     });
   });
 }
