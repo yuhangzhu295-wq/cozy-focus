@@ -10,6 +10,7 @@ import '../controllers/craft_controller.dart';
 import '../../core/auth/current_user.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pet_avatar_widget.dart';
+import '../companion/companion_presentation_mapper.dart';
 
 /// Screen 01: Home Page — V4.1 redesign
 class HomePage extends ConsumerStatefulWidget {
@@ -101,11 +102,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     PetProgress? petProgress,
     CraftState craftState,
   ) {
-    final mochiState = hasActive
-        ? PetVisualState.focus
-        : (craftState.activeJob != null
-            ? PetVisualState.craft
-            : PetVisualState.idle);
+    final mochiState = CompanionPresentationMapper.visualStateFor(
+      hasActiveSession: hasActive,
+      hasActiveCraft: craftState.activeJob != null,
+    );
     if (_petMotionController.visualState != mochiState) {
       _petMotionController.updateState(mochiState);
     }

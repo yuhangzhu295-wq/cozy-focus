@@ -1,0 +1,30 @@
+{
+  "project": "COZY_FOCUS",
+  "base_sha": "55555385bb2af6e9c509bd311246fe0307df9bda",
+  "current_sha": "fb26a12b40e47154f9aeec91673b8e875836fd30",
+  "current_slice": "AUTO-2",
+  "status": "RUNNING",
+  "completed_slices": [
+    "RP-0",
+    "RP-1",
+    "RP-3",
+    "RP-4",
+    "RP-5"
+  ],
+  "current_findings": {
+    "AUTO-1": "BLOCKED_PENDING_PRODUCT_ACQUISITION_RULE",
+    "AUTO-2": "APPROVED_PENDING_COMMIT_PUSH_CI",
+    "AUTO-2_claude_review": "FINAL_APPROVED_P0_0_P1_0_P2_3",
+    "open_source_reuse_audit": "NOT_DONE"
+  },
+  "repair_round": 0,
+  "last_test_total": "289/289",
+  "last_ci_run": "35255376779",
+  "last_ci_sha": "fb26a12b40e47154f9aeec91673b8e875836fd30",
+  "rive_asset_status": "BLOCKED_PENDING_AUTHORING",
+  "real_device_status": "NOT_AVAILABLE",
+  "runtime_visual_qa": "NOT_AVAILABLE",
+  "performance_runtime": "NOT_MEASURED",
+  "gpt_substitution_used": "NO",
+  "next_slice": "AUTO-2 commit, push, and exact-SHA CI"
+}
