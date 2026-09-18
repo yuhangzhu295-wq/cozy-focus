@@ -26,6 +26,8 @@ class PetIdleFallbackView extends StatefulWidget {
   final PetMotionController? controller;
   final IPetMotionScheduler? scheduler;
   final Widget? accessory;
+  final double? focusProgress;
+  final double? craftProgress;
 
   const PetIdleFallbackView({
     super.key,
@@ -34,6 +36,8 @@ class PetIdleFallbackView extends StatefulWidget {
     this.controller,
     this.scheduler,
     this.accessory,
+    this.focusProgress,
+    this.craftProgress,
   });
 
   @override

@@ -12,8 +12,9 @@ import '../theme/app_theme.dart';
 /// - [message] (optional speech bubble)
 ///
 /// Under the hood, delegates rendering to [PetMotionView], which:
-/// 1. Uses [RivePetAdapter] if a real .riv asset is present and enabled.
-/// 2. Truthfully defaults to [PetIdleFallbackView] for idle micro-motions
+/// 1. Uses the Android V1 Flutter fallback through [PetMotionView].
+/// 2. Keeps an optional renderer boundary for future non-release renderers.
+/// 3. Truthfully defaults to [PetIdleFallbackView] for idle micro-motions
 ///    (breathe, sway, blink, ear-twitch, tail-idle) and safe fallback states.
 class PetAvatarWidget extends StatelessWidget {
   final PetVisualState visualState;
@@ -24,6 +25,8 @@ class PetAvatarWidget extends StatelessWidget {
   final IPetRiveRenderer? riveRenderer;
   final bool enableRive;
   final Widget? accessory;
+  final double? focusProgress;
+  final double? craftProgress;
 
   const PetAvatarWidget({
     super.key,
@@ -35,6 +38,8 @@ class PetAvatarWidget extends StatelessWidget {
     this.riveRenderer,
     this.enableRive = false,
     this.accessory,
+    this.focusProgress,
+    this.craftProgress,
   });
 
   String _petSemanticLabel(PetVisualState state) {
@@ -114,6 +119,8 @@ class PetAvatarWidget extends StatelessWidget {
                   riveRenderer: riveRenderer,
                   enableRive: enableRive,
                   accessory: accessory,
+                  focusProgress: focusProgress,
+                  craftProgress: craftProgress,
                 ),
               ),
             )
@@ -125,6 +132,8 @@ class PetAvatarWidget extends StatelessWidget {
               riveRenderer: riveRenderer,
               enableRive: enableRive,
               accessory: accessory,
+              focusProgress: focusProgress,
+              craftProgress: craftProgress,
             ),
         ],
       );

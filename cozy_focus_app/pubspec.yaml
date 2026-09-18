@@ -26,9 +26,6 @@ dependencies:
   # Remote / sync
   supabase_flutter: ^2.8.1
 
-  # Animation
-  rive: ^0.13.17
-
   # Notifications
   flutter_local_notifications: ^18.0.1
 

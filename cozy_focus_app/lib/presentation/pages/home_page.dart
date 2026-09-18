@@ -135,6 +135,11 @@ class _HomePageState extends ConsumerState<HomePage> {
     final petMessage = petProgress != null
         ? 'Lv.${petProgress.level} 累计专注 ${petProgress.totalFocusMinutes} 分钟'
         : null;
+    final craftProgress = craftState.activeJob != null &&
+            (craftState.activeRecipe?.requiredSeconds ?? 0) > 0
+        ? craftState.activeJob!.progressSeconds /
+            craftState.activeRecipe!.requiredSeconds
+        : null;
 
     return SizedBox(
       height: petProgress != null ? 350 : 300,
@@ -220,6 +225,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 message: petMessage,
                 controller: _petMotionController,
                 size: 180,
+                craftProgress: craftProgress,
               ),
             ),
           ),

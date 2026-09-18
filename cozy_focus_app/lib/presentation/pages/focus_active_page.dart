@@ -429,6 +429,11 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                     child: PetAvatarWidget(
                       visualState: sessionState.petState,
                       size: 160,
+                      focusProgress: sessionState.session != null &&
+                              sessionState.session!.plannedSeconds > 0
+                          ? sessionState.elapsedSeconds /
+                              sessionState.session!.plannedSeconds
+                          : null,
                     ),
                   ),
                 ),
