@@ -106,7 +106,11 @@ class _HeroSection extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          PetAvatarWidget(visualState: PetVisualState.idle, size: 72),
+          PetAvatarWidget(
+            visualState: PetVisualState.idle,
+            size: 72,
+            showStateBadge: false,
+          ),
           SizedBox(width: 16),
           Expanded(
             child: Column(

@@ -284,6 +284,7 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
             visualState: PetVisualState.idle,
             size: 56,
             message: '${pet.name} 的收藏屋 🌱',
+            showStateBadge: false,
           ),
           const SizedBox(width: 16),
           Expanded(

@@ -27,6 +27,7 @@ class PetAvatarWidget extends StatelessWidget {
   final Widget? accessory;
   final double? focusProgress;
   final double? craftProgress;
+  final bool showStateBadge;
 
   const PetAvatarWidget({
     super.key,
@@ -40,6 +41,7 @@ class PetAvatarWidget extends StatelessWidget {
     this.accessory,
     this.focusProgress,
     this.craftProgress,
+    this.showStateBadge = true,
   });
 
   String _petSemanticLabel(PetVisualState state) {
@@ -121,6 +123,7 @@ class PetAvatarWidget extends StatelessWidget {
                   accessory: accessory,
                   focusProgress: focusProgress,
                   craftProgress: craftProgress,
+                  showStateBadge: showStateBadge,
                 ),
               ),
             )
@@ -134,6 +137,7 @@ class PetAvatarWidget extends StatelessWidget {
               accessory: accessory,
               focusProgress: focusProgress,
               craftProgress: craftProgress,
+              showStateBadge: showStateBadge,
             ),
         ],
       );

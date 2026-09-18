@@ -77,7 +77,10 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
             children: [
               // Pet avatar — small
               const PetAvatarWidget(
-                  visualState: PetVisualState.pause, size: 80),
+                visualState: PetVisualState.pause,
+                size: 80,
+                showStateBadge: false,
+              ),
               const SizedBox(height: 16),
               const Text(
                 '提前结束专注吗？',

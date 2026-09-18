@@ -17,6 +17,7 @@ class PetMotionView extends StatelessWidget {
   final Widget? accessory;
   final double? focusProgress;
   final double? craftProgress;
+  final bool showStateBadge;
 
   const PetMotionView({
     super.key,
@@ -29,6 +30,7 @@ class PetMotionView extends StatelessWidget {
     this.accessory,
     this.focusProgress,
     this.craftProgress,
+    this.showStateBadge = true,
   });
 
   double? get _visualFocusProgress => _normalizeProgress(focusProgress);
@@ -49,6 +51,7 @@ class PetMotionView extends StatelessWidget {
         accessory: accessory,
         focusProgress: _visualFocusProgress,
         craftProgress: _visualCraftProgress,
+        showStateBadge: showStateBadge,
       );
 
       if (enableRive) {

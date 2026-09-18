@@ -28,6 +28,7 @@ class PetIdleFallbackView extends StatefulWidget {
   final Widget? accessory;
   final double? focusProgress;
   final double? craftProgress;
+  final bool showStateBadge;
 
   const PetIdleFallbackView({
     super.key,
@@ -38,6 +39,7 @@ class PetIdleFallbackView extends StatefulWidget {
     this.accessory,
     this.focusProgress,
     this.craftProgress,
+    this.showStateBadge = true,
   });
 
   @override
@@ -1102,35 +1104,35 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
                     ),
                     // Optional accessory
                     if (widget.accessory != null) widget.accessory!,
-                    // State badge
-                    Positioned(
-                      bottom: widget.size * 0.10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(config.stateIcon,
-                                size: 13, color: config.iconColor),
-                            const SizedBox(width: 4),
-                            Text(
-                              config.label,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: config.iconColor,
+                    if (widget.showStateBadge)
+                      Positioned(
+                        bottom: widget.size * 0.10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface.withValues(alpha: 0.92),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(config.stateIcon,
+                                  size: 13, color: config.iconColor),
+                              const SizedBox(width: 4),
+                              Text(
+                                config.label,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: config.iconColor,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
