@@ -2,19 +2,23 @@
   "project": "COZY_FOCUS",
   "base_sha": "55555385bb2af6e9c509bd311246fe0307df9bda",
   "start_sha": "aed79a145de45252b938ec65fdc3a2aa9575b96f",
-  "current_sha": "2697b5b64fb2fe312a5b408eaac8cd7760890169",
-  "final_sha": "PENDING_COMMIT",
-  "current_slice": "Home / Focus accessibility polish",
-  "status": "READY_TO_COMMIT",
-  "accessibility_slice": "HOME_FOCUS_MOCHI_ACCESSIBILITY_POLISH",
-  "accessibility_sha": "PENDING_COMMIT",
-  "accessibility_ci": "PENDING",
+  "current_sha": "735cf712cd796e3988f0ef93065dffc6f8977313",
+  "final_sha": "735cf712cd796e3988f0ef93065dffc6f8977313",
+  "current_slice": "RIVE-ASSET-READINESS",
+  "status": "ACCESSIBILITY_COMPLETE_PENDING_RIVE_DECISION",
+  "accessibility_slice": "COMPLETE",
+  "accessibility_sha": "735cf712cd796e3988f0ef93065dffc6f8977313",
+  "accessibility_ci": "PASS",
+  "accessibility_ci_run_id": "35333795661",
+  "accessibility_ci_head_sha": "735cf712cd796e3988f0ef93065dffc6f8977313",
+  "accessibility_ci_conclusion": "success",
   "completed_slices": [
     "RP-0",
     "RP-1",
     "RP-3",
     "RP-4",
-    "RP-5"
+    "RP-5",
+    "ACCESSIBILITY_POLISH"
   ],
   "current_findings": {
     "AUTO-1": "BLOCKED_PENDING_PRODUCT_ACQUISITION_RULE",
@@ -26,21 +30,24 @@
     "AUTO-3_cli_proof": "RIVE_CLI_1_0_4_OFFLINE_CREATE_VERIFY_BUILD_INSPECT_SCREENSHOT_PASS",
     "AUTO-3_claude_gate": "P0_DISTRIBUTION_LICENSE_DECISION_REQUIRED",
     "AUTO-3_naming": "ACTIVE_CONTRACT_MOCHI_STATE_MACHINE_1_HISTORICAL_NAMES_NONAUTHORITATIVE",
-    "accessibility_polish": "FOCUSED_TESTS_6_OF_6_PASS_FULL_TESTS_295_OF_295_PASS_FORMAT_PASS_ANALYZE_PASS_DIFF_CHECK_PASS",
+    "accessibility_polish": "COMPLETE_LOCAL_ALL_PASS_AND_EXACT_SHA_CI_PASS",
+    "accessibility_ci": "RUN_35333795661_SUCCESS_EXACT_SHA",
     "claude_review_actual": "APPROVED_P0_0_P1_0_P2_5",
-    "apk_build": "APACHE_DEBUG_APK_PRODUCED_BUILD_APP_OUTPUTS_FLUTTER_APK_APP_DEBUG_APK"
+    "apk_build": "PASS_EXIT_CODE_0_APP_DEBUG_APK"
   },
   "review_verdict": {
     "p0": 0,
     "p1": 0,
     "p2": 5,
-    "status": "APPROVE_READY_TO_COMMIT"
+    "status": "APPROVE_COMPLETE"
   },
   "repair_round": 2,
   "last_test_total": "295/295",
   "focused_test_total": "6/6",
-  "last_ci_run": "35259670518",
-  "last_ci_sha": "2697b5b64fb2fe312a5b408eaac8cd7760890169",
+  "last_ci_run": "35333795661",
+  "last_ci_sha": "735cf712cd796e3988f0ef93065dffc6f8977313",
+  "last_ci_conclusion": "success",
+  "apk_build_exit_code": 0,
   "rive_asset_status": "AUTHORING_PATH_AVAILABLE_ASSET_BLOCKED_PENDING_DISTRIBUTION_LICENSE_DECISION",
   "rive_code_readiness": "READY_FALLBACK_ACTIVE_CONTRACT_PRESERVED",
   "dress_product_contract": "BLOCKED_PENDING_PRODUCT_ACQUISITION_RULE",
@@ -52,5 +59,5 @@
   "performance_qa": "NOT_MEASURED",
   "gpt_substitution_used": "NO",
   "next_required_user_input": "DECIDE_RIVE_DISTRIBUTION_LICENSE_AND_SOURCE_AUTHORIZATION",
-  "next_slice": "Await product-owner Rive distribution-rights decision; continue only non-Rive release-polish slices"
+  "next_slice": "RIVE-ASSET-READINESS"
 }
