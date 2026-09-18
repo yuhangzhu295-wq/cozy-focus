@@ -1,9 +1,14 @@
 {
   "project": "COZY_FOCUS",
   "base_sha": "55555385bb2af6e9c509bd311246fe0307df9bda",
+  "start_sha": "aed79a145de45252b938ec65fdc3a2aa9575b96f",
   "current_sha": "2697b5b64fb2fe312a5b408eaac8cd7760890169",
-  "current_slice": "AUTO-3 Rive authoring gate",
-  "status": "BLOCKED",
+  "final_sha": "PENDING_COMMIT",
+  "current_slice": "Home / Focus accessibility polish",
+  "status": "READY_TO_COMMIT",
+  "accessibility_slice": "HOME_FOCUS_MOCHI_ACCESSIBILITY_POLISH",
+  "accessibility_sha": "PENDING_COMMIT",
+  "accessibility_ci": "PENDING",
   "completed_slices": [
     "RP-0",
     "RP-1",
@@ -20,16 +25,32 @@
     "AUTO-3_asset_discovery": "NO_REAL_RIVE_ASSET_OR_SOURCE_FOUND",
     "AUTO-3_cli_proof": "RIVE_CLI_1_0_4_OFFLINE_CREATE_VERIFY_BUILD_INSPECT_SCREENSHOT_PASS",
     "AUTO-3_claude_gate": "P0_DISTRIBUTION_LICENSE_DECISION_REQUIRED",
-    "AUTO-3_naming": "ACTIVE_CONTRACT_MOCHI_STATE_MACHINE_1_HISTORICAL_NAMES_NONAUTHORITATIVE"
+    "AUTO-3_naming": "ACTIVE_CONTRACT_MOCHI_STATE_MACHINE_1_HISTORICAL_NAMES_NONAUTHORITATIVE",
+    "accessibility_polish": "FOCUSED_TESTS_6_OF_6_PASS_FULL_TESTS_295_OF_295_PASS_FORMAT_PASS_ANALYZE_PASS_DIFF_CHECK_PASS",
+    "claude_review_actual": "APPROVED_P0_0_P1_0_P2_5",
+    "apk_build": "APACHE_DEBUG_APK_PRODUCED_BUILD_APP_OUTPUTS_FLUTTER_APK_APP_DEBUG_APK"
   },
-  "repair_round": 0,
-  "last_test_total": "289/289",
+  "review_verdict": {
+    "p0": 0,
+    "p1": 0,
+    "p2": 5,
+    "status": "APPROVE_READY_TO_COMMIT"
+  },
+  "repair_round": 2,
+  "last_test_total": "295/295",
+  "focused_test_total": "6/6",
   "last_ci_run": "35259670518",
   "last_ci_sha": "2697b5b64fb2fe312a5b408eaac8cd7760890169",
   "rive_asset_status": "AUTHORING_PATH_AVAILABLE_ASSET_BLOCKED_PENDING_DISTRIBUTION_LICENSE_DECISION",
+  "rive_code_readiness": "READY_FALLBACK_ACTIVE_CONTRACT_PRESERVED",
+  "dress_product_contract": "BLOCKED_PENDING_PRODUCT_ACQUISITION_RULE",
+  "dress_implementation": "DRESS_ENGINE_COMPATIBLE_AWAITING_CONTRACT",
   "real_device_status": "NOT_AVAILABLE",
+  "real_device_qa": "NOT_AVAILABLE",
   "runtime_visual_qa": "NOT_AVAILABLE",
   "performance_runtime": "NOT_MEASURED",
+  "performance_qa": "NOT_MEASURED",
   "gpt_substitution_used": "NO",
+  "next_required_user_input": "DECIDE_RIVE_DISTRIBUTION_LICENSE_AND_SOURCE_AUTHORIZATION",
   "next_slice": "Await product-owner Rive distribution-rights decision; continue only non-Rive release-polish slices"
 }

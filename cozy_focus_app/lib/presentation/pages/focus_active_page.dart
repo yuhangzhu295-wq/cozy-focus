@@ -446,131 +446,164 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                     BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
               ),
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              child: Column(
-                children: [
-                  // Timer
-                  Text(
-                    displayTime,
-                    style: const TextStyle(
-                      fontSize: 68,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primaryDark,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    isPaused ? '暂停不会清零，可以随时继续' : '保持专注，Mochi 正在陪着你',
-                    style: const TextStyle(
-                        fontSize: 13, color: AppColors.textSecondary),
-                  ),
-
-                  // 03A paused: task + elapsed info
-                  if (isPaused) ...[
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(color: AppColors.border),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
                       ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.description_outlined,
-                                  color: AppColors.primarySage, size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                '本次任务：${sessionState.taskName ?? '专注任务'}',
-                                style: const TextStyle(
-                                    fontSize: 14, color: AppColors.textPrimary),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Text('🌱 ', style: TextStyle(fontSize: 16)),
-                              Text(
-                                '已专注：${(sessionState.elapsedSeconds / 60).floor()} 分钟',
-                                style: const TextStyle(
-                                    fontSize: 14, color: AppColors.textPrimary),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  const Spacer(),
-
-                  // Buttons
-                  if (isPaused) ...[
-                    // 03A: full-width resume + text end
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.play_arrow_rounded, size: 24),
-                        label: const Text('继续专注',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold)),
-                        onPressed: () => _handlePauseResume(true),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () =>
-                          _showEarlyFinishDialog(sessionState.elapsedSeconds),
-                      child: const Text('提前结束',
-                          style: TextStyle(
-                              color: AppColors.textSecondary, fontSize: 15)),
-                    ),
-                  ] else ...[
-                    // 03: side-by-side pause + end
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 52,
-                            child: ElevatedButton.icon(
-                              icon: const Icon(Icons.pause_rounded, size: 22),
-                              label: const Text('暂停',
-                                  style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold)),
-                              onPressed: () => _handlePauseResume(false),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SizedBox(
-                            height: 52,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.textSecondary,
-                                side: const BorderSide(color: AppColors.border),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.pill),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          children: [
+                            // Timer
+                            Semantics(
+                              readOnly: true,
+                              label:
+                                  '专注计时 $displayTime，当前${isPaused ? '已暂停' : '专注中'}',
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  displayTime,
+                                  style: const TextStyle(
+                                    fontSize: 68,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryDark,
+                                    letterSpacing: 2,
+                                  ),
                                 ),
                               ),
-                              onPressed: () => _showEarlyFinishDialog(
-                                  sessionState.elapsedSeconds),
-                              child: const Text('提前结束',
-                                  style: TextStyle(fontSize: 15)),
                             ),
-                          ),
+                            const SizedBox(height: 6),
+                            Text(
+                              isPaused ? '暂停不会清零，可以随时继续' : '保持专注，Mochi 正在陪着你',
+                              style: const TextStyle(
+                                  fontSize: 13, color: AppColors.textSecondary),
+                            ),
+
+                            // 03A paused: task + elapsed info
+                            if (isPaused) ...[
+                              const SizedBox(height: 20),
+                              Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: AppColors.background,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.description_outlined,
+                                            color: AppColors.primarySage,
+                                            size: 18),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '本次任务：${sessionState.taskName ?? '专注任务'}',
+                                          style: const TextStyle(
+                                              fontSize: 14,
+                                              color: AppColors.textPrimary),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Text('🌱 ',
+                                            style: TextStyle(fontSize: 16)),
+                                        Text(
+                                          '已专注：${(sessionState.elapsedSeconds / 60).floor()} 分钟',
+                                          style: const TextStyle(
+                                              fontSize: 14,
+                                              color: AppColors.textPrimary),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+
+                            const Spacer(),
+
+                            // Buttons
+                            if (isPaused) ...[
+                              // 03A: full-width resume + text end
+                              SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.play_arrow_rounded,
+                                      size: 24),
+                                  label: const Text('继续专注',
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold)),
+                                  onPressed: () => _handlePauseResume(true),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextButton(
+                                onPressed: () => _showEarlyFinishDialog(
+                                    sessionState.elapsedSeconds),
+                                child: const Text('提前结束',
+                                    style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 15)),
+                              ),
+                            ] else ...[
+                              // 03: side-by-side pause + end
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 52,
+                                      child: ElevatedButton.icon(
+                                        icon: const Icon(Icons.pause_rounded,
+                                            size: 22),
+                                        label: const Text('暂停',
+                                            style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold)),
+                                        onPressed: () =>
+                                            _handlePauseResume(false),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 52,
+                                      child: OutlinedButton(
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor:
+                                              AppColors.textSecondary,
+                                          side: const BorderSide(
+                                              color: AppColors.border),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                                AppRadius.pill),
+                                          ),
+                                        ),
+                                        onPressed: () => _showEarlyFinishDialog(
+                                            sessionState.elapsedSeconds),
+                                        child: const Text('提前结束',
+                                            style: TextStyle(fontSize: 15)),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 24),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ],
-                  const SizedBox(height: 24),
-                ],
+                  );
+                },
               ),
             ),
           ),

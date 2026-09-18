@@ -24,16 +24,41 @@ class _HomePageState extends ConsumerState<HomePage> {
   int _currentNavIndex = 0;
   final PetMotionController _petMotionController = PetMotionController();
   static const List<int> _quickChips = [5, 25, 50, 90];
+  ProviderSubscription<HomeUIState>? _homeSubscription;
+  ProviderSubscription<CraftState>? _craftSubscription;
 
   @override
   void initState() {
     super.initState();
+    _homeSubscription = ref.listenManual<HomeUIState>(
+      homeControllerProvider,
+      (_, __) => _syncPetVisualState(),
+      fireImmediately: true,
+    );
+    _craftSubscription = ref.listenManual<CraftState>(
+      craftControllerProvider,
+      (_, __) => _syncPetVisualState(),
+    );
     Future.microtask(
         () => ref.read(craftControllerProvider.notifier).loadAll());
   }
 
+  void _syncPetVisualState() {
+    final homeState = ref.read(homeControllerProvider);
+    final craftState = ref.read(craftControllerProvider);
+    final visualState = CompanionPresentationMapper.visualStateFor(
+      hasActiveSession: homeState.hasActiveSession,
+      hasActiveCraft: craftState.activeJob != null,
+    );
+    if (_petMotionController.visualState != visualState) {
+      _petMotionController.updateState(visualState);
+    }
+  }
+
   @override
   void dispose() {
+    _homeSubscription?.close();
+    _craftSubscription?.close();
     _petMotionController.dispose();
     super.dispose();
   }
@@ -106,9 +131,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       hasActiveSession: hasActive,
       hasActiveCraft: craftState.activeJob != null,
     );
-    if (_petMotionController.visualState != mochiState) {
-      _petMotionController.updateState(mochiState);
-    }
 
     final petMessage = petProgress != null
         ? 'Lv.${petProgress.level} 累计专注 ${petProgress.totalFocusMinutes} 分钟'
@@ -227,18 +249,26 @@ class _HomePageState extends ConsumerState<HomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Text('🌱 ', style: TextStyle(fontSize: 16)),
-                  Text(
-                    '专注时长',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+              const Expanded(
+                child: Row(
+                  children: [
+                    Text('🌱 ', style: TextStyle(fontSize: 16)),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '专注时长',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               GestureDetector(
                 onTap: () => context.go('/focus/setup'),
@@ -363,12 +393,14 @@ class _HomePageState extends ConsumerState<HomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '📊 今天的专注',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+              const Expanded(
+                child: Text(
+                  '📊 今天的专注',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
               GestureDetector(
@@ -405,39 +437,47 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ),
               const SizedBox(width: 20),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$todayMinutes 分钟',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const Text(
-                    '今日专注时长',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Text('🔥 ', style: TextStyle(fontSize: 14)),
-                      Text(
-                        '$streakDays 天  连续专注',
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '$todayMinutes 分钟',
                         style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.accentPeach,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const Text(
+                      '今日专注时长',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Text('🔥 ', style: TextStyle(fontSize: 14)),
+                        Flexible(
+                          child: Text(
+                            '$streakDays 天  连续专注',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.accentPeach,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

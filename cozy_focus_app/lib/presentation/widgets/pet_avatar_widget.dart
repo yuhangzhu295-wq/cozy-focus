@@ -37,6 +37,27 @@ class PetAvatarWidget extends StatelessWidget {
     this.accessory,
   });
 
+  String _petSemanticLabel(PetVisualState state) {
+    switch (state) {
+      case PetVisualState.idle:
+        return 'Mochi 空闲';
+      case PetVisualState.focus:
+        return 'Mochi 专注中';
+      case PetVisualState.craft:
+        return 'Mochi 制作中';
+      case PetVisualState.pause:
+        return 'Mochi 暂停中';
+      case PetVisualState.celebrate:
+        return 'Mochi 庆祝中';
+      case PetVisualState.sleep:
+        return 'Mochi 休息中';
+      case PetVisualState.greeting:
+        return 'Mochi 打招呼';
+      case PetVisualState.interact:
+        return 'Mochi 互动中';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget buildAvatar(PetVisualState activeState) {
@@ -71,17 +92,29 @@ class PetAvatarWidget extends StatelessWidget {
             ),
           ],
           if (controller != null)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: controller!.triggerInteract,
-              child: PetMotionView(
-                visualState: activeState,
-                size: size,
-                controller: controller,
-                scheduler: scheduler,
-                riveRenderer: riveRenderer,
-                enableRive: enableRive,
-                accessory: accessory,
+            Semantics(
+              button: activeState == PetVisualState.idle,
+              label: _petSemanticLabel(activeState),
+              hint: activeState == PetVisualState.idle ? '仅空闲时可互动' : null,
+              onTap: activeState == PetVisualState.idle
+                  ? () {
+                      controller!.triggerInteract();
+                    }
+                  : null,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  controller!.triggerInteract();
+                },
+                child: PetMotionView(
+                  visualState: activeState,
+                  size: size,
+                  controller: controller,
+                  scheduler: scheduler,
+                  riveRenderer: riveRenderer,
+                  enableRive: enableRive,
+                  accessory: accessory,
+                ),
               ),
             )
           else
