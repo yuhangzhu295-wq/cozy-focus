@@ -151,6 +151,9 @@ void main() {
       // Verify today's content
       expect(find.text('今日专注时长'), findsOneWidget);
       expect(find.text('专注次数'), findsOneWidget);
+      expect(find.text('0'), findsNWidgets(3));
+      expect(find.text(r'$count'), findsNothing);
+      expect(find.text(r'$streak'), findsNothing);
 
       // Switch to History tab (tab index 1)
       await tester.tap(find.text('历史'));
@@ -160,6 +163,12 @@ void main() {
       expect(find.widgetWithText(ChoiceChip, '学习'), findsOneWidget);
       expect(find.widgetWithText(ChoiceChip, '工作'), findsOneWidget);
       expect(find.widgetWithText(ChoiceChip, '阅读'), findsOneWidget);
+
+      await tester.tap(find.text('日历'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(r'$d'), findsNothing);
+      expect(find.text('1'), findsWidgets);
     });
 
     testWidgets(
