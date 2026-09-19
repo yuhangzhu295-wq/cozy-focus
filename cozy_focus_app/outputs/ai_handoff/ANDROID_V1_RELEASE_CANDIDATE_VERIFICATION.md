@@ -241,9 +241,23 @@ Everything else this run is **evidence only** — 44 runtime screenshots + hiera
 `outputs/release_qa/` is local evidence), plus rebuilt release artifacts under `build/` (never
 tracked).
 
-**Not pushed, no PR change, no merge, no store upload.** The commit is local only; `origin` and
-PR #1 still point at `75b3e4be565ad1db6d7ce1fe9bf2a08f9f114b59`, so no CI re-run is triggered and
-no release channel is affected.
+**Not pushed, no PR change, no merge, no store upload.** The commit is local only; nothing was
+sent to `origin`, so no CI re-run is triggered and no release channel is affected. (Note: this
+local clone currently has **no** `refs/remotes/origin/*` entries, so the remote heads could not be
+re-read locally in this run; `git fetch` would restore them. The remote state recorded earlier in
+this session was `release/android-v1 = 75b3e4be`, `main = 41e26a1`.)
+
+### Local git anomaly encountered (environment, not project)
+
+`git commit` wrote the commit object and reflog entry successfully, but the loose ref
+`.git/refs/heads/release/android-v1` did not land — `HEAD` was momentarily treated as an unborn
+branch (`git log` → "does not have any commits yet"; `git status` showed every file as staged `A`).
+History was **never** lost: `git reflog` retained `75b3e4be → a65cb388`. `git update-ref` also
+exited 0 without creating the file when the ref required a **new intermediate directory**
+(`refs/heads/release/`); top-level refs created fine. The ref was restored by creating the
+directory and writing the ref file directly, after which `git rev-parse HEAD`, `git log`, and
+`git status` were all consistent and `git fsck --connectivity-only` reported only ordinary
+dangling objects. No object or history damage resulted.
 
 ### P2 — Unused declared dependencies (carried over, unchanged)
 
