@@ -234,6 +234,13 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
     final restored = await _engine.restore(userId);
     if (restored != null) {
       _syncFromEngine();
+      if (restored.plannedSeconds > 0 && state.remainingSeconds <= 0) {
+        // An expired countdown still needs the established completion flow;
+        // it must not be presented as a runnable session after restoration.
+        final completed = await _engine.complete();
+        _syncFromEngine();
+        return completed;
+      }
     }
     return restored;
   }

@@ -12,8 +12,9 @@ import '../theme/app_theme.dart';
 /// - [message] (optional speech bubble)
 ///
 /// Under the hood, delegates rendering to [PetMotionView], which:
-/// 1. Uses [RivePetAdapter] if a real .riv asset is present and enabled.
-/// 2. Truthfully defaults to [PetIdleFallbackView] for idle micro-motions
+/// 1. Uses the Android V1 Flutter fallback through [PetMotionView].
+/// 2. Keeps an optional renderer boundary for future non-release renderers.
+/// 3. Truthfully defaults to [PetIdleFallbackView] for idle micro-motions
 ///    (breathe, sway, blink, ear-twitch, tail-idle) and safe fallback states.
 class PetAvatarWidget extends StatelessWidget {
   final PetVisualState visualState;
@@ -24,6 +25,9 @@ class PetAvatarWidget extends StatelessWidget {
   final IPetRiveRenderer? riveRenderer;
   final bool enableRive;
   final Widget? accessory;
+  final double? focusProgress;
+  final double? craftProgress;
+  final bool showStateBadge;
 
   const PetAvatarWidget({
     super.key,
@@ -35,6 +39,9 @@ class PetAvatarWidget extends StatelessWidget {
     this.riveRenderer,
     this.enableRive = false,
     this.accessory,
+    this.focusProgress,
+    this.craftProgress,
+    this.showStateBadge = true,
   });
 
   String _petSemanticLabel(PetVisualState state) {
@@ -91,41 +98,46 @@ class PetAvatarWidget extends StatelessWidget {
               ),
             ),
           ],
-          if (controller != null)
-            Semantics(
-              button: activeState == PetVisualState.idle,
-              label: _petSemanticLabel(activeState),
-              hint: activeState == PetVisualState.idle ? '仅空闲时可互动' : null,
-              onTap: activeState == PetVisualState.idle
-                  ? () {
-                      controller!.triggerInteract();
-                    }
-                  : null,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  controller!.triggerInteract();
-                },
-                child: PetMotionView(
-                  visualState: activeState,
-                  size: size,
-                  controller: controller,
-                  scheduler: scheduler,
-                  riveRenderer: riveRenderer,
-                  enableRive: enableRive,
-                  accessory: accessory,
-                ),
-              ),
-            )
-          else
-            PetMotionView(
-              visualState: activeState,
-              size: size,
-              scheduler: scheduler,
-              riveRenderer: riveRenderer,
-              enableRive: enableRive,
-              accessory: accessory,
-            ),
+          Semantics(
+            button: controller != null && activeState == PetVisualState.idle,
+            label: _petSemanticLabel(activeState),
+            hint: controller != null && activeState == PetVisualState.idle
+                ? '仅空闲时可互动'
+                : null,
+            onTap: controller != null && activeState == PetVisualState.idle
+                ? () {
+                    controller!.triggerInteract();
+                  }
+                : null,
+            child: controller != null
+                ? GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: controller!.triggerInteract,
+                    child: PetMotionView(
+                      visualState: activeState,
+                      size: size,
+                      controller: controller,
+                      scheduler: scheduler,
+                      riveRenderer: riveRenderer,
+                      enableRive: enableRive,
+                      accessory: accessory,
+                      focusProgress: focusProgress,
+                      craftProgress: craftProgress,
+                      showStateBadge: showStateBadge,
+                    ),
+                  )
+                : PetMotionView(
+                    visualState: activeState,
+                    size: size,
+                    scheduler: scheduler,
+                    riveRenderer: riveRenderer,
+                    enableRive: enableRive,
+                    accessory: accessory,
+                    focusProgress: focusProgress,
+                    craftProgress: craftProgress,
+                    showStateBadge: showStateBadge,
+                  ),
+          ),
         ],
       );
     }

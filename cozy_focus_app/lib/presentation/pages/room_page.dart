@@ -5,6 +5,7 @@ import '../../domain/models/craft_models.dart';
 import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
 import '../../core/geometry/room_geometry.dart';
+import '../widgets/cozy_furniture_artwork.dart';
 
 /// Screen 09: Room Decoration Page (房间装饰).
 ///
@@ -127,8 +128,10 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Text('🏠',
-                                      style: TextStyle(fontSize: 56)),
+                                  const CozyFurnitureArtwork(
+                                    itemId: 'room',
+                                    size: 86,
+                                  ),
                                   const SizedBox(height: 12),
                                   const Text(
                                     '房间空空的，先去制作些家具吧',
@@ -509,7 +512,6 @@ class _InventoryPanel extends StatelessWidget {
               final recipe = craft.recipes
                   .where((r) => r.outputItemId == inv.itemId)
                   .firstOrNull;
-              final icon = recipe?.icon ?? '□';
               final name = recipe?.name ?? inv.itemId;
               return GestureDetector(
                 onTap: () => recipe != null ? onPlace(recipe) : null,
@@ -529,13 +531,19 @@ class _InventoryPanel extends StatelessWidget {
                           width: 44,
                           height: 44,
                           child: recipe?.artworkPath == null
-                              ? Text(icon,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 28))
-                              : Image.asset(recipe!.artworkPath!,
+                              ? CozyFurnitureArtwork(
+                                  itemId: inv.itemId,
+                                  size: 42,
+                                )
+                              : Image.asset(
+                                  recipe!.artworkPath!,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => Text(icon,
-                                      style: const TextStyle(fontSize: 28)))),
+                                  errorBuilder: (_, __, ___) =>
+                                      CozyFurnitureArtwork(
+                                    itemId: inv.itemId,
+                                    size: 42,
+                                  ),
+                                )),
                       const SizedBox(height: 4),
                       Text(
                         name,
@@ -574,6 +582,8 @@ class _RoomArtwork extends StatelessWidget {
     return _fallback();
   }
 
-  Widget _fallback() =>
-      Text(recipe?.icon ?? '□', style: TextStyle(fontSize: size * .62));
+  Widget _fallback() => CozyFurnitureArtwork(
+        itemId: recipe?.outputItemId ?? recipe?.id ?? '',
+        size: size,
+      );
 }

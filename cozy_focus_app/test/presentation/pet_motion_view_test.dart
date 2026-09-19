@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rive/rive.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_idle_fallback_view.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_motion_view.dart';
@@ -37,7 +36,8 @@ class CrashingRiveRenderer implements IPetRiveRenderer {
     required double width,
     required double height,
     required BoxFit fit,
-    void Function(Artboard)? onInit,
+    double? focusProgress,
+    double? craftProgress,
     Widget? fallback,
   }) {
     if (simulateCrashOrMissing && fallback != null) {
@@ -48,6 +48,28 @@ class CrashingRiveRenderer implements IPetRiveRenderer {
       height: height,
       child: const Center(child: Text('Simulated Rive Placeholder')),
     );
+  }
+}
+
+class CapturingRiveRenderer implements IPetRiveRenderer {
+  PetVisualState? visualState;
+  double? focusProgress;
+  double? craftProgress;
+
+  @override
+  Widget buildRiveWidget({
+    required PetVisualState visualState,
+    required double width,
+    required double height,
+    required BoxFit fit,
+    double? focusProgress,
+    double? craftProgress,
+    Widget? fallback,
+  }) {
+    this.visualState = visualState;
+    this.focusProgress = focusProgress;
+    this.craftProgress = craftProgress;
+    return SizedBox(width: width, height: height);
   }
 }
 
@@ -73,6 +95,27 @@ void main() {
       expect(find.byType(PetIdleFallbackView), findsOneWidget);
 
       await tester.pump(const Duration(milliseconds: 500));
+    });
+
+    testWidgets(
+        '1a. Android V1 fallback renders Mochi as a dog on a cushion, not a generic avatar',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: PetAvatarWidget(visualState: PetVisualState.idle),
+          ),
+        ),
+      );
+
+      expect(find.byKey(const Key('mochi-dog-body')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-dog-head')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-left-ear')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-right-ear')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-tail')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-left-paw')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-right-paw')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-cushion')), findsOneWidget);
     });
 
     testWidgets(
@@ -1374,6 +1417,72 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
       controller.dispose();
+    });
+
+    testWidgets(
+        '27. Renderer-neutral progress inputs remain nullable and clamp at the rendering boundary',
+        (tester) async {
+      final renderer = CapturingRiveRenderer();
+      final cases = <(
+        PetVisualState state,
+        double? focus,
+        double? craft,
+        double? expectedFocus,
+        double? expectedCraft
+      )>[
+        (PetVisualState.idle, null, null, null, null),
+        (PetVisualState.focus, -0.25, 0.0, 0.0, 0.0),
+        (PetVisualState.focus, 0.5, 0.5, 0.5, 0.5),
+        (PetVisualState.craft, 1.0, 1.25, 1.0, 1.0),
+      ];
+
+      for (final entry in cases) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: PetAvatarWidget(
+                visualState: entry.$1,
+                focusProgress: entry.$2,
+                craftProgress: entry.$3,
+                enableRive: true,
+                riveRenderer: renderer,
+              ),
+            ),
+          ),
+        );
+
+        expect(renderer.visualState, entry.$1);
+        expect(renderer.focusProgress, entry.$4);
+        expect(renderer.craftProgress, entry.$5);
+      }
+    });
+
+    testWidgets(
+        '28. Reduced-motion fallback accepts progress without creating Rive work or business callbacks',
+        (tester) async {
+      await tester.pumpWidget(
+        const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Scaffold(
+              body: PetMotionView(
+                visualState: PetVisualState.craft,
+                focusProgress: 0.5,
+                craftProgress: 0.5,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(PetIdleFallbackView), findsOneWidget);
+      final fallback = tester.widget<PetIdleFallbackView>(
+        find.byType(PetIdleFallbackView),
+      );
+      expect(fallback.focusProgress, 0.5);
+      expect(fallback.craftProgress, 0.5);
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
     });
   });
 }

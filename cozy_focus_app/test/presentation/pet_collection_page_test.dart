@@ -21,6 +21,7 @@ import 'package:cozy_focus_app/presentation/controllers/providers.dart';
 import 'package:cozy_focus_app/presentation/navigation/app_router.dart';
 import 'package:cozy_focus_app/presentation/pages/pet_collection_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
+import 'package:cozy_focus_app/presentation/widgets/cozy_furniture_artwork.dart';
 
 class _TestClock implements FocusClock {
   final DateTime _now;
@@ -116,6 +117,7 @@ void main() {
       expect(find.text('温馨布艺沙发'), findsOneWidget);
       expect(find.text('暂无宠物陪伴，前往成长页领养宠物伙伴吧！'), findsOneWidget);
       expect(find.text('已拥有 0 件'), findsOneWidget);
+      expect(find.byKey(const Key('cozy-furniture-sofa')), findsOneWidget);
     });
 
     testWidgets(
@@ -129,6 +131,7 @@ void main() {
       expect(find.text('已拥有 0 件'), findsOneWidget);
       expect(find.text('未收集'), findsWidgets);
       expect(find.byIcon(Icons.lock_rounded), findsWidgets);
+      expect(find.byType(CozyFurnitureArtwork), findsWidgets);
     });
 
     testWidgets(

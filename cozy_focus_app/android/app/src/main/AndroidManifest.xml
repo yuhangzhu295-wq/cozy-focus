@@ -4,7 +4,7 @@
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <application
-        android:label="cozy_focus_app"
+        android:label="Cozy Focus"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

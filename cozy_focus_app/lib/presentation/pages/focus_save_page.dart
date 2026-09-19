@@ -139,6 +139,7 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                           PetAvatarWidget(
                             visualState: PetVisualState.celebrate,
                             size: 64,
+                            showStateBadge: false,
                           ),
                           SizedBox(width: 16),
                           Expanded(

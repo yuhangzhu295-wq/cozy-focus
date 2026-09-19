@@ -26,6 +26,8 @@ void main() {
       expect(find.byType(PetAvatarWidget), findsOneWidget);
       expect(find.text('个人中心'), findsOneWidget);
       expect(find.text('和 Mochi 一起，专注更好的自己'), findsOneWidget);
+      expect(find.text('Mochi 陪伴中'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets(

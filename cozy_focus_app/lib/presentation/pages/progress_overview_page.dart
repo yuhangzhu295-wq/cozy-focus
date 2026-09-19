@@ -386,10 +386,10 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
               ])),
           const SizedBox(width: 8),
           Column(children: [
-            _miniStat(Icons.ads_click_rounded, '\$count', '次', '专注次数'),
+            _miniStat(Icons.ads_click_rounded, '$count', '次', '专注次数'),
             const SizedBox(height: 12),
             _miniStat(
-                Icons.local_fire_department_rounded, '\$streak', '天', '连续专注',
+                Icons.local_fire_department_rounded, '$streak', '天', '连续专注',
                 iconColor: const Color(0xFFE55B2A)),
           ]),
         ]),
@@ -641,7 +641,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
                         isSel ? AppColors.primarySage : AppColors.borderLight,
                     width: isSel ? 2 : 1)),
             alignment: Alignment.center,
-            child: Text('\$d',
+            child: Text('$d',
                 style: TextStyle(
                     fontSize: 12,
                     fontWeight: isSel ? FontWeight.bold : FontWeight.normal,

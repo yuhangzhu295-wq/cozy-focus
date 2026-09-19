@@ -78,7 +78,15 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _handleStartFocus() async {
     final homeState = ref.read(homeControllerProvider);
     if (homeState.hasActiveSession) {
-      context.go('/focus/active');
+      final restored = await ref
+          .read(focusSessionControllerProvider.notifier)
+          .restoreSession(localMvpUserId);
+      if (!mounted) return;
+      if (restored != null) {
+        context.go('/focus/active');
+      } else {
+        await ref.read(homeControllerProvider.notifier).loadHomeData();
+      }
       return;
     }
     await ref.read(focusSessionControllerProvider.notifier).startSession(
@@ -134,6 +142,11 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final petMessage = petProgress != null
         ? 'Lv.${petProgress.level} 累计专注 ${petProgress.totalFocusMinutes} 分钟'
+        : null;
+    final craftProgress = craftState.activeJob != null &&
+            (craftState.activeRecipe?.requiredSeconds ?? 0) > 0
+        ? craftState.activeJob!.progressSeconds /
+            craftState.activeRecipe!.requiredSeconds
         : null;
 
     return SizedBox(
@@ -220,6 +233,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 message: petMessage,
                 controller: _petMotionController,
                 size: 180,
+                craftProgress: craftProgress,
               ),
             ),
           ),

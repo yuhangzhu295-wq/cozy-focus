@@ -63,6 +63,7 @@ class SettingsPage extends StatelessWidget {
                     PetAvatarWidget(
                       visualState: PetVisualState.idle,
                       size: 72,
+                      showStateBadge: false,
                     ),
                     SizedBox(width: 16),
                     Expanded(

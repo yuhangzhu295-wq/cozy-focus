@@ -1,9 +1,26 @@
-﻿plugins {
+import java.util.Properties
+
+plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+val releasePropertiesFile = rootProject.file("key.properties")
+val releaseProperties = Properties()
+if (releasePropertiesFile.isFile) {
+    releasePropertiesFile.inputStream().use { input ->
+        releaseProperties.load(input)
+    }
+}
+
+val releaseStoreFile = releaseProperties.getProperty("storeFile")
+val hasReleaseSigning = releaseStoreFile != null &&
+    releaseProperties.getProperty("storePassword") != null &&
+    releaseProperties.getProperty("keyAlias") != null &&
+    releaseProperties.getProperty("keyPassword") != null &&
+    rootProject.file(releaseStoreFile).isFile
 
 android {
     namespace = "com.example.cozy_focus_app"
@@ -30,9 +47,26 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            if (hasReleaseSigning) {
+                storeFile = rootProject.file(releaseStoreFile!!)
+                storePassword = releaseProperties.getProperty("storePassword")
+                keyAlias = releaseProperties.getProperty("keyAlias")
+                keyPassword = releaseProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            // Debug signing enables local build verification only; it is not
+            // production/store signing when android/key.properties is absent.
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

@@ -23,6 +23,8 @@ void main() {
       expect(find.text('没关系～'), findsOneWidget);
       expect(find.text('你的专注数据已安全保存在本机。'), findsOneWidget);
       expect(find.text('数据状态'), findsOneWidget);
+      expect(find.text('Mochi 陪伴中'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('2. DataSyncPage renders the three approved status cards',

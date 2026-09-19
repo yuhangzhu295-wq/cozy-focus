@@ -30,6 +30,8 @@ void main() {
         find.text('让 Mochi 在合适的时间陪伴你，养成更好的专注习惯。'),
         findsOneWidget,
       );
+      expect(find.text('Mochi 陪伴中'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets(

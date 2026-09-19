@@ -5,8 +5,8 @@ import 'pet_idle_fallback_view.dart';
 import 'rive_pet_adapter.dart';
 
 /// Unified presentation abstraction for Mochi motion.
-/// Supports Rive runtime rendering via [IPetRiveRenderer] when enabled/available,
-/// and truthfully delegates to [PetIdleFallbackView] when .riv asset is absent or in fallback mode.
+/// Ships the Flutter fallback renderer and exposes a renderer-neutral optional
+/// boundary without making an external animation SDK a release dependency.
 class PetMotionView extends StatelessWidget {
   final PetVisualState visualState;
   final double size;
@@ -15,6 +15,9 @@ class PetMotionView extends StatelessWidget {
   final IPetRiveRenderer? riveRenderer;
   final bool enableRive;
   final Widget? accessory;
+  final double? focusProgress;
+  final double? craftProgress;
+  final bool showStateBadge;
 
   const PetMotionView({
     super.key,
@@ -25,7 +28,17 @@ class PetMotionView extends StatelessWidget {
     this.riveRenderer,
     this.enableRive = false,
     this.accessory,
+    this.focusProgress,
+    this.craftProgress,
+    this.showStateBadge = true,
   });
+
+  double? get _visualFocusProgress => _normalizeProgress(focusProgress);
+  double? get _visualCraftProgress => _normalizeProgress(craftProgress);
+
+  static double? _normalizeProgress(double? value) {
+    return value?.clamp(0.0, 1.0).toDouble();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +49,9 @@ class PetMotionView extends StatelessWidget {
         controller: controller,
         scheduler: scheduler,
         accessory: accessory,
+        focusProgress: _visualFocusProgress,
+        craftProgress: _visualCraftProgress,
+        showStateBadge: showStateBadge,
       );
 
       if (enableRive) {
@@ -45,6 +61,8 @@ class PetMotionView extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.contain,
+          focusProgress: _visualFocusProgress,
+          craftProgress: _visualCraftProgress,
           fallback: fallbackView,
         );
       }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models/craft_models.dart';
 import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/cozy_furniture_artwork.dart';
 
 /// Screen 09C: Inventory Page (库存)
 /// Shows all owned InventoryItems from real data. No fake items.
@@ -443,7 +444,6 @@ class _InventoryCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = recipe?.icon ?? '📦';
     final name = recipe?.name ?? item.itemId;
     final status = placedCount == 0
         ? '尚未摆放'
@@ -476,7 +476,7 @@ class _InventoryCell extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Center(
-                child: _InventoryArtwork(recipe: recipe, icon: icon),
+                child: _InventoryArtwork(recipe: recipe, itemId: item.itemId),
               ),
             ),
           ),
@@ -545,9 +545,9 @@ class _InventoryCell extends StatelessWidget {
 
 class _InventoryArtwork extends StatelessWidget {
   final CraftRecipe? recipe;
-  final String icon;
+  final String itemId;
 
-  const _InventoryArtwork({required this.recipe, required this.icon});
+  const _InventoryArtwork({required this.recipe, required this.itemId});
 
   @override
   Widget build(BuildContext context) {
@@ -563,5 +563,5 @@ class _InventoryArtwork extends StatelessWidget {
     return _fallback();
   }
 
-  Widget _fallback() => Text(icon, style: const TextStyle(fontSize: 42));
+  Widget _fallback() => CozyFurnitureArtwork(itemId: itemId, size: 76);
 }
