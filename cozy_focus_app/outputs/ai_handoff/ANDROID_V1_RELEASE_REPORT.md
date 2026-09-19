@@ -52,22 +52,25 @@ icon source was found, so no invented replacement was made.
 
 - FORMAT: PASS (dart format --output=none --set-exit-if-changed ., 124 files, 0 changed)
 - ANALYZE: PASS (flutter analyze --fatal-infos --no-pub, no issues)
-- FULL_TEST_COUNT: 297/297 PASS
+- FULL_TEST_COUNT: 303/303 PASS
 - DEBUG_APK: PASS (flutter build apk --debug, exit code 0)
 - RELEASE_APK: PASS (flutter build apk --release, exit code 0)
 - RELEASE_AAB: PASS (flutter build appbundle --release, exit code 0)
 - DIFF_CHECK: PASS (git diff --check)
 
-The final artifact hashes are recorded after the final non-runtime release
-build immediately before commit. The runtime smoke install may overwrite its
-temporary APK output and is not used as artifact-hash evidence.
+The hashes below are from the post-fix release build, and were re-computed after
+the runtime QA install to confirm the on-disk artifact is byte-identical
+(`adb install` reads the local APK but does not modify it).
 
 - APK_PATH: C:\Users\zyu33\Documents\Codex\2026-09-07\new-chat\cozy_focus_app\build\app\outputs\flutter-apk\app-release.apk
-- APK_SIZE: 27004460 bytes
-- APK_SHA256: D3031A7FE86732B4D6F5306AEE4A4E2E58B3FD9A27379767551B8593481792D1
+- APK_SIZE: 27037953 bytes
+- APK_SHA256: 42325232BF86A9BE67D268650F7BF1AA3E0F391AE0577C39D61D9DEB3E443CD5
 - AAB_PATH: C:\Users\zyu33\Documents\Codex\2026-09-07\new-chat\cozy_focus_app\build\app\outputs\bundle\release\app-release.aab
-- AAB_SIZE: 46524659 bytes
-- AAB_SHA256: 3C9431CAB5152EC228F86B16CD6CE8042A92B1DCE3761FCFC29B4EE6B8BFD757
+- AAB_SIZE: 46558157 bytes
+- AAB_SHA256: A3E75411BEA422C8741E9624B6091E57E856FF004BE594C8C61DD46E6BF35020
+
+Both artifacts were rebuilt after the runtime repair recorded in
+ANDROID_V1_RELEASE_CANDIDATE_VERIFICATION.md (§4), so they embed that fix.
 
 ## Signing
 
@@ -86,24 +89,52 @@ this is not production or store signing.
 
 ## Runtime And Visual Evidence
 
-- RUNTIME_DEVICE_QA: PASS (Android 14 emulator release Home launch only)
-- RUNTIME_VISUAL_QA: PARTIAL
+- RUNTIME_DEVICE_QA: PASS (Android 14 emulator, real release APK installed via adb)
+- RUNTIME_VISUAL_QA: PASS (complete primary flow + all 22 routed pages)
+- RELEASE_INSTALL_SMOKE: PASS
+- RUNTIME_EXCEPTION_SCAN: CLEAN (0 E/flutter, 0 exception signatures, 0 ANR/crash)
 - PERFORMANCE_QA: NOT_MEASURED
+- PHYSICAL_DEVICE_QA: NOT_ASSESSED
 
-flutter run --release -d emulator-5554 --no-resident exited 0. A separate Home
-screenshot was captured at outputs/ai_handoff/android_v1_runtime/home-release-final.png.
-It verifies that the release application launches and presents Home with the
-Flutter Mochi fallback. It does not certify the complete primary flow, every
-page/state, physical-device behavior, or performance metrics.
+The release APK was installed with `adb install -r` and driven on emulator-5554.
+Interaction used uiautomator hierarchy dumps for real on-screen coordinates, which
+resolved flows that had previously been unreachable by blind coordinate tapping.
+
+Covered: Home → resume → Focus Active (paused) → continue → background/foreground
+restore → end-early confirm → Focus Complete → Save (mood/note) → Reward → Home;
+plus every route in app_router.dart (Home, focus setup/active/complete/save/reward,
+progress, records 今日/历史/日历/报告, record detail, growth, collection, dress,
+weekly/monthly/yearly reports, wrapped, craft, craft detail, inventory, room,
+settings, notifications, data sync). 44 screenshots + XML dumps are at
+outputs/release_qa/.
+
+One real P1 release defect was found and repaired during this QA (blank Monthly
+Report page from a `dynamic` PetProgress access); see
+ANDROID_V1_RELEASE_CANDIDATE_VERIFICATION.md §4 for root cause, fix, and on-device
+re-verification. Two further anomalies were investigated and correctly ruled out
+as non-defects (records attributed to their start date; the documented
+DRESS_PRODUCT_DECISION unconnected state).
+
+Physical-device behavior and performance metrics remain uncertified.
 
 ## Review And Known Issues
 
 - P0: 0
-- P1: 0
-- P2: 2
+- P1: 2
+- P2: 1
 
-P2 items: an approved non-default launcher icon/adaptive icon has not been
-provided, and runtime visual coverage is limited to one emulator Home state.
+P1 items (both non-code owner decisions, neither repairable by the agent):
+1. `applicationId` / `namespace` remain the placeholder `com.example.cozy_focus_app`,
+   an explicit invalid-release-identity pattern.
+2. The launcher icon is still the stock Flutter logo with no adaptive icon; the V4.1
+   package and the repository contain no approved brand/icon asset, so no replacement
+   was invented.
+
+P2 item: `flutter_local_notifications`, `supabase_flutter`, and `connectivity_plus`
+are declared but unused in `lib/` (surfaced honestly as "not connected" states).
+
+Resolved this run: the single P1 runtime defect (blank Monthly Report page) was
+repaired and re-verified; runtime visual coverage is no longer a gap.
 
 ## Store Boundary
 
@@ -112,3 +143,8 @@ submission remains NO-GO until the user supplies a final non-placeholder
 application identifier, production signing material, and the required store
 and device-release evidence. This work does not publish, sign a production
 release, upload to Google Play, merge a pull request, or push main.
+
+The validated runtime repair (§ Runtime And Visual Evidence) and these reports
+were committed locally on `release/android-v1`. Nothing was pushed, so `origin`
+and PR #1 remain at 75b3e4be565ad1db6d7ce1fe9bf2a08f9f114b59 and no CI re-run is
+triggered.
