@@ -78,7 +78,15 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _handleStartFocus() async {
     final homeState = ref.read(homeControllerProvider);
     if (homeState.hasActiveSession) {
-      context.go('/focus/active');
+      final restored = await ref
+          .read(focusSessionControllerProvider.notifier)
+          .restoreSession(localMvpUserId);
+      if (!mounted) return;
+      if (restored != null) {
+        context.go('/focus/active');
+      } else {
+        await ref.read(homeControllerProvider.notifier).loadHomeData();
+      }
       return;
     }
     await ref.read(focusSessionControllerProvider.notifier).startSession(

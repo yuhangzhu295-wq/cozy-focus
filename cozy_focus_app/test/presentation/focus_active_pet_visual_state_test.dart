@@ -60,6 +60,20 @@ void main() {
   }
 
   group('FocusActivePage PetVisualState Regression Tests', () {
+    testWidgets('does not render focus controls without an active session',
+        (tester) async {
+      setScreenSize(tester);
+
+      await tester
+          .pumpWidget(createTestApp(container, const FocusActivePage()));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('没有进行中的专注'), findsOneWidget);
+      expect(find.text('暂停'), findsNothing);
+      expect(find.text('提前结束'), findsNothing);
+    });
+
     testWidgets(
         'Test A: Tap 提前结束, dialog opens, verify PetAvatarWidget has PetVisualState.pause',
         (tester) async {

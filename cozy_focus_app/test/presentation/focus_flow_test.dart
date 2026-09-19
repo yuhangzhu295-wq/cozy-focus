@@ -285,5 +285,40 @@ void main() {
 
       newContainer.dispose();
     });
+
+    test(
+        '9. Restoring an expired countdown enters completion, not a runnable UI state',
+        () async {
+      final sessionController =
+          container.read(focusSessionControllerProvider.notifier);
+      final session = await sessionController.startSession(
+        userId: 'expired_restore_user',
+        plannedSeconds: 60,
+        mode: FocusMode.focus,
+      );
+      testClock.advance(const Duration(minutes: 2));
+
+      final restoredContainer = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          focusClockProvider.overrideWithValue(testClock),
+        ],
+      );
+      final restoredController =
+          restoredContainer.read(focusSessionControllerProvider.notifier);
+
+      final restored =
+          await restoredController.restoreSession('expired_restore_user');
+      final state = restoredContainer.read(focusSessionControllerProvider);
+
+      expect(restored?.id, session.id);
+      expect(restored?.status, FocusSessionStatus.finishing);
+      expect(state.isCompleted, isTrue);
+      expect(state.session?.status, FocusSessionStatus.finishing);
+      expect(await db.focusRecordDao.findBySessionId(session.id), isNull,
+          reason: 'Restore completion must not bypass the existing save gate.');
+
+      restoredContainer.dispose();
+    });
   });
 }

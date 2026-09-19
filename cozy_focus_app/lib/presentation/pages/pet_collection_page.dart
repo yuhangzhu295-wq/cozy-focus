@@ -5,6 +5,7 @@ import '../../domain/models/enums.dart';
 import '../controllers/craft_controller.dart';
 import '../controllers/growth_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/cozy_furniture_artwork.dart';
 import '../widgets/pet_avatar_widget.dart';
 
 /// Catalog item definition for collection items.
@@ -435,14 +436,16 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
                 alignment: Alignment.center,
                 children: [
                   CircleAvatar(
-                    radius: 28,
+                    radius: 36,
                     backgroundColor: isOwned
                         ? AppColors.primaryLight
                         : AppColors.surfaceMuted,
-                    child: Icon(
-                      item.icon,
-                      size: 28,
-                      color: isOwned ? AppColors.primarySage : Colors.grey,
+                    child: Opacity(
+                      opacity: isOwned ? 1 : 0.48,
+                      child: CozyFurnitureArtwork(
+                        itemId: item.id,
+                        size: 58,
+                      ),
                     ),
                   ),
                   if (!isOwned)

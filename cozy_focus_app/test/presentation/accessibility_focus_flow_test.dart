@@ -122,6 +122,10 @@ void main() {
         findsOneWidget,
       );
 
+      final semanticsHandle = tester.ensureSemantics();
+      expect(find.bySemanticsLabel('Mochi 专注中'), findsOneWidget);
+      semanticsHandle.dispose();
+
       // Switching controller state to pause updates semantics label
       controller.updateState(PetVisualState.pause);
       await tester.pump();

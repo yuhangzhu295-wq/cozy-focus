@@ -954,24 +954,19 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
             child: Transform.rotate(
               angle: rotation,
               alignment: Alignment.bottomCenter,
-              child: Container(
+              child: SizedBox(
                 width: widget.size,
                 height: widget.size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: config.bgTint,
-                  border: Border.all(color: config.borderColor, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: config.borderColor.withValues(alpha: 0.2),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
                 child: Stack(
+                  clipBehavior: Clip.none,
                   alignment: Alignment.center,
                   children: [
+                    _MochiDogArtwork(
+                      size: widget.size,
+                      eyeScaleY: eyeScaleY,
+                      earRotation: earRotation,
+                      tailRotation: tailRotation,
+                    ),
                     // Sleep Zzz floating animation indicator
                     if (isSleep)
                       Positioned(
@@ -998,138 +993,36 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
                           ),
                         ),
                       ),
-                    // Tail
-                    Positioned(
-                      bottom: widget.size * 0.25,
-                      right: widget.size * 0.16,
-                      child: Transform.rotate(
-                        angle: tailRotation,
-                        alignment: Alignment.bottomLeft,
-                        child: Icon(
-                          Icons.pets,
-                          size: widget.size * 0.20,
-                          color: config.iconColor.withValues(alpha: 0.4),
-                        ),
-                      ),
-                    ),
-                    // Ears
-                    Positioned(
-                      top: widget.size * 0.18,
-                      child: SizedBox(
-                        width: widget.size * 0.65,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Left ear
-                            Transform.rotate(
-                              angle: -earRotation,
-                              alignment: Alignment.bottomRight,
-                              child: Container(
-                                width: widget.size * 0.14,
-                                height: widget.size * 0.18,
-                                decoration: BoxDecoration(
-                                  color:
-                                      config.iconColor.withValues(alpha: 0.7),
-                                  borderRadius:
-                                      BorderRadius.circular(widget.size * 0.08),
-                                ),
-                              ),
-                            ),
-                            // Right ear (twitches)
-                            Transform.rotate(
-                              angle: earRotation,
-                              alignment: Alignment.bottomLeft,
-                              child: Container(
-                                width: widget.size * 0.14,
-                                height: widget.size * 0.18,
-                                decoration: BoxDecoration(
-                                  color:
-                                      config.iconColor.withValues(alpha: 0.7),
-                                  borderRadius:
-                                      BorderRadius.circular(widget.size * 0.08),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Face / Eyes / Mouth (Mochi Character)
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Eyes
-                        SizedBox(
-                          width: widget.size * 0.38,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Left Eye
-                              Transform.scale(
-                                scaleY: eyeScaleY,
-                                alignment: Alignment.center,
-                                child: Container(
-                                  width: widget.size * 0.085,
-                                  height: widget.size * 0.085,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: config.iconColor,
-                                  ),
-                                ),
-                              ),
-                              // Right Eye
-                              Transform.scale(
-                                scaleY: eyeScaleY,
-                                alignment: Alignment.center,
-                                child: Container(
-                                  width: widget.size * 0.085,
-                                  height: widget.size * 0.085,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: config.iconColor,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: widget.size * 0.04),
-                        // Nose / Mouth
-                        Icon(
-                          Icons.favorite_rounded,
-                          size: widget.size * 0.08,
-                          color: config.iconColor.withValues(alpha: 0.65),
-                        ),
-                      ],
-                    ),
                     // Optional accessory
                     if (widget.accessory != null) widget.accessory!,
                     if (widget.showStateBadge)
                       Positioned(
                         bottom: widget.size * 0.10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface.withValues(alpha: 0.92),
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(config.stateIcon,
-                                  size: 13, color: config.iconColor),
-                              const SizedBox(width: 4),
-                              Text(
-                                config.label,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: config.iconColor,
+                        child: ExcludeSemantics(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface.withValues(alpha: 0.92),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(config.stateIcon,
+                                    size: 13, color: config.iconColor),
+                                const SizedBox(width: 4),
+                                Text(
+                                  config.label,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: config.iconColor,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -1213,4 +1106,286 @@ class _StateVisualConfig {
     required this.iconColor,
     required this.stateIcon,
   });
+}
+
+/// Native Flutter artwork for Android V1. It deliberately keeps the character
+/// separate from the motion transforms above, so every existing state shares
+/// the same Mochi silhouette instead of falling back to a generic pet icon.
+class _MochiDogArtwork extends StatelessWidget {
+  final double size;
+  final double eyeScaleY;
+  final double earRotation;
+  final double tailRotation;
+
+  const _MochiDogArtwork({
+    required this.size,
+    required this.eyeScaleY,
+    required this.earRotation,
+    required this.tailRotation,
+  });
+
+  static const _fur = Color(0xFFFFFDF8);
+  static const _furShade = Color(0xFFF5EEE1);
+  static const _line = Color(0xFF6F5848);
+  static const _cushion = Color(0xFFABC38B);
+  static const _cushionDark = Color(0xFF789660);
+
+  BoxDecoration _outlined({
+    required Color color,
+    double radius = 999,
+    List<BoxShadow>? shadows,
+  }) {
+    return BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(color: _line.withValues(alpha: 0.78), width: 1.4),
+      boxShadow: shadows,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final eyeHeight = size * 0.065 * eyeScaleY.clamp(0.08, 1.0);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          left: size * 0.08,
+          right: size * 0.08,
+          bottom: size * 0.075,
+          height: size * 0.25,
+          child: Container(
+            key: const Key('mochi-cushion'),
+            decoration: _outlined(
+              color: _cushion,
+              radius: size * 0.16,
+              shadows: [
+                BoxShadow(
+                  color: _line.withValues(alpha: 0.16),
+                  blurRadius: size * 0.09,
+                  offset: Offset(0, size * 0.045),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(size * 0.16),
+              child: Stack(
+                children: [
+                  for (var i = 1; i <= 3; i++)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: size * (0.048 * i),
+                      child: Container(
+                        height: size * 0.018,
+                        color: _cushionDark.withValues(alpha: 0.25),
+                      ),
+                    ),
+                  for (var i = 1; i <= 4; i++)
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      left: size * (0.15 * i),
+                      child: Container(
+                        width: size * 0.018,
+                        color: _cushionDark.withValues(alpha: 0.22),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: size * 0.10,
+          bottom: size * 0.25,
+          child: Transform.rotate(
+            angle: tailRotation,
+            alignment: Alignment.bottomLeft,
+            child: Container(
+              key: const Key('mochi-tail'),
+              width: size * 0.17,
+              height: size * 0.34,
+              decoration: _outlined(color: _furShade, radius: size * 0.15),
+            ),
+          ),
+        ),
+        Positioned(
+          left: size * 0.22,
+          right: size * 0.22,
+          bottom: size * 0.20,
+          height: size * 0.42,
+          child: Container(
+            key: const Key('mochi-dog-body'),
+            decoration: _outlined(color: _fur, radius: size * 0.25),
+          ),
+        ),
+        Positioned(
+          left: size * 0.11,
+          top: size * 0.29,
+          child: Transform.rotate(
+            angle: -0.28 - earRotation,
+            alignment: Alignment.topRight,
+            child: Container(
+              key: const Key('mochi-left-ear'),
+              width: size * 0.24,
+              height: size * 0.39,
+              decoration: _outlined(color: _furShade, radius: size * 0.16),
+            ),
+          ),
+        ),
+        Positioned(
+          right: size * 0.11,
+          top: size * 0.29,
+          child: Transform.rotate(
+            angle: 0.28 + earRotation,
+            alignment: Alignment.topLeft,
+            child: Container(
+              key: const Key('mochi-right-ear'),
+              width: size * 0.24,
+              height: size * 0.39,
+              decoration: _outlined(color: _furShade, radius: size * 0.16),
+            ),
+          ),
+        ),
+        Positioned(
+          left: size * 0.20,
+          right: size * 0.20,
+          top: size * 0.27,
+          height: size * 0.49,
+          child: Container(
+            key: const Key('mochi-dog-head'),
+            decoration: _outlined(color: _fur, radius: size * 0.28),
+          ),
+        ),
+        Positioned(
+          left: size * 0.34,
+          top: size * 0.49,
+          child: Transform.scale(
+            scaleY: eyeScaleY.clamp(0.08, 1.0),
+            alignment: Alignment.center,
+            child: Container(
+              key: const Key('mochi-left-eye'),
+              width: size * 0.065,
+              height: eyeHeight,
+              decoration:
+                  const BoxDecoration(color: _line, shape: BoxShape.circle),
+            ),
+          ),
+        ),
+        Positioned(
+          right: size * 0.34,
+          top: size * 0.49,
+          child: Transform.scale(
+            scaleY: eyeScaleY.clamp(0.08, 1.0),
+            alignment: Alignment.center,
+            child: Container(
+              key: const Key('mochi-right-eye'),
+              width: size * 0.065,
+              height: eyeHeight,
+              decoration:
+                  const BoxDecoration(color: _line, shape: BoxShape.circle),
+            ),
+          ),
+        ),
+        Positioned(
+          left: size * 0.46,
+          top: size * 0.58,
+          child: Container(
+            key: const Key('mochi-nose'),
+            width: size * 0.075,
+            height: size * 0.05,
+            decoration:
+                const BoxDecoration(color: _line, shape: BoxShape.circle),
+          ),
+        ),
+        Positioned(
+          left: size * 0.26,
+          top: size * 0.60,
+          child: Container(
+            width: size * 0.12,
+            height: size * 0.06,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF4B5A8),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        Positioned(
+          right: size * 0.26,
+          top: size * 0.60,
+          child: Container(
+            width: size * 0.12,
+            height: size * 0.06,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF4B5A8),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        Positioned(
+          left: size * 0.24,
+          bottom: size * 0.18,
+          child: Container(
+            key: const Key('mochi-left-paw'),
+            width: size * 0.20,
+            height: size * 0.13,
+            decoration: _outlined(color: _fur, radius: size * 0.09),
+          ),
+        ),
+        Positioned(
+          right: size * 0.24,
+          bottom: size * 0.18,
+          child: Container(
+            key: const Key('mochi-right-paw'),
+            width: size * 0.20,
+            height: size * 0.13,
+            decoration: _outlined(color: _fur, radius: size * 0.09),
+          ),
+        ),
+        Positioned(
+          left: size * 0.485,
+          top: size * 0.13,
+          child: Container(
+            width: size * 0.018,
+            height: size * 0.15,
+            color: const Color(0xFF4E7B3F),
+          ),
+        ),
+        Positioned(
+          left: size * 0.37,
+          top: size * 0.08,
+          child: Transform.rotate(
+            angle: -0.55,
+            child: Container(
+              width: size * 0.15,
+              height: size * 0.09,
+              decoration: BoxDecoration(
+                color: const Color(0xFF86B95B),
+                border: Border.all(color: const Color(0xFF4E7B3F), width: 1),
+                borderRadius: BorderRadius.circular(size * 0.10),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: size * 0.37,
+          top: size * 0.08,
+          child: Transform.rotate(
+            angle: 0.55,
+            child: Container(
+              width: size * 0.15,
+              height: size * 0.09,
+              decoration: BoxDecoration(
+                color: const Color(0xFF86B95B),
+                border: Border.all(color: const Color(0xFF4E7B3F), width: 1),
+                borderRadius: BorderRadius.circular(size * 0.10),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

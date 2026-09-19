@@ -20,11 +20,20 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
     with WidgetsBindingObserver {
   // 03B restore overlay — shown once when status becomes restored
   bool _showRestoreOverlay = false;
+  bool _isRestoring = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    Future.microtask(_restoreSession);
+  }
+
+  Future<void> _restoreSession() async {
+    await ref
+        .read(focusSessionControllerProvider.notifier)
+        .restoreSession(ref.read(currentUserIdProvider));
+    if (mounted) setState(() => _isRestoring = false);
   }
 
   @override
@@ -316,6 +325,51 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
     final sessionState = ref.watch(focusSessionControllerProvider);
     final session = sessionState.session;
 
+    if (session == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: _isRestoring
+                  ? const CircularProgressIndicator()
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.timer_off_outlined,
+                          color: AppColors.primarySage,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          '没有进行中的专注',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '回到首页开始一段新的专注吧。',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(height: 24),
+                        FilledButton(
+                          onPressed: () => context.go('/'),
+                          child: const Text('返回首页'),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      );
+    }
+
     // Auto-navigate when session completes
     if (sessionState.isCompleted && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -323,13 +377,13 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
       });
     }
 
-    final isPaused = session?.status == FocusSessionStatus.paused ||
-        (session?.status == FocusSessionStatus.restored &&
-            session!.pauseIntervals.isNotEmpty &&
+    final isPaused = session.status == FocusSessionStatus.paused ||
+        (session.status == FocusSessionStatus.restored &&
+            session.pauseIntervals.isNotEmpty &&
             session.pauseIntervals.last.pauseEnd == null);
     final isRestored =
-        session?.status == FocusSessionStatus.restored && _showRestoreOverlay;
-    final isFlow = (session?.plannedSeconds ?? 0) == 0;
+        session.status == FocusSessionStatus.restored && _showRestoreOverlay;
+    final isFlow = session.plannedSeconds == 0;
 
     final displayTime = isFlow
         ? _formatDuration(sessionState.elapsedSeconds)

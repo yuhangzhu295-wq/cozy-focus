@@ -98,6 +98,27 @@ void main() {
     });
 
     testWidgets(
+        '1a. Android V1 fallback renders Mochi as a dog on a cushion, not a generic avatar',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: PetAvatarWidget(visualState: PetVisualState.idle),
+          ),
+        ),
+      );
+
+      expect(find.byKey(const Key('mochi-dog-body')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-dog-head')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-left-ear')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-right-ear')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-tail')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-left-paw')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-right-paw')), findsOneWidget);
+      expect(find.byKey(const Key('mochi-cushion')), findsOneWidget);
+    });
+
+    testWidgets(
         '2. Missing/default Rive asset safely uses truthful fallback without crash',
         (tester) async {
       await tester.pumpWidget(

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models/craft_models.dart';
 import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/cozy_furniture_artwork.dart';
 
 /// Screen 09A: Craft Workshop List (制作工坊列表).
 /// Presentation only: recipe grouping, job progress, and navigation remain
@@ -93,7 +94,10 @@ class _CraftListPageState extends ConsumerState<CraftListPage> {
                       borderRadius: BorderRadius.circular(30),
                     ),
                     alignment: Alignment.center,
-                    child: const Text('📦', style: TextStyle(fontSize: 42)),
+                    child: const CozyFurnitureArtwork(
+                      itemId: 'workshop',
+                      size: 62,
+                    ),
                   ),
                   const SizedBox(height: 18),
                   const Text('暂无制作配方',
@@ -192,7 +196,10 @@ class _CraftListPageState extends ConsumerState<CraftListPage> {
                 borderRadius: BorderRadius.circular(16),
               ),
               alignment: Alignment.center,
-              child: const Text('🛠️', style: TextStyle(fontSize: 25)),
+              child: const CozyFurnitureArtwork(
+                itemId: 'workshop',
+                size: 34,
+              ),
             ),
             const SizedBox(width: 13),
             const Expanded(
@@ -467,15 +474,15 @@ class _ArtworkPreview extends StatelessWidget {
           ? Image.asset(recipe.artworkPath!,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
-                  _FallbackArtwork(icon: recipe.icon))
-          : _FallbackArtwork(icon: recipe.icon),
+                  _FallbackArtwork(itemId: recipe.outputItemId))
+          : _FallbackArtwork(itemId: recipe.outputItemId),
     );
   }
 }
 
 class _FallbackArtwork extends StatelessWidget {
-  final String icon;
-  const _FallbackArtwork({required this.icon});
+  final String itemId;
+  const _FallbackArtwork({required this.itemId});
 
   @override
   Widget build(BuildContext context) {
@@ -495,7 +502,7 @@ class _FallbackArtwork extends StatelessWidget {
           ],
         ),
         alignment: Alignment.center,
-        child: Text(icon, style: const TextStyle(fontSize: 30)),
+        child: CozyFurnitureArtwork(itemId: itemId, size: 44),
       ),
       const SizedBox(height: 9),
       const Text('家具草图',

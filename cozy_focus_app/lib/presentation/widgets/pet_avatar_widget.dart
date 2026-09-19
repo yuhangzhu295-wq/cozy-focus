@@ -98,47 +98,46 @@ class PetAvatarWidget extends StatelessWidget {
               ),
             ),
           ],
-          if (controller != null)
-            Semantics(
-              button: activeState == PetVisualState.idle,
-              label: _petSemanticLabel(activeState),
-              hint: activeState == PetVisualState.idle ? '仅空闲时可互动' : null,
-              onTap: activeState == PetVisualState.idle
-                  ? () {
-                      controller!.triggerInteract();
-                    }
-                  : null,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  controller!.triggerInteract();
-                },
-                child: PetMotionView(
-                  visualState: activeState,
-                  size: size,
-                  controller: controller,
-                  scheduler: scheduler,
-                  riveRenderer: riveRenderer,
-                  enableRive: enableRive,
-                  accessory: accessory,
-                  focusProgress: focusProgress,
-                  craftProgress: craftProgress,
-                  showStateBadge: showStateBadge,
-                ),
-              ),
-            )
-          else
-            PetMotionView(
-              visualState: activeState,
-              size: size,
-              scheduler: scheduler,
-              riveRenderer: riveRenderer,
-              enableRive: enableRive,
-              accessory: accessory,
-              focusProgress: focusProgress,
-              craftProgress: craftProgress,
-              showStateBadge: showStateBadge,
-            ),
+          Semantics(
+            button: controller != null && activeState == PetVisualState.idle,
+            label: _petSemanticLabel(activeState),
+            hint: controller != null && activeState == PetVisualState.idle
+                ? '仅空闲时可互动'
+                : null,
+            onTap: controller != null && activeState == PetVisualState.idle
+                ? () {
+                    controller!.triggerInteract();
+                  }
+                : null,
+            child: controller != null
+                ? GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: controller!.triggerInteract,
+                    child: PetMotionView(
+                      visualState: activeState,
+                      size: size,
+                      controller: controller,
+                      scheduler: scheduler,
+                      riveRenderer: riveRenderer,
+                      enableRive: enableRive,
+                      accessory: accessory,
+                      focusProgress: focusProgress,
+                      craftProgress: craftProgress,
+                      showStateBadge: showStateBadge,
+                    ),
+                  )
+                : PetMotionView(
+                    visualState: activeState,
+                    size: size,
+                    scheduler: scheduler,
+                    riveRenderer: riveRenderer,
+                    enableRive: enableRive,
+                    accessory: accessory,
+                    focusProgress: focusProgress,
+                    craftProgress: craftProgress,
+                    showStateBadge: showStateBadge,
+                  ),
+          ),
         ],
       );
     }
