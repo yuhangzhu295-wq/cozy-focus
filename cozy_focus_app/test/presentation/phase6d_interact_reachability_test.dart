@@ -118,7 +118,9 @@ void main() {
     final fallback = fallbackState(tester);
 
     expect(controller.visualState, PetVisualState.focus);
-    expect(controller.activeTimerCount, 0);
+    // Focus is an ambient base state: the V4.1 micro-motion layer (blink /
+    // ear twitch) keeps its two scheduler timers running.
+    expect(controller.activeTimerCount, 2);
 
     await tester.tap(find.byType(PetAvatarWidget));
     await tester.pump();

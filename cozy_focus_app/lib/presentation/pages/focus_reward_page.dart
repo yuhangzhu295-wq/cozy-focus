@@ -11,7 +11,16 @@ import '../theme/app_theme.dart';
 /// Shows real Focus Coins and Pet XP from RewardLedger.
 /// Shows real active craft job progress if one exists (Phase 4).
 class FocusRewardPage extends ConsumerStatefulWidget {
-  const FocusRewardPage({super.key});
+  /// Id of the session whose ledger row should be shown.
+  ///
+  /// [FocusSessionEngine.save] clears its current session as part of settling,
+  /// so by the time this page builds, `focusSessionControllerProvider` no
+  /// longer knows the session that was just saved — the page would read a null
+  /// ledger and display "+0 专注币 / +0 Pet XP" for a session that did earn a
+  /// reward. The save page therefore hands the id over explicitly.
+  final String? sessionId;
+
+  const FocusRewardPage({super.key, this.sessionId});
 
   @override
   ConsumerState<FocusRewardPage> createState() => _FocusRewardPageState();
@@ -29,7 +38,7 @@ class _FocusRewardPageState extends ConsumerState<FocusRewardPage> {
   Widget build(BuildContext context) {
     final sessionState = ref.watch(focusSessionControllerProvider);
     final craft = ref.watch(craftControllerProvider);
-    final sessionId = sessionState.session?.id;
+    final sessionId = widget.sessionId ?? sessionState.session?.id;
 
     return Scaffold(
       backgroundColor: AppColors.background,

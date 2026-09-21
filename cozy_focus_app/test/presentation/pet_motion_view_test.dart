@@ -6,6 +6,7 @@ import 'package:cozy_focus_app/presentation/animations/pet_motion_view.dart';
 import 'package:cozy_focus_app/presentation/animations/rive_pet_adapter.dart';
 import 'package:cozy_focus_app/presentation/controllers/pet_motion_controller.dart';
 import 'package:cozy_focus_app/presentation/widgets/pet_avatar_widget.dart';
+import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 
 /// Test double implementing IPetMotionScheduler with predictable intervals.
 class FakeDeterministicScheduler implements IPetMotionScheduler {
@@ -108,14 +109,12 @@ void main() {
         ),
       );
 
-      expect(find.byKey(const Key('mochi-dog-body')), findsOneWidget);
-      expect(find.byKey(const Key('mochi-dog-head')), findsOneWidget);
-      expect(find.byKey(const Key('mochi-left-ear')), findsOneWidget);
-      expect(find.byKey(const Key('mochi-right-ear')), findsOneWidget);
-      expect(find.byKey(const Key('mochi-tail')), findsOneWidget);
-      expect(find.byKey(const Key('mochi-left-paw')), findsOneWidget);
-      expect(find.byKey(const Key('mochi-right-paw')), findsOneWidget);
-      expect(find.byKey(const Key('mochi-cushion')), findsOneWidget);
+      // Mochi is the approved V4.1 art, composed from independent layers.
+      expect(find.byType(MochiLayeredRenderer), findsOneWidget);
+      for (final key in MochiLayerKeys.all) {
+        expect(find.byKey(key), findsOneWidget, reason: 'missing layer $key');
+      }
+      expect(find.byKey(MochiLayerKeys.headGroup), findsOneWidget);
     });
 
     testWidgets(
@@ -435,15 +434,16 @@ void main() {
       expect(controller.isMotionActive, isTrue);
       expect(controller.activeTimerCount, equals(2));
 
-      // Transition to non-idle via controller
+      // Transition to focus. Focus is a long-lived ambient state, so the V4.1
+      // "Micro" layer (blink / ear twitch / tail wag) keeps scheduling.
       controller.updateState(PetVisualState.focus);
       await tester.pump();
 
       expect(controller.isIdle, isFalse);
-      expect(controller.isMotionActive, isFalse);
-      expect(controller.activeTimerCount, equals(0));
+      expect(controller.isMotionActive, isTrue);
+      expect(controller.activeTimerCount, equals(2));
 
-      // Transition to sleep
+      // Transition to sleep: not an ambient state, so scheduling stops.
       controller.updateState(PetVisualState.sleep);
       await tester.pump();
       expect(controller.isMotionActive, isFalse);
@@ -614,7 +614,7 @@ void main() {
       expect(find.text('Mochi \u4e13\u6ce8\u4e2d'), findsOneWidget);
       expect(find.text('Mochi \u966a\u4f34\u4e2d'), findsNothing);
       expect(controller.isIdle, isFalse);
-      expect(controller.isMotionActive, isFalse);
+      expect(controller.isMotionActive, isTrue);
 
       // Record transforms at t=0 in focus
       final focusT0 = tester
@@ -809,10 +809,18 @@ void main() {
         find.byType(PetIdleFallbackView),
       );
 
-      // Verify idle continuous loops and timers are strictly stopped
+      // Body ambience (breathe / sway) belongs to idle; focus drives the body
+      // through its own controller.
       expect(fallbackState.breatheController.isAnimating, isFalse);
       expect(fallbackState.swayController.isAnimating, isFalse);
-      expect(fallbackState.tailController.isAnimating, isFalse);
+
+      // The V4.1 "Micro" layer stays engaged beneath every ambient base state,
+      // so a whole focus session never shows a frozen companion. Tail wag and
+      // the delayed head channel are continuous; blink and ear twitch are
+      // discrete one-shots fired by the scheduler, so they are not animating at
+      // this instant.
+      expect(fallbackState.tailController.isAnimating, isTrue);
+      expect(fallbackState.headController.isAnimating, isTrue);
       expect(fallbackState.blinkController.isAnimating, isFalse);
       expect(fallbackState.earTwitchController.isAnimating, isFalse);
 
@@ -863,10 +871,12 @@ void main() {
         find.byType(PetIdleFallbackView),
       );
 
-      // Idle loops stopped
+      // Body ambience stopped; the ambient micro layer keeps the tail and head
+      // moving while the pet rests.
       expect(fallbackState.breatheController.isAnimating, isFalse);
       expect(fallbackState.swayController.isAnimating, isFalse);
-      expect(fallbackState.tailController.isAnimating, isFalse);
+      expect(fallbackState.tailController.isAnimating, isTrue);
+      expect(fallbackState.headController.isAnimating, isTrue);
       expect(fallbackState.blinkController.isAnimating, isFalse);
       expect(fallbackState.earTwitchController.isAnimating, isFalse);
 

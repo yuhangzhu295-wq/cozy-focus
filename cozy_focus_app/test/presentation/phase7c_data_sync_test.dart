@@ -12,7 +12,12 @@ void main() {
     testWidgets('1. DataSyncPage renders honest local-only status',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(theme: AppTheme.lightTheme, home: const DataSyncPage()),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const DataSyncPage(),
+          ),
+        ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
@@ -30,7 +35,12 @@ void main() {
     testWidgets('2. DataSyncPage renders the three approved status cards',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(theme: AppTheme.lightTheme, home: const DataSyncPage()),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const DataSyncPage(),
+          ),
+        ),
       );
       await tester.pump();
 
@@ -47,7 +57,12 @@ void main() {
         '3. DataSyncPage has no fake controls or navigation affordances',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(theme: AppTheme.lightTheme, home: const DataSyncPage()),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const DataSyncPage(),
+          ),
+        ),
       );
       await tester.pump();
 

@@ -13,9 +13,11 @@ void main() {
         '1. SettingsPage renders AppBar with title, back button, and Mochi hero with 个人中心 and subtitle',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const SettingsPage(),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const SettingsPage(),
+          ),
         ),
       );
       await tester.pump();
@@ -34,9 +36,11 @@ void main() {
         '2. SettingsPage renders all seven honest, noninteractive rows with evidence-backed wording',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const SettingsPage(),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const SettingsPage(),
+          ),
         ),
       );
       await tester.pump();
@@ -65,9 +69,11 @@ void main() {
         '3. SettingsPage has no fake controls and two navigation chevrons',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const SettingsPage(),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const SettingsPage(),
+          ),
         ),
       );
       await tester.pump();

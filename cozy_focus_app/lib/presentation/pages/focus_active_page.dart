@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/focus_session_controller.dart';
+import '../controllers/craft_controller.dart';
 import '../controllers/providers.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pet_avatar_widget.dart';
@@ -26,6 +27,12 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Reference 03 draws the running craft on this screen, so the page has to
+    // load the craft state itself. It cannot rely on another page having loaded
+    // it: a cold start straight into a restored session never passes through
+    // Home, and the row would then be silently missing.
+    Future.microtask(
+        () => ref.read(craftControllerProvider.notifier).loadAll());
     Future.microtask(_restoreSession);
   }
 
@@ -324,6 +331,9 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
   Widget build(BuildContext context) {
     final sessionState = ref.watch(focusSessionControllerProvider);
     final session = sessionState.session;
+    // Reference 03 surfaces the in-progress craft on the running screen, so the
+    // job's real progress is visible without leaving the timer.
+    final craft = ref.watch(craftControllerProvider);
 
     if (session == null) {
       return Scaffold(
@@ -543,6 +553,14 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                                   fontSize: 13, color: AppColors.textSecondary),
                             ),
 
+                            // Reference 03 shows the active craft job here:
+                            // item icon, name, a bar and the real percentage.
+                            if (craft.activeJob != null &&
+                                craft.activeRecipe != null) ...[
+                              const SizedBox(height: 18),
+                              _buildCraftProgress(craft),
+                            ],
+
                             // 03A paused: task + elapsed info
                             if (isPaused) ...[
                               const SizedBox(height: 20),
@@ -667,6 +685,63 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                   );
                 },
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The running session's craft progress, exactly as reference 03 draws it.
+  Widget _buildCraftProgress(CraftState craft) {
+    final recipe = craft.activeRecipe!;
+    final job = craft.activeJob!;
+    final progress = recipe.requiredSeconds > 0
+        ? (job.progressSeconds / recipe.requiredSeconds).clamp(0.0, 1.0)
+        : 0.0;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Text(recipe.icon, style: const TextStyle(fontSize: 24)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '正在制作 ${recipe.name}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: AppColors.border,
+                    color: AppColors.primarySage,
+                    minHeight: 6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${(progress * 100).round()}%',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
             ),
           ),
         ],

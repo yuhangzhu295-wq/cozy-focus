@@ -15,6 +15,7 @@ import 'package:cozy_focus_app/presentation/pages/focus_save_page.dart';
 import 'package:cozy_focus_app/presentation/pages/focus_reward_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 import 'package:cozy_focus_app/presentation/widgets/pet_avatar_widget.dart';
+import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 import 'package:cozy_focus_app/domain/models/pet_models.dart' as pet_domain;
 import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
@@ -99,7 +100,7 @@ void main() {
       expect(find.text('开始专注'), findsOneWidget);
     });
 
-    testWidgets('Screen 01: HomePage displays truthful PetProgress message',
+    testWidgets('Screen 01: HomePage hero invents no numbers of its own',
         (tester) async {
       final progress = pet_domain.PetProgress(
         id: 'mochi_progress_id',
@@ -132,18 +133,22 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      const expectedMessage = 'Lv.3 累计专注 120 分钟';
-      final messageFinder = find.text(expectedMessage);
-      expect(messageFinder, findsOneWidget);
-
+      // Reference 01 gives the hero to the illustration alone, so the hero
+      // carries no speech bubble. That means the page must not print a level or
+      // an XP figure anywhere in the hero either — the truthful level/XP display
+      // lives on the Mochi growth page, which is where the design puts it.
       final avatarFinder = find.byType(PetAvatarWidget);
       expect(avatarFinder, findsOneWidget);
       final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
-      expect(avatarWidget.message, equals(expectedMessage));
+      expect(avatarWidget.message, isNull);
+
+      expect(find.textContaining('累计专注'), findsNothing);
+      expect(find.textContaining('Lv.'), findsNothing);
+      expect(find.textContaining('245'), findsNothing);
     });
 
     testWidgets(
-        'Screen 01: HomePage displays truthful PetProgress message and does not overlap headline at 320x640',
+        'Screen 01: HomePage hero keeps the headline clear of the pet at 320x640',
         (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1.0;
@@ -183,25 +188,24 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      const expectedMessage = 'Lv.3 累计专注 120 分钟';
-      final messageFinder = find.text(expectedMessage);
-      expect(messageFinder, findsOneWidget);
-
       final avatarFinder = find.byType(PetAvatarWidget);
       expect(avatarFinder, findsOneWidget);
-      final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
-      expect(avatarWidget.message, equals(expectedMessage));
 
-      final headlineFinder = find.text('每一次专注都有意义');
+      final headlineFinder = find.text('专注当下，\n让更好的自己慢慢长大。');
       expect(headlineFinder, findsOneWidget);
 
+      // The guard that matters is the headline against the pet itself: the
+      // approved hero has no bubble, so the pet is what the copy must clear.
+      final petFinder = find.byType(MochiLayeredRenderer);
+      expect(petFinder, findsOneWidget);
+
       final headlineRect = tester.getRect(headlineFinder);
-      final messageRect = tester.getRect(messageFinder);
-      expect(headlineRect.overlaps(messageRect), isFalse);
+      final petRect = tester.getRect(petFinder);
+      expect(headlineRect.overlaps(petRect), isFalse);
     });
 
     testWidgets(
-        'Screen 01: HomePage displays truthful PetProgress message and does not overlap headline at 360x800',
+        'Screen 01: HomePage hero keeps the headline clear of the pet at 360x800',
         (tester) async {
       tester.view.physicalSize = const Size(360, 800);
       tester.view.devicePixelRatio = 1.0;
@@ -241,25 +245,24 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      const expectedMessage = 'Lv.3 累计专注 120 分钟';
-      final messageFinder = find.text(expectedMessage);
-      expect(messageFinder, findsOneWidget);
-
       final avatarFinder = find.byType(PetAvatarWidget);
       expect(avatarFinder, findsOneWidget);
       final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
-      expect(avatarWidget.message, equals(expectedMessage));
+      expect(avatarWidget.message, isNull);
 
-      final headlineFinder = find.text('每一次专注都有意义');
+      final headlineFinder = find.text('专注当下，\n让更好的自己慢慢长大。');
       expect(headlineFinder, findsOneWidget);
 
+      final petFinder = find.byType(MochiLayeredRenderer);
+      expect(petFinder, findsOneWidget);
+
       final headlineRect = tester.getRect(headlineFinder);
-      final messageRect = tester.getRect(messageFinder);
-      expect(headlineRect.overlaps(messageRect), isFalse);
+      final petRect = tester.getRect(petFinder);
+      expect(headlineRect.overlaps(petRect), isFalse);
     });
 
     testWidgets(
-        'Screen 01: HomePage handles null PetProgress with 300 hero height',
+        'Screen 01: HomePage handles null PetProgress with 264 hero band',
         (tester) async {
       const homeState = HomeUIState(
         petProgress: null,
@@ -289,16 +292,19 @@ void main() {
 
       expect(find.textContaining('累计专注'), findsNothing);
 
-      final heroFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is SizedBox &&
-            (widget.height == 300 ||
-                (widget.height != null && widget.height! >= 300)),
-      );
-      expect(heroFinder, findsOneWidget);
+      // The hero band is what keeps the pet clear of the headline, and it is
+      // sized from the approved page: reference 01 measures 311.25pt from the
+      // page top to the focus card's margin box, of which the test environment
+      // contributes no status-bar inset.
+      final heroFinder = find
+          .ancestor(
+            of: find.text('和 Mochi 一起'),
+            matching: find.byType(SizedBox),
+          )
+          .first;
       final heroWidget = tester.widget<SizedBox>(heroFinder);
-      expect(heroWidget.height, equals(300));
-      expect(tester.getSize(heroFinder).height, equals(300));
+      expect(heroWidget.height, equals(264));
+      expect(tester.getSize(heroFinder).height, equals(264));
     });
 
     testWidgets('Screen 02: FocusSetupPage renders categories and mode options',

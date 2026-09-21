@@ -14,9 +14,11 @@ void main() {
         '1. NotificationsPage renders title, back arrow icon, and PetAvatarWidget',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const NotificationsPage(),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const NotificationsPage(),
+          ),
         ),
       );
       await tester.pump();
@@ -38,9 +40,11 @@ void main() {
         '2. NotificationsPage renders expected notification labels and repeating status strings',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const NotificationsPage(),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const NotificationsPage(),
+          ),
         ),
       );
       await tester.pump();
@@ -67,9 +71,11 @@ void main() {
         '3. NotificationsPage has NO interactive toggles, switches, list tiles, or bottom bar',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const NotificationsPage(),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const NotificationsPage(),
+          ),
         ),
       );
       await tester.pump();
@@ -88,9 +94,11 @@ void main() {
         '4. SettingsPage has two chevron_right icons for navigable settings',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const SettingsPage(),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const SettingsPage(),
+          ),
         ),
       );
       await tester.pump();

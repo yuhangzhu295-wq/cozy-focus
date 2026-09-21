@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../domain/models/enums.dart';
+import '../companion/companion_avatar.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pet_avatar_widget.dart';
 
 /// Settings Page for Cozy Focus (PHASE-7A)
 /// Honest personal-center / settings view with Mochi hero and noninteractive informational cards.
@@ -60,8 +59,7 @@ class SettingsPage extends StatelessWidget {
                 ),
                 child: const Row(
                   children: [
-                    PetAvatarWidget(
-                      visualState: PetVisualState.idle,
+                    CompanionAvatar(
                       size: 72,
                       showStateBadge: false,
                     ),
@@ -155,6 +153,26 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
+/// Reference 12 draws every settings row at 59.67pt: a 24pt icon disc, a 14pt
+/// title, a 3pt gap, an 11pt subtitle and 12pt of vertical padding. The rows
+/// used to measure 70.47dp (and 87.24dp where the status subtitle wrapped),
+/// which is what pushed the seventh row under the navigation bar.
+class _SettingRowMetrics {
+  const _SettingRowMetrics._();
+
+  static const EdgeInsets padding =
+      EdgeInsets.symmetric(horizontal: 14, vertical: 12);
+  static const EdgeInsets margin = EdgeInsets.only(bottom: 8);
+  static const double iconDisc = 24;
+  static const double iconGlyph = 14;
+  static const double iconGap = 12;
+  static const double titleSize = 14;
+  static const double titleGap = 3;
+  static const double subtitleSize = 11;
+  static const double chevron = 14;
+  static const double radius = AppRadius.md;
+}
+
 class _SettingInfoCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
@@ -173,11 +191,11 @@ class _SettingInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: _SettingRowMetrics.margin,
+      padding: _SettingRowMetrics.padding,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(_SettingRowMetrics.radius),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
@@ -191,19 +209,19 @@ class _SettingInfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: _SettingRowMetrics.iconDisc,
+            height: _SettingRowMetrics.iconDisc,
             decoration: BoxDecoration(
               color: iconBgColor,
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              size: 20,
+              size: _SettingRowMetrics.iconGlyph,
               color: iconColor,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: _SettingRowMetrics.iconGap),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,16 +229,16 @@ class _SettingInfoCard extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: _SettingRowMetrics.titleSize,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: _SettingRowMetrics.titleGap),
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: _SettingRowMetrics.subtitleSize,
                     color: AppColors.textSecondary,
                     height: 1.3,
                   ),
@@ -256,11 +274,11 @@ class _NavigableSettingCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push(route),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: _SettingRowMetrics.margin,
+        padding: _SettingRowMetrics.padding,
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(_SettingRowMetrics.radius),
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
@@ -274,19 +292,19 @@ class _NavigableSettingCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: _SettingRowMetrics.iconDisc,
+              height: _SettingRowMetrics.iconDisc,
               decoration: BoxDecoration(
                 color: iconBgColor,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                size: 20,
+                size: _SettingRowMetrics.iconGlyph,
                 color: iconColor,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: _SettingRowMetrics.iconGap),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,16 +312,16 @@ class _NavigableSettingCard extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: _SettingRowMetrics.titleSize,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: _SettingRowMetrics.titleGap),
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: _SettingRowMetrics.subtitleSize,
                       color: AppColors.textSecondary,
                       height: 1.3,
                     ),
@@ -314,7 +332,7 @@ class _NavigableSettingCard extends StatelessWidget {
             const Icon(
               Icons.chevron_right,
               color: AppColors.textTertiary,
-              size: 18,
+              size: _SettingRowMetrics.chevron,
             ),
           ],
         ),

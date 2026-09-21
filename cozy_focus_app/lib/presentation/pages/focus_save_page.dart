@@ -74,7 +74,7 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
 
       // All user-edited fields are passed as structured parameters.
       // mood is stored as its own field, NOT concatenated into note.
-      await notifier.saveSession(
+      final saved = await notifier.saveSession(
         taskName: _taskController.text.trim().isEmpty
             ? '专注任务'
             : _taskController.text.trim(),
@@ -87,7 +87,9 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
       await ref.read(homeControllerProvider.notifier).loadHomeData();
 
       if (mounted) {
-        context.go('/focus/reward');
+        // The engine clears its current session while settling, so the reward
+        // page is told which ledger row to show instead of looking it up.
+        context.go('/focus/reward?sessionId=${saved.id}');
       }
     } catch (e) {
       if (mounted) {

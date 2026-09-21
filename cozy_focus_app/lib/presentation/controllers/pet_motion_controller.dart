@@ -37,8 +37,26 @@ class DefaultPetMotionScheduler implements IPetMotionScheduler {
 /// Centralized controller owning visual state, motion decider contracts, and
 /// trigger lifecycles for Mochi.
 class PetMotionController extends ChangeNotifier {
+  /// Base states whose ambient micro-motion (breathe / blink / ear twitch /
+  /// tail wag) is sustained continuously.
+  ///
+  /// [PetVisualState.sleep] is excluded because a sleeping pet keeps its eyes
+  /// closed and stays still apart from breathing. [PetVisualState.celebrate]
+  /// and [PetVisualState.greeting] are excluded because they are one-shot
+  /// triggers; the presentation layer re-enables ambient motion for them once
+  /// the trigger settles (see [extendAmbientMotionTo]).
+  static const Set<PetVisualState> ambientMotionStates = <PetVisualState>{
+    PetVisualState.idle,
+    PetVisualState.focus,
+    PetVisualState.pause,
+    PetVisualState.craft,
+  };
+
   PetVisualState _visualState;
   final IPetMotionScheduler scheduler;
+  final Set<PetVisualState> _ambientStates = <PetVisualState>{
+    ...ambientMotionStates,
+  };
   VoidCallback? _onTriggerBlink;
   VoidCallback? _onTriggerEarTwitch;
   VoidCallback? _onStartContinuousLoops;
@@ -76,6 +94,28 @@ class PetMotionController extends ChangeNotifier {
       isGreeting;
   bool get isMotionActive => _isMotionActive;
   bool get isDisposed => _isDisposed;
+
+  /// Whether ambient micro-motion scheduling is currently permitted for the
+  /// active [visualState]. This is the gate for the blink / ear-twitch timers.
+  bool get supportsAmbientMotion => _ambientStates.contains(_visualState);
+
+  /// Extends ambient micro-motion to a state outside [ambientMotionStates].
+  ///
+  /// Used after a one-shot trigger (celebrate / greeting) completes so the pet
+  /// returns to base aliveness without leaving its visual state. The extension
+  /// is discarded on the next real state transition.
+  void extendAmbientMotionTo(PetVisualState state) {
+    if (_isDisposed) return;
+    if (!_ambientStates.add(state)) return;
+    if (supportsAmbientMotion) startMotion();
+  }
+
+  void _resetAmbientExtensions() {
+    _ambientStates.removeWhere(
+      (state) => !ambientMotionStates.contains(state),
+    );
+  }
+
   int get activeTimerCount =>
       (_blinkTimer != null ? 1 : 0) + (_earTwitchTimer != null ? 1 : 0);
   bool get isInteractCooldownActive => _interactCooldownTimer != null;
@@ -129,7 +169,7 @@ class PetMotionController extends ChangeNotifier {
     _onStartContinuousLoops = onStartContinuousLoops;
     _onStopContinuousLoops = onStopContinuousLoops;
     _onTriggerInteract = onTriggerInteract;
-    if (isIdle) {
+    if (supportsAmbientMotion) {
       startMotion();
     } else {
       stopMotion();
@@ -164,7 +204,8 @@ class PetMotionController extends ChangeNotifier {
   void updateState(PetVisualState state) {
     if (_isDisposed || _visualState == state) return;
     _visualState = state;
-    if (isIdle) {
+    _resetAmbientExtensions();
+    if (supportsAmbientMotion) {
       startMotion();
     } else {
       stopMotion();
@@ -172,10 +213,10 @@ class PetMotionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Starts idle motion scheduling. Safely cancels any existing timers
+  /// Starts ambient motion scheduling. Safely cancels any existing timers
   /// to prevent duplicate schedulers.
   void startMotion() {
-    if (_isDisposed || !isIdle) return;
+    if (_isDisposed || !supportsAmbientMotion) return;
     _isMotionActive = true;
     _cancelTimers();
     _onStartContinuousLoops?.call();
@@ -210,18 +251,18 @@ class PetMotionController extends ChangeNotifier {
   }
 
   void _scheduleNextBlink() {
-    if (_isDisposed || !_isMotionActive || !isIdle) return;
+    if (_isDisposed || !_isMotionActive || !supportsAmbientMotion) return;
     _blinkTimer = Timer(scheduler.nextBlinkInterval(), () {
-      if (_isDisposed || !_isMotionActive || !isIdle) return;
+      if (_isDisposed || !_isMotionActive || !supportsAmbientMotion) return;
       _onTriggerBlink?.call();
       _scheduleNextBlink();
     });
   }
 
   void _scheduleNextEarTwitch() {
-    if (_isDisposed || !_isMotionActive || !isIdle) return;
+    if (_isDisposed || !_isMotionActive || !supportsAmbientMotion) return;
     _earTwitchTimer = Timer(scheduler.nextEarTwitchInterval(), () {
-      if (_isDisposed || !_isMotionActive || !isIdle) return;
+      if (_isDisposed || !_isMotionActive || !supportsAmbientMotion) return;
       _onTriggerEarTwitch?.call();
       _scheduleNextEarTwitch();
     });

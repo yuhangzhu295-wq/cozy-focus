@@ -6,6 +6,7 @@ import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
 import '../../core/geometry/room_geometry.dart';
 import '../widgets/cozy_furniture_artwork.dart';
+import '../widgets/growth_sub_nav.dart';
 
 /// Screen 09: Room Decoration Page (房间装饰).
 ///
@@ -70,6 +71,7 @@ class _RoomPageState extends ConsumerState<RoomPage> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                const GrowthSubNav(active: GrowthSection.room),
                 // Room canvas — fills available space; LayoutBuilder provides
                 // real canvas dimensions for normalised coordinate mapping.
                 Expanded(

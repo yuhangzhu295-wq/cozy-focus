@@ -108,7 +108,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('收藏图鉴'), findsOneWidget);
-      expect(find.text('图鉴预览 · 物品收集'), findsOneWidget);
+      expect(find.text('图鉴收集'), findsOneWidget);
       expect(find.text('全部'), findsOneWidget);
       expect(find.text('植物'), findsOneWidget);
       expect(find.text('家具'), findsOneWidget);
@@ -116,7 +116,10 @@ void main() {
       expect(find.text('特别'), findsOneWidget);
       expect(find.text('温馨布艺沙发'), findsOneWidget);
       expect(find.text('暂无宠物陪伴，前往成长页领养宠物伙伴吧！'), findsOneWidget);
-      expect(find.text('已拥有 0 件'), findsOneWidget);
+      // The summary card reports the owned/total fraction against the whole
+      // catalogue (10 items), matching reference 10B.
+      expect(find.text('0 / 10'), findsOneWidget);
+      expect(find.text('已收集 0%'), findsOneWidget);
       expect(find.byKey(const Key('cozy-furniture-sofa')), findsOneWidget);
     });
 
@@ -128,7 +131,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('已拥有 0 件'), findsOneWidget);
+      expect(find.text('0 / 10'), findsOneWidget);
       expect(find.text('未收集'), findsWidgets);
       expect(find.byIcon(Icons.lock_rounded), findsWidgets);
       expect(find.byType(CozyFurnitureArtwork), findsWidgets);
@@ -162,8 +165,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('可可 的收藏屋'), findsOneWidget);
-      expect(find.text('已拥有 1 件'), findsOneWidget);
-      expect(find.text('已拥有 (x2)'), findsOneWidget);
+      expect(find.text('1 / 10'), findsOneWidget);
+      expect(find.text('已拥有 x2'), findsOneWidget);
     });
 
     testWidgets('6. Bottom navigation has exactly 3 items with 成长 selected',

@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../domain/models/enums.dart';
 import '../../domain/models/focus_record.dart';
 import '../controllers/records_controller.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pet_avatar_widget.dart';
+import '../companion/companion_avatar.dart';
+import '../widgets/app_bottom_nav.dart';
 
 /// Screen 05: Records Hub (V4.1)
 class ProgressOverviewPage extends ConsumerStatefulWidget {
@@ -272,8 +272,8 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
     final msg = sec == 0
         ? '和 Mochi 一起开启今天的专注吧！'
         : diff > 0
-            ? '今天也很棒呀，和 Mochi 一起继续加油！ ♥'
-            : '慢慢来，和 Mochi 一起加油！ ♥';
+            ? '今天也很棒呢，和 Mochi 一起继续加油！💚'
+            : '慢慢来，和 Mochi 一起加油！💚';
 
     return ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -712,7 +712,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
   Widget _buildRecordRow(FocusRecord r) {
     final mins = (r.durationSeconds / 60).floor();
     final time =
-        '${DateFormat('HH:mm').format(r.startAt)} - ${DateFormat('HH:mm').format(r.endAt)}';
+        '${DateFormat('HH:mm').format(r.startAt)} – ${DateFormat('HH:mm').format(r.endAt)}';
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -795,7 +795,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
   Widget _buildEmptyState() {
     return Column(children: [
       const SizedBox(height: 20),
-      const PetAvatarWidget(visualState: PetVisualState.idle, size: 120),
+      const CompanionAvatar(size: 120),
       const SizedBox(height: 16),
       const Text('今天还没有专注记录',
           style: TextStyle(
@@ -892,25 +892,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
   }
 
   Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      currentIndex: 1,
-      selectedItemColor: AppColors.primarySage,
-      unselectedItemColor: AppColors.textTertiary,
-      backgroundColor: AppColors.surface,
-      onTap: (i) {
-        if (i == 0) {
-          context.go('/');
-        } else if (i == 2) {
-          context.go('/growth');
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: '首页'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_rounded), label: '记录'),
-        BottomNavigationBarItem(icon: Icon(Icons.eco_outlined), label: '成长'),
-      ],
-    );
+    return const AppBottomNav(currentIndex: 1);
   }
 }
 

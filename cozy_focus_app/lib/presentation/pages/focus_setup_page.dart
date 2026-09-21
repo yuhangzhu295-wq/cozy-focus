@@ -5,7 +5,8 @@ import '../../domain/models/enums.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/providers.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pet_avatar_widget.dart';
+import '../companion/companion_avatar.dart';
+import '../widgets/app_bottom_nav.dart';
 
 /// Screen 02: Focus Setup — V4.1 visual redesign
 /// Design ref: docs/cozy_focus_v4_1/designs/pages_ascii/02_focus_setup.png
@@ -169,10 +170,7 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: PetAvatarWidget(
-                        visualState: PetVisualState.idle,
-                        size: 130,
-                        message: '选好了我们就出发！'),
+                    child: CompanionAvatar(size: 130, message: '选好了我们就出发！'),
                   ),
                 ),
               ],
@@ -395,26 +393,7 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
       ),
 
       // ── Bottom nav (3 tabs) ────────────────────────────────────
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        selectedItemColor: AppColors.primarySage,
-        unselectedItemColor: AppColors.textTertiary,
-        backgroundColor: AppColors.surface,
-        type: BottomNavigationBarType.fixed,
-        selectedLabelStyle:
-            const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: const TextStyle(fontSize: 11),
-        onTap: (idx) {
-          if (idx == 1) context.go('/records');
-          if (idx == 2) context.go('/growth');
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: '首页'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart_rounded), label: '记录'),
-          BottomNavigationBarItem(icon: Icon(Icons.eco_outlined), label: '成长'),
-        ],
-      ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
     );
   }
 }

@@ -70,4 +70,40 @@ class PetMotionSpec {
   static const double interactTailTiltDeg = 5.0;
   static const double interactEyeSquintMin = 0.55;
   static const Duration interactCooldown = Duration(milliseconds: 1500);
+
+  // --- Ambient micro-motion layer ---
+  //
+  // V4.1 `reference/02_动效架构.md` declares the *Micro* channels
+  // (Breathe / Sway / Blink / Ear Twitch / Tail Wag) as the layer beneath every
+  // base state (Idle / Focus / Craft / Pause / Celebrate / Sleep / Greeting /
+  // Interact). Base states therefore do not own the micro channels; they only
+  // scale how strongly the micro layer reads.
+  //
+  // A live companion that freezes its ears, tail and eyes for the whole length
+  // of a 25-minute focus session or a multi-minute craft job is not alive, so
+  // the part-level micro channels stay engaged in every ambient base state and
+  // are damped (never disabled) per state.
+  static const double idlePartMotionFactor = 1.0;
+  static const double focusPartMotionFactor = 0.6;
+  static const double pausePartMotionFactor = 0.5;
+  static const double craftPartMotionFactor = 0.75;
+
+  // --- Progress binding ---
+  //
+  // V4.1 binds `focusProgress` / `craftProgress` into the engine. They are
+  // expressed as *motion intensity*: the delta of every transform away from the
+  // neutral pose is scaled by this factor, so the pet starts a session calm and
+  // grows more animated as it approaches completion. The neutral pose itself is
+  // never moved, which keeps the binding free of visual drift.
+  static const double progressIntensityMin = 0.55;
+  static const double progressIntensityMax = 1.0;
+
+  // --- Delayed head response ---
+  //
+  // The head counter-rotates against the body sway and carries its own, longer
+  // oscillation, so it drifts in and out of phase with the body instead of
+  // moving rigidly with it. This is the "head slight delayed response" channel.
+  static const Duration headLagCycle = Duration(milliseconds: 3400);
+  static const double headLagAngleDegrees = 0.9;
+  static const double headLagFactor = 0.55;
 }

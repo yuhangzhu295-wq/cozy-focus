@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/pet_motion_controller.dart';
+import '../companion/mochi_layered_renderer.dart';
 import '../theme/app_theme.dart';
 import 'pet_motion_spec.dart';
 
@@ -63,6 +64,12 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   late AnimationController _tailController;
   late Animation<double> _tailAnimation;
 
+  // Delayed head response channel: the head counter-rotates against the body
+  // sway and carries its own longer oscillation, so it drifts in and out of
+  // phase with the body instead of moving rigidly with it.
+  late AnimationController _headController;
+  late Animation<double> _headAnimation;
+
   // One-shot controllers
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
@@ -112,6 +119,12 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   bool _interactFlash = false;
   bool _reduceMotion = false;
 
+  // One-shot trigger settle flags. V4.1 lists `triggerCelebrate` as a *trigger*,
+  // so celebrate/greeting play once and then hand the pet back to the ambient
+  // micro-motion layer instead of looping the big bounce forever.
+  bool _celebrateSettled = false;
+  bool _greetingSettled = false;
+
   /// Testing accessors to observe animation controllers and their cleanup status
   @visibleForTesting
   AnimationController get breatheController => _breatheController;
@@ -119,6 +132,8 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   AnimationController get swayController => _swayController;
   @visibleForTesting
   AnimationController get tailController => _tailController;
+  @visibleForTesting
+  AnimationController get headController => _headController;
   @visibleForTesting
   AnimationController get blinkController => _blinkController;
   @visibleForTesting
@@ -151,6 +166,48 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   double get interactTailTilt => _interactTailTiltAnimation.value;
   @visibleForTesting
   double get interactEyeScaleY => _interactEyeSquintAnimation.value;
+  @visibleForTesting
+  bool get isCelebrateSettled => _celebrateSettled;
+  @visibleForTesting
+  bool get isGreetingSettled => _greetingSettled;
+
+  /// Effective `focusProgress` / `craftProgress` binding, expressed as motion
+  /// intensity. `1.0` when the active state carries no progress binding.
+  @visibleForTesting
+  double get progressIntensity => _progressIntensityFor(
+        _effectiveController.visualState,
+      );
+
+  /// Effective head counter-rotation in radians, including the delayed head
+  /// oscillation. Exposed so tests can prove the head channel moves
+  /// independently of the body.
+  @visibleForTesting
+  double get headRotationValue => _testFrame.headRotation;
+
+  @visibleForTesting
+  double get bodyScaleForTesting => _testFrame.scale;
+
+  @visibleForTesting
+  double get bodyDyForTesting => _testFrame.dy;
+
+  @visibleForTesting
+  double get bodyRotationForTesting => _testFrame.rotation;
+
+  @visibleForTesting
+  double get earRotationForTesting => _testFrame.earRotation;
+
+  @visibleForTesting
+  double get tailRotationForTesting => _testFrame.tailRotation;
+
+  @visibleForTesting
+  double get eyeScaleYForTesting => _testFrame.eyeScaleY;
+
+  /// The frame the widget tree is composing right now, with reduced motion
+  /// disabled so the raw motion channels are observable.
+  _MotionFrame get _testFrame => _frameFor(
+        _effectiveController.visualState,
+        reduceMotion: false,
+      );
 
   @override
   void initState() {
@@ -203,6 +260,18 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       end: PetMotionSpec.tailIdleAngleDegrees * math.pi / 180,
     ).animate(
       CurvedAnimation(parent: _tailController, curve: Curves.easeInOutSine),
+    );
+
+    // 3b. Delayed head response
+    _headController = AnimationController(
+      vsync: this,
+      duration: PetMotionSpec.headLagCycle,
+    );
+    _headAnimation = Tween<double>(
+      begin: -PetMotionSpec.headLagAngleDegrees * math.pi / 180,
+      end: PetMotionSpec.headLagAngleDegrees * math.pi / 180,
+    ).animate(
+      CurvedAnimation(parent: _headController, curve: Curves.easeInOutSine),
     );
 
     // 4. Blink
@@ -522,6 +591,9 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       Curves.easeInOutSine,
     );
 
+    _celebrateController.addStatusListener(_onCelebrateStatusChanged);
+    _greetingController.addStatusListener(_onGreetingStatusChanged);
+
     _effectiveController.attach(
       onTriggerBlink: _onBlinkTrigger,
       onTriggerEarTwitch: _onEarTwitchTrigger,
@@ -590,16 +662,46 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     }
   }
 
+  void _onCelebrateStatusChanged(AnimationStatus status) {
+    if (status != AnimationStatus.completed || !mounted) return;
+    setState(() => _celebrateSettled = true);
+    _effectiveController.extendAmbientMotionTo(PetVisualState.celebrate);
+    _syncStateAnimations(_effectiveController.visualState);
+  }
+
+  void _onGreetingStatusChanged(AnimationStatus status) {
+    if (status != AnimationStatus.completed || !mounted) return;
+    setState(() => _greetingSettled = true);
+    _effectiveController.extendAmbientMotionTo(PetVisualState.greeting);
+    _syncStateAnimations(_effectiveController.visualState);
+  }
+
+  /// True when the active state is a one-shot trigger that has already played
+  /// and handed control back to the ambient micro-motion layer.
+  bool _isSettledOneShot(PetVisualState state) =>
+      (state == PetVisualState.celebrate && _celebrateSettled) ||
+      (state == PetVisualState.greeting && _greetingSettled);
+
+  /// Part-level micro-motion amplitude for a base state.
+  double _partMotionFactor(PetVisualState state) {
+    switch (state) {
+      case PetVisualState.focus:
+        return PetMotionSpec.focusPartMotionFactor;
+      case PetVisualState.pause:
+        return PetMotionSpec.pausePartMotionFactor;
+      case PetVisualState.craft:
+        return PetMotionSpec.craftPartMotionFactor;
+      case PetVisualState.idle:
+      case PetVisualState.celebrate:
+      case PetVisualState.sleep:
+      case PetVisualState.greeting:
+      case PetVisualState.interact:
+        return PetMotionSpec.idlePartMotionFactor;
+    }
+  }
+
   void _startContinuousLoops() {
-    if (!_breatheController.isAnimating) {
-      _breatheController.repeat(reverse: true);
-    }
-    if (!_swayController.isAnimating) {
-      _swayController.repeat(reverse: true);
-    }
-    if (!_tailController.isAnimating) {
-      _tailController.repeat(reverse: true);
-    }
+    _syncStateAnimations(_effectiveController.visualState);
   }
 
   void _stopAllAnimations() {
@@ -611,6 +713,9 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
 
     if (_tailController.isAnimating) _tailController.stop();
     _tailController.reset();
+
+    if (_headController.isAnimating) _headController.stop();
+    _headController.reset();
 
     if (_blinkController.isAnimating) _blinkController.stop();
     _blinkController.reset();
@@ -641,6 +746,9 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     _interactFlashTimer?.cancel();
     _interactFlashTimer = null;
     _interactFlash = false;
+
+    _celebrateSettled = false;
+    _greetingSettled = false;
   }
 
   void _syncStateAnimations(PetVisualState state) {
@@ -649,20 +757,43 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       return;
     }
 
-    // If not idle, stop idle continuous loops and one-shot controllers
-    if (state != PetVisualState.idle) {
+    final settledOneShot = _isSettledOneShot(state);
+    final ambient = _effectiveController.supportsAmbientMotion;
+
+    // --- Part-level micro-motion layer -------------------------------------
+    //
+    // V4.1 `reference/02_动效架构.md` puts Breathe / Sway / Blink / Ear Twitch /
+    // Tail Wag *beneath* the base states. They stay engaged in every ambient
+    // base state (idle / focus / pause / craft) so ears, tail and eyes never
+    // freeze for the length of a long focus session or craft job; only their
+    // amplitude is damped per state (see [_partMotionFactor]).
+    if (ambient) {
+      if (!_tailController.isAnimating) {
+        _tailController.repeat(reverse: true);
+      }
+      if (!_headController.isAnimating) {
+        _headController.repeat(reverse: true);
+      }
+    } else {
+      _stopPartMotion();
+    }
+
+    // --- Body ambience ----------------------------------------------------
+    // Full body breathing/sway belongs to idle, and to a one-shot trigger that
+    // has settled back into base aliveness.
+    final bodyAmbience = state == PetVisualState.idle || settledOneShot;
+    if (bodyAmbience) {
+      if (!_breatheController.isAnimating) {
+        _breatheController.repeat(reverse: true);
+      }
+      if (!_swayController.isAnimating) {
+        _swayController.repeat(reverse: true);
+      }
+    } else {
       if (_breatheController.isAnimating) _breatheController.stop();
       _breatheController.reset();
       if (_swayController.isAnimating) _swayController.stop();
       _swayController.reset();
-      if (_tailController.isAnimating) _tailController.stop();
-      _tailController.reset();
-      if (_blinkController.isAnimating) _blinkController.stop();
-      _blinkController.reset();
-      if (_earTwitchController.isAnimating) _earTwitchController.stop();
-      _earTwitchController.reset();
-    } else {
-      _startContinuousLoops();
     }
 
     // Focus
@@ -695,14 +826,15 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       _sleepController.reset();
     }
 
-    // Celebrate
+    // Celebrate — a one-shot trigger, never a loop.
     if (state == PetVisualState.celebrate) {
-      if (!_celebrateController.isAnimating) {
-        _celebrateController.repeat();
+      if (!_celebrateSettled && !_celebrateController.isAnimating) {
+        _celebrateController.forward(from: 0.0);
       }
     } else {
       if (_celebrateController.isAnimating) _celebrateController.stop();
       _celebrateController.reset();
+      _celebrateSettled = false;
     }
 
     // Craft
@@ -715,21 +847,33 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       _craftController.reset();
     }
 
-    // Greeting
+    // Greeting — a one-shot trigger, never a loop.
     if (state == PetVisualState.greeting) {
-      if (!_greetingController.isAnimating) {
-        _greetingController.repeat();
+      if (!_greetingSettled && !_greetingController.isAnimating) {
+        _greetingController.forward(from: 0.0);
       }
     } else {
       if (_greetingController.isAnimating) _greetingController.stop();
       _greetingController.reset();
+      _greetingSettled = false;
     }
+  }
+
+  void _stopPartMotion() {
+    if (_tailController.isAnimating) _tailController.stop();
+    _tailController.reset();
+    if (_headController.isAnimating) _headController.stop();
+    _headController.reset();
+    if (_blinkController.isAnimating) _blinkController.stop();
+    _blinkController.reset();
+    if (_earTwitchController.isAnimating) _earTwitchController.stop();
+    _earTwitchController.reset();
   }
 
   void _onBlinkTrigger() {
     if (!mounted ||
         _reduceMotion ||
-        _effectiveController.visualState != PetVisualState.idle) {
+        !_effectiveController.supportsAmbientMotion) {
       return;
     }
     _blinkController.forward(from: 0.0);
@@ -738,7 +882,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   void _onEarTwitchTrigger() {
     if (!mounted ||
         _reduceMotion ||
-        _effectiveController.visualState != PetVisualState.idle) {
+        !_effectiveController.supportsAmbientMotion) {
       return;
     }
     _earTwitchController.forward(from: 0.0);
@@ -822,13 +966,16 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     _breatheController.dispose();
     _swayController.dispose();
     _tailController.dispose();
+    _headController.dispose();
     _blinkController.dispose();
     _earTwitchController.dispose();
     _focusController.dispose();
     _pauseController.dispose();
     _sleepController.dispose();
+    _celebrateController.removeStatusListener(_onCelebrateStatusChanged);
     _celebrateController.dispose();
     _craftController.dispose();
+    _greetingController.removeStatusListener(_onGreetingStatusChanged);
     _greetingController.dispose();
     _interactFlashTimer?.cancel();
     _interactController.removeStatusListener(_onInteractStatusChanged);
@@ -836,16 +983,190 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     super.dispose();
   }
 
+  /// V4.1 binds `focusProgress` / `craftProgress` into the engine. They are
+  /// expressed here as *motion intensity*: the delta of every transform away
+  /// from the neutral pose is scaled, so the pet starts a session calm and
+  /// grows more animated as it approaches completion. The neutral pose itself
+  /// never moves, which keeps the binding free of visual drift.
+  ///
+  /// Returns `1.0` when the active state carries no progress binding.
+  double _progressIntensityFor(PetVisualState state) {
+    double? progress;
+    if (state == PetVisualState.focus) {
+      progress = widget.focusProgress;
+    } else if (state == PetVisualState.craft) {
+      progress = widget.craftProgress;
+    }
+    if (progress == null) return 1.0;
+    final clamped = progress.clamp(0.0, 1.0);
+    return PetMotionSpec.progressIntensityMin +
+        (PetMotionSpec.progressIntensityMax -
+                PetMotionSpec.progressIntensityMin) *
+            clamped;
+  }
+
+  /// Delayed head response: the head counter-rotates against the body sway and
+  /// carries its own longer oscillation, so it drifts in and out of phase with
+  /// the body instead of moving rigidly with it.
+  double _headRotationFor(double bodyRotation, {required bool reduceMotion}) {
+    if (reduceMotion) return 0.0;
+    return -bodyRotation * PetMotionSpec.headLagFactor + _headAnimation.value;
+  }
+
+  /// Single authoritative composition of the current motion frame.
+  ///
+  /// Kept in one place so the rendered tree and the `@visibleForTesting`
+  /// accessors can never drift apart.
+  _MotionFrame _frameFor(
+    PetVisualState state, {
+    required bool reduceMotion,
+  }) {
+    final settledOneShot = _isSettledOneShot(state);
+    final partFactor = reduceMotion ? 0.0 : _partMotionFactor(state);
+
+    double scale = 1.0;
+    double dy = 0.0;
+    double rotation = 0.0;
+    double earRotation = 0.0;
+    double tailRotation = 0.0;
+    double eyeScaleY = 1.0;
+
+    switch (state) {
+      case PetVisualState.idle:
+        scale = reduceMotion ? 1.0 : _breatheScaleAnimation.value;
+        dy = reduceMotion
+            ? (PetMotionSpec.breatheReducedDyMax * 0.5)
+            : _breatheDyAnimation.value;
+        rotation = reduceMotion ? 0.0 : _swayAnimation.value;
+        earRotation = _earTwitchAnimation.value * partFactor;
+        tailRotation = _tailAnimation.value * partFactor;
+        eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+      case PetVisualState.focus:
+        scale = reduceMotion ? 1.0 : _focusScaleAnimation.value;
+        dy = reduceMotion
+            ? (PetMotionSpec.focusBreatheDyMax * 0.5)
+            : _focusBreatheDyAnimation.value;
+        rotation = reduceMotion ? 0.0 : _focusAngleAnimation.value;
+        // The ambient micro layer stays engaged: a companion that never blinks
+        // or moves its tail through an entire focus session is not alive.
+        earRotation = _earTwitchAnimation.value * partFactor;
+        tailRotation = _tailAnimation.value * partFactor;
+        eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+      case PetVisualState.pause:
+        scale = 1.0;
+        dy = reduceMotion
+            ? (PetMotionSpec.pauseBreatheDyMax * 0.5)
+            : _pauseBreatheDyAnimation.value;
+        rotation = 0.0;
+        earRotation = _earTwitchAnimation.value * partFactor;
+        tailRotation = _tailAnimation.value * partFactor;
+        eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+      case PetVisualState.sleep:
+        scale = 1.0;
+        dy = reduceMotion
+            ? (PetMotionSpec.sleepBreatheDyMax * 0.5)
+            : _sleepBreatheDyAnimation.value;
+        rotation = 0.0;
+        eyeScaleY = 0.10; // Eyes closed in sleep
+      case PetVisualState.celebrate:
+        if (settledOneShot) {
+          // The trigger has played once; hand the pet back to base aliveness.
+          scale = reduceMotion ? 1.0 : _breatheScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.breatheReducedDyMax * 0.5)
+              : _breatheDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _swayAnimation.value;
+          earRotation = _earTwitchAnimation.value * partFactor;
+          tailRotation = _tailAnimation.value * partFactor;
+          eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+        } else {
+          scale = reduceMotion ? 1.0 : _celebrateScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.celebrateBounceDyMax * 0.5)
+              : _celebrateBounceDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _celebrateAngleAnimation.value;
+          earRotation = reduceMotion ? 0.0 : _celebrateAngleAnimation.value;
+          tailRotation = reduceMotion ? 0.0 : -_celebrateAngleAnimation.value;
+          eyeScaleY = 1.0; // Bright joyful gaze
+        }
+      case PetVisualState.craft:
+        scale = reduceMotion ? 1.0 : _craftScaleAnimation.value;
+        dy = reduceMotion
+            ? (PetMotionSpec.craftBreatheDyMax * 0.5)
+            : _craftBreatheDyAnimation.value;
+        rotation = reduceMotion ? 0.0 : _craftTiltAngleAnimation.value;
+        // Craft used to pin ears and tail at 0.0, freezing them for the whole
+        // job. The ambient micro layer keeps them moving independently of the
+        // body tilt.
+        earRotation = _earTwitchAnimation.value * partFactor;
+        tailRotation = _tailAnimation.value * partFactor;
+        eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+      case PetVisualState.greeting:
+        if (settledOneShot) {
+          scale = reduceMotion ? 1.0 : _breatheScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.breatheReducedDyMax * 0.5)
+              : _breatheDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _swayAnimation.value;
+          earRotation = _earTwitchAnimation.value * partFactor;
+          tailRotation = _tailAnimation.value * partFactor;
+          eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+        } else {
+          scale = reduceMotion ? 1.0 : _greetingScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.greetingBounceDyMax * 0.5)
+              : _greetingBounceDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value;
+          earRotation = reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value;
+          tailRotation =
+              reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value * 0.8;
+          eyeScaleY = 1.0; // Welcoming cheerful gaze
+        }
+      case PetVisualState.interact:
+        // `interact` is a trigger, never a settled visual state; the override
+        // below is the only thing that drives it.
+        break;
+    }
+
+    // --- V4.1 binding: focusProgress / craftProgress -> motion intensity ---
+    final intensity = _progressIntensityFor(state);
+    if (intensity != 1.0) {
+      scale = 1.0 + (scale - 1.0) * intensity;
+      dy *= intensity;
+      rotation *= intensity;
+      earRotation *= intensity;
+      tailRotation *= intensity;
+    }
+
+    if (state == PetVisualState.idle && _interactFlash) {
+      scale = 1.02;
+      dy = -1.0;
+    } else if (state == PetVisualState.idle &&
+        !reduceMotion &&
+        _interactController.isAnimating) {
+      scale = _interactScaleAnimation.value;
+      dy = _interactDyAnimation.value;
+      rotation = _interactBodyTiltAnimation.value;
+      earRotation = _interactEarTiltAnimation.value;
+      tailRotation = _interactTailTiltAnimation.value;
+      eyeScaleY = _interactEyeSquintAnimation.value;
+    }
+
+    return _MotionFrame(
+      scale: scale,
+      dy: dy,
+      rotation: rotation,
+      earRotation: earRotation,
+      tailRotation: tailRotation,
+      eyeScaleY: eyeScaleY,
+      headRotation: _headRotationFor(rotation, reduceMotion: reduceMotion),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentVisualState = _effectiveController.visualState;
-    final isIdle = currentVisualState == PetVisualState.idle;
-    final isFocus = currentVisualState == PetVisualState.focus;
-    final isPause = currentVisualState == PetVisualState.pause;
     final isSleep = currentVisualState == PetVisualState.sleep;
-    final isCelebrate = currentVisualState == PetVisualState.celebrate;
-    final isCraft = currentVisualState == PetVisualState.craft;
-    final isGreeting = currentVisualState == PetVisualState.greeting;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
@@ -856,6 +1177,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         _breatheController,
         _swayController,
         _tailController,
+        _headController,
         _blinkController,
         _earTwitchController,
         _focusController,
@@ -867,92 +1189,15 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         _interactController,
       ]),
       builder: (context, child) {
-        // Compose transforms: state-gated and respects reduced motion
-        double scale = 1.0;
-        double dy = 0.0;
-        double rotation = 0.0;
-        double earRotation = 0.0;
-        double tailRotation = 0.0;
-        double eyeScaleY = 1.0;
-
-        if (isIdle) {
-          scale = reduceMotion ? 1.0 : _breatheScaleAnimation.value;
-          dy = reduceMotion
-              ? (PetMotionSpec.breatheReducedDyMax * 0.5)
-              : _breatheDyAnimation.value;
-          rotation = reduceMotion ? 0.0 : _swayAnimation.value;
-          earRotation = reduceMotion ? 0.0 : _earTwitchAnimation.value;
-          tailRotation = reduceMotion ? 0.0 : _tailAnimation.value;
-          eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
-        } else if (isFocus) {
-          scale = reduceMotion ? 1.0 : _focusScaleAnimation.value;
-          dy = reduceMotion
-              ? (PetMotionSpec.focusBreatheDyMax * 0.5)
-              : _focusBreatheDyAnimation.value;
-          rotation = reduceMotion ? 0.0 : _focusAngleAnimation.value;
-          eyeScaleY = 1.0; // Steady focused gaze
-        } else if (isPause) {
-          scale = 1.0;
-          dy = reduceMotion
-              ? (PetMotionSpec.pauseBreatheDyMax * 0.5)
-              : _pauseBreatheDyAnimation.value;
-          rotation = 0.0;
-          eyeScaleY = 1.0; // Restful gaze
-        } else if (isSleep) {
-          scale = 1.0;
-          dy = reduceMotion
-              ? (PetMotionSpec.sleepBreatheDyMax * 0.5)
-              : _sleepBreatheDyAnimation.value;
-          rotation = 0.0;
-          eyeScaleY = 0.10; // Eyes closed in sleep
-        } else if (isCelebrate) {
-          scale = reduceMotion ? 1.0 : _celebrateScaleAnimation.value;
-          dy = reduceMotion
-              ? (PetMotionSpec.celebrateBounceDyMax * 0.5)
-              : _celebrateBounceDyAnimation.value;
-          rotation = reduceMotion ? 0.0 : _celebrateAngleAnimation.value;
-          earRotation = reduceMotion ? 0.0 : _celebrateAngleAnimation.value;
-          tailRotation = reduceMotion ? 0.0 : -_celebrateAngleAnimation.value;
-          eyeScaleY = 1.0; // Bright joyful gaze
-        } else if (isCraft) {
-          scale = reduceMotion ? 1.0 : _craftScaleAnimation.value;
-          dy = reduceMotion
-              ? (PetMotionSpec.craftBreatheDyMax * 0.5)
-              : _craftBreatheDyAnimation.value;
-          rotation = reduceMotion ? 0.0 : _craftTiltAngleAnimation.value;
-          earRotation = 0.0;
-          tailRotation = 0.0;
-          eyeScaleY = 1.0; // Attentive crafting gaze
-        } else if (isGreeting) {
-          scale = reduceMotion ? 1.0 : _greetingScaleAnimation.value;
-          dy = reduceMotion
-              ? (PetMotionSpec.greetingBounceDyMax * 0.5)
-              : _greetingBounceDyAnimation.value;
-          rotation = reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value;
-          earRotation = reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value;
-          tailRotation = 0.0;
-          eyeScaleY = 1.0; // Welcoming cheerful gaze
-        }
-
-        if (isIdle && _interactFlash) {
-          scale = 1.02;
-          dy = -1.0;
-        } else if (isIdle && !reduceMotion && _interactController.isAnimating) {
-          scale = _interactScaleAnimation.value;
-          dy = _interactDyAnimation.value;
-          rotation = _interactBodyTiltAnimation.value;
-          earRotation = _interactEarTiltAnimation.value;
-          tailRotation = _interactTailTiltAnimation.value;
-          eyeScaleY = _interactEyeSquintAnimation.value;
-        }
+        final frame = _frameFor(currentVisualState, reduceMotion: reduceMotion);
 
         return Transform.translate(
-          offset: Offset(0, dy),
+          offset: Offset(0, frame.dy),
           child: Transform.scale(
-            scale: scale,
+            scale: frame.scale,
             alignment: Alignment.center,
             child: Transform.rotate(
-              angle: rotation,
+              angle: frame.rotation,
               alignment: Alignment.bottomCenter,
               child: SizedBox(
                 width: widget.size,
@@ -961,11 +1206,13 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
                   children: [
-                    _MochiDogArtwork(
+                    MochiLayeredRenderer(
                       size: widget.size,
-                      eyeScaleY: eyeScaleY,
-                      earRotation: earRotation,
-                      tailRotation: tailRotation,
+                      eyeScaleY: frame.eyeScaleY,
+                      earRotation: frame.earRotation,
+                      sproutRotation: frame.tailRotation * 0.6,
+                      headRotation: frame.headRotation,
+                      headDy: frame.dy * 0.28,
                     ),
                     // Sleep Zzz floating animation indicator
                     if (isSleep)
@@ -1111,281 +1358,23 @@ class _StateVisualConfig {
 /// Native Flutter artwork for Android V1. It deliberately keeps the character
 /// separate from the motion transforms above, so every existing state shares
 /// the same Mochi silhouette instead of falling back to a generic pet icon.
-class _MochiDogArtwork extends StatelessWidget {
-  final double size;
-  final double eyeScaleY;
+/// Immutable snapshot of the transforms composed for one frame.
+class _MotionFrame {
+  final double scale;
+  final double dy;
+  final double rotation;
   final double earRotation;
   final double tailRotation;
+  final double eyeScaleY;
+  final double headRotation;
 
-  const _MochiDogArtwork({
-    required this.size,
-    required this.eyeScaleY,
+  const _MotionFrame({
+    required this.scale,
+    required this.dy,
+    required this.rotation,
     required this.earRotation,
     required this.tailRotation,
+    required this.eyeScaleY,
+    required this.headRotation,
   });
-
-  static const _fur = Color(0xFFFFFDF8);
-  static const _furShade = Color(0xFFF5EEE1);
-  static const _line = Color(0xFF6F5848);
-  static const _cushion = Color(0xFFABC38B);
-  static const _cushionDark = Color(0xFF789660);
-
-  BoxDecoration _outlined({
-    required Color color,
-    double radius = 999,
-    List<BoxShadow>? shadows,
-  }) {
-    return BoxDecoration(
-      color: color,
-      borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: _line.withValues(alpha: 0.78), width: 1.4),
-      boxShadow: shadows,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final eyeHeight = size * 0.065 * eyeScaleY.clamp(0.08, 1.0);
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned(
-          left: size * 0.08,
-          right: size * 0.08,
-          bottom: size * 0.075,
-          height: size * 0.25,
-          child: Container(
-            key: const Key('mochi-cushion'),
-            decoration: _outlined(
-              color: _cushion,
-              radius: size * 0.16,
-              shadows: [
-                BoxShadow(
-                  color: _line.withValues(alpha: 0.16),
-                  blurRadius: size * 0.09,
-                  offset: Offset(0, size * 0.045),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(size * 0.16),
-              child: Stack(
-                children: [
-                  for (var i = 1; i <= 3; i++)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      top: size * (0.048 * i),
-                      child: Container(
-                        height: size * 0.018,
-                        color: _cushionDark.withValues(alpha: 0.25),
-                      ),
-                    ),
-                  for (var i = 1; i <= 4; i++)
-                    Positioned(
-                      top: 0,
-                      bottom: 0,
-                      left: size * (0.15 * i),
-                      child: Container(
-                        width: size * 0.018,
-                        color: _cushionDark.withValues(alpha: 0.22),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          right: size * 0.10,
-          bottom: size * 0.25,
-          child: Transform.rotate(
-            angle: tailRotation,
-            alignment: Alignment.bottomLeft,
-            child: Container(
-              key: const Key('mochi-tail'),
-              width: size * 0.17,
-              height: size * 0.34,
-              decoration: _outlined(color: _furShade, radius: size * 0.15),
-            ),
-          ),
-        ),
-        Positioned(
-          left: size * 0.22,
-          right: size * 0.22,
-          bottom: size * 0.20,
-          height: size * 0.42,
-          child: Container(
-            key: const Key('mochi-dog-body'),
-            decoration: _outlined(color: _fur, radius: size * 0.25),
-          ),
-        ),
-        Positioned(
-          left: size * 0.11,
-          top: size * 0.29,
-          child: Transform.rotate(
-            angle: -0.28 - earRotation,
-            alignment: Alignment.topRight,
-            child: Container(
-              key: const Key('mochi-left-ear'),
-              width: size * 0.24,
-              height: size * 0.39,
-              decoration: _outlined(color: _furShade, radius: size * 0.16),
-            ),
-          ),
-        ),
-        Positioned(
-          right: size * 0.11,
-          top: size * 0.29,
-          child: Transform.rotate(
-            angle: 0.28 + earRotation,
-            alignment: Alignment.topLeft,
-            child: Container(
-              key: const Key('mochi-right-ear'),
-              width: size * 0.24,
-              height: size * 0.39,
-              decoration: _outlined(color: _furShade, radius: size * 0.16),
-            ),
-          ),
-        ),
-        Positioned(
-          left: size * 0.20,
-          right: size * 0.20,
-          top: size * 0.27,
-          height: size * 0.49,
-          child: Container(
-            key: const Key('mochi-dog-head'),
-            decoration: _outlined(color: _fur, radius: size * 0.28),
-          ),
-        ),
-        Positioned(
-          left: size * 0.34,
-          top: size * 0.49,
-          child: Transform.scale(
-            scaleY: eyeScaleY.clamp(0.08, 1.0),
-            alignment: Alignment.center,
-            child: Container(
-              key: const Key('mochi-left-eye'),
-              width: size * 0.065,
-              height: eyeHeight,
-              decoration:
-                  const BoxDecoration(color: _line, shape: BoxShape.circle),
-            ),
-          ),
-        ),
-        Positioned(
-          right: size * 0.34,
-          top: size * 0.49,
-          child: Transform.scale(
-            scaleY: eyeScaleY.clamp(0.08, 1.0),
-            alignment: Alignment.center,
-            child: Container(
-              key: const Key('mochi-right-eye'),
-              width: size * 0.065,
-              height: eyeHeight,
-              decoration:
-                  const BoxDecoration(color: _line, shape: BoxShape.circle),
-            ),
-          ),
-        ),
-        Positioned(
-          left: size * 0.46,
-          top: size * 0.58,
-          child: Container(
-            key: const Key('mochi-nose'),
-            width: size * 0.075,
-            height: size * 0.05,
-            decoration:
-                const BoxDecoration(color: _line, shape: BoxShape.circle),
-          ),
-        ),
-        Positioned(
-          left: size * 0.26,
-          top: size * 0.60,
-          child: Container(
-            width: size * 0.12,
-            height: size * 0.06,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF4B5A8),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-        Positioned(
-          right: size * 0.26,
-          top: size * 0.60,
-          child: Container(
-            width: size * 0.12,
-            height: size * 0.06,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF4B5A8),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-        Positioned(
-          left: size * 0.24,
-          bottom: size * 0.18,
-          child: Container(
-            key: const Key('mochi-left-paw'),
-            width: size * 0.20,
-            height: size * 0.13,
-            decoration: _outlined(color: _fur, radius: size * 0.09),
-          ),
-        ),
-        Positioned(
-          right: size * 0.24,
-          bottom: size * 0.18,
-          child: Container(
-            key: const Key('mochi-right-paw'),
-            width: size * 0.20,
-            height: size * 0.13,
-            decoration: _outlined(color: _fur, radius: size * 0.09),
-          ),
-        ),
-        Positioned(
-          left: size * 0.485,
-          top: size * 0.13,
-          child: Container(
-            width: size * 0.018,
-            height: size * 0.15,
-            color: const Color(0xFF4E7B3F),
-          ),
-        ),
-        Positioned(
-          left: size * 0.37,
-          top: size * 0.08,
-          child: Transform.rotate(
-            angle: -0.55,
-            child: Container(
-              width: size * 0.15,
-              height: size * 0.09,
-              decoration: BoxDecoration(
-                color: const Color(0xFF86B95B),
-                border: Border.all(color: const Color(0xFF4E7B3F), width: 1),
-                borderRadius: BorderRadius.circular(size * 0.10),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          right: size * 0.37,
-          top: size * 0.08,
-          child: Transform.rotate(
-            angle: 0.55,
-            child: Container(
-              width: size * 0.15,
-              height: size * 0.09,
-              decoration: BoxDecoration(
-                color: const Color(0xFF86B95B),
-                border: Border.all(color: const Color(0xFF4E7B3F), width: 1),
-                borderRadius: BorderRadius.circular(size * 0.10),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
