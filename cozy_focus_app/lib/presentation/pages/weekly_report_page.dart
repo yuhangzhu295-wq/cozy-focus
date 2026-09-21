@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -594,64 +596,159 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
               ),
             )
           else ...[
-            // Proportional Multi-segment Bar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              child: SizedBox(
-                height: 12,
-                child: Row(
-                  children: categories.map((cat) {
-                    return Expanded(
-                      flex: (cat.percentage * 100).round().clamp(1, 10000),
-                      child: Container(
-                        color: _categoryColor(cat.categoryId),
+            // Reference 06 draws a ring with the period total in its centre. The
+            // proportional bar this page used to render carried the same data
+            // but a different hierarchy, and it was recorded as a P1.
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 128,
+                  height: 128,
+                  child: CustomPaint(
+                    painter: _CategoryDonutPainter(
+                      segments: [
+                        for (final cat in categories)
+                          (
+                            value: cat.percentage,
+                            color: _categoryColor(cat.categoryId),
+                          ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _formatTotalDuration(report?.totalSeconds ?? 0),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                              height: 1.15,
+                            ),
+                          ),
+                          const Text(
+                            '本周总时长',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: categories.map((cat) {
+                      final pct = (cat.percentage * 100).toStringAsFixed(0);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.5),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: _categoryColor(cat.categoryId),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _categoryLabel(cat.categoryId),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '$pct%',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            // Legend list
-            ...categories.map((cat) {
-              final pct = (cat.percentage * 100).toStringAsFixed(0);
-              final mins = cat.totalSeconds ~/ 60;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: _categoryColor(cat.categoryId),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _categoryLabel(cat.categoryId),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '$mins 分钟 ($pct%)',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
           ],
         ],
       ),
     );
   }
+
+  /// `12h 30m` — the form reference 06 prints inside the ring.
+  String _formatTotalDuration(int seconds) {
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    return '${hours}h ${minutes}m';
+  }
+}
+
+/// Ring chart for 专注分类分布.
+///
+/// Reference 06 draws the category split as a donut with the period total in
+/// the centre; the page used to render a proportional bar with a separate
+/// legend, which carried the same data under a different hierarchy.
+///
+/// A small angular gap separates adjacent arcs so two categories with close
+/// colours stay distinguishable. Segments start at 12 o'clock and run clockwise,
+/// matching the reference.
+class _CategoryDonutPainter extends CustomPainter {
+  final List<({double value, Color color})> segments;
+
+  /// Reference 06's ring is ~14pt thick inside a ~106pt box.
+  static const double _strokeWidth = 19;
+
+  /// Angular gap between adjacent arcs, in radians.
+  static const double _gap = 0.04;
+
+  const _CategoryDonutPainter({required this.segments});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height)
+        .deflate(_strokeWidth / 2 + 1);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _strokeWidth;
+
+    final total = segments.fold<double>(0, (sum, s) => sum + s.value);
+    if (total <= 0) {
+      paint.color = AppColors.border;
+      canvas.drawArc(rect, 0, 2 * math.pi, false, paint);
+      return;
+    }
+
+    var start = -math.pi / 2; // 12 o'clock
+    for (final segment in segments) {
+      final sweep = (segment.value / total) * 2 * math.pi;
+      paint.color = segment.color;
+      canvas.drawArc(
+        rect,
+        start + _gap / 2,
+        (sweep - _gap).clamp(0.0, 2 * math.pi),
+        false,
+        paint,
+      );
+      start += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CategoryDonutPainter oldDelegate) =>
+      !identical(oldDelegate.segments, segments);
 }

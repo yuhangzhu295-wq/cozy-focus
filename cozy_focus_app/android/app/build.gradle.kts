@@ -23,7 +23,7 @@ val hasReleaseSigning = releaseStoreFile != null &&
     rootProject.file(releaseStoreFile).isFile
 
 android {
-    namespace = "com.example.cozy_focus_app"
+    namespace = "com.yuhangzhu295.cozyfocus"
     compileSdk = flutter.compileSdkVersion
     // Use the highest NDK version required by any plugin (backward compatible)
     ndkVersion = "27.0.12077973"
@@ -40,7 +40,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.cozy_focus_app"
+        applicationId = "com.yuhangzhu295.cozyfocus"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

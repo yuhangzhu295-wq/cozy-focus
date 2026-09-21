@@ -19,6 +19,7 @@ import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dar
 import 'package:cozy_focus_app/domain/models/pet_models.dart' as pet_domain;
 import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
+import 'package:cozy_focus_app/presentation/navigation/app_router.dart';
 import 'package:cozy_focus_app/domain/models/craft_models.dart' as craft_domain;
 
 class WidgetTestClock implements FocusClock {
@@ -382,16 +383,93 @@ void main() {
           .cancelSession();
     });
 
-    testWidgets('Screen 04: FocusCompletePage renders celebration and minutes',
-        (tester) async {
+    testWidgets(
+        'Screen 04: FocusCompletePage renders the reference sections and the '
+        'settled reward rates', (tester) async {
+      // Drive a real 25-minute session to `finishing` — the state
+      // FocusActivePage leaves before routing here.
+      final notifier = container.read(focusSessionControllerProvider.notifier);
+      await notifier.startSession(
+        userId: 'test_user',
+        plannedSeconds: 1500,
+        mode: FocusMode.focus,
+        taskName: '写作练习',
+        categoryName: '学习',
+      );
+      testClock.advance(const Duration(minutes: 25));
+      await notifier.completeSession();
+
       await tester
           .pumpWidget(createTestApp(container, const FocusCompletePage()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('专注完成'), findsOneWidget);
-      expect(find.text('Great Work!'), findsOneWidget);
-      expect(find.text('继续保存记录'), findsOneWidget);
+      // Reference 04's three cards, its banner and its single action. The
+      // previous revision rendered none of the cards and titled itself in
+      // English.
+      expect(find.textContaining('专注完成'), findsOneWidget);
+      expect(find.text('本次专注时长'), findsOneWidget);
+      expect(find.text('恭喜获得奖励'), findsOneWidget);
+      expect(find.text('记录一下此刻心情（可选）'), findsOneWidget);
+      expect(find.text('完成并返回首页'), findsOneWidget);
+      expect(find.textContaining('每一次专注，都是在靠近更喜欢自己'), findsOneWidget);
+
+      // The duration is MM:SS, the form the reference prints (25:00).
+      expect(find.text('25:00'), findsOneWidget);
+
+      // RewardService settles 2 coins and 5 XP per whole minute. The page must
+      // not print numbers the ledger will disagree with.
+      expect(find.text('+50'), findsOneWidget);
+      expect(find.text('+125'), findsOneWidget);
+    });
+
+    testWidgets('Screen 04: quick finish persists the record and the mood note',
+        (tester) async {
+      final notifier = container.read(focusSessionControllerProvider.notifier);
+      final session = await notifier.startSession(
+        userId: 'test_user',
+        plannedSeconds: 1500,
+        mode: FocusMode.focus,
+        taskName: '写作练习',
+        categoryName: '学习',
+      );
+      testClock.advance(const Duration(minutes: 25));
+      await notifier.completeSession();
+
+      addTearDown(() => appRouter.go('/'));
+      appRouter.go('/focus/complete');
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            theme: AppTheme.lightTheme,
+            routerConfig: appRouter,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.enterText(find.byType(TextField), '今天状态很好');
+      await tester.pump();
+
+      final cta = find.text('完成并返回首页');
+      await tester.ensureVisible(cta);
+      await tester.pump();
+      await tester.tap(cta);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // The action has to actually persist. A completion screen that renders
+      // correctly but writes nothing is the same class of defect as the
+      // abandoned `finishing` session this flow already shipped once.
+      final record = await db.focusRecordDao.findBySessionId(session.id);
+      expect(record, isNotNull);
+      expect(record!.durationSeconds, 1500);
+      expect(record.note, '今天状态很好');
+      expect(record.mood, isNull,
+          reason: 'reference 04 has no mood picker, so no mood is invented');
+      expect(record.taskName, '写作练习');
     });
 
     testWidgets('Screen 04A: FocusSavePage allows mood selection & save',
