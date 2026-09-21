@@ -148,38 +148,97 @@ class FocusSessionEngine {
     final session = _requireSession();
     _assertStatus(session, FocusSessionStatus.finishing);
 
-    final effectiveCategoryId = categoryId ?? session.categoryId;
-    final effectiveTaskName = taskName ?? session.taskName;
-    final now = _clock.now();
+    final completed = await _persistRecord(
+      session,
+      note: note,
+      taskName: taskName,
+      categoryId: categoryId,
+      mood: mood,
+    );
+    _currentSession = null;
+    return completed.copyWith(status: FocusSessionStatus.saved);
+  }
 
-    // elapsed is deterministic because endAt is set by FocusClock in complete()
+  // ── recover abandoned sessions ─────────────────────────────────────────────
+
+  /// Finalize sessions that ended but were never saved.
+  ///
+  /// [complete] parks a session in `finishing`; only [save] makes it durable.
+  /// Anything that stops the user from finishing the save page — the close
+  /// button on the save screen, the app being killed, a crash — used to leave
+  /// the session in `finishing` forever: `findActive` never returned it,
+  /// `isActive` was false for it, and [save] needs the in-memory session. The
+  /// FocusRecord and the reward were never written, so the focus time vanished
+  /// with no trace and no way to get it back.
+  ///
+  /// This drains that backlog from persisted data, keeping whatever metadata the
+  /// session already carries. Safe to call repeatedly: [_persistRecord] skips an
+  /// already-written record and [RewardService.settle] is idempotent per session.
+  ///
+  /// The session currently held in memory is skipped — the user may be sitting
+  /// on the save page editing it, and recovery must not pre-empt their input.
+  Future<List<FocusSession>> recoverAbandonedSessions(String userId) async {
+    final unfinished = await _sessionRepo.findUnfinished(userId);
+    final abandoned = unfinished.where((s) =>
+        s.status == FocusSessionStatus.finishing &&
+        s.id != _currentSession?.id);
+    final recovered = <FocusSession>[];
+    for (final session in abandoned) {
+      recovered.add(await _persistRecord(session));
+    }
+    return recovered;
+  }
+
+  /// Writes the FocusRecord for a session whose [FocusSession.endAt] is already
+  /// set, settles its reward and marks it `completed`.
+  ///
+  /// The named overrides are the save page's path (the user may retitle the task,
+  /// change the category, pick a mood). Recovery passes none of them and keeps
+  /// whatever the session already carries.
+  Future<FocusSession> _persistRecord(
+    FocusSession session, {
+    String? note,
+    String? taskName,
+    String? categoryId,
+    String? mood,
+  }) async {
+    final endAt = session.endAt;
+    if (endAt == null) {
+      throw StateError(
+          'Cannot persist a record for an open session: ${session.id}');
+    }
+
+    final now = _clock.now();
+    // elapsed is deterministic because endAt was set when the session closed.
     final elapsed = session.elapsedSecondsAt(now);
 
-    // Write immutable FocusRecord
-    await _recordRepo.insert(
-      FocusRecord(
-        id: _uuid.v4(),
-        sessionId: session.id,
-        userId: session.userId,
-        categoryId: effectiveCategoryId,
-        taskName: effectiveTaskName,
-        mood: mood,
-        durationSeconds: elapsed,
-        startAt: session.startAt,
-        endAt: session.endAt!,
-        recordedAt: now,
-        isCountedForReward: true,
-        note: note,
-      ),
-    );
+    // Idempotent: recovery and the save page may both reach the same session.
+    final existing = await _recordRepo.findBySessionId(session.id);
+    if (existing == null) {
+      await _recordRepo.insert(
+        FocusRecord(
+          id: _uuid.v4(),
+          sessionId: session.id,
+          userId: session.userId,
+          categoryId: categoryId ?? session.categoryId,
+          taskName: taskName ?? session.taskName,
+          mood: mood,
+          durationSeconds: elapsed,
+          startAt: session.startAt,
+          endAt: endAt,
+          recordedAt: now,
+          isCountedForReward: true,
+          note: note,
+        ),
+      );
+    }
 
     // Settle reward (idempotent — safe to call multiple times)
     await _rewardService.settle(session);
 
     final completed = session.copyWith(status: FocusSessionStatus.completed);
     await _sessionRepo.update(completed);
-    _currentSession = null;
-    return completed.copyWith(status: FocusSessionStatus.saved);
+    return completed;
   }
 
   // ── cancel ─────────────────────────────────────────────────────────────────
@@ -203,15 +262,26 @@ class FocusSessionEngine {
   }
 
   // ── restore (app killed / backgrounded) ───────────────────────────────────
-  /// Called on app launch to re-hydrate the last active session from local DB.
-  /// If the session timer has already expired, auto-completes it.
+  /// Called on app launch to re-hydrate the last live session from the local DB.
+  ///
+  /// Two things happen, in order:
+  ///  1. [recoverAbandonedSessions] finalizes anything left in `finishing`, so a
+  ///     session abandoned on the save page is persisted instead of dropped.
+  ///  2. The most recent resumable session is handed back as `restored`.
+  ///
+  /// This does not auto-complete an expired countdown itself — that belongs to
+  /// the caller, which also owns navigation into the save flow. See
+  /// `FocusSessionController.restoreSession`.
 
   Future<FocusSession?> restore(String userId) async {
-    final activeSessions = await _sessionRepo.findActive(userId);
-    if (activeSessions.isEmpty) return null;
+    await recoverAbandonedSessions(userId);
 
-    // Pick the most recent active session
-    final session = activeSessions.reduce(
+    final unfinished = await _sessionRepo.findUnfinished(userId);
+    final resumable = unfinished.where((s) => s.isActive).toList();
+    if (resumable.isEmpty) return null;
+
+    // Pick the most recent resumable session
+    final session = resumable.reduce(
       (a, b) => a.startAt.isAfter(b.startAt) ? a : b,
     );
 

@@ -61,7 +61,19 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
     super.dispose();
   }
 
-  Future<void> _handleSave() async {
+  Future<void> _handleSave() => _persist(goToReward: true);
+
+  /// Closing is NOT discarding.
+  ///
+  /// The session already ended before this page opened, and its FocusRecord is
+  /// written only on save — so `context.go('/')` used to drop the focus time
+  /// with no trace. Closing now saves with whatever the user has filled in and
+  /// returns home. (The engine additionally recovers any session left in
+  /// `finishing` on the next launch, for the paths that never reach this
+  /// button: app killed, crash, force quit.)
+  Future<void> _handleClose() => _persist(goToReward: false);
+
+  Future<void> _persist({required bool goToReward}) async {
     if (_isSaving) return;
     setState(() => _isSaving = true);
 
@@ -86,10 +98,13 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
       // Refresh home data so today focus reflects immediately
       await ref.read(homeControllerProvider.notifier).loadHomeData();
 
-      if (mounted) {
+      if (!mounted) return;
+      if (goToReward) {
         // The engine clears its current session while settling, so the reward
         // page is told which ledger row to show instead of looking it up.
         context.go('/focus/reward?sessionId=${saved.id}');
+      } else {
+        context.go('/');
       }
     } catch (e) {
       if (mounted) {
@@ -114,7 +129,7 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close_rounded, size: 26),
-          onPressed: () => context.go('/'),
+          onPressed: _isSaving ? null : _handleClose,
         ),
         title: const Text('保存本次记录'),
       ),

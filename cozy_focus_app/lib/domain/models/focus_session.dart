@@ -62,10 +62,15 @@ class FocusSession {
   /// do not inject a clock. Production code must call elapsedSecondsAt(clock.now()).
   int get elapsedSeconds => elapsedSecondsAt(DateTime.now());
 
-  bool get isActive =>
-      status == FocusSessionStatus.running ||
-      status == FocusSessionStatus.paused ||
-      status == FocusSessionStatus.restored;
+  /// A session the user can still drive forward (pause / resume / complete).
+  ///
+  /// Derived from [FocusSessionStatusSets.isResumable] so the status set is not
+  /// spelled out a second time — see the note in enums.dart.
+  bool get isActive => status.isResumable;
+
+  /// Ended but not yet persisted as a FocusRecord — the session still owes a
+  /// save. See [FocusSessionStatusSets.isUnfinished].
+  bool get isUnfinished => status.isUnfinished;
 
   FocusSession copyWith({
     String? categoryId,

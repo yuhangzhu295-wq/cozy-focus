@@ -36,11 +36,25 @@ class FocusSessionDao extends DatabaseAccessor<AppDatabase>
     return row == null ? null : _map(row);
   }
 
-  Future<List<domain.FocusSession>> findActive(String userId) async {
+  Future<List<domain.FocusSession>> findActive(String userId) =>
+      _findByStatusNames(userId, kLiveSessionStatusNames);
+
+  /// Sessions that ended but were never saved — see
+  /// [FocusSessionStatusSets.isUnfinished].
+  ///
+  /// `restore()` must consult this set rather than [findActive]: a session
+  /// abandoned on the save page sits in `finishing`, which [findActive]
+  /// deliberately excludes (its timer is not running), so it would otherwise
+  /// never be seen again and its focus time would be lost.
+  Future<List<domain.FocusSession>> findUnfinished(String userId) =>
+      _findByStatusNames(userId, kUnfinishedSessionStatusNames);
+
+  Future<List<domain.FocusSession>> _findByStatusNames(
+    String userId,
+    List<String> statusNames,
+  ) async {
     final rows = await (select(focusSessions)
-          ..where((t) =>
-              t.userId.equals(userId) &
-              (t.status.equals('running') | t.status.equals('paused'))))
+          ..where((t) => t.userId.equals(userId) & t.status.isIn(statusNames)))
         .get();
     return rows.map(_map).toList();
   }

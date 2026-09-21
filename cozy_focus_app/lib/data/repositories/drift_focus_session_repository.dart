@@ -21,6 +21,10 @@ class DriftFocusSessionRepository implements IFocusSessionRepository {
       _dao.findActive(userId);
 
   @override
+  Future<List<domain.FocusSession>> findUnfinished(String userId) =>
+      _dao.findUnfinished(userId);
+
+  @override
   Future<List<domain.FocusSession>> findRecent(String userId,
           {int limit = 20}) =>
       _dao.findRecent(userId, limit: limit);

@@ -13,6 +13,12 @@ abstract interface class IFocusSessionRepository {
   /// All active (running/paused) sessions for the user.
   Future<List<FocusSession>> findActive(String userId);
 
+  /// Sessions that ended but were never saved, `finishing` included.
+  ///
+  /// Recovery must use this rather than [findActive] — see
+  /// [FocusSessionStatusSets.isUnfinished] for why.
+  Future<List<FocusSession>> findUnfinished(String userId);
+
   /// Latest N sessions regardless of status.
   Future<List<FocusSession>> findRecent(String userId, {int limit = 20});
 

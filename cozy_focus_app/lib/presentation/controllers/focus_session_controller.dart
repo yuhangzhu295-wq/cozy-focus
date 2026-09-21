@@ -229,6 +229,18 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
     return result;
   }
 
+  /// Persist any session left in `finishing` by an interrupted save flow.
+  ///
+  /// Exposed for the app-launch hook. [restoreSession] alone is not enough: the
+  /// home page only reaches it when `hasActiveSession` is true, and that flag is
+  /// derived from `findActive`, which ignores `finishing`. A session stranded on
+  /// the save page therefore never triggers a resume, and would be dropped.
+  Future<List<FocusSession>> recoverAbandonedSessions(String userId) async {
+    final recovered = await _engine.recoverAbandonedSessions(userId);
+    if (recovered.isNotEmpty) _syncFromEngine();
+    return recovered;
+  }
+
   /// App lifecycle restore hook
   Future<FocusSession?> restoreSession(String userId) async {
     final restored = await _engine.restore(userId);

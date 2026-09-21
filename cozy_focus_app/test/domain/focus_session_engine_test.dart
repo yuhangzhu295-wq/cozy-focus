@@ -35,6 +35,9 @@ class StubSessionRepo implements IFocusSessionRepository {
   Future<List<FocusSession>> findActive(String userId) async =>
       _store.values.where((s) => s.isActive).toList();
   @override
+  Future<List<FocusSession>> findUnfinished(String userId) async =>
+      _store.values.where((s) => s.isUnfinished).toList();
+  @override
   Future<List<FocusSession>> findRecent(String userId,
           {int limit = 20}) async =>
       _store.values.toList();
@@ -228,6 +231,101 @@ void main() {
       final second = await rewardService.settle(session);
       expect(first, isTrue);
       expect(second, isFalse);
+    });
+  });
+
+  // Regression: a session parked in `finishing` by complete() used to be
+  // unreachable once the save page was abandoned — findActive never returned it,
+  // isActive was false for it, and save() needs the in-memory session. The
+  // FocusRecord was never written and the focus time was lost silently.
+  group('Abandoned (finishing) session recovery', () {
+    /// A "restarted app": a new engine over the same persisted stores.
+    FocusSessionEngine restartedEngine() => FocusSessionEngine(
+          sessionRepo: sessionRepo,
+          recordRepo: recordRepo,
+          rewardService: rewardService,
+          clock: clock,
+        );
+
+    Future<FocusSession> completeWithoutSaving() async {
+      final session = await engine.start(
+          userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
+      clock.advance(const Duration(minutes: 25));
+      await engine.complete();
+      expect(engine.currentSession?.status, FocusSessionStatus.finishing);
+      expect(await recordRepo.findBySessionId(session.id), isNull,
+          reason: 'finishing alone must not write a record');
+      return session;
+    }
+
+    test('recovery persists the record a fresh engine could not reach before',
+        () async {
+      final session = await completeWithoutSaving();
+
+      final recovered = await restartedEngine().recoverAbandonedSessions('u1');
+
+      expect(recovered.length, 1);
+      expect(recovered.single.id, session.id);
+      expect(recovered.single.status, FocusSessionStatus.completed);
+
+      final record = await recordRepo.findBySessionId(session.id);
+      expect(record, isNotNull);
+      expect(record!.durationSeconds, 1500);
+      expect(record.taskName, session.taskName);
+      expect(record.isCountedForReward, isTrue);
+
+      final fromRepo = await sessionRepo.findById(session.id);
+      expect(fromRepo?.status, FocusSessionStatus.completed);
+    });
+
+    test('restore() recovers it, settles the reward, and resumes nothing',
+        () async {
+      final session = await completeWithoutSaving();
+
+      final restored = await restartedEngine().restore('u1');
+
+      expect(restored, isNull,
+          reason: 'the session is over; there is nothing to resume');
+      expect(await recordRepo.findBySessionId(session.id), isNotNull);
+      expect(await ledgerRepo.findBySessionId(session.id), isNotNull,
+          reason: 'the reward must be settled by recovery too');
+    });
+
+    test('recovery is idempotent across repeated passes', () async {
+      final session = await completeWithoutSaving();
+      final e = restartedEngine();
+
+      expect((await e.recoverAbandonedSessions('u1')).length, 1);
+      expect((await e.recoverAbandonedSessions('u1')), isEmpty,
+          reason: 'the session is completed now, so nothing is left to drain');
+
+      // save() on a recovered session must not write a second record either.
+      expect(await recordRepo.findBySessionId(session.id), isNotNull);
+    });
+
+    test('a session still open on the save page is never pre-empted', () async {
+      final session = await completeWithoutSaving();
+
+      // Same engine that still holds the session in memory: the user is on the
+      // save page, so recovery must leave their pending edit alone.
+      final recovered = await engine.recoverAbandonedSessions('u1');
+
+      expect(recovered, isEmpty);
+      expect(await recordRepo.findBySessionId(session.id), isNull);
+    });
+
+    test('a live running session is resumed, not finalized', () async {
+      final running = await engine.start(
+          userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
+      clock.advance(const Duration(minutes: 10));
+
+      final restored = await restartedEngine().restore('u1');
+
+      expect(restored, isNotNull);
+      expect(restored!.id, running.id);
+      expect(restored.status, FocusSessionStatus.restored);
+      expect(await recordRepo.findBySessionId(running.id), isNull,
+          reason: 'a session that never ended must not produce a record');
     });
   });
 }

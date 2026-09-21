@@ -36,6 +36,9 @@ class _StubSessionRepo implements IFocusSessionRepository {
   Future<List<FocusSession>> findActive(String userId) async =>
       _store.values.where((s) => s.isActive).toList();
   @override
+  Future<List<FocusSession>> findUnfinished(String userId) async =>
+      _store.values.where((s) => s.isUnfinished).toList();
+  @override
   Future<List<FocusSession>> findRecent(String userId,
           {int limit = 20}) async =>
       _store.values.toList();

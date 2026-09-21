@@ -38,6 +38,23 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.initState();
     Future.microtask(
         () => ref.read(craftControllerProvider.notifier).loadAll());
+    // Launch hook: a session the save flow never finished (app killed, crash,
+    // force quit) has no other way back — see _recoverAbandonedSessions.
+    Future.microtask(_recoverAbandonedSessions);
+  }
+
+  /// Persist sessions left in `finishing` by an interrupted save flow.
+  ///
+  /// Without this they are stranded forever: the save page's FocusRecord is
+  /// written only on save, `hasActiveSession` ignores `finishing`, and tapping
+  /// 开始专注 would start a fresh session over the top of it.
+  Future<void> _recoverAbandonedSessions() async {
+    final recovered = await ref
+        .read(focusSessionControllerProvider.notifier)
+        .recoverAbandonedSessions(localMvpUserId);
+    if (!mounted || recovered.isEmpty) return;
+    // Today's totals and the pet progress moved, so refresh the read model.
+    await ref.read(homeControllerProvider.notifier).loadHomeData();
   }
 
   void _increment() {
