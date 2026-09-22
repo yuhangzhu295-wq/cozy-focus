@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/growth/mochi_growth_profile.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/craft_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/pet_motion_controller.dart';
 import '../widgets/pet_avatar_widget.dart';
 import 'companion_presentation_mapper.dart';
+import 'focus_phase.dart';
 
 /// The single, business-driven Mochi presentation used across pages.
 ///
@@ -29,6 +31,28 @@ class CompanionAvatar extends ConsumerStatefulWidget {
   /// disposes it with itself.
   final PetMotionController? controller;
 
+  /// Optional explicit visual state.
+  ///
+  /// [CompanionPresentationMapper] can tell "a session is active" but not
+  /// "the session is paused", so a page that knows better (the focus screen)
+  /// passes the state it derived from the session engine. When omitted, the
+  /// state is derived from business controllers as before.
+  final PetVisualState? visualStateOverride;
+
+  /// Optional explicit focus progress (`elapsed / target`).
+  ///
+  /// The focus screen already computes this from the session engine, so it can
+  /// hand it over rather than have the avatar re-derive it. The long-arc focus
+  /// phase is resolved from it — see [FocusPhaseResolver].
+  final double? focusProgress;
+
+  /// The real `categoryId` of the running focus task, if any.
+  ///
+  /// Used only to pick a presentation-only work flavour. The avatar does not
+  /// watch the focus session provider (it deliberately never owns the focus
+  /// ticker), so the page supplies this.
+  final String? focusCategoryId;
+
   const CompanionAvatar({
     super.key,
     this.size = 140,
@@ -36,6 +60,9 @@ class CompanionAvatar extends ConsumerStatefulWidget {
     this.showStateBadge = true,
     this.accessory,
     this.controller,
+    this.visualStateOverride,
+    this.focusProgress,
+    this.focusCategoryId,
   });
 
   @override
@@ -74,13 +101,41 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant CompanionAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A page can change what it wants Mochi to present *after* the first frame —
+    // the collection page overrides the state for a moment when a real unlock
+    // happens. That has to be pushed into the controller rather than merely
+    // passed down as a parameter: `PetAvatarWidget` reads `controller.visualState`
+    // whenever a controller is supplied, so a changed parameter alone would be
+    // ignored and the override would silently never appear.
+    if (oldWidget.visualStateOverride != widget.visualStateOverride ||
+        oldWidget.focusProgress != widget.focusProgress ||
+        oldWidget.focusCategoryId != widget.focusCategoryId) {
+      _sync();
+    }
+  }
+
   PetVisualState _deriveVisualState() {
+    final override = widget.visualStateOverride;
+    if (override != null) return override;
     final homeState = ref.read(homeControllerProvider);
     final craftState = ref.read(craftControllerProvider);
     return CompanionPresentationMapper.visualStateFor(
       hasActiveSession: homeState.hasActiveSession,
       hasActiveCraft: craftState.activeJob != null,
     );
+  }
+
+  /// Resolves Mochi's growth from the real `PetProgress` truth.
+  ///
+  /// Read-only: it derives a stage from XP and happiness and writes nothing
+  /// back. `PetProgress.level` itself is now derived from XP in the data layer
+  /// too, so the stored and presented values can no longer disagree.
+  MochiGrowthProfile _growthProfile() {
+    final homeState = ref.read(homeControllerProvider);
+    return MochiGrowthProfile.fromProgress(homeState.petProgress);
   }
 
   /// Pushes business state into the motion controller.
@@ -93,6 +148,13 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     if (_controller.visualState != visualState) {
       _controller.updateState(visualState);
     }
+    // Growth owns the blink / ear-twitch cadence, so the controller has to be
+    // told whenever the stage moves. Idempotent when the stage is unchanged.
+    final growth = _growthProfile();
+    _controller.updateMotionCadence(
+      blinkIntervalScale: growth.blinkIntervalScale,
+      earTwitchIntervalScale: growth.earTwitchIntervalScale,
+    );
   }
 
   double? _craftProgress() {
@@ -104,6 +166,15 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
       job.progressSeconds,
       requiredSeconds,
     );
+  }
+
+  /// Resolves the long-arc focus phase from the real session progress.
+  ///
+  /// Only the focus visual state has a work cycle, so a phase is reported only
+  /// then — a paused session must not keep presenting work beats.
+  FocusPhase? _focusPhase() {
+    if (_deriveVisualState() != PetVisualState.focus) return null;
+    return FocusPhaseResolver.resolve(widget.focusProgress);
   }
 
   @override
@@ -118,8 +189,12 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
       message: widget.message,
       controller: _controller,
       accessory: widget.accessory,
+      focusProgress: widget.focusProgress,
+      focusPhase: _focusPhase(),
+      focusCategoryId: widget.focusCategoryId,
       craftProgress: _craftProgress(),
       showStateBadge: widget.showStateBadge,
+      growthProfile: _growthProfile(),
     );
   }
 }

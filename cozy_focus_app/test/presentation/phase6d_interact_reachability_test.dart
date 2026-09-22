@@ -3,6 +3,7 @@ import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_idle_fallback_view.dart';
+import 'package:cozy_focus_app/presentation/animations/pet_interaction_spec.dart';
 import 'package:cozy_focus_app/presentation/controllers/focus_session_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
@@ -102,7 +103,7 @@ void main() {
   });
 
   testWidgets(
-      'Home entered with an active session shows focus Mochi and blocks interaction',
+      'Home entered with an active session shows focus Mochi that answers a tap',
       (tester) async {
     await container.read(focusSessionControllerProvider.notifier).startSession(
           userId: localMvpUserId,
@@ -125,8 +126,17 @@ void main() {
     await tester.tap(find.byType(PetAvatarWidget));
     await tester.pump();
 
-    expect(fallback.interactController.isAnimating, isFalse);
+    // STAGE 4: a tap during focus used to be silently dropped, which read as
+    // broken rather than as considerate. Mochi now answers with a glance — a
+    // short head-and-eyes response — and stays in focus throughout.
+    expect(fallback.interactController.isAnimating, isTrue);
+    expect(fallback.interactionKind, PetInteractionKind.glance);
     expect(controller.visualState, PetVisualState.focus);
+
+    // And the glance is *only* a glance: no body movement, so the focus pose
+    // underneath is not replaced.
+    expect(fallback.interactionSpec!.tapBodyTiltDegrees, 0.0);
+    expect(fallback.interactionSpec!.tapScalePeak, 1.0);
 
     await container
         .read(focusSessionControllerProvider.notifier)

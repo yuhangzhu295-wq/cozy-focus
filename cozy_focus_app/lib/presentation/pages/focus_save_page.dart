@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/home_controller.dart';
+import '../companion/companion_avatar.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pet_avatar_widget.dart';
 
 /// Screen 04A: Save Focus Record (04A 保存专注记录)
 /// Allows user to review and customize:
@@ -153,8 +153,8 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                       ),
                       child: const Row(
                         children: [
-                          PetAvatarWidget(
-                            visualState: PetVisualState.celebrate,
+                          CompanionAvatar(
+                            visualStateOverride: PetVisualState.celebrate,
                             size: 64,
                             showStateBadge: false,
                           ),

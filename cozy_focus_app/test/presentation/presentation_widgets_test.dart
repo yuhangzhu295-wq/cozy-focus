@@ -671,7 +671,7 @@ void main() {
     });
 
     testWidgets(
-        'RP-5: Tapping Mochi in focus state does not activate interact cooldown',
+        'RP-5: Tapping Mochi in focus state answers without leaving focus',
         (tester) async {
       const homeState = HomeUIState(
         petProgress: null,
@@ -706,8 +706,13 @@ void main() {
       await tester.tap(avatarFinder);
       await tester.pump();
 
+      // STAGE 4 changed this expectation on purpose. The old contract — "focus
+      // blocks interaction" — meant a user tapping a working Mochi got nothing
+      // at all. The brief requires the opposite: a brief glance, then straight
+      // back to work. The critical constraint is the second line: the base state
+      // is *still focus*, never idle.
       expect(controller.visualState, equals(PetVisualState.focus));
-      expect(controller.isInteractCooldownActive, isFalse);
+      expect(controller.isInteractCooldownActive, isTrue);
     });
   });
 }

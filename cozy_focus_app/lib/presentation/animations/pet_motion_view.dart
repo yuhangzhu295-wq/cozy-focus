@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../domain/growth/mochi_growth_profile.dart';
 import '../../domain/models/enums.dart';
+import '../companion/focus_phase.dart';
 import '../controllers/pet_motion_controller.dart';
 import 'pet_idle_fallback_view.dart';
 import 'rive_pet_adapter.dart';
@@ -19,6 +21,15 @@ class PetMotionView extends StatelessWidget {
   final double? craftProgress;
   final bool showStateBadge;
 
+  /// Presentation-only growth profile; see [PetIdleFallbackView.growthProfile].
+  final MochiGrowthProfile? growthProfile;
+
+  /// Long-arc focus phase; see [PetIdleFallbackView.focusPhase].
+  final FocusPhase? focusPhase;
+
+  /// Real focus `categoryId`; see [PetIdleFallbackView.focusCategoryId].
+  final String? focusCategoryId;
+
   const PetMotionView({
     super.key,
     required this.visualState,
@@ -31,6 +42,9 @@ class PetMotionView extends StatelessWidget {
     this.focusProgress,
     this.craftProgress,
     this.showStateBadge = true,
+    this.growthProfile,
+    this.focusPhase,
+    this.focusCategoryId,
   });
 
   double? get _visualFocusProgress => _normalizeProgress(focusProgress);
@@ -52,6 +66,9 @@ class PetMotionView extends StatelessWidget {
         focusProgress: _visualFocusProgress,
         craftProgress: _visualCraftProgress,
         showStateBadge: showStateBadge,
+        growthProfile: growthProfile,
+        focusPhase: focusPhase,
+        focusCategoryId: focusCategoryId,
       );
 
       if (enableRive) {

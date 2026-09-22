@@ -8,6 +8,7 @@ import 'package:cozy_focus_app/presentation/animations/pet_idle_fallback_view.da
 import 'package:cozy_focus_app/presentation/animations/pet_motion_spec.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
+import 'package:cozy_focus_app/presentation/companion/pet_craft_activity.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/pet_motion_controller.dart';
@@ -219,6 +220,22 @@ void main() {
         (tester) async {
       // A distinct Key per run forces a fresh State, so both runs start their
       // animation phase at zero and sample the very same time offsets.
+      //
+      // STAGE 5 note: `craftProgress` now drives *two* things — the intensity
+      // binding measured here, and (via 11G) which craft beat is playing. A
+      // plain time sweep therefore measures both at once and can no longer
+      // isolate the binding, so the beat clock is parked inside the `pause`
+      // beat for the whole sweep. `pause` is the one beat whose spec carries no
+      // `dy` offset, which takes the beat layer out of the measurement without
+      // weakening the claim: the binding must still scale the delta by exactly
+      // the declared intensity ratio.
+      double pausePositionFor(double progress) {
+        final stage = PetCraftStageResolver.resolve(progress);
+        final window = PetCraftActivitySchedule.windowsFor(stage)
+            .firstWhere((w) => w.activity == PetCraftActivity.pause);
+        return (window.start + window.end) / 2;
+      }
+
       Future<List<double>> sampleDy(double craftProgress) async {
         await tester.pumpWidget(_app(const SizedBox.shrink()));
         await tester.pump();
@@ -230,6 +247,13 @@ void main() {
           )),
         );
         await tester.pump();
+
+        // The controller's `value` setter stops the animation, so the beat
+        // stays parked while the sweep below advances time.
+        _fallback(tester).workCycleController.value =
+            pausePositionFor(craftProgress);
+        await tester.pump();
+
         final samples = <double>[];
         for (var i = 0; i < 40; i++) {
           await tester.pump(const Duration(milliseconds: 50));

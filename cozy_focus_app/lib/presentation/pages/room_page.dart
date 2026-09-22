@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/craft_models.dart';
+import '../../domain/models/enums.dart';
+import '../companion/companion_avatar.dart';
+import '../companion/room_presence.dart';
 import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
 import '../../core/geometry/room_geometry.dart';
@@ -110,6 +113,11 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                               },
                             );
                           }),
+                          // Mochi itself, standing where the real placement
+                          // truth says it should. Drawn above the furniture so
+                          // it is visibly *on* its seat, and below the toolbar
+                          // so the delete affordance stays reachable.
+                          _buildMochi(craft, canvasWidth, canvasHeight),
                           if (_selectedRoomItemId != null)
                             Positioned(
                               top: 12,
@@ -212,6 +220,49 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                 ),
               ],
             ),
+    );
+  }
+
+  /// Places Mochi in the room, on a seat resolved from real data.
+  ///
+  /// The seat is not a decoration: [PetRoomPresenceResolver] reads the same
+  /// `room_items` rows the canvas draws and the same `inventory` rows the
+  /// placement panel counts, and only reports a seat when the item is both
+  /// **owned** and **placed**. When nothing qualifies Mochi stands on the floor,
+  /// so an empty room still shows Mochi in it.
+  ///
+  /// Two deliberate choices:
+  ///
+  /// * The avatar is behind an [IgnorePointer]. Mochi sits *on* furniture, so it
+  ///   necessarily overlaps the one item the user may want to tap to move or
+  ///   delete. Letting Mochi swallow that tap would make the seat it is sitting
+  ///   on impossible to select — a worse bug than a pet that does not respond
+  ///   while you are decorating. This is the same structural reasoning that puts
+  ///   the speech bubble behind an `IgnorePointer` on the focus screen.
+  /// * The state is pinned to [PetVisualState.idle]. The room is where Mochi
+  ///   rests; the craft presentation belongs to the screens that show the job.
+  ///   V4.1's room reference (`09_房间.png`) shows Mochi lying down reading, not
+  ///   hammering, which is what `idle` is for.
+  Widget _buildMochi(
+      CraftState craft, double canvasWidth, double canvasHeight) {
+    final presence = PetRoomPresenceResolver.resolve(
+      placed: craft.roomItems,
+      owned: craft.inventory,
+    );
+
+    const size = 92.0;
+    // The resolved point is where Mochi's feet are, so the avatar is anchored by
+    // its bottom edge rather than by its centre.
+    return Positioned(
+      left: presence.x * canvasWidth - size / 2,
+      top: presence.y * canvasHeight - size,
+      child: const IgnorePointer(
+        child: CompanionAvatar(
+          size: size,
+          visualStateOverride: PetVisualState.idle,
+          showStateBadge: false,
+        ),
+      ),
     );
   }
 

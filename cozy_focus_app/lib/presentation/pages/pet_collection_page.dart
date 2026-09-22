@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../domain/models/enums.dart';
+import '../companion/collection_unlock.dart';
 import '../controllers/craft_controller.dart';
 import '../controllers/growth_controller.dart';
 import '../theme/app_theme.dart';
@@ -117,6 +121,35 @@ class PetCollectionPage extends ConsumerStatefulWidget {
 class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
   String _selectedCategory = '全部';
 
+  /// Watches the real inventory for items that have just become owned.
+  ///
+  /// Read from a provider rather than owned by this `State`: inventory only
+  /// changes during a focus-session settlement, so a page-scoped tracker would
+  /// take a fresh baseline on every visit and could never observe the
+  /// transition it exists to report. The tracker is fed only collection items,
+  /// so its baseline is about the collection rather than about everything the
+  /// craft system stores.
+  PetCollectionUnlockTracker get _unlockTracker =>
+      ref.read(petCollectionUnlockTrackerProvider);
+
+  /// The one-shot celebration currently on screen, if any.
+  ///
+  /// `null` means "no override": Mochi falls back to whatever the presentation
+  /// mapper derives, which is the normal case. Clearing it needs no memory of
+  /// what came before — the mapper is the answer.
+  PetVisualState? _unlockCelebration;
+
+  /// The name of the item that just unlocked, while the celebration lasts.
+  String? _unlockMessage;
+
+  Timer? _unlockTimer;
+
+  /// How long the unlock celebration stays up.
+  ///
+  /// Long enough to read the item name, short enough not to become a state the
+  /// page is stuck in. 11I is a one-shot for exactly this reason.
+  static const Duration _unlockDisplayDuration = Duration(milliseconds: 2600);
+
   @override
   void initState() {
     super.initState();
@@ -126,9 +159,61 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
   }
 
   @override
+  void dispose() {
+    _unlockTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Reacts to a real, newly-owned collection item.
+  ///
+  /// Driven from a provider listener rather than derived during `build`: an
+  /// unlock is a thing that *happens*, not a thing that is true, and deriving it
+  /// per rebuild would fire once per frame. [PetCollectionUnlockTracker] also
+  /// returns `null` for its first observation, so arriving on the page with a
+  /// full collection celebrates nothing — see the class docs for why that
+  /// matters.
+  void _onInventoryChanged(CraftState craft) {
+    // A loading state is **not an authoritative reading**. `CraftController`
+    // emits `isLoading: true` carrying the *previous* inventory before the rows
+    // arrive, and on a cold controller that previous inventory is empty. Feeding
+    // that to the tracker would establish a false empty baseline, and the very
+    // next real reading would then look like a whole collection being unlocked
+    // at once — the exact false celebration this feature exists to prevent.
+    if (craft.isLoading) return;
+
+    final catalogIds = kCollectionCatalog.map((entry) => entry.id).toSet();
+    final unlockedItemId = _unlockTracker.observe(
+      craft.inventory.where((item) => catalogIds.contains(item.itemId)),
+    );
+    if (unlockedItemId == null || !mounted) return;
+
+    final item = kCollectionCatalog.firstWhere(
+      (entry) => entry.id == unlockedItemId,
+    );
+
+    _unlockTimer?.cancel();
+    setState(() {
+      _unlockCelebration = PetVisualState.celebrate;
+      _unlockMessage = '新收藏：${item.name}！';
+    });
+    _unlockTimer = Timer(_unlockDisplayDuration, () {
+      if (!mounted) return;
+      setState(() {
+        _unlockCelebration = null;
+        _unlockMessage = null;
+      });
+      _unlockTimer = null;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final growthState = ref.watch(growthControllerProvider);
     final craftState = ref.watch(craftControllerProvider);
+
+    ref.listen<CraftState>(craftControllerProvider, (_, next) {
+      _onInventoryChanged(next);
+    });
 
     final Map<String, int> inventoryQuantities = {};
     for (final inv in craftState.inventory) {
@@ -222,7 +307,10 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
         children: [
           CompanionAvatar(
             size: 56,
-            message: '${pet.name} 的收藏屋 🌱',
+            message: _unlockMessage ?? '${pet.name} 的收藏屋 🌱',
+            // `null` outside an unlock, so the presentation mapper keeps
+            // deciding and there is no previous state to remember.
+            visualStateOverride: _unlockCelebration,
             showStateBadge: false,
           ),
           const SizedBox(width: 16),

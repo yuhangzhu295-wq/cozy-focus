@@ -155,5 +155,113 @@
   "phase_8_result": "COMPLETE",
   "final_qa": "APPROVED",
   "phase_8_gate": "outputs/ai_handoff/PHASE_8_FINAL_GATE.md",
+  "android_v1_release": {
+    "note": "Separate line from the PHASE-1..8 track recorded above, which is preserved as history. See ANDROID_V1_RELEASE_REPORT.md and V4_1_RUNTIME_FIDELITY_MATRIX.md.",
+    "branch": "release/android-v1",
+    "head_sha": "6a548b5e3120ebdb340160604f045691c43681c8",
+    "head_subject": "feat(v4.1): rebuild screen 04, fix screen 06's donut, land release applicationId",
+    "pushed": false,
+    "origin_sha": "764aaa11d4f755b02cc701b459eb1d32db344bdd",
+    "application_id": "com.yuhangzhu295.cozyfocus",
+    "application_id_status": "RESOLVED",
+    "release_artifacts_stale": true,
+    "release_artifacts_stale_reason": "The recorded release APK/AAB were built 2026-09-19 under com.example.cozy_focus_app and must be rebuilt from 6a548b5 before any store submission.",
+    "local_gate": {
+      "format": "PASS: 133 files, 0 changed",
+      "analyze": "PASS: 0 issues (flutter analyze --fatal-infos --no-pub)",
+      "tests": "PASS: 339/339",
+      "debug_apk": "PASS: md5 4bf71642792aaf4c8296445159821eec",
+      "diff_check": "PASS"
+    },
+    "open_p1": 1,
+    "open_p1_detail": "launcher icon is still the stock Flutter logo; no approved artwork exists, so none was invented",
+    "open_p2": 1,
+    "device_verified": [
+      "screen 04 rebuild: card 1 top +1.26dp, card heights within 1.58dp vs reference",
+      "screen 06 donut: outer 125.33dp vs 126.00pt (-0.67), was -22.38 before the fix"
+    ],
+    "recorded_not_changed": [
+      "category palette differs from the design renders; AppColors.cat* is a global token and the design package defines no canonical category palette",
+      "06 legend row pitch +3.54dp and legend dot -1.1dp",
+      "report-page insets: reference 06/07/08 use 12.0/11.8/8.8% of page width, the runtime uses 5.1% uniformly",
+      "screen 09 房间: reference is an inventory/management view, the runtime a drag canvas; rebuilding would remove the only drag/place entry point"
+    ]
+  },
+  "mochi_growth": {
+    "note": "Separate track from PHASE-1..8 and from the android-v1 release line. See MOCHI_GROWTH_STAGE0_AUDIT.md for the gap matrix (§C) and every chosen default (§D).",
+    "branch": "release/android-v1",
+    "head_sha": "6a548b5e3120ebdb340160604f045691c43681c8",
+    "pushed": false,
+    "origin_sha": "764aaa11d4f755b02cc701b459eb1d32db344bdd",
+    "audit": "outputs/ai_handoff/MOCHI_GROWTH_STAGE0_AUDIT.md",
+    "stages": {
+      "0": "DONE: audit + gap matrix + order",
+      "1a": "DONE: growth domain (stage + centralised curve + resolver)",
+      "1b": "DONE: PetProgress.level derived from XP",
+      "1c": "DONE: growth visible in the render chain",
+      "2": "DONE: focus activity (phases + 11F beat loop + category flavour)",
+      "3": "DONE: encouragement engine + anti-spam + TimeOfDayResolver",
+      "4": "DONE: state-aware interaction + priority + base-state restore",
+      "5": "DONE: room / craft / collection / dress, all data-gated",
+      "6": "DONE: tests + gates + runtime acceptance"
+    },
+    "stage_6_gate": "outputs/ai_handoff/MOCHI_GROWTH_STAGE6_GATE.md",
+    "stage_5_slices": {
+      "C5_room": "DONE: PetRoomPresenceResolver, gated on seat id + placed + visible + owned; floor fallback; IgnorePointer",
+      "C6_craft": "DONE: PetCraftActivitySchedule (11G raise/strike/pause/inspect) on the shared beat clock; craftCycle 1800ms -> 3800ms to enter 11G's 3-5s band",
+      "C7_collection": "DONE: PetCollectionUnlockTracker reports 0->positive transitions only; tracker hoisted to a provider so the baseline survives navigation",
+      "C8_dress": "DONE: preview-only honesty pinned by guards (no usable action, no accessory on the pet, denial is the only equipment claim, no outfit contract in domain/data)"
+    },
+    "local_gate": {
+      "format": "PASS: 155 files, 0 changed",
+      "analyze": "PASS: 0 issues (flutter analyze --fatal-infos)",
+      "tests": "PASS: 617/617",
+      "debug_apk": "PASS: md5 55015bfa5389a49a70c647bf9fbf0dde",
+      "diff_check": "PASS"
+    },
+    "not_committed": true,
+    "not_committed_detail": "Working tree only. Nothing staged, committed or pushed for this track; local HEAD is still 6a548b5e and origin/release/android-v1 is still 764aaa11 (confirmed with git ls-remote).",
+    "device_verified": true,
+    "device_verified_apk_md5": "55015bfa5389a49a70c647bf9fbf0dde",
+    "device_verified_detail": "emulator-5554 / GoodnightPixel7Api34. C5's four seat gates plus the positive seat case (five floor states byte-identical at [419,1391,661,1633]; seat at [95,790,337,1031]); C6 craft state from a real job; C7 guard with 8/10 owned (no celebration); C8 dress honesty incl. non-clickable 未连接; STAGE 4 tap mid-session leaves the pet label at Mochi 专注中. Evidence in outputs/ai_handoff/android_v1_runtime/stage6/.",
+    "device_verified_later": {
+      "when": "2026-09-22, later the same day, same build",
+      "what": [
+        "growth stages beyond the device's real state: XP seeded for all four stages with a deliberately stale level column; the page reported Lv.1/Lv.4/Lv.10/Lv.20, proving level is derived from XP (PetDao._mapProgress -> GrowthLevelCurve.levelForXp); pet width ratios 1.0311/1.0622/1.0933 against expected maturityScale ratios 1.0319/1.0638/1.0957, growing symmetrically about x=539.5",
+        "reduced motion: A/B over 10 samples per arm; animation scales = 1 gives widths with spread 6 and 4 distinct values, scales = 0 gives 386 ten times (spread 0). The A/B discriminates, so the reduced-motion path is real and the growth readings are deterministic because motion is off",
+        "real craft completion end to end: job seeded at 1140s of the table recipe's 1200s, a real session started/paused/ended/saved through the UI; status completed, completed_at set, inventory [(table,1)], progress 1224 = 1140 + 84, exactly one ledger row",
+        "the C7 POSITIVE celebration, produced by a real production flow: 7/10 catalog items owned and a table job one minute short, open 图鉴 (baseline 7, quiet), leave, run a real session and save it so the settlement unlocks table while the page is closed, return. The celebration label captured was '新收藏：原木茶几！' with Mochi 庆祝中, and owned rows went 7 -> 8. All eight assertions true: quiet_before, celebrated, celebration_state_observed, message_is_the_unlocked_item, owned_went_7_to_8, quiet_after, db_unlocked, exactly_one_settlement",
+        "STAGE 3's cadence and opening line, from a purpose-built 280s run that samples the session's own clock (planned_seconds from the DB minus the on-screen countdown). Nothing before 25s: four polls at session elapsed 11/15/19/24s all had no message, the first message landed at 29s. Three messages over the run (startEncouragement, focusCompanion, pauseComfort), opening first. The non-pause gap brackets at 143-151s against a 150s floor; the pause gap brackets at 37-42s against the 30s allowance, i.e. below 150s so the shorter rule is genuinely in use. Each bubble spanned more than one poll and then ended"
+      ],
+      "evidence": "outputs/ai_handoff/android_v1_runtime/growth/, .../craft/, .../collection/ and .../encouragement/",
+      "gate_doc": "MOCHI_GROWTH_STAGE6_GATE.md 6"
+    },
+    "device_not_verified": [
+      "room seat artwork alignment: the avatar's bottom is anchored at the seat's positionY, which the canvas also uses as the item's centre, so the feet land on the item's vertical centre rather than its seat surface",
+      "Rive assets (rive_asset_status: PENDING_AUTHORING) and anything needing the 36 encouragement lines approved"
+    ],
+    "harness_findings": [
+      "A seeded near-threshold state plus recoverAbandonedSessions() settling old unfinished sessions at launch means the craft job can be pushed over the threshold by an UNRELATED settlement: the first craft-completion run read 1271s against a 1140s seed and a ~90s session, with 41s coming from a recovered session. progress >= threshold was true and meaningless. The seed now sets resetSessions and the assertions require exactly one ledger row plus an advance inside clamp(raw-paused,0,raw) for this session."
+    ],
+    "copy_coverage": {
+      "test": "test/presentation/mochi_copy_coverage_test.dart",
+      "scenarios": 180,
+      "result": "every category the engine owns is reachable and every category has an entry point, so no copy line is orphaned; 170 of the 180 scenarios reach the 3-message cap, and the ten that do not are the 5-minute sessions, too short for three messages at 150s gaps. The cap assertion also fails if no scenario reaches the cap, so it cannot go vacuous",
+      "finding": "focusCompanion and finishingSupport are mutually exclusive: happiness decides which one a user gets, not position in the session. At 25 minutes with happiness >= 40 the halfway band's single firing spends the third slot; below the threshold the band fires twice (it spans 195s, wider than the 150s silence) and also spends it. The last-stretch line therefore only reaches a short-session, low-happiness user, and at night lateNightCare takes the budget outright. The comment at pet_encouragement.dart:390 claims the opposite intent for late night and cannot occur",
+      "not_fixed_reason": "the fix is a cadence change and the cadence is the anti-harassment promise; three options with their costs are laid out in the review doc and the owner chooses. The test locks the current coverage so a cadence edit fails loudly and forces the review doc to be re-issued",
+      "evidence": "outputs/ai_handoff/mochi_copy_reachability.json",
+      "review_doc": "outputs/ai_handoff/MOCHI_GROWTH_COPY_REVIEW.md"
+    },
+    "out_of_scope_findings": [],
+    "retracted_findings": [
+      "RETRACTED 2026-09-22: an earlier claim that craft_dao._mapJob maps status with firstWhere without orElse and therefore throws was wrong. craft_dao.dart:248 has carried 'orElse: () => CraftJobStatus.pending' since before this track (verified with git show HEAD:.../craft_dao.dart) and the file is unmodified. The real cause of the C6 seed not taking effect was a harness bug: the seed wrote status='in_progress' while findActiveJobByUser filters on status.isIn(['pending','inProgress']) (craft_dao.dart:72), so the row was never selected and _mapJob was never called. Seeding the enum's .name (inProgress) fixed it. No owner decision is outstanding here."
+    ],
+    "owner_decisions_open": [
+      "the 36 encouragement lines still need review — now presented for approval in MOCHI_GROWTH_COPY_REVIEW.md, which lists all 36 (9 categories x 4 growth stages) with each category's trigger, the guilt-guard tokens and the cadence budget. It also carries a measured map of which lines a user can actually hear, and asks a cadence question: focusCompanion and finishingSupport are mutually exclusive, and happiness decides which one you get, so the last-stretch line only reaches a user below the happiness threshold in a session short enough that the halfway band fires once. The comment at pet_encouragement.dart:390 states the opposite intent. Three options with costs are laid out; the cadence is deliberately NOT changed because it is the anti-harassment promise",
+      "the per-state interaction table (PetInteractionSpec.table) is my chosen default except the idle row, which preserves Phase 6D exactly",
+      "DRESS_PRODUCT_DECISION.md's eight open dress items are still undecided",
+      "the report pages' 21.14dp gutter and the category palette were deliberately left alone (design decisions)"
+    ]
+  },
   "project_status": "ALL_PHASES_COMPLETE"
 }

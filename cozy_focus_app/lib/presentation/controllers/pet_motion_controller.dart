@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../../domain/models/enums.dart';
+import '../animations/pet_interaction_spec.dart';
 import '../animations/pet_motion_spec.dart';
 
 /// Injectable interface for scheduling random triggers like blink and ear twitch,
@@ -62,12 +63,25 @@ class PetMotionController extends ChangeNotifier {
   VoidCallback? _onStartContinuousLoops;
   VoidCallback? _onStopContinuousLoops;
   VoidCallback? _onTriggerInteract;
+  VoidCallback? _onTriggerStroke;
   Timer? _blinkTimer;
   Timer? _earTwitchTimer;
   Timer? _interactCooldownTimer;
+  Timer? _strokeCooldownTimer;
   bool _isDisposed = false;
   bool _isMotionActive = false;
   int _listenerCount = 0;
+
+  // --- Growth-driven cadence (presentation only) -----------------------------
+  //
+  // The growth stage decides how expressive Mochi's face reads: a younger stage
+  // blinks less often, a grown one more often. The scales are applied on top of
+  // whatever the [scheduler] returns, so a deterministic test scheduler still
+  // drives the timing and the growth term stays a pure multiplier.
+  //
+  // This is a rendering knob. It never touches XP, rewards, sessions or craft.
+  double _blinkIntervalScale = 1.0;
+  double _earTwitchIntervalScale = 1.0;
 
   PetMotionController({
     PetVisualState visualState = PetVisualState.idle,
@@ -76,6 +90,54 @@ class PetMotionController extends ChangeNotifier {
         scheduler = scheduler ?? DefaultPetMotionScheduler();
 
   PetVisualState get visualState => _visualState;
+
+  /// Cadence multiplier currently applied to the blink interval.
+  double get blinkIntervalScale => _blinkIntervalScale;
+
+  /// Cadence multiplier currently applied to the ear-twitch interval.
+  double get earTwitchIntervalScale => _earTwitchIntervalScale;
+
+  /// Applies a growth stage's cadence multipliers.
+  ///
+  /// Safe to call on every frame — equal values are a no-op. When the value
+  /// actually changes, pending timers are re-armed so the new cadence lands
+  /// immediately instead of after the current (stale) interval elapses.
+  void updateMotionCadence({
+    required double blinkIntervalScale,
+    required double earTwitchIntervalScale,
+  }) {
+    if (_isDisposed) return;
+    final blink = _sanitizeScale(blinkIntervalScale);
+    final ear = _sanitizeScale(earTwitchIntervalScale);
+    if (blink == _blinkIntervalScale && ear == _earTwitchIntervalScale) return;
+
+    _blinkIntervalScale = blink;
+    _earTwitchIntervalScale = ear;
+
+    if (_isMotionActive && supportsAmbientMotion) {
+      _blinkTimer?.cancel();
+      _blinkTimer = null;
+      _earTwitchTimer?.cancel();
+      _earTwitchTimer = null;
+      _scheduleNextBlink();
+      _scheduleNextEarTwitch();
+    }
+  }
+
+  /// Guards a cadence multiplier against `NaN`/`Infinity`/zero/negative input
+  /// and against absurd values, so a bad growth config can never stop the
+  /// ambient layer or spin it into a busy loop.
+  static double _sanitizeScale(double value) {
+    if (value.isNaN || value.isInfinite || value <= 0) return 1.0;
+    return value.clamp(0.25, 4.0);
+  }
+
+  /// Applies a cadence multiplier to a scheduled interval, never returning a
+  /// non-positive duration (which `Timer` would treat as an immediate fire).
+  static Duration _scaleInterval(Duration base, double scale) {
+    final ms = (base.inMilliseconds * scale).round();
+    return Duration(milliseconds: ms < 1 ? 1 : ms);
+  }
 
   bool get isIdle => _visualState == PetVisualState.idle;
   bool get isFocus => _visualState == PetVisualState.focus;
@@ -119,6 +181,7 @@ class PetMotionController extends ChangeNotifier {
   int get activeTimerCount =>
       (_blinkTimer != null ? 1 : 0) + (_earTwitchTimer != null ? 1 : 0);
   bool get isInteractCooldownActive => _interactCooldownTimer != null;
+  bool get isStrokeCooldownActive => _strokeCooldownTimer != null;
 
   /// Whether presentation callbacks are currently attached.
   bool get isAttached =>
@@ -126,7 +189,8 @@ class PetMotionController extends ChangeNotifier {
       _onTriggerEarTwitch != null ||
       _onStartContinuousLoops != null ||
       _onStopContinuousLoops != null ||
-      _onTriggerInteract != null;
+      _onTriggerInteract != null ||
+      _onTriggerStroke != null;
 
   /// Observable callbacks for behavioral lifecycle verification.
   bool get hasBlinkCallback => _onTriggerBlink != null;
@@ -134,6 +198,7 @@ class PetMotionController extends ChangeNotifier {
   bool get hasStartContinuousLoopsCallback => _onStartContinuousLoops != null;
   bool get hasStopContinuousLoopsCallback => _onStopContinuousLoops != null;
   bool get hasInteractCallback => _onTriggerInteract != null;
+  bool get hasStrokeCallback => _onTriggerStroke != null;
 
   /// Total registered listeners on this controller.
   int get listenerCount => _listenerCount;
@@ -162,6 +227,7 @@ class PetMotionController extends ChangeNotifier {
     VoidCallback? onStartContinuousLoops,
     VoidCallback? onStopContinuousLoops,
     VoidCallback? onTriggerInteract,
+    VoidCallback? onTriggerStroke,
   }) {
     if (_isDisposed) return;
     _onTriggerBlink = onTriggerBlink;
@@ -169,6 +235,7 @@ class PetMotionController extends ChangeNotifier {
     _onStartContinuousLoops = onStartContinuousLoops;
     _onStopContinuousLoops = onStopContinuousLoops;
     _onTriggerInteract = onTriggerInteract;
+    _onTriggerStroke = onTriggerStroke;
     if (supportsAmbientMotion) {
       startMotion();
     } else {
@@ -180,23 +247,57 @@ class PetMotionController extends ChangeNotifier {
   void detach() {
     stopMotion();
     _cancelInteractCooldown();
+    _cancelStrokeCooldown();
     _onTriggerBlink = null;
     _onTriggerEarTwitch = null;
     _onStartContinuousLoops = null;
     _onStopContinuousLoops = null;
     _onTriggerInteract = null;
+    _onTriggerStroke = null;
   }
 
-  /// Triggers a one-shot interact animation only while Mochi is idle.
+  /// Triggers a one-shot interact animation in the current base state.
   ///
-  /// This never changes [visualState]; interact remains a presentation-only
-  /// affordance with no business side effects.
+  /// ## What changed in STAGE 4, and why
+  ///
+  /// This used to refuse unless `visualState == idle`. That is the defect the
+  /// brief names: a user who taps Mochi during a focus session got no response
+  /// at all, which reads as broken rather than as considerate. Mochi now
+  /// responds in every base state, with a behaviour from
+  /// [PetInteractionSpec.table] chosen by that state.
+  ///
+  /// Two independent guards, both required:
+  ///
+  /// 1. [PetInteractionPriority.canInteractDuring] — a one-shot celebration
+  ///    outranks an interaction, so a poke cannot cut a celebration short.
+  /// 2. [PetInteractionSpec.forState] — a state with no spec does not react.
+  ///    This is also what refuses re-entrancy, without a special case.
+  ///
+  /// This still never changes [visualState]. Interact remains a
+  /// presentation-only overlay with no business side effects, which is why the
+  /// base state cannot be lost.
   bool triggerInteract() {
     if (_isDisposed || _interactCooldownTimer != null) return false;
-    if (_visualState != PetVisualState.idle) return false;
+    if (!PetInteractionPriority.canInteractDuring(_visualState)) return false;
+    if (PetInteractionSpec.forState(_visualState) == null) return false;
 
     _startInteractCooldown();
     _onTriggerInteract?.call();
+    return true;
+  }
+
+  /// Triggers a one-shot long-press stroke ("轻抚").
+  ///
+  /// Shares the interact gate — the same two guards, the same base state
+  /// untouched — but has its own cooldown, so holding Mochi and then tapping it
+  /// are two distinct gestures rather than one being swallowed by the other.
+  bool triggerStroke() {
+    if (_isDisposed || _strokeCooldownTimer != null) return false;
+    if (!PetInteractionPriority.canInteractDuring(_visualState)) return false;
+    if (PetInteractionSpec.forState(_visualState) == null) return false;
+
+    _startStrokeCooldown();
+    _onTriggerStroke?.call();
     return true;
   }
 
@@ -250,9 +351,23 @@ class PetMotionController extends ChangeNotifier {
     _interactCooldownTimer = null;
   }
 
+  void _startStrokeCooldown() {
+    _strokeCooldownTimer?.cancel();
+    _strokeCooldownTimer = Timer(PetMotionSpec.strokeCooldown, () {
+      _strokeCooldownTimer = null;
+    });
+  }
+
+  void _cancelStrokeCooldown() {
+    _strokeCooldownTimer?.cancel();
+    _strokeCooldownTimer = null;
+  }
+
   void _scheduleNextBlink() {
     if (_isDisposed || !_isMotionActive || !supportsAmbientMotion) return;
-    _blinkTimer = Timer(scheduler.nextBlinkInterval(), () {
+    final interval =
+        _scaleInterval(scheduler.nextBlinkInterval(), _blinkIntervalScale);
+    _blinkTimer = Timer(interval, () {
       if (_isDisposed || !_isMotionActive || !supportsAmbientMotion) return;
       _onTriggerBlink?.call();
       _scheduleNextBlink();
@@ -261,7 +376,11 @@ class PetMotionController extends ChangeNotifier {
 
   void _scheduleNextEarTwitch() {
     if (_isDisposed || !_isMotionActive || !supportsAmbientMotion) return;
-    _earTwitchTimer = Timer(scheduler.nextEarTwitchInterval(), () {
+    final interval = _scaleInterval(
+      scheduler.nextEarTwitchInterval(),
+      _earTwitchIntervalScale,
+    );
+    _earTwitchTimer = Timer(interval, () {
       if (_isDisposed || !_isMotionActive || !supportsAmbientMotion) return;
       _onTriggerEarTwitch?.call();
       _scheduleNextEarTwitch();

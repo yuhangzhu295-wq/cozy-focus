@@ -21,25 +21,82 @@ void main() {
       controller.dispose();
     });
 
+    // ── The STAGE 4 contract change ──────────────────────────────────────
+    //
+    // This block used to assert that *every* non-idle state refused an
+    // interaction. That encoded the defect the brief names: a user who tapped
+    // Mochi during a focus session got nothing at all, which reads as broken
+    // rather than as considerate. Mochi now answers in every base state, with a
+    // behaviour chosen by that state (see `PetInteractionSpec.table`).
+
     for (final state in const [
       PetVisualState.focus,
       PetVisualState.pause,
       PetVisualState.sleep,
       PetVisualState.craft,
-      PetVisualState.celebrate,
-      PetVisualState.greeting,
-      PetVisualState.interact,
     ]) {
-      test('AT-6D priority blocks interact while $state', () {
+      test('AT-6D/4: $state answers a tap without leaving the state', () {
         var calls = 0;
         final controller = PetMotionController(visualState: state);
         controller.attach(onTriggerInteract: () => calls++);
 
+        expect(controller.triggerInteract(), isTrue);
+        expect(calls, 1);
+        // The critical constraint: the base state is untouched, so there is
+        // nothing to restore and nothing that can be restored wrongly.
+        expect(controller.visualState, state);
+        controller.dispose();
+      });
+    }
+
+    for (final state in const [
+      PetVisualState.celebrate,
+      PetVisualState.greeting,
+      PetVisualState.interact,
+    ]) {
+      test('AT-6D/4 priority still blocks interact while $state', () {
+        var calls = 0;
+        final controller = PetMotionController(visualState: state);
+        controller.attach(onTriggerInteract: () => calls++);
+
+        // Celebrate outranks interact, so a poke cannot cut a celebration
+        // short. Greeting is the same kind of thing. `interact` has no spec at
+        // all, which is what refuses re-entrancy without a special case.
         expect(controller.triggerInteract(), isFalse);
         expect(calls, 0);
         controller.dispose();
       });
     }
+
+    test('AT-6D/4: the stroke shares the gate and has its own cooldown', () {
+      var strokes = 0;
+      final controller = PetMotionController(visualState: PetVisualState.focus);
+      controller.attach(onTriggerStroke: () => strokes++);
+
+      expect(controller.triggerStroke(), isTrue);
+      expect(strokes, 1);
+      expect(controller.isStrokeCooldownActive, isTrue);
+      // Holding Mochi must not spend the tap gesture's cooldown, or a stroke
+      // followed by a poke would be silently swallowed.
+      expect(controller.isInteractCooldownActive, isFalse);
+      expect(controller.visualState, PetVisualState.focus);
+
+      // A second stroke inside the cooldown is refused.
+      expect(controller.triggerStroke(), isFalse);
+      expect(strokes, 1);
+      controller.dispose();
+    });
+
+    test('AT-6D/4: a stroke is refused during a celebration', () {
+      var strokes = 0;
+      final controller =
+          PetMotionController(visualState: PetVisualState.celebrate);
+      controller.attach(onTriggerStroke: () => strokes++);
+
+      expect(controller.triggerStroke(), isFalse);
+      expect(strokes, 0);
+      controller.dispose();
+    });
 
     testWidgets('AT-6D-08/09: cooldown blocks retap then allows it',
         (tester) async {

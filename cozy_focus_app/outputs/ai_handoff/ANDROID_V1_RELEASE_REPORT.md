@@ -33,9 +33,9 @@ toolchain changes were made.
 
 ## Android Identity
 
-- APPLICATION_ID: com.example.cozy_focus_app
-- NAMESPACE: com.example.cozy_focus_app
-- APPLICATION_ID_STATUS: USER_INPUT_REQUIRED
+- APPLICATION_ID: com.yuhangzhu295.cozyfocus
+- NAMESPACE: com.yuhangzhu295.cozyfocus
+- APPLICATION_ID_STATUS: RESOLVED (owner supplied 2026-09-21; see the amendment at the foot of this file)
 - APP_NAME: Cozy Focus
 - VERSION_NAME: 1.0.0
 - VERSION_CODE: 1
@@ -50,9 +50,9 @@ icon source was found, so no invented replacement was made.
 
 ## Verification
 
-- FORMAT: PASS (dart format --output=none --set-exit-if-changed ., 124 files, 0 changed)
+- FORMAT: PASS (dart format --output=none --set-exit-if-changed ., 124 files, 0 changed at the release build; 133 files, 0 changed at the 2026-09-21 re-run)
 - ANALYZE: PASS (flutter analyze --fatal-infos --no-pub, no issues)
-- FULL_TEST_COUNT: 303/303 PASS
+- FULL_TEST_COUNT: 303/303 PASS at the release build; 339/339 PASS at the 2026-09-21 re-run
 - DEBUG_APK: PASS (flutter build apk --debug, exit code 0)
 - RELEASE_APK: PASS (flutter build apk --release, exit code 0)
 - RELEASE_AAB: PASS (flutter build appbundle --release, exit code 0)
@@ -120,15 +120,20 @@ Physical-device behavior and performance metrics remain uncertified.
 ## Review And Known Issues
 
 - P0: 0
-- P1: 2
+- P1: 1 (was 2; the application-identity item was resolved on 2026-09-21)
 - P2: 1
 
-P1 items (both non-code owner decisions, neither repairable by the agent):
-1. `applicationId` / `namespace` remain the placeholder `com.example.cozy_focus_app`,
-   an explicit invalid-release-identity pattern.
-2. The launcher icon is still the stock Flutter logo with no adaptive icon; the V4.1
+P1 item (a non-code owner decision, not repairable by the agent):
+1. The launcher icon is still the stock Flutter logo with no adaptive icon; the V4.1
    package and the repository contain no approved brand/icon asset, so no replacement
    was invented.
+
+Resolved 2026-09-21: `applicationId` and `namespace` are no longer the placeholder.
+The owner supplied `com.yuhangzhu295.cozyfocus`; `android/app/build.gradle.kts` and
+`MainActivity.kt` (moved to `.../kotlin/com/yuhangzhu295/cozyfocus/`) both carry it,
+and `tools/visual_qa/drive.py` was updated to the new package. The previously recorded
+`com.example.cozy_focus_app` was an explicit invalid-release-identity pattern, so this
+closes that finding — but see the amendment below for the artifact consequence.
 
 P2 item: `flutter_local_notifications`, `supabase_flutter`, and `connectivity_plus`
 are declared but unused in `lib/` (surfaced honestly as "not connected" states).
@@ -139,12 +144,47 @@ repaired and re-verified; runtime visual coverage is no longer a gap.
 ## Store Boundary
 
 Android RC can be evaluated independently from Play publication. Google Play
-submission remains NO-GO until the user supplies a final non-placeholder
-application identifier, production signing material, and the required store
-and device-release evidence. This work does not publish, sign a production
-release, upload to Google Play, merge a pull request, or push main.
+submission remains NO-GO. The application-identifier blocker is now cleared, so
+the remaining blockers are production signing material, an approved launcher
+icon, and the required store and device-release evidence. This work does not
+publish, sign a production release, upload to Google Play, merge a pull request,
+or push main.
 
 The validated runtime repair (§ Runtime And Visual Evidence) and these reports
 were committed locally on `release/android-v1`. Nothing was pushed, so `origin`
 and PR #1 remain at 75b3e4be565ad1db6d7ce1fe9bf2a08f9f114b59 and no CI re-run is
 triggered.
+
+---
+
+## Amendment — 2026-09-21 (identity change, and what it invalidates)
+
+`release/android-v1` moved from `764aaa1` to `6a548b5`
+(`feat(v4.1): rebuild screen 04, fix screen 06's donut, land release applicationId`),
+5 files changed, +786/−173. Still local only; `origin` is at `764aaa1`.
+
+**The recorded release artifacts are now stale.** The release APK
+(`42325232…`, 27037953 bytes) and the AAB (`A3E75411…`, 46558157 bytes) were built
+on 2026-09-19 from source that still carried `applicationId =
+com.example.cozy_focus_app`. Both hashes above therefore describe an artifact whose
+package identity no longer matches the source tree. They are left in place as the
+historical record of the 09-19 verification, not as a current candidate. Before any
+store submission both must be rebuilt from `6a548b5` and re-hashed, and the runtime
+QA below must be repeated against the rebuilt APK.
+
+The debug APK used for visual QA was rebuilt on 2026-09-21 (md5
+`5360261b1ea2f0fc65b45051a1f41be3`) and does carry the new identity; `adb install`
+confirmed the package as `com.yuhangzhu295.cozyfocus`.
+
+Also changed in the same commit, both landing after the last device capture and
+therefore **not yet device-verified**:
+
+- `focus_complete_page.dart`: hero band height `187 → 184`.
+- `weekly_report_page.dart`: donut `106 → 128` with stroke `14 → 19`.
+
+These two numbers are the only unverified part of the commit; the rest of the
+screen 04 rebuild and the screen 06 donut conversion were measured on-device at
+md5 `5360261b`. See `V4_1_RUNTIME_FIDELITY_MATRIX.md` § Screen 04 and § Screen 06.
+
+Unchanged by this amendment: the launcher-icon P1, the unused-dependency P2, and
+`PHYSICAL_DEVICE_QA: NOT_ASSESSED` / `PERFORMANCE_QA: NOT_MEASURED`.
