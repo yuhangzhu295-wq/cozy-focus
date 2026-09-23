@@ -30,9 +30,17 @@ enum GrowthStage {
 
 /// How lively the idle layer reads at a stage.
 ///
-/// This is a *presentation* descriptor only: it scales amplitude and cadence of
-/// the existing micro-motion channels. It never touches rewards, XP, or any
+/// This is a *presentation* descriptor only: it selects which additive idle
+/// behaviours the presentation layer may play (`PetIdleBehaviorSpec` in
+/// `lib/presentation/companion/pet_idle_behavior.dart`) and how the existing
+/// micro-motion channels are retuned. It never touches rewards, XP, or any
 /// other business value.
+///
+/// It is deliberately *not* a copy of [GrowthStage]: the stage says how far
+/// along Mochi is, this says how that reads. They map one-to-one today, but a
+/// retune that gives two stages the same personality — or gives one stage a
+/// personality no other stage has — is a presentation change, not a growth
+/// change, and should not require touching the level table.
 enum GrowthIdlePersonality {
   /// Short, gentle, infrequent motion.
   gentle,

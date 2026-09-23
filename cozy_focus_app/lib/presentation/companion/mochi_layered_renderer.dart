@@ -218,6 +218,27 @@ abstract final class MochiLayerAssets {
   /// printed by `assets/mochi/base/layers.json`.
   static const double aspect = 482 / 328;
 
+  /// How far the character's feet sit above the bottom edge of the square box
+  /// `CompanionAvatar` centres it in, as a fraction of the box's side.
+  ///
+  /// The box is square and the character is centred inside it, so its bottom
+  /// edge is **not** where the paws are. Two gaps stack:
+  ///
+  /// * centring a 328-tall crop in a 482-wide square leaves `(482 - 328) / 2 =
+  ///   77` reference pixels of empty space above *and* below the crop;
+  /// * `body.png`'s lowest inked row is 321 of 328, so another 6 rows below the
+  ///   paws are empty.
+  ///
+  /// Together that is `(77 + 6) / 482 = 0.1722` of the box side — 15.8 pt on the
+  /// 92 pt avatar the room uses. Anything that anchors the avatar by its *feet*
+  /// has to add this back, or the character hovers by that much.
+  ///
+  /// Same provenance as [aspect]: the body bbox in
+  /// `assets/mochi/base/layers.json`. `mochi_layer_contract_test` re-reads that
+  /// file and fails if this stops matching, so a re-export cannot silently
+  /// leave Mochi floating.
+  static const double feetInsetFraction = 83 / 482;
+
   /// Neck / base of the head — the head group rotates here.
   static const Alignment headPivot = Alignment(-0.0456, 0.8415);
 

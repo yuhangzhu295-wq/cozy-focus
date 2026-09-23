@@ -4,12 +4,20 @@ import 'package:go_router/go_router.dart';
 import '../../domain/models/craft_models.dart';
 import '../../domain/models/enums.dart';
 import '../companion/companion_avatar.dart';
+import '../companion/mochi_layered_renderer.dart';
 import '../companion/room_presence.dart';
 import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
 import '../../core/geometry/room_geometry.dart';
 import '../widgets/cozy_furniture_artwork.dart';
 import '../widgets/growth_sub_nav.dart';
+
+/// Rendered size of a placed furniture sprite at `scale == 1`.
+///
+/// Shared by [_PlacedItemWidget], which draws an item at this size, and
+/// `_buildMochi`, which needs it to find the item's sitting surface — one fact,
+/// one place, so the two cannot drift apart.
+const double _kFurnitureItemSize = 60.0;
 
 /// Screen 09: Room Decoration Page (房间装饰).
 ///
@@ -251,11 +259,30 @@ class _RoomPageState extends ConsumerState<RoomPage> {
     );
 
     const size = 92.0;
-    // The resolved point is where Mochi's feet are, so the avatar is anchored by
-    // its bottom edge rather than by its centre.
+
+    // The resolved point is the *seat item's anchor*, which the canvas treats as
+    // the item's centre — not the surface Mochi's feet rest on. Two measured
+    // corrections turn it into a feet position; see [PetSeatPlacement].
+    final seat = _seatItemFor(craft, presence.seatItemId);
+    final feetY = PetSeatPlacement.feetY(
+      seatAnchorY: presence.y * canvasHeight,
+      seatRenderedSize: seat == null ? 0.0 : _kFurnitureItemSize * seat.scale,
+      seatSurfaceFraction: seat == null
+          ? PetRoomPresenceResolver.defaultSeatSurfaceFraction
+          : PetRoomPresenceResolver.seatSurfaceFraction(seat.itemId),
+    );
+
     return Positioned(
       left: presence.x * canvasWidth - size / 2,
-      top: presence.y * canvasHeight - size,
+      // The avatar's box is square and the character is centred inside it, so
+      // the box's bottom edge is *below* the paws. Anchoring by that edge is
+      // what "put the pet on the sofa" naturally reads as, and it leaves Mochi
+      // hovering ~15 pt above the cushions.
+      top: PetSeatPlacement.boxTop(
+        feetY: feetY,
+        avatarSize: size,
+        feetInsetFraction: MochiLayerAssets.feetInsetFraction,
+      ),
       child: const IgnorePointer(
         child: CompanionAvatar(
           size: size,
@@ -264,6 +291,20 @@ class _RoomPageState extends ConsumerState<RoomPage> {
         ),
       ),
     );
+  }
+
+  /// The placed row [seatItemId] came from, or `null` when Mochi is on the
+  /// floor.
+  ///
+  /// [PetRoomPresenceResolver] deliberately returns only the id, so the one
+  /// thing the geometry still needs — the item's `scale` — is looked up here
+  /// rather than duplicated into [PetRoomPresence].
+  static RoomItem? _seatItemFor(CraftState craft, String? seatItemId) {
+    if (seatItemId == null) return null;
+    for (final item in craft.roomItems) {
+      if (item.itemId == seatItemId) return item;
+    }
+    return null;
   }
 
   Widget _buildRoomBackground() {
@@ -369,8 +410,6 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
   double _dxOffset = 0;
   double _dyOffset = 0;
 
-  static const double _itemSize = 60.0;
-
   @override
   void didUpdateWidget(_PlacedItemWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -388,7 +427,7 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
     final baseLeft = widget.roomItem.positionX * widget.canvasWidth;
     final baseTop = widget.roomItem.positionY * widget.canvasHeight;
     // Clamp the transient drag centre so the item stays inside canvas visually.
-    final renderedSize = _itemSize * widget.roomItem.scale;
+    final renderedSize = _kFurnitureItemSize * widget.roomItem.scale;
     final clampedDrag = clampNormalizedPosition(
       rawX: (baseLeft + _dxOffset) / widget.canvasWidth,
       rawY: (baseTop + _dyOffset) / widget.canvasHeight,

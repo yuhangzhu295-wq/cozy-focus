@@ -165,19 +165,39 @@ void main() {
     });
 
     test(
-        'the chatty line needs happiness and daylight; the finishing line is '
-        'the other way round', () {
-      // Measured, not assumed. `focusCompanion` is withheld below
-      // `lowHappinessThreshold` on purpose, and `lateNightCare` outranks it at
-      // night — so the chatty line is a daytime-and-coping line. The
-      // consequence for `finishingSupport` is the surprising half: a *happy*
-      // user's budget is spent by the midpoint band, so the last-stretch line is
-      // only ever heard by a user below the happiness threshold. See
-      // `MOCHI_GROWTH_COPY_REVIEW.md`.
+        'the three arcs are served: START and FINISHING always, MIDDLE by one '
+        'of two categories', () {
+      // Measured, not assumed. A session's voice has three arcs — START, MIDDLE,
+      // FINISHING — and the cap is three, so each arc gets exactly one slot.
+      //
+      // This test used to assert the *defect*: that `finishingSupport` was
+      // reachable for a coping user and unreachable for a content one. It was,
+      // because the START and MIDDLE arcs spent the whole budget by 58% of the
+      // way through a session. Reserving one slot for the finishing arc
+      // (`PetEncouragementBudget.preFinishingCap`) fixed it, and the assertion
+      // flipped to what the product actually promises.
+      //
+      // The MIDDLE arc has two candidate categories, and which one a user hears
+      // is decided by happiness rather than by taste: `focusCompanion` is
+      // withheld below `lowHappinessThreshold`, so a coping user hears the
+      // progress marker and a content one hears company. Both stay reachable, so
+      // neither is dead copy — which the "every category is reachable" test above
+      // also guards.
       for (final band in TimeOfDayBand.values) {
         final key80 = '${band.name}/h80';
         final key20 = '${band.name}/h20';
         final atNight = band == TimeOfDayBand.lateNight;
+
+        for (final always in [
+          PetMessageKind.startEncouragement,
+          PetMessageKind.finishingSupport,
+          PetMessageKind.pauseComfort,
+        ]) {
+          expect(reachableIn[always]!.contains(key80), true,
+              reason: '${always.name} vs $key80');
+          expect(reachableIn[always]!.contains(key20), true,
+              reason: '${always.name} vs $key20');
+        }
 
         expect(reachableIn[PetMessageKind.focusCompanion]!.contains(key80),
             !atNight,
@@ -187,28 +207,17 @@ void main() {
             reason: 'focusCompanion must be withheld below the happiness '
                 'threshold ($key20)');
 
-        expect(reachableIn[PetMessageKind.finishingSupport]!.contains(key20),
+        expect(reachableIn[PetMessageKind.midpointSupport]!.contains(key20),
             !atNight,
-            reason: 'finishingSupport vs $key20');
-        expect(reachableIn[PetMessageKind.finishingSupport]!.contains(key80),
-            false,
-            reason: 'finishingSupport vs $key80');
+            reason: 'midpointSupport vs $key20');
+        expect(
+            reachableIn[PetMessageKind.midpointSupport]!.contains(key80), false,
+            reason: 'midpointSupport vs $key80');
 
         expect(reachableIn[PetMessageKind.lateNightCare]!.contains(key80),
             atNight);
         expect(reachableIn[PetMessageKind.lateNightCare]!.contains(key20),
             atNight);
-
-        for (final always in [
-          PetMessageKind.startEncouragement,
-          PetMessageKind.midpointSupport,
-          PetMessageKind.pauseComfort,
-        ]) {
-          expect(reachableIn[always]!.contains(key80), true,
-              reason: '${always.name} vs $key80');
-          expect(reachableIn[always]!.contains(key20), true,
-              reason: '${always.name} vs $key20');
-        }
       }
     });
 

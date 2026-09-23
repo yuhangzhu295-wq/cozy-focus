@@ -10,6 +10,7 @@ import 'package:cozy_focus_app/domain/models/craft_models.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
+import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 import 'package:cozy_focus_app/presentation/companion/room_presence.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
@@ -70,13 +71,20 @@ InventoryItem owned(String itemId, {int quantity = 1}) {
   );
 }
 
-/// Recovers the normalised point the room page anchored Mochi at.
+/// Recovers the normalised point the room page put Mochi's **feet** on.
 ///
 /// The page places the avatar with `Positioned` inside the room canvas, so the
 /// avatar's global rect has to be measured against the canvas's own origin —
 /// the canvas is not at the top of the screen. Inverting the page's arithmetic
 /// this way means the assertion needs no knowledge of the canvas size and
 /// cannot drift with the layout.
+///
+/// The avatar's box is square and the character is centred inside it, so the
+/// box's bottom edge is *below* the paws by
+/// [MochiLayerAssets.feetInsetFraction] of the box. Reading the box's bottom
+/// edge as the feet — which is what this helper did until the room was found to
+/// be floating Mochi ~15 pt above the furniture — is the same mistake in the
+/// test as it was in the page.
 Offset impliedPresence(WidgetTester tester) {
   final avatarFinder = find.byType(CompanionAvatar);
   final stackFinder =
@@ -89,7 +97,11 @@ Offset impliedPresence(WidgetTester tester) {
 
   return Offset(
     (avatarTopLeft.dx - canvasTopLeft.dx + avatar.size / 2) / canvas.width,
-    (avatarTopLeft.dy - canvasTopLeft.dy + avatar.size) / canvas.height,
+    (avatarTopLeft.dy -
+            canvasTopLeft.dy +
+            avatar.size -
+            avatar.size * MochiLayerAssets.feetInsetFraction) /
+        canvas.height,
   );
 }
 
@@ -319,7 +331,7 @@ void main() {
       expect(find.byType(CompanionAvatar), findsOneWidget);
     });
 
-    testWidgets('Mochi stands on the resolved seat, by its bottom edge',
+    testWidgets('Mochi stands on the resolved seat, by its feet',
         (tester) async {
       await container.read(craftRepositoryProvider).upsertInventoryItem(
             owned('rug', quantity: 1),
@@ -333,9 +345,43 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
+      // A rug is the one seat with no cushion line of its own, so its anchor is
+      // already the surface — this pins the feet to the item's own position
+      // with nothing else in play.
       final implied = impliedPresence(tester);
       expect(implied.dx, closeTo(0.35, 0.01));
       expect(implied.dy, closeTo(0.6, 0.01));
+    });
+
+    testWidgets('on a sofa the feet sit on the cushions, not on its centre',
+        (tester) async {
+      await container.read(craftRepositoryProvider).upsertInventoryItem(
+            owned('sofa', quantity: 1),
+          );
+      await container.read(craftRepositoryProvider).placeRoomItem(
+            placed('sofa', x: 0.35, y: 0.6, id: 'room-sofa'),
+          );
+      await container.read(craftControllerProvider.notifier).loadAll();
+
+      await tester.pumpWidget(_app(container, const RoomPage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Measured in pixels, not normalised: the seat-surface correction is
+      // `(0.5 - 0.48) * 60 = 1.2 pt` on a scale-1 sofa, which a 0.01
+      // normalised tolerance would swallow whole. This is the half of the
+      // placement that `room_seat_geometry_test` cannot see, because it only
+      // exists once the page has looked the item's scale up.
+      final avatarFinder = find.byType(CompanionAvatar);
+      final canvasFinder =
+          find.ancestor(of: avatarFinder, matching: find.byType(Stack)).first;
+      final avatar = tester.widget<CompanionAvatar>(avatarFinder);
+      final feetY = tester.getBottomLeft(avatarFinder).dy -
+          avatar.size * MochiLayerAssets.feetInsetFraction;
+      final anchorY = tester.getTopLeft(canvasFinder).dy +
+          0.6 * tester.getSize(canvasFinder).height;
+
+      expect(anchorY - feetY, closeTo(1.2, 0.05));
     });
 
     testWidgets('with nothing placed Mochi uses the floor spot',

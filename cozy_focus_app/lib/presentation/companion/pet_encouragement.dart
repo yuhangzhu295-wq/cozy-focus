@@ -25,17 +25,28 @@
 ///    vsync and no I/O, so it *cannot* preempt anything. The rendered bubble is
 ///    wrapped in an `IgnorePointer` by `PetAvatarWidget`, so it cannot swallow
 ///    a tap either.
-/// 3. **Never guilt.** [PetEncouragementCopyGuard] holds a list of
-///    guilt-inducing tokens, and the test suite fails if any string in the copy
-///    table contains one. The rule is executable rather than aspirational.
+/// 3. **Never guilt.** [PetEncouragementCopyGuard] holds tokens for each of the
+///    seven prohibitions the tone contract names ([PetToneAxis]), and the test
+///    suite fails if any string in the copy table contains one, or if any axis
+///    ends up with no tokens at all. The rule is executable rather than
+///    aspirational — though it is a floor and not a proof, for the reason
+///    recorded on the guard itself.
 ///
 /// ## Growth is visible in the voice
 ///
 /// The copy table carries four variants per category, one per [GrowthStage], so
-/// a sprout Mochi speaks in short, simple lines and a blooming Mochi in longer,
-/// more articulate ones. This is the same "additive growth" rule the motion
-/// layer follows: a later stage gains vocabulary, a younger one is not
-/// silenced.
+/// the stage a user has grown to is audible in what Mochi says. This is the same
+/// "additive growth" rule the motion layer follows: a later stage gains
+/// vocabulary, a younger one is not silenced.
+///
+/// The precise form of the claim is narrower than "longer is later", and it was
+/// measured rather than assumed. Across the nine categories the intermediate
+/// steps are **not** monotonic — `startEncouragement`'s sprout line is 13
+/// characters and its seedling line 12 — so "a sprout speaks short and a
+/// blooming speaks long" is only true on average. What is true in every
+/// category, and what `pet_tone_contract_test` asserts, is that the blooming
+/// variant is **longer than the sprout variant**. Every category grows; none
+/// grows in a straight line.
 library;
 
 import '../../domain/growth/growth_stage.dart';
@@ -121,6 +132,41 @@ abstract final class PetEncouragementBudget {
   /// session being *quieter* than a 25-minute one is the correct failure
   /// direction. Silence never bothers anyone; nagging does.
   static const int maxMessagesPerSession = 3;
+
+  /// How many messages may be spent **before** the finishing window opens.
+  ///
+  /// ## Why one slot is reserved
+  ///
+  /// A session's voice has three arcs: START (the opening line), MIDDLE (one
+  /// companionship beat) and FINISHING (the last-stretch line). The cap is
+  /// [maxMessagesPerSession], which is exactly three — one per arc.
+  ///
+  /// The engine used to let the START and MIDDLE arcs spend from the full cap.
+  /// That made [PetMessageKind.finishingSupport] arithmetically unreachable: by
+  /// the time `progress > FocusPhaseSpec.deepFocusUntil` the budget was gone.
+  /// Measured before this rule existed, over 180 swept sessions: every session
+  /// that ran to the end spent all three slots by 58% of the way through, so the
+  /// last-stretch line was heard by **no one** — the copy existed and could
+  /// never be spoken. See `MOCHI_GROWTH_COPY_REVIEW.md` §3.
+  ///
+  /// Reserving one slot fixes that at the source rather than by widening the
+  /// finishing window, which is only `(1 - deepFocusUntil) x duration` seconds
+  /// wide and cannot be widened without moving the phase boundary that
+  /// `FocusPhaseSpec` owns.
+  ///
+  /// ## What it costs, measured
+  ///
+  /// A session that ends early now yields at most two messages instead of three.
+  /// That is inside the "0-3 messages" promise and in the quiet direction, which
+  /// is the direction the budget deliberately errs.
+  ///
+  /// The MIDDLE arc has two candidate categories ([PetMessageKind.focusCompanion]
+  /// and [PetMessageKind.midpointSupport]) and the reservation means exactly one
+  /// of them is heard per session. Which one is not arbitrary: the chatty line is
+  /// withheld below [lowHappinessThreshold], so a coping user hears the progress
+  /// marker and a content one hears company. Both categories stay reachable
+  /// across the population; neither is dead copy.
+  static const int preFinishingCap = maxMessagesPerSession - 1;
 
   /// The minimum silence between two messages.
   ///
@@ -228,31 +274,208 @@ abstract final class PetEncouragementCopy {
   };
 }
 
+/// The seven ways a line can break the tone contract.
+///
+/// The brief states the contract in two halves. Mochi's voice may be *gentle,
+/// brief, companionable, encouraging, non-judgemental and low-interruption*,
+/// and it may never be *humiliating, blaming, urging, guilt-inducing,
+/// dependency-inducing, the pet punishing the user, or emotionally blackmailing*.
+///
+/// Those seven prohibitions are named here so [PetEncouragementCopyGuard] can be
+/// checked for **coverage** and not merely for length. Two of the seven —
+/// [dependency] and [emotionalBlackmail] — had no tokens at all before this enum
+/// existed, which meant a line like "别走，没有你 Mochi 会难过" would have sailed
+/// through the guard that was supposed to stop it. A guard is only as good as
+/// the axes it actually covers.
+enum PetToneAxis {
+  /// Telling the user they are lesser, or comparing them to others.
+  humiliation,
+
+  /// Reproaching the user for what already happened.
+  blame,
+
+  /// Hurrying the user along.
+  urging,
+
+  /// Framing the user as indebted, lazy, or a disappointment.
+  guilt,
+
+  /// Cultivating the user's dependence on Mochi, or Mochi's on the user.
+  dependency,
+
+  /// Mochi withdrawing, sulking or punishing the user.
+  petPunishment,
+
+  /// Making the user responsible for Mochi's feelings.
+  emotionalBlackmail,
+}
+
+extension PetToneAxisLabel on PetToneAxis {
+  /// The axis name, for failure messages.
+  String get label => switch (this) {
+        PetToneAxis.humiliation => 'HUMILIATION',
+        PetToneAxis.blame => 'BLAME',
+        PetToneAxis.urging => 'URGING',
+        PetToneAxis.guilt => 'GUILT',
+        PetToneAxis.dependency => 'DEPENDENCY',
+        PetToneAxis.petPunishment => 'PET_PUNISHES_USER',
+        PetToneAxis.emotionalBlackmail => 'EMOTIONAL_BLACKMAIL',
+      };
+}
+
 /// The executable form of "never guilt".
 ///
 /// A convention nobody can test is a convention that decays. Every string in
 /// [PetEncouragementCopy.table] is checked against [forbiddenTokens], and any
 /// hit fails the build — so a well-meaning future edit that adds
 /// "别浪费这次专注" is caught before it ships.
+///
+/// ## This is a floor, not a proof
+///
+/// A token list catches the crude failures. It cannot catch the formulaic ones.
+/// The clearest example in this app is the early-finish dialog at
+/// `focus_active_page.dart:245`:
+///
+/// ```
+/// 已经专注了 $minutes 分钟，
+/// 再坚持一会儿，你可以做得更好！
+/// 相信自己！
+/// ```
+///
+/// Read at the moment it appears — the user has just chosen to stop — this
+/// presses them to continue and implies the effort so far was not good enough.
+/// It contains none of the tokens below and never will: the pressure is in the
+/// *formula*, not in any word. That line is also printed on V4.1 page 03C, so it
+/// is the approved design's own copy; see `COMPANION_STAGE_E_COPY_AUDIT.md` §4.
+///
+/// So the guard is deliberately described as a floor. `pet_tone_contract_test`
+/// pins that limitation with a test rather than leaving it implied, because a
+/// guard believed to be a proof is worse than one known to be a floor.
 abstract final class PetEncouragementCopyGuard {
   const PetEncouragementCopyGuard._();
 
-  /// Tokens that make a line reproachful rather than supportive.
+  // Tokens that make a line reproachful rather than supportive.
+  //
+  // Kept to unambiguous reproach: each of these reads as blame, debt, or
+  // comparison no matter how it is wrapped. Ordinary care words such as
+  // `应该` / `必须` are deliberately *not* here — "该休息了" is kindness, and a
+  // guard that fires on kindness would be turned off within a week. That is not
+  // a hypothetical: `pet_encouragement_test.dart` asserts those two stay clean.
+
+  /// Telling the user they are lesser, or comparing them to others.
   ///
-  /// Kept to unambiguous reproach: each of these reads as blame, debt, or
-  /// comparison no matter how it is wrapped. Ordinary care words such as
-  /// `应该` / `必须` are deliberately *not* here — "该休息了" is kindness, and a
-  /// guard that fires on kindness would be turned off within a week.
-  static const List<String> forbiddenTokens = [
-    // blame / waste
-    '浪费', '白费', '亏', '可惜', '活该',
-    // reproach
-    '又没', '怎么还没', '你怎', '为什么没', '别再', '加把劲', '抓紧',
-    // failure framing
-    '失败', '落后', '差劲', '比不上', '别人都',
-    // debt / guilt
-    '对不起', '惩罚', '失望', '不够努力', '懒',
+  /// Includes failure framing (`失败`, `落后`): "you fell behind" is humiliation
+  /// wearing a progress report.
+  static const List<String> _humiliationTokens = [
+    '差劲',
+    '比不上',
+    '别人都',
+    '失败',
+    '落后',
   ];
+
+  /// Reproaching the user for what already happened.
+  static const List<String> _blameTokens = [
+    '又没',
+    '怎么还没',
+    '你怎',
+    '为什么没',
+    '别再',
+    '活该',
+  ];
+
+  /// Hurrying the user along.
+  static const List<String> _urgingTokens = ['加把劲', '抓紧'];
+
+  /// Framing the user as indebted, lazy, or a disappointment.
+  ///
+  /// Waste framing (`浪费`, `白费`) belongs here: "you wasted that" is guilt, not
+  /// a fact about the session.
+  ///
+  /// `亏` used to sit here bare, and it is gone rather than narrowed. It was
+  /// there for regret framing, but no substring of it separates that from
+  /// *kindness*: `幸亏` and `多亏了你陪着` both contain it, and narrowing to
+  /// `亏了` does not help because `多亏了你` contains that too. A guard that
+  /// fires on a line thanking the user is the guard the note above warns gets
+  /// switched off. The regret axis is already carried by `可惜`, so nothing is
+  /// left undefended.
+  static const List<String> _guiltTokens = [
+    '对不起',
+    '失望',
+    '不够努力',
+    '懒',
+    '可惜',
+    '浪费',
+    '白费',
+    '愧疚',
+    '惭愧',
+  ];
+
+  /// Cultivating the user's dependence on Mochi, or Mochi's on the user.
+  ///
+  /// Kept to unambiguous hooks — a request that the user not leave, or a claim
+  /// that Mochi cannot do without them. Availability stated without a hook
+  /// ("想回来的时候我在") is deliberately allowed: it gives the user permission
+  /// to go, which is the opposite of the axis.
+  static const List<String> _dependencyTokens = [
+    '别走',
+    '不要走',
+    '别离开',
+    '别丢下',
+    '离不开',
+  ];
+
+  /// Mochi withdrawing, sulking or punishing the user.
+  static const List<String> _petPunishmentTokens = ['惩罚'];
+
+  /// Making the user responsible for Mochi's feelings.
+  static const List<String> _emotionalBlackmailTokens = [
+    '为了我',
+    '你忍心',
+    '辜负',
+    '我会伤心',
+    '都是为你',
+  ];
+
+  /// Every axis, mapped to its tokens.
+  ///
+  /// [PetToneAxis] is the key rather than a comment above a list, so a token can
+  /// be traced to the axis it defends and an axis cannot quietly lose its tokens.
+  static const Map<PetToneAxis, List<String>> axisTokens = {
+    PetToneAxis.humiliation: _humiliationTokens,
+    PetToneAxis.blame: _blameTokens,
+    PetToneAxis.urging: _urgingTokens,
+    PetToneAxis.guilt: _guiltTokens,
+    PetToneAxis.dependency: _dependencyTokens,
+    PetToneAxis.petPunishment: _petPunishmentTokens,
+    PetToneAxis.emotionalBlackmail: _emotionalBlackmailTokens,
+  };
+
+  /// Every token across every axis, in axis order.
+  static const List<String> forbiddenTokens = <String>[
+    ..._humiliationTokens,
+    ..._blameTokens,
+    ..._urgingTokens,
+    ..._guiltTokens,
+    ..._dependencyTokens,
+    ..._petPunishmentTokens,
+    ..._emotionalBlackmailTokens,
+  ];
+
+  /// The axes with no tokens defending them.
+  ///
+  /// Empty is the only acceptable answer, and `pet_tone_contract_test` asserts
+  /// it — driven by the enum, so adding an eighth axis without tokens fails the
+  /// build instead of silently widening the hole this one closed.
+  static List<PetToneAxis> get uncoveredAxes => PetToneAxis.values
+      .where((axis) => (axisTokens[axis] ?? const <String>[]).isEmpty)
+      .toList(growable: false);
+
+  /// The axes [text] violates, in enum order.
+  static List<PetToneAxis> axesIn(String text) => PetToneAxis.values
+      .where(
+          (axis) => (axisTokens[axis] ?? const <String>[]).any(text.contains))
+      .toList(growable: false);
 
   /// Every forbidden token present in [text], in table order.
   ///
@@ -349,11 +572,24 @@ abstract final class PetEncouragementEngine {
   ///
   /// Silence is the default. Every branch below has to earn its message.
   static PetMessage? decide(PetEncouragementInput input) {
-    // Rule 1: the hard cap. Nothing else can override it.
-    if (input.messagesThisSession >=
-        PetEncouragementBudget.maxMessagesPerSession) {
-      return null;
-    }
+    final progress = input.progress;
+
+    // Rule 1: the cap, and nothing else can override it.
+    //
+    // The cap is arc-aware. While the session still has a target and has not
+    // reached its finishing window, one of the three slots is held back for the
+    // FINISHING arc — otherwise the START and MIDDLE arcs spend the whole budget
+    // and the last-stretch line can never be spoken. See
+    // [PetEncouragementBudget.preFinishingCap] for the measurement.
+    //
+    // With no target there is no finishing window to reserve for, so the full
+    // cap applies.
+    final inFinishingWindow =
+        progress != null && progress > FocusPhaseSpec.deepFocusUntil;
+    final cap = (progress == null || inFinishingWindow)
+        ? PetEncouragementBudget.maxMessagesPerSession
+        : PetEncouragementBudget.preFinishingCap;
+    if (input.messagesThisSession >= cap) return null;
 
     // Rule 1b: nothing lands in the opening seconds of a session.
     if (input.elapsed < PetEncouragementBudget.firstMessageDelay) return null;
@@ -375,8 +611,6 @@ abstract final class PetEncouragementEngine {
         input.sinceLastMessage < PetEncouragementBudget.minGapBetweenMessages) {
       return null;
     }
-
-    final progress = input.progress;
 
     // The opening line: the first thing said in a session, while it is still
     // early. Gated on progress rather than on `FocusPhase.starting` because the

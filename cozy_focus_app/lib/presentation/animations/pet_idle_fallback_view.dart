@@ -6,6 +6,7 @@ import '../../domain/models/enums.dart';
 import '../companion/focus_phase.dart';
 import '../companion/pet_craft_activity.dart';
 import '../companion/pet_focus_activity.dart';
+import '../companion/pet_idle_behavior.dart';
 import '../controllers/pet_motion_controller.dart';
 import '../companion/mochi_layered_renderer.dart';
 import '../theme/app_theme.dart';
@@ -154,28 +155,88 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   @visibleForTesting
   double get craftActivityHeadDegrees => _craftActivity.visual.headDegrees;
 
-  /// The flourish's current look-around contribution to the head channel, in
-  /// radians. Zero outside the flourish window and at stages without it.
+  /// The flourish's current head contribution, in radians. Zero outside the
+  /// flourish window and at stages whose pool is empty.
   @visibleForTesting
   double get flourishLookValue => _flourishLookRadians;
 
-  /// The current look-around offset in radians, derived from the flourish
-  /// controller's position within its cycle.
+  /// The flourish's current ear contribution, in radians.
   ///
-  /// A single out-and-back per cycle: `0 -> peak -> 0`. Computed rather than
-  /// tweened so the whole flourish is a pure function of the cycle position and
-  /// can be tested without pumping a widget tree.
-  double get _flourishLookRadians {
-    if (!_growth.hasIdleFlourish) return 0.0;
+  /// Separate from [flourishLookValue] because the two are independent: an
+  /// [PetIdleFlourishKind.earPerk] moves the ears and leaves the head alone.
+  @visibleForTesting
+  double get flourishEarValue => _flourishEarLeadRadians;
+
+  /// The flourish's current tail contribution, in radians.
+  @visibleForTesting
+  double get flourishTailValue => _flourishTailRadians;
+
+  /// The flourish's current body lift, in logical pixels.
+  @visibleForTesting
+  double get flourishLiftValue => _flourishLiftPx;
+
+  /// The pool of flourishes this stage has learned, in play order.
+  ///
+  /// Empty at the youngest stage. `hasIdleFlourish: false` and an empty pool are
+  /// two spellings of the same fact, and `pet_idle_behavior_test` pins them
+  /// together so the boolean and the pool can never drift apart.
+  @visibleForTesting
+  List<PetIdleFlourishSpec> get idleFlourishPool => _idleFlourishPool;
+
+  /// How many full flourish cycles have completed since this view mounted.
+  ///
+  /// The pool is walked one member per cycle, so this is what makes the *order*
+  /// of the pool observable rather than only its size.
+  @visibleForTesting
+  int get flourishCycleIndex => _flourishCycleIndex;
+
+  /// The pool member this cycle plays, or `null` when the layer is off.
+  @visibleForTesting
+  PetIdleFlourishSpec? get currentIdleFlourish => _currentFlourish;
+
+  List<PetIdleFlourishSpec> get _idleFlourishPool {
+    if (!_growth.hasIdleFlourish) return const <PetIdleFlourishSpec>[];
+    return PetIdleBehaviorSpec.of(_growth.idlePersonality).pool;
+  }
+
+  PetIdleFlourishSpec? get _currentFlourish {
+    final pool = _idleFlourishPool;
+    if (pool.isEmpty) return null;
+    return pool[_flourishCycleIndex % pool.length];
+  }
+
+  /// The flourish window's `0 -> 1 -> 0` envelope, or `0.0` outside the window.
+  ///
+  /// `sin` gives a smooth out-and-back with no velocity discontinuity at either
+  /// end, so no flourish ever snaps. Computed rather than tweened so the whole
+  /// flourish is a pure function of the cycle position and can be tested without
+  /// pumping a widget tree.
+  double get _flourishWindowEase {
+    if (_currentFlourish == null) return 0.0;
     final value = _flourishController.value;
     const start = PetMotionSpec.idleFlourishWindowStart;
     if (value <= start) return 0.0;
     final t = (value - start) / (1.0 - start);
     if (t <= 0.0 || t >= 1.0) return 0.0;
-    // sin gives a smooth 0 -> 1 -> 0 out-and-back with no velocity discontinuity
-    // at either end, so the look never snaps.
-    final eased = math.sin(math.pi * t);
-    return eased * PetMotionSpec.idleFlourishLookDegrees * math.pi / 180;
+    return math.sin(math.pi * t);
+  }
+
+  double get _flourishLookRadians {
+    final spec = _currentFlourish;
+    if (spec == null) return 0.0;
+    return _flourishWindowEase * spec.headYawDegrees * math.pi / 180;
+  }
+
+  double get _flourishTailRadians {
+    final spec = _currentFlourish;
+    if (spec == null) return 0.0;
+    return _flourishWindowEase * spec.tailWagDegrees * math.pi / 180;
+  }
+
+  double get _flourishLiftPx {
+    final spec = _currentFlourish;
+    if (spec == null) return 0.0;
+    return _flourishWindowEase * spec.bodyLiftPx;
   }
 
   // Continuous loop controllers
@@ -253,9 +314,18 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   bool _reduceMotion = false;
 
   // Growth-gated idle flourish. A slow, repeating cycle whose final window
-  // carries a look-around. Driven by an AnimationController rather than a timer
-  // so the ambient timer contract is untouched and nothing can leak.
+  // carries one behaviour from the stage's pool. Driven by an AnimationController
+  // rather than a timer so the ambient timer contract is untouched and nothing
+  // can leak.
   late AnimationController _flourishController;
+
+  /// Which member of the stage's pool this cycle plays.
+  ///
+  /// Advanced by observing the existing flourish controller wrap (see
+  /// [_onFlourishTick]), so walking the pool costs no timer and no second
+  /// controller — the ambient scheduler contract is untouched.
+  int _flourishCycleIndex = 0;
+  double _lastFlourishValue = 0.0;
 
   // Focus work cycle. V4.1 `designs/motion/11F_Focus_Work.png` gives Focus Work
   // a 4–6 s loop with keyframes 开始 / 工作 / 微动 / 循环; this controller's
@@ -820,6 +890,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       vsync: this,
       duration: _flourishCycleDuration,
     );
+    _flourishController.addListener(_onFlourishTick);
 
     _workCycleController = AnimationController(
       vsync: this,
@@ -875,6 +946,23 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     } else {
       _flourishController.value = 0.0;
     }
+  }
+
+  /// Walks the stage's flourish pool by one member per completed cycle.
+  ///
+  /// A wrap — the controller's value going backwards — is the only moment a new
+  /// cycle begins. It is *not* the only moment the value goes backwards, though:
+  /// the layer is reset to zero whenever the state changes or Reduced Motion
+  /// turns on. `isAnimating` is what separates the two, because every reset path
+  /// stops the controller first. Without that guard, entering a focus session
+  /// would silently advance the pool and the stage's behaviours would play out
+  /// of order.
+  void _onFlourishTick() {
+    final value = _flourishController.value;
+    if (_flourishController.isAnimating && value < _lastFlourishValue) {
+      _flourishCycleIndex++;
+    }
+    _lastFlourishValue = value;
   }
 
   @override
@@ -1088,7 +1176,13 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     // Strictly additive: it only ever runs *on top of* the fixed micro layer,
     // and only at stages that have developed it. A stage without it is not
     // missing a channel — it simply has the fixed layer and nothing more.
-    if (ambient && _growth.hasIdleFlourish) {
+    //
+    // The gate is the pool rather than the boolean. The pool *is* the stage's
+    // list of behaviours, and `hasIdleFlourish: false` is the same statement in
+    // boolean form — `pet_idle_behavior_test` pins the two together, so reading
+    // either one makes the same decision. Reading the pool keeps "what plays"
+    // and "whether it plays" in one place instead of two that can drift.
+    if (ambient && _idleFlourishPool.isNotEmpty) {
       if (!_flourishController.isAnimating) {
         _flourishController.repeat();
       }
@@ -1392,6 +1486,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     _craftController.dispose();
     _greetingController.removeStatusListener(_onGreetingStatusChanged);
     _greetingController.dispose();
+    _flourishController.removeListener(_onFlourishTick);
     _flourishController.dispose();
     _workCycleController.dispose();
     _focusActivity.dispose();
@@ -1441,16 +1536,20 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         extraHeadTerm;
   }
 
-  /// The flourish's ear lead, in radians.
+  /// The flourish's ear contribution, in radians.
   ///
-  /// The ears lead the head through the look, which is what makes it read as
-  /// *noticing* something rather than as slow drift.
+  /// Read straight off the envelope rather than derived as a ratio of the head
+  /// term. An [PetIdleFlourishKind.earPerk] has no head term at all, so a
+  /// ratio-based derivation would have silenced the one behaviour that is
+  /// *only* ears.
+  ///
+  /// For [PetIdleFlourishKind.lookAround] this is arithmetically the same as the
+  /// ratio it replaced (`ease x 3.0 x 1.4/3.0` versus `ease x 1.4`), so the
+  /// original look-around is unchanged apart from floating-point rounding.
   double get _flourishEarLeadRadians {
-    final look = _flourishLookRadians;
-    if (look == 0.0) return 0.0;
-    return look *
-        (PetMotionSpec.idleFlourishEarLeadDegrees /
-            PetMotionSpec.idleFlourishLookDegrees);
+    final spec = _currentFlourish;
+    if (spec == null) return 0.0;
+    return _flourishWindowEase * spec.earLeadDegrees * math.pi / 180;
   }
 
   /// Single authoritative composition of the current motion frame.
@@ -1587,11 +1686,22 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
 
     // --- Growth-gated flourish -------------------------------------------
     // Applied after the per-state switch so it is purely additive: it offsets
-    // the ears and (via [_headRotationFor]) the head on top of whatever the
-    // state already does, and never rewrites a state's own channel. A stage
-    // without the flourish leaves every channel exactly as it was.
+    // the ears, the tail and (via [_headRotationFor]) the head on top of
+    // whatever the state already does, and never rewrites a state's own
+    // channel. A stage with an empty pool leaves every channel exactly as it
+    // was.
     if (!reduceMotion) {
       earRotation += _flourishEarLeadRadians;
+      tailRotation += _flourishTailRadians;
+      // The body-lift term is idle-only. Head, ear and tail are additive by
+      // design — that is what lets a flourish ride along inside a focus session
+      // without disturbing the work loop. The body is different: every other
+      // state already owns its own body ambience (breathe, focus sway, craft
+      // beat), and lifting the body underneath those would fight them rather
+      // than layer onto them.
+      if (state == PetVisualState.idle) {
+        dy += _flourishLiftPx;
+      }
     }
 
     // --- Focus work beats (V4.1 `designs/motion/11F_Focus_Work.png`) ------

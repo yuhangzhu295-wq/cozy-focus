@@ -24,8 +24,12 @@ import 'growth_stage.dart';
 /// 1. **Proportion** — [maturityScale] nudges the rendered body size.
 /// 2. **Amplitude and cadence** — [partMotionFactor], [blinkIntervalScale] and
 ///    [earTwitchIntervalScale] retune the fixed layer without removing it.
-/// 3. **Extra flourishes** — [hasIdleFlourish] adds a *new* behaviour on top of
-///    the fixed layer. The base layer is untouched.
+/// 3. **Extra behaviours** — [hasIdleFlourish] unlocks the stage's idle
+///    behaviour pool, which adds *new* behaviours on top of the fixed layer.
+///    Pools only gain members as the stage advances, and each stage's pool opens
+///    with a behaviour the previous stage did not have, so the difference
+///    between two stages is behavioural rather than merely faster. The base
+///    layer is untouched.
 class GrowthStageSpec {
   final GrowthStage stage;
 
@@ -61,6 +65,12 @@ class GrowthStageSpec {
   /// `false` at the youngest stage means "the fixed micro layer, and nothing
   /// more" — not "fewer channels". Stages that set it gain an additional,
   /// occasional behaviour that the younger stage simply does not have yet.
+  ///
+  /// This is the boolean form of "the stage's idle behaviour pool is empty":
+  /// [idlePersonality] selects the pool and this field says whether any of it
+  /// has been unlocked. `pet_idle_behavior_test` asserts the two agree for every
+  /// row, so a retune cannot leave a stage claiming a flourish it has no
+  /// behaviour for, or hiding one it has.
   final bool hasIdleFlourish;
 
   /// Multiplier on the scheduled flourish interval. `< 1` means flourishes come
@@ -68,6 +78,14 @@ class GrowthStageSpec {
   final double flourishIntervalScale;
 
   /// How lively the idle layer reads.
+  ///
+  /// Selects the additive idle behaviour pool (`PetIdleBehaviorSpec` in
+  /// `lib/presentation/companion/pet_idle_behavior.dart`). This is the field
+  /// that makes a `growing` Mochi and a `blooming` Mochi *do* different things,
+  /// rather than do the same thing at different rates: cadence alone
+  /// ([flourishIntervalScale]) cannot express a stage difference, because two
+  /// stages that differ only in how often they repeat one behaviour still read
+  /// as the same animal.
   final GrowthIdlePersonality idlePersonality;
 
   const GrowthStageSpec({

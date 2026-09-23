@@ -20,11 +20,17 @@ class PetRoomPresence {
   /// `isOnSeat` flag: two sources for one fact is how they end up disagreeing.
   final String? seatItemId;
 
-  /// Normalised centre of Mochi's feet, `0.0 … 1.0` on each axis.
+  /// The anchor Mochi is placed at, `0.0 … 1.0` on each axis.
   ///
   /// Same coordinate space as [RoomItem.positionX] / [RoomItem.positionY], so
   /// the room canvas can position Mochi with the arithmetic it already uses for
   /// furniture.
+  ///
+  /// On a seat this is the **item's own anchor**, which the canvas treats as the
+  /// item's centre — not the surface Mochi's feet rest on. Converting it into a
+  /// feet position is [PetSeatPlacement]'s job, because it needs the item's
+  /// rendered size and the avatar's own geometry. On the floor it is already
+  /// the standing point.
   final double x;
   final double y;
 
@@ -91,6 +97,42 @@ abstract final class PetRoomPresenceResolver {
   static const double floorX = 0.5;
   static const double floorY = 0.70;
 
+  /// Where each seat's *sitting surface* is, as a fraction of the sprite's
+  /// height measured from its top. **Presentation-only choice.**
+  ///
+  /// Read off `CozyFurnitureArtwork`'s own painter, which works in a 100-unit
+  /// space so its coordinates are already percentages:
+  ///
+  /// * `_sofa`'s cream seat cushions are `Rect.fromLTWH(25, 48, 24, 21)` →
+  ///   `y = 48`;
+  /// * `_bed`'s cream mattress is `Rect.fromLTWH(21, 42, 58, 26)` → `y = 42`.
+  ///
+  /// They matter because the canvas positions furniture by its **centre**
+  /// (`_PlacedItemWidget` offsets by `renderedSize / 2`), so a pet anchored to
+  /// the item's position would sink `(0.5 - 0.42) = 8 %` of the sprite into a
+  /// bed.
+  ///
+  /// Seats with no sitting line are absent and fall back to
+  /// [defaultSeatSurfaceFraction]: a rug is flat on the floor, so Mochi simply
+  /// stands in the middle of it.
+  ///
+  /// `room_seat_geometry_test` re-reads those two `Rect`s from the painter and
+  /// fails if these numbers stop matching, so re-drawing a sofa cannot silently
+  /// leave Mochi floating above it.
+  static const Map<String, double> seatSurfaceFractions = {
+    'sofa': 0.48,
+    'bed': 0.42,
+  };
+
+  /// The sitting surface assumed for a seat with no line of its own: the
+  /// sprite's vertical centre, which is also where the item is anchored.
+  static const double defaultSeatSurfaceFraction = 0.5;
+
+  /// The sitting surface for [itemId]. Never null — see
+  /// [defaultSeatSurfaceFraction].
+  static double seatSurfaceFraction(String itemId) =>
+      seatSurfaceFractions[itemId.toLowerCase()] ?? defaultSeatSurfaceFraction;
+
   /// Resolves where Mochi is.
   ///
   /// A seat must satisfy **all** of:
@@ -148,4 +190,52 @@ abstract final class PetRoomPresenceResolver {
       y: seat.positionY,
     );
   }
+}
+
+/// Turns a resolved seat into the pixel geometry of the avatar's box.
+///
+/// Two corrections stack here, and both err in the same direction — the pet
+/// ends up **floating** — which is why this is a pure function with a test
+/// rather than inline arithmetic in the room page:
+///
+/// 1. **Furniture is positioned by its centre.** The canvas draws an item at
+///    `positionY - renderedSize / 2`, so [PetRoomPresence.y] is the middle of
+///    the sprite. The surface Mochi sits on is above that by
+///    `0.5 - seatSurfaceFraction` of the item's rendered height — 1.2 px on a
+///    scale-1 sofa, 4.8 px on a scale-1 bed.
+/// 2. **The avatar's box is square and the character is centred inside it**, so
+///    the box's bottom edge sits
+///    [MochiLayerAssets.feetInsetFraction] of the box *below* the paws. On the
+///    room's 92 pt avatar that is 15.8 pt, and it dominates: anchoring the box
+///    by its bottom edge — which is what "put the pet on the sofa" naturally
+///    reads as — leaves Mochi hovering about 15 pt above the cushions.
+///
+/// Both were measured rather than assumed; see the constants' own docs.
+abstract final class PetSeatPlacement {
+  const PetSeatPlacement._();
+
+  /// The canvas y the character's feet must land on.
+  ///
+  /// [seatAnchorY] is the seat item's own `positionY` in canvas pixels and
+  /// [seatRenderedSize] its rendered height. On the floor there is no seat:
+  /// pass `0` for the size and the anchor is returned unchanged, which is what
+  /// the floor point already means.
+  static double feetY({
+    required double seatAnchorY,
+    required double seatRenderedSize,
+    required double seatSurfaceFraction,
+  }) =>
+      seatAnchorY -
+      seatRenderedSize *
+          (PetRoomPresenceResolver.defaultSeatSurfaceFraction -
+              seatSurfaceFraction);
+
+  /// The `Positioned.top` for an avatar of [avatarSize] whose feet are at
+  /// [feetY].
+  static double boxTop({
+    required double feetY,
+    required double avatarSize,
+    required double feetInsetFraction,
+  }) =>
+      feetY - avatarSize * (1 - feetInsetFraction);
 }
