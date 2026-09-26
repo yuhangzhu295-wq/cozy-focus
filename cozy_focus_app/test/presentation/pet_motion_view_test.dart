@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rive/rive.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_idle_fallback_view.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_motion_view.dart';
 import 'package:cozy_focus_app/presentation/animations/rive_pet_adapter.dart';
 import 'package:cozy_focus_app/presentation/controllers/pet_motion_controller.dart';
 import 'package:cozy_focus_app/presentation/widgets/pet_avatar_widget.dart';
+import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 
 /// Test double implementing IPetMotionScheduler with predictable intervals.
 class FakeDeterministicScheduler implements IPetMotionScheduler {
@@ -37,7 +37,8 @@ class CrashingRiveRenderer implements IPetRiveRenderer {
     required double width,
     required double height,
     required BoxFit fit,
-    void Function(Artboard)? onInit,
+    double? focusProgress,
+    double? craftProgress,
     Widget? fallback,
   }) {
     if (simulateCrashOrMissing && fallback != null) {
@@ -48,6 +49,28 @@ class CrashingRiveRenderer implements IPetRiveRenderer {
       height: height,
       child: const Center(child: Text('Simulated Rive Placeholder')),
     );
+  }
+}
+
+class CapturingRiveRenderer implements IPetRiveRenderer {
+  PetVisualState? visualState;
+  double? focusProgress;
+  double? craftProgress;
+
+  @override
+  Widget buildRiveWidget({
+    required PetVisualState visualState,
+    required double width,
+    required double height,
+    required BoxFit fit,
+    double? focusProgress,
+    double? craftProgress,
+    Widget? fallback,
+  }) {
+    this.visualState = visualState;
+    this.focusProgress = focusProgress;
+    this.craftProgress = craftProgress;
+    return SizedBox(width: width, height: height);
   }
 }
 
@@ -73,6 +96,25 @@ void main() {
       expect(find.byType(PetIdleFallbackView), findsOneWidget);
 
       await tester.pump(const Duration(milliseconds: 500));
+    });
+
+    testWidgets(
+        '1a. Android V1 fallback renders Mochi as a dog on a cushion, not a generic avatar',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: PetAvatarWidget(visualState: PetVisualState.idle),
+          ),
+        ),
+      );
+
+      // Mochi is the approved V4.1 art, composed from independent layers.
+      expect(find.byType(MochiLayeredRenderer), findsOneWidget);
+      for (final key in MochiLayerKeys.all) {
+        expect(find.byKey(key), findsOneWidget, reason: 'missing layer $key');
+      }
+      expect(find.byKey(MochiLayerKeys.headGroup), findsOneWidget);
     });
 
     testWidgets(
@@ -392,15 +434,16 @@ void main() {
       expect(controller.isMotionActive, isTrue);
       expect(controller.activeTimerCount, equals(2));
 
-      // Transition to non-idle via controller
+      // Transition to focus. Focus is a long-lived ambient state, so the V4.1
+      // "Micro" layer (blink / ear twitch / tail wag) keeps scheduling.
       controller.updateState(PetVisualState.focus);
       await tester.pump();
 
       expect(controller.isIdle, isFalse);
-      expect(controller.isMotionActive, isFalse);
-      expect(controller.activeTimerCount, equals(0));
+      expect(controller.isMotionActive, isTrue);
+      expect(controller.activeTimerCount, equals(2));
 
-      // Transition to sleep
+      // Transition to sleep: not an ambient state, so scheduling stops.
       controller.updateState(PetVisualState.sleep);
       await tester.pump();
       expect(controller.isMotionActive, isFalse);
@@ -571,7 +614,7 @@ void main() {
       expect(find.text('Mochi \u4e13\u6ce8\u4e2d'), findsOneWidget);
       expect(find.text('Mochi \u966a\u4f34\u4e2d'), findsNothing);
       expect(controller.isIdle, isFalse);
-      expect(controller.isMotionActive, isFalse);
+      expect(controller.isMotionActive, isTrue);
 
       // Record transforms at t=0 in focus
       final focusT0 = tester
@@ -766,10 +809,18 @@ void main() {
         find.byType(PetIdleFallbackView),
       );
 
-      // Verify idle continuous loops and timers are strictly stopped
+      // Body ambience (breathe / sway) belongs to idle; focus drives the body
+      // through its own controller.
       expect(fallbackState.breatheController.isAnimating, isFalse);
       expect(fallbackState.swayController.isAnimating, isFalse);
-      expect(fallbackState.tailController.isAnimating, isFalse);
+
+      // The V4.1 "Micro" layer stays engaged beneath every ambient base state,
+      // so a whole focus session never shows a frozen companion. Tail wag and
+      // the delayed head channel are continuous; blink and ear twitch are
+      // discrete one-shots fired by the scheduler, so they are not animating at
+      // this instant.
+      expect(fallbackState.tailController.isAnimating, isTrue);
+      expect(fallbackState.headController.isAnimating, isTrue);
       expect(fallbackState.blinkController.isAnimating, isFalse);
       expect(fallbackState.earTwitchController.isAnimating, isFalse);
 
@@ -820,10 +871,12 @@ void main() {
         find.byType(PetIdleFallbackView),
       );
 
-      // Idle loops stopped
+      // Body ambience stopped; the ambient micro layer keeps the tail and head
+      // moving while the pet rests.
       expect(fallbackState.breatheController.isAnimating, isFalse);
       expect(fallbackState.swayController.isAnimating, isFalse);
-      expect(fallbackState.tailController.isAnimating, isFalse);
+      expect(fallbackState.tailController.isAnimating, isTrue);
+      expect(fallbackState.headController.isAnimating, isTrue);
       expect(fallbackState.blinkController.isAnimating, isFalse);
       expect(fallbackState.earTwitchController.isAnimating, isFalse);
 
@@ -1374,6 +1427,72 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
       controller.dispose();
+    });
+
+    testWidgets(
+        '27. Renderer-neutral progress inputs remain nullable and clamp at the rendering boundary',
+        (tester) async {
+      final renderer = CapturingRiveRenderer();
+      final cases = <(
+        PetVisualState state,
+        double? focus,
+        double? craft,
+        double? expectedFocus,
+        double? expectedCraft
+      )>[
+        (PetVisualState.idle, null, null, null, null),
+        (PetVisualState.focus, -0.25, 0.0, 0.0, 0.0),
+        (PetVisualState.focus, 0.5, 0.5, 0.5, 0.5),
+        (PetVisualState.craft, 1.0, 1.25, 1.0, 1.0),
+      ];
+
+      for (final entry in cases) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: PetAvatarWidget(
+                visualState: entry.$1,
+                focusProgress: entry.$2,
+                craftProgress: entry.$3,
+                enableRive: true,
+                riveRenderer: renderer,
+              ),
+            ),
+          ),
+        );
+
+        expect(renderer.visualState, entry.$1);
+        expect(renderer.focusProgress, entry.$4);
+        expect(renderer.craftProgress, entry.$5);
+      }
+    });
+
+    testWidgets(
+        '28. Reduced-motion fallback accepts progress without creating Rive work or business callbacks',
+        (tester) async {
+      await tester.pumpWidget(
+        const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Scaffold(
+              body: PetMotionView(
+                visualState: PetVisualState.craft,
+                focusProgress: 0.5,
+                craftProgress: 0.5,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(PetIdleFallbackView), findsOneWidget);
+      final fallback = tester.widget<PetIdleFallbackView>(
+        find.byType(PetIdleFallbackView),
+      );
+      expect(fallback.focusProgress, 0.5);
+      expect(fallback.craftProgress, 0.5);
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
     });
   });
 }

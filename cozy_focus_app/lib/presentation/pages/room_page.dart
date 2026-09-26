@@ -2,9 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/craft_models.dart';
+import '../../domain/models/enums.dart';
+import '../companion/companion_avatar.dart';
+import '../companion/mochi_layered_renderer.dart';
+import '../companion/room_presence.dart';
 import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
 import '../../core/geometry/room_geometry.dart';
+import '../widgets/cozy_furniture_artwork.dart';
+import '../widgets/growth_sub_nav.dart';
+
+/// Rendered size of a placed furniture sprite at `scale == 1`.
+///
+/// Shared by [_PlacedItemWidget], which draws an item at this size, and
+/// `_buildMochi`, which needs it to find the item's sitting surface — one fact,
+/// one place, so the two cannot drift apart.
+const double _kFurnitureItemSize = 60.0;
 
 /// Screen 09: Room Decoration Page (房间装饰).
 ///
@@ -69,6 +82,7 @@ class _RoomPageState extends ConsumerState<RoomPage> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                const GrowthSubNav(active: GrowthSection.room),
                 // Room canvas — fills available space; LayoutBuilder provides
                 // real canvas dimensions for normalised coordinate mapping.
                 Expanded(
@@ -107,6 +121,11 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                               },
                             );
                           }),
+                          // Mochi itself, standing where the real placement
+                          // truth says it should. Drawn above the furniture so
+                          // it is visibly *on* its seat, and below the toolbar
+                          // so the delete affordance stays reachable.
+                          _buildMochi(craft, canvasWidth, canvasHeight),
                           if (_selectedRoomItemId != null)
                             Positioned(
                               top: 12,
@@ -127,8 +146,10 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Text('🏠',
-                                      style: TextStyle(fontSize: 56)),
+                                  const CozyFurnitureArtwork(
+                                    itemId: 'room',
+                                    size: 86,
+                                  ),
                                   const SizedBox(height: 12),
                                   const Text(
                                     '房间空空的，先去制作些家具吧',
@@ -208,6 +229,82 @@ class _RoomPageState extends ConsumerState<RoomPage> {
               ],
             ),
     );
+  }
+
+  /// Places Mochi in the room, on a seat resolved from real data.
+  ///
+  /// The seat is not a decoration: [PetRoomPresenceResolver] reads the same
+  /// `room_items` rows the canvas draws and the same `inventory` rows the
+  /// placement panel counts, and only reports a seat when the item is both
+  /// **owned** and **placed**. When nothing qualifies Mochi stands on the floor,
+  /// so an empty room still shows Mochi in it.
+  ///
+  /// Two deliberate choices:
+  ///
+  /// * The avatar is behind an [IgnorePointer]. Mochi sits *on* furniture, so it
+  ///   necessarily overlaps the one item the user may want to tap to move or
+  ///   delete. Letting Mochi swallow that tap would make the seat it is sitting
+  ///   on impossible to select — a worse bug than a pet that does not respond
+  ///   while you are decorating. This is the same structural reasoning that puts
+  ///   the speech bubble behind an `IgnorePointer` on the focus screen.
+  /// * The state is pinned to [PetVisualState.idle]. The room is where Mochi
+  ///   rests; the craft presentation belongs to the screens that show the job.
+  ///   V4.1's room reference (`09_房间.png`) shows Mochi lying down reading, not
+  ///   hammering, which is what `idle` is for.
+  Widget _buildMochi(
+      CraftState craft, double canvasWidth, double canvasHeight) {
+    final presence = PetRoomPresenceResolver.resolve(
+      placed: craft.roomItems,
+      owned: craft.inventory,
+    );
+
+    const size = 92.0;
+
+    // The resolved point is the *seat item's anchor*, which the canvas treats as
+    // the item's centre — not the surface Mochi's feet rest on. Two measured
+    // corrections turn it into a feet position; see [PetSeatPlacement].
+    final seat = _seatItemFor(craft, presence.seatItemId);
+    final feetY = PetSeatPlacement.feetY(
+      seatAnchorY: presence.y * canvasHeight,
+      seatRenderedSize: seat == null ? 0.0 : _kFurnitureItemSize * seat.scale,
+      seatSurfaceFraction: seat == null
+          ? PetRoomPresenceResolver.defaultSeatSurfaceFraction
+          : PetRoomPresenceResolver.seatSurfaceFraction(seat.itemId),
+    );
+
+    return Positioned(
+      left: presence.x * canvasWidth - size / 2,
+      // The avatar's box is square and the character is centred inside it, so
+      // the box's bottom edge is *below* the paws. Anchoring by that edge is
+      // what "put the pet on the sofa" naturally reads as, and it leaves Mochi
+      // hovering ~15 pt above the cushions.
+      top: PetSeatPlacement.boxTop(
+        feetY: feetY,
+        avatarSize: size,
+        feetInsetFraction: MochiLayerAssets.feetInsetFraction,
+      ),
+      child: const IgnorePointer(
+        child: CompanionAvatar(
+          size: size,
+          visualStateOverride: PetVisualState.idle,
+          showStateBadge: false,
+        ),
+      ),
+    );
+  }
+
+  /// The placed row [seatItemId] came from, or `null` when Mochi is on the
+  /// floor.
+  ///
+  /// [PetRoomPresenceResolver] deliberately returns only the id, so the one
+  /// thing the geometry still needs — the item's `scale` — is looked up here
+  /// rather than duplicated into [PetRoomPresence].
+  static RoomItem? _seatItemFor(CraftState craft, String? seatItemId) {
+    if (seatItemId == null) return null;
+    for (final item in craft.roomItems) {
+      if (item.itemId == seatItemId) return item;
+    }
+    return null;
   }
 
   Widget _buildRoomBackground() {
@@ -313,8 +410,6 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
   double _dxOffset = 0;
   double _dyOffset = 0;
 
-  static const double _itemSize = 60.0;
-
   @override
   void didUpdateWidget(_PlacedItemWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -332,7 +427,7 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
     final baseLeft = widget.roomItem.positionX * widget.canvasWidth;
     final baseTop = widget.roomItem.positionY * widget.canvasHeight;
     // Clamp the transient drag centre so the item stays inside canvas visually.
-    final renderedSize = _itemSize * widget.roomItem.scale;
+    final renderedSize = _kFurnitureItemSize * widget.roomItem.scale;
     final clampedDrag = clampNormalizedPosition(
       rawX: (baseLeft + _dxOffset) / widget.canvasWidth,
       rawY: (baseTop + _dyOffset) / widget.canvasHeight,
@@ -509,7 +604,6 @@ class _InventoryPanel extends StatelessWidget {
               final recipe = craft.recipes
                   .where((r) => r.outputItemId == inv.itemId)
                   .firstOrNull;
-              final icon = recipe?.icon ?? '□';
               final name = recipe?.name ?? inv.itemId;
               return GestureDetector(
                 onTap: () => recipe != null ? onPlace(recipe) : null,
@@ -529,13 +623,19 @@ class _InventoryPanel extends StatelessWidget {
                           width: 44,
                           height: 44,
                           child: recipe?.artworkPath == null
-                              ? Text(icon,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 28))
-                              : Image.asset(recipe!.artworkPath!,
+                              ? CozyFurnitureArtwork(
+                                  itemId: inv.itemId,
+                                  size: 42,
+                                )
+                              : Image.asset(
+                                  recipe!.artworkPath!,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => Text(icon,
-                                      style: const TextStyle(fontSize: 28)))),
+                                  errorBuilder: (_, __, ___) =>
+                                      CozyFurnitureArtwork(
+                                    itemId: inv.itemId,
+                                    size: 42,
+                                  ),
+                                )),
                       const SizedBox(height: 4),
                       Text(
                         name,
@@ -574,6 +674,8 @@ class _RoomArtwork extends StatelessWidget {
     return _fallback();
   }
 
-  Widget _fallback() =>
-      Text(recipe?.icon ?? '□', style: TextStyle(fontSize: size * .62));
+  Widget _fallback() => CozyFurnitureArtwork(
+        itemId: recipe?.outputItemId ?? recipe?.id ?? '',
+        size: size,
+      );
 }

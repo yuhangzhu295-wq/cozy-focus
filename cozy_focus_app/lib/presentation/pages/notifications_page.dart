@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../domain/models/enums.dart';
+import '../companion/companion_avatar.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pet_avatar_widget.dart';
 
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
@@ -106,7 +105,10 @@ class _HeroSection extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          PetAvatarWidget(visualState: PetVisualState.idle, size: 72),
+          CompanionAvatar(
+            size: 72,
+            showStateBadge: false,
+          ),
           SizedBox(width: 16),
           Expanded(
             child: Column(

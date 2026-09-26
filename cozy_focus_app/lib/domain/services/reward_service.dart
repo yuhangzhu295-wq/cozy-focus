@@ -1,3 +1,4 @@
+import '../growth/growth_level_curve.dart';
 import '../models/focus_session.dart';
 import '../models/sync_models.dart';
 import '../models/pet_models.dart';
@@ -74,11 +75,16 @@ class RewardService {
     if (pet != null) {
       final progress = await _petRepo.findPetProgress(pet.id);
       if (progress != null) {
+        final newXp = progress.experiencePoints + xp;
         final updated = PetProgress(
           id: progress.id,
           petId: progress.petId,
-          level: progress.level,
-          experiencePoints: progress.experiencePoints + xp,
+          // Derived from the new XP, not carried through — see the note in
+          // SettlementDao and MOCHI_GROWTH_STAGE0_AUDIT.md §A. The two
+          // settlement paths must agree on this or the stored level depends on
+          // which path ran.
+          level: GrowthLevelCurve.levelForXp(newXp),
+          experiencePoints: newXp,
           totalFocusMinutes: progress.totalFocusMinutes + focusMinutes,
           happinessScore: (progress.happinessScore + 5).clamp(0, 100),
           updatedAt: now,

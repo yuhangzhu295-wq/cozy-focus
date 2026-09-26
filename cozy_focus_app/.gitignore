@@ -5,6 +5,10 @@ build/
 .flutter-plugins-dependencies
 .packages
 
+# Flutter tool state -- machine-local, written by the flutter CLI
+.flutter
+.flutter_tool_state
+
 # Coverage reports
 coverage/
 
@@ -25,6 +29,7 @@ android/.gradle/
 android/captures/
 android/key.properties
 *.jks
+*.keystore
 
 # iOS generated / local config
 ios/Pods/

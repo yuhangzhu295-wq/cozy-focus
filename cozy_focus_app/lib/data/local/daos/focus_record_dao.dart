@@ -11,7 +11,7 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
   FocusRecordDao(super.db);
 
   Future<void> insert(domain.FocusRecord record) async {
-    await into(focusRecords).insertOnConflictUpdate(
+    await into(focusRecords).insert(
       FocusRecordsCompanion(
         id: Value(record.id),
         sessionId: Value(record.sessionId),
@@ -26,6 +26,7 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
         isCountedForReward: Value(record.isCountedForReward),
         note: Value(record.note),
       ),
+      mode: InsertMode.insertOrIgnore,
     );
   }
 

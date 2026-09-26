@@ -1,9 +1,16 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../domain/growth/mochi_growth_profile.dart';
 import '../../domain/models/enums.dart';
+import '../companion/focus_phase.dart';
+import '../companion/pet_craft_activity.dart';
+import '../companion/pet_focus_activity.dart';
+import '../companion/pet_idle_behavior.dart';
 import '../controllers/pet_motion_controller.dart';
+import '../companion/mochi_layered_renderer.dart';
 import '../theme/app_theme.dart';
+import 'pet_interaction_spec.dart';
 import 'pet_motion_spec.dart';
 
 /// Truthful Flutter idle-motion fallback renderer for Mochi.
@@ -26,6 +33,35 @@ class PetIdleFallbackView extends StatefulWidget {
   final PetMotionController? controller;
   final IPetMotionScheduler? scheduler;
   final Widget? accessory;
+  final double? focusProgress;
+  final double? craftProgress;
+  final bool showStateBadge;
+
+  /// The resolved, presentation-only growth profile.
+  ///
+  /// `null` means "no growth data" and resolves to
+  /// [MochiGrowthProfile.initial] — the youngest stage — so a page that has not
+  /// loaded `PetProgress` yet never renders a more grown Mochi than the user
+  /// has actually earned.
+  ///
+  /// The profile modulates the *existing* channels (part-motion amplitude, blink
+  /// and ear-twitch cadence, and a narrow body-scale maturation), plus the
+  /// additive idle flourish. It cannot add business state and cannot be written
+  /// back.
+  final MochiGrowthProfile? growthProfile;
+
+  /// The long-arc focus phase, or `null` when no session is running.
+  ///
+  /// Derived by the caller from the real `focusProgress`; see
+  /// [FocusPhaseResolver]. It selects *which work beats happen* during a focus
+  /// session and nothing else.
+  final FocusPhase? focusPhase;
+
+  /// The real `categoryId` of the focus task.
+  ///
+  /// Used only to pick a work flavour (see [PetWorkFlavourResolver]). It is read,
+  /// never written: statistics, rewards and session semantics are untouched.
+  final String? focusCategoryId;
 
   const PetIdleFallbackView({
     super.key,
@@ -34,6 +70,12 @@ class PetIdleFallbackView extends StatefulWidget {
     this.controller,
     this.scheduler,
     this.accessory,
+    this.focusProgress,
+    this.craftProgress,
+    this.showStateBadge = true,
+    this.growthProfile,
+    this.focusPhase,
+    this.focusCategoryId,
   });
 
   @override
@@ -46,6 +88,157 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   PetMotionController get _effectiveController =>
       widget.controller ?? _internalController!;
 
+  /// The growth profile in force for this frame. Never `null`.
+  MochiGrowthProfile get _growth =>
+      widget.growthProfile ?? MochiGrowthProfile.initial;
+
+  /// The body-proportion maturation factor, exposed so tests can prove the
+  /// rendered size actually follows the growth stage.
+  @visibleForTesting
+  double get growthMaturityScale => _growth.maturityScale;
+
+  /// Whether the growth stage adds the idle flourish layer.
+  @visibleForTesting
+  bool get growthHasIdleFlourish => _growth.hasIdleFlourish;
+
+  /// The part-motion amplitude multiplier contributed by growth alone.
+  @visibleForTesting
+  double get growthPartMotionFactor => _growth.partMotionFactor;
+
+  /// The growth-scaled flourish cycle length.
+  Duration get _flourishCycleDuration {
+    final base = PetMotionSpec.idleFlourishCycle.inMilliseconds;
+    final scaled = (base * _growth.flourishIntervalScale).round();
+    return Duration(
+      milliseconds: scaled.clamp(
+        PetMotionSpec.idleFlourishMinCycle.inMilliseconds,
+        PetMotionSpec.idleFlourishMaxCycle.inMilliseconds,
+      ),
+    );
+  }
+
+  @visibleForTesting
+  AnimationController get flourishController => _flourishController;
+
+  @visibleForTesting
+  AnimationController get workCycleController => _workCycleController;
+
+  /// The focus activity layer, for tests that assert beat transitions.
+  @visibleForTesting
+  PetFocusActivityController get focusActivity => _focusActivity;
+
+  /// The beat Mochi is performing right now.
+  @visibleForTesting
+  PetFocusActivity get currentFocusActivity => _focusActivity.activity;
+
+  /// The amplitude multiplier the current beat contributes.
+  @visibleForTesting
+  double get focusActivityAmplitude => _focusActivity.visual.amplitudeScale;
+
+  /// The craft activity layer, for tests that assert beat transitions.
+  @visibleForTesting
+  PetCraftActivityController get craftActivity => _craftActivity;
+
+  /// The craft beat Mochi is performing right now.
+  @visibleForTesting
+  PetCraftActivity get currentCraftActivity => _craftActivity.activity;
+
+  /// The amplitude multiplier the current craft beat contributes.
+  @visibleForTesting
+  double get craftActivityAmplitude => _craftActivity.visual.amplitudeScale;
+
+  /// The vertical offset the current craft beat contributes, in logical pixels.
+  @visibleForTesting
+  double get craftActivityDy => _craftActivity.visual.dyOffset;
+
+  /// The head contribution the current craft beat makes, in degrees.
+  @visibleForTesting
+  double get craftActivityHeadDegrees => _craftActivity.visual.headDegrees;
+
+  /// The flourish's current head contribution, in radians. Zero outside the
+  /// flourish window and at stages whose pool is empty.
+  @visibleForTesting
+  double get flourishLookValue => _flourishLookRadians;
+
+  /// The flourish's current ear contribution, in radians.
+  ///
+  /// Separate from [flourishLookValue] because the two are independent: an
+  /// [PetIdleFlourishKind.earPerk] moves the ears and leaves the head alone.
+  @visibleForTesting
+  double get flourishEarValue => _flourishEarLeadRadians;
+
+  /// The flourish's current tail contribution, in radians.
+  @visibleForTesting
+  double get flourishTailValue => _flourishTailRadians;
+
+  /// The flourish's current body lift, in logical pixels.
+  @visibleForTesting
+  double get flourishLiftValue => _flourishLiftPx;
+
+  /// The pool of flourishes this stage has learned, in play order.
+  ///
+  /// Empty at the youngest stage. `hasIdleFlourish: false` and an empty pool are
+  /// two spellings of the same fact, and `pet_idle_behavior_test` pins them
+  /// together so the boolean and the pool can never drift apart.
+  @visibleForTesting
+  List<PetIdleFlourishSpec> get idleFlourishPool => _idleFlourishPool;
+
+  /// How many full flourish cycles have completed since this view mounted.
+  ///
+  /// The pool is walked one member per cycle, so this is what makes the *order*
+  /// of the pool observable rather than only its size.
+  @visibleForTesting
+  int get flourishCycleIndex => _flourishCycleIndex;
+
+  /// The pool member this cycle plays, or `null` when the layer is off.
+  @visibleForTesting
+  PetIdleFlourishSpec? get currentIdleFlourish => _currentFlourish;
+
+  List<PetIdleFlourishSpec> get _idleFlourishPool {
+    if (!_growth.hasIdleFlourish) return const <PetIdleFlourishSpec>[];
+    return PetIdleBehaviorSpec.of(_growth.idlePersonality).pool;
+  }
+
+  PetIdleFlourishSpec? get _currentFlourish {
+    final pool = _idleFlourishPool;
+    if (pool.isEmpty) return null;
+    return pool[_flourishCycleIndex % pool.length];
+  }
+
+  /// The flourish window's `0 -> 1 -> 0` envelope, or `0.0` outside the window.
+  ///
+  /// `sin` gives a smooth out-and-back with no velocity discontinuity at either
+  /// end, so no flourish ever snaps. Computed rather than tweened so the whole
+  /// flourish is a pure function of the cycle position and can be tested without
+  /// pumping a widget tree.
+  double get _flourishWindowEase {
+    if (_currentFlourish == null) return 0.0;
+    final value = _flourishController.value;
+    const start = PetMotionSpec.idleFlourishWindowStart;
+    if (value <= start) return 0.0;
+    final t = (value - start) / (1.0 - start);
+    if (t <= 0.0 || t >= 1.0) return 0.0;
+    return math.sin(math.pi * t);
+  }
+
+  double get _flourishLookRadians {
+    final spec = _currentFlourish;
+    if (spec == null) return 0.0;
+    return _flourishWindowEase * spec.headYawDegrees * math.pi / 180;
+  }
+
+  double get _flourishTailRadians {
+    final spec = _currentFlourish;
+    if (spec == null) return 0.0;
+    return _flourishWindowEase * spec.tailWagDegrees * math.pi / 180;
+  }
+
+  double get _flourishLiftPx {
+    final spec = _currentFlourish;
+    if (spec == null) return 0.0;
+    return _flourishWindowEase * spec.bodyLiftPx;
+  }
+
   // Continuous loop controllers
   late AnimationController _breatheController;
   late Animation<double> _breatheScaleAnimation;
@@ -56,6 +249,12 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
 
   late AnimationController _tailController;
   late Animation<double> _tailAnimation;
+
+  // Delayed head response channel: the head counter-rotates against the body
+  // sway and carries its own longer oscillation, so it drifts in and out of
+  // phase with the body instead of moving rigidly with it.
+  late AnimationController _headController;
+  late Animation<double> _headAnimation;
 
   // One-shot controllers
   late AnimationController _blinkController;
@@ -94,17 +293,65 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   late Animation<double> _greetingBounceDyAnimation;
   late Animation<double> _greetingTiltAngleAnimation;
 
-  // Phase 6D: one-shot idle interact motion.
+  // Phase 6D / STAGE 4: the one-shot interaction overlay.
+  //
+  // Built from two *unit* shapes rather than six amplitude-baked tweens: a rise
+  // (`0 → 1 → 1 → 0`) and a swing (`0 → 1 → −1 → 0`). The amplitudes are per base
+  // state (see [PetInteractionSpec.table]) and are applied per channel in
+  // [_frameFor], so a state change mid-response retargets the motion on the next
+  // frame instead of needing any controller rebuilt.
   late AnimationController _interactController;
-  late Animation<double> _interactDyAnimation;
-  late Animation<double> _interactScaleAnimation;
-  late Animation<double> _interactBodyTiltAnimation;
-  late Animation<double> _interactEarTiltAnimation;
-  late Animation<double> _interactTailTiltAnimation;
-  late Animation<double> _interactEyeSquintAnimation;
+  late Animation<double> _interactRise;
+  late Animation<double> _interactSwing;
+
+  // STAGE 4: the long-press stroke ("轻抚") — a slower, softer shape than the tap
+  // response. The eyes soften, the ears droop, the head tilts, then it releases.
+  late AnimationController _strokeController;
+  late Animation<double> _strokeEase;
+
   Timer? _interactFlashTimer;
   bool _interactFlash = false;
   bool _reduceMotion = false;
+
+  // Growth-gated idle flourish. A slow, repeating cycle whose final window
+  // carries one behaviour from the stage's pool. Driven by an AnimationController
+  // rather than a timer so the ambient timer contract is untouched and nothing
+  // can leak.
+  late AnimationController _flourishController;
+
+  /// Which member of the stage's pool this cycle plays.
+  ///
+  /// Advanced by observing the existing flourish controller wrap (see
+  /// [_onFlourishTick]), so walking the pool costs no timer and no second
+  /// controller — the ambient scheduler contract is untouched.
+  int _flourishCycleIndex = 0;
+  double _lastFlourishValue = 0.0;
+
+  // Focus work cycle. V4.1 `designs/motion/11F_Focus_Work.png` gives Focus Work
+  // a 4–6 s loop with keyframes 开始 / 工作 / 微动 / 循环; this controller's
+  // position inside that loop is what selects the beat. It repeats (no
+  // `reverse:`) so one controller period is exactly one loop, matching 11F.
+  late AnimationController _workCycleController;
+
+  /// Owns "what is Mochi doing right now" during a focus session.
+  ///
+  /// Disposed with the State. It holds no timers and no streams — the frame
+  /// detail is pushed in from [_workCycleController].
+  late PetFocusActivityController _focusActivity;
+
+  /// Owns "what is Mochi doing in the workshop right now" during a craft job.
+  ///
+  /// The exact mirror of [_focusActivity]: 11G's four keyframes are a separate
+  /// schedule from 11F's, but the mechanism is the same one — a presentation
+  /// layer read by [_frameFor] and driven by the shared work-beat clock. It
+  /// holds no timers and no streams.
+  late PetCraftActivityController _craftActivity;
+
+  // One-shot trigger settle flags. V4.1 lists `triggerCelebrate` as a *trigger*,
+  // so celebrate/greeting play once and then hand the pet back to the ambient
+  // micro-motion layer instead of looping the big bounce forever.
+  bool _celebrateSettled = false;
+  bool _greetingSettled = false;
 
   /// Testing accessors to observe animation controllers and their cleanup status
   @visibleForTesting
@@ -113,6 +360,8 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   AnimationController get swayController => _swayController;
   @visibleForTesting
   AnimationController get tailController => _tailController;
+  @visibleForTesting
+  AnimationController get headController => _headController;
   @visibleForTesting
   AnimationController get blinkController => _blinkController;
   @visibleForTesting
@@ -132,19 +381,137 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   @visibleForTesting
   AnimationController get interactController => _interactController;
   @visibleForTesting
+  AnimationController get strokeController => _strokeController;
+  @visibleForTesting
   bool get isInteractFlashActive => _interactFlash;
+
+  /// The interaction spec for the active base state, or `null` when Mochi does
+  /// not react in that state.
   @visibleForTesting
-  double get interactDy => _interactDyAnimation.value;
+  PetInteractionSpec? get interactionSpec => _interactionSpec;
+
+  /// The interaction kind the active base state resolves to, for tests that want
+  /// to name the behaviour rather than a number.
   @visibleForTesting
-  double get interactScale => _interactScaleAnimation.value;
+  PetInteractionKind? get interactionKind => _interactionSpec?.kind;
+
+  /// Whether the heart feedback is currently on screen.
   @visibleForTesting
-  double get interactBodyTilt => _interactBodyTiltAnimation.value;
+  bool get isStrokeHeartVisible => _showStrokeHeart;
+
+  // The per-channel readings below are the *effective* values for the active
+  // base state — the unit shape multiplied by that state's amplitude — so a test
+  // can compare a focus glance against an idle greeting on the same scale.
+
   @visibleForTesting
-  double get interactEarTilt => _interactEarTiltAnimation.value;
+  double get interactDy =>
+      _interactRise.value * (_interactionSpec?.tapDyPeak ?? 0.0);
   @visibleForTesting
-  double get interactTailTilt => _interactTailTiltAnimation.value;
+  double get interactScale =>
+      1.0 +
+      _interactRise.value * ((_interactionSpec?.tapScalePeak ?? 1.0) - 1.0);
   @visibleForTesting
-  double get interactEyeScaleY => _interactEyeSquintAnimation.value;
+  double get interactBodyTilt =>
+      _interactSwing.value *
+      (_interactionSpec?.tapBodyTiltDegrees ?? 0.0) *
+      math.pi /
+      180;
+  @visibleForTesting
+  double get interactEarTilt =>
+      _interactSwing.value *
+      (_interactionSpec?.tapEarTiltDegrees ?? 0.0) *
+      math.pi /
+      180;
+  @visibleForTesting
+  double get interactTailTilt =>
+      _interactSwing.value *
+      (_interactionSpec?.tapTailTiltDegrees ?? 0.0) *
+      math.pi /
+      180;
+  @visibleForTesting
+  double get interactEyeScaleY =>
+      1.0 -
+      _interactRise.value * (1.0 - (_interactionSpec?.tapEyeSquintMin ?? 1.0));
+  @visibleForTesting
+  double get strokeEyeScaleY =>
+      1.0 -
+      _strokeEase.value * (1.0 - (_interactionSpec?.strokeEyeClose ?? 1.0));
+  @visibleForTesting
+  double get strokeEarDroop =>
+      _strokeEase.value *
+      (_interactionSpec?.strokeEarDroopDegrees ?? 0.0) *
+      math.pi /
+      180;
+  @visibleForTesting
+  bool get isCelebrateSettled => _celebrateSettled;
+  @visibleForTesting
+  bool get isGreetingSettled => _greetingSettled;
+
+  /// Effective `focusProgress` / `craftProgress` binding, expressed as motion
+  /// intensity. `1.0` when the active state carries no progress binding.
+  @visibleForTesting
+  double get progressIntensity => _progressIntensityFor(
+        _effectiveController.visualState,
+      );
+
+  /// Effective head counter-rotation in radians, including the delayed head
+  /// oscillation. Exposed so tests can prove the head channel moves
+  /// independently of the body.
+  @visibleForTesting
+  double get headRotationValue => _testFrame.headRotation;
+
+  @visibleForTesting
+  double get bodyScaleForTesting => _testFrame.scale;
+
+  @visibleForTesting
+  double get bodyDyForTesting => _testFrame.dy;
+
+  @visibleForTesting
+  double get bodyRotationForTesting => _testFrame.rotation;
+
+  @visibleForTesting
+  double get earRotationForTesting => _testFrame.earRotation;
+
+  @visibleForTesting
+  double get tailRotationForTesting => _testFrame.tailRotation;
+
+  @visibleForTesting
+  double get eyeScaleYForTesting => _testFrame.eyeScaleY;
+
+  /// The frame the widget tree is composing right now, with reduced motion
+  /// disabled so the raw motion channels are observable.
+  _MotionFrame get _testFrame => _frameFor(
+        _effectiveController.visualState,
+        reduceMotion: false,
+      );
+
+  /// The frame the widget tree is composing right now, **honouring the live
+  /// Reduced Motion setting**.
+  ///
+  /// [_testFrame] and its accessors deliberately force `reduceMotion: false` so
+  /// the raw channels stay observable regardless of the ambient setting. That
+  /// makes them the wrong tool for asserting what Reduced Motion actually
+  /// renders, which is what these two accessors are for.
+  _MotionFrame get _renderedFrame => _frameFor(
+        _effectiveController.visualState,
+        reduceMotion: _reduceMotion,
+      );
+
+  /// Body scale actually rendered, Reduced Motion included.
+  @visibleForTesting
+  double get renderedBodyScale => _renderedFrame.scale;
+
+  /// Head rotation actually rendered, Reduced Motion included.
+  @visibleForTesting
+  double get renderedHeadRotation => _renderedFrame.headRotation;
+
+  /// Body vertical offset actually rendered, Reduced Motion included.
+  @visibleForTesting
+  double get renderedBodyDy => _renderedFrame.dy;
+
+  /// Whether Reduced Motion is currently in force.
+  @visibleForTesting
+  bool get isReduceMotionActive => _reduceMotion;
 
   @override
   void initState() {
@@ -197,6 +564,18 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       end: PetMotionSpec.tailIdleAngleDegrees * math.pi / 180,
     ).animate(
       CurvedAnimation(parent: _tailController, curve: Curves.easeInOutSine),
+    );
+
+    // 3b. Delayed head response
+    _headController = AnimationController(
+      vsync: this,
+      duration: PetMotionSpec.headLagCycle,
+    );
+    _headAnimation = Tween<double>(
+      begin: -PetMotionSpec.headLagAngleDegrees * math.pi / 180,
+      end: PetMotionSpec.headLagAngleDegrees * math.pi / 180,
+    ).animate(
+      CurvedAnimation(parent: _headController, curve: Curves.easeInOutSine),
     );
 
     // 4. Blink
@@ -467,54 +846,67 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       CurvedAnimation(parent: _greetingController, curve: Curves.easeInOut),
     );
 
-    // 12. Phase 6D: Interact Controller
+    // 12. Phase 6D / STAGE 4: the interaction overlay.
+    //
+    // The duration is retargeted from the state's spec on every trigger, so the
+    // value here is only the idle default.
     _interactController = AnimationController(
       vsync: this,
-      duration: PetMotionSpec.interactDuration,
+      duration: PetInteractionSpec.table[PetVisualState.idle]!.tapDuration,
     );
     _interactController.addStatusListener(_onInteractStatusChanged);
-    _interactDyAnimation = _interactSequence(
+    _interactRise = _unitSequence(
+      _interactController,
       0.0,
-      PetMotionSpec.interactBounceDyMax,
-      PetMotionSpec.interactBounceDyMax,
+      1.0,
+      1.0,
       0.0,
       Curves.easeInOutSine,
     );
-    _interactScaleAnimation = _interactSequence(
+    _interactSwing = _unitSequence(
+      _interactController,
+      0.0,
       1.0,
-      PetMotionSpec.interactScaleMax,
-      PetMotionSpec.interactScaleMax,
+      -1.0,
+      0.0,
+      Curves.easeInOut,
+    );
+
+    // 13. STAGE 4: the long-press stroke.
+    _strokeController = AnimationController(
+      vsync: this,
+      duration: PetInteractionSpec.table[PetVisualState.idle]!.strokeDuration,
+    );
+    _strokeController.addStatusListener(_onStrokeStatusChanged);
+    _strokeEase = _unitSequence(
+      _strokeController,
+      0.0,
       1.0,
+      1.0,
+      0.0,
       Curves.easeInOutSine,
     );
-    _interactBodyTiltAnimation = _interactSequence(
-      0.0,
-      PetMotionSpec.interactTiltDeg * math.pi / 180,
-      -PetMotionSpec.interactTiltDeg * math.pi / 180,
-      0.0,
-      Curves.easeInOut,
+
+    _celebrateController.addStatusListener(_onCelebrateStatusChanged);
+    _greetingController.addStatusListener(_onGreetingStatusChanged);
+
+    _flourishController = AnimationController(
+      vsync: this,
+      duration: _flourishCycleDuration,
     );
-    _interactEarTiltAnimation = _interactSequence(
-      0.0,
-      PetMotionSpec.interactEarTiltDeg * math.pi / 180,
-      -PetMotionSpec.interactEarTiltDeg * math.pi / 180,
-      0.0,
-      Curves.easeInOut,
+    _flourishController.addListener(_onFlourishTick);
+
+    _workCycleController = AnimationController(
+      vsync: this,
+      duration: PetMotionSpec.focusWorkCycle,
     );
-    _interactTailTiltAnimation = _interactSequence(
-      0.0,
-      PetMotionSpec.interactTailTiltDeg * math.pi / 180,
-      -PetMotionSpec.interactTailTiltDeg * math.pi / 180,
-      0.0,
-      Curves.easeInOut,
+    _focusActivity = PetFocusActivityController();
+    _focusActivity.setContext(
+      phase: widget.focusPhase,
+      categoryId: widget.focusCategoryId,
     );
-    _interactEyeSquintAnimation = _interactSequence(
-      1.0,
-      PetMotionSpec.interactEyeSquintMin,
-      PetMotionSpec.interactEyeSquintMin,
-      1.0,
-      Curves.easeInOutSine,
-    );
+    _craftActivity = PetCraftActivityController();
+    _craftActivity.setContext(progress: widget.craftProgress);
 
     _effectiveController.attach(
       onTriggerBlink: _onBlinkTrigger,
@@ -522,9 +914,59 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       onStartContinuousLoops: _startContinuousLoops,
       onStopContinuousLoops: _stopAllAnimations,
       onTriggerInteract: _onInteractTrigger,
+      onTriggerStroke: _onStrokeTrigger,
     );
 
+    _syncGrowthToController();
     _syncStateAnimations(widget.visualState);
+  }
+
+  /// Pushes the growth stage's cadence into the motion controller.
+  ///
+  /// The controller owns the blink / ear-twitch timers, so growth can only
+  /// reach them through here. Idempotent — the controller ignores equal values —
+  /// so it is safe to call from `initState`, `didUpdateWidget` and the build
+  /// path alike.
+  void _syncGrowthToController() {
+    _effectiveController.updateMotionCadence(
+      blinkIntervalScale: _growth.blinkIntervalScale,
+      earTwitchIntervalScale: _growth.earTwitchIntervalScale,
+    );
+    _syncFlourishCycle();
+  }
+
+  /// Re-applies the growth-scaled flourish cycle length.
+  ///
+  /// The duration is fixed at controller creation, so a stage change has to
+  /// update it. A running flourish is restarted from zero rather than left to
+  /// finish at the old length, which would stretch or clip the look.
+  void _syncFlourishCycle() {
+    final target = _flourishCycleDuration;
+    if (_flourishController.duration == target) return;
+    final wasAnimating = _flourishController.isAnimating;
+    _flourishController.duration = target;
+    if (wasAnimating) {
+      _flourishController.repeat();
+    } else {
+      _flourishController.value = 0.0;
+    }
+  }
+
+  /// Walks the stage's flourish pool by one member per completed cycle.
+  ///
+  /// A wrap — the controller's value going backwards — is the only moment a new
+  /// cycle begins. It is *not* the only moment the value goes backwards, though:
+  /// the layer is reset to zero whenever the state changes or Reduced Motion
+  /// turns on. `isAnimating` is what separates the two, because every reset path
+  /// stops the controller first. Without that guard, entering a focus session
+  /// would silently advance the pool and the stage's behaviours would play out
+  /// of order.
+  void _onFlourishTick() {
+    final value = _flourishController.value;
+    if (_flourishController.isAnimating && value < _lastFlourishValue) {
+      _flourishCycleIndex++;
+    }
+    _lastFlourishValue = value;
   }
 
   @override
@@ -546,7 +988,14 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     }
   }
 
-  Animation<double> _interactSequence(
+  /// A three-segment unit shape over [controller]: rise, hold, release.
+  ///
+  /// Segment weights are 30 / 40 / 30, so a shape reads as "get there, stay a
+  /// moment, come back" — which is what every interaction here wants. The
+  /// amplitudes are deliberately *not* baked in; they come from the base state's
+  /// [PetInteractionSpec] at frame time.
+  Animation<double> _unitSequence(
+    AnimationController controller,
     double begin,
     double peak,
     double settle,
@@ -575,7 +1024,13 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         ).chain(CurveTween(curve: curve)),
         weight: 30,
       ),
-    ]).animate(_interactController);
+    ]).animate(controller);
+  }
+
+  void _onStrokeStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      _strokeController.reset();
+    }
   }
 
   void _onInteractStatusChanged(AnimationStatus status) {
@@ -584,16 +1039,56 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     }
   }
 
+  void _onCelebrateStatusChanged(AnimationStatus status) {
+    if (status != AnimationStatus.completed || !mounted) return;
+    setState(() => _celebrateSettled = true);
+    _effectiveController.extendAmbientMotionTo(PetVisualState.celebrate);
+    _syncStateAnimations(_effectiveController.visualState);
+  }
+
+  void _onGreetingStatusChanged(AnimationStatus status) {
+    if (status != AnimationStatus.completed || !mounted) return;
+    setState(() => _greetingSettled = true);
+    _effectiveController.extendAmbientMotionTo(PetVisualState.greeting);
+    _syncStateAnimations(_effectiveController.visualState);
+  }
+
+  /// True when the active state is a one-shot trigger that has already played
+  /// and handed control back to the ambient micro-motion layer.
+  bool _isSettledOneShot(PetVisualState state) =>
+      (state == PetVisualState.celebrate && _celebrateSettled) ||
+      (state == PetVisualState.greeting && _greetingSettled);
+
+  /// Part-level micro-motion amplitude for a base state.
+  ///
+  /// The state's damping from [PetMotionSpec] is multiplied by the growth
+  /// stage's own factor, so the *same* state reads calmer on a young Mochi and
+  /// livelier on a grown one without any state needing a second code path.
+  double _partMotionFactor(PetVisualState state) {
+    double stateFactor;
+    switch (state) {
+      case PetVisualState.focus:
+        stateFactor = PetMotionSpec.focusPartMotionFactor;
+        break;
+      case PetVisualState.pause:
+        stateFactor = PetMotionSpec.pausePartMotionFactor;
+        break;
+      case PetVisualState.craft:
+        stateFactor = PetMotionSpec.craftPartMotionFactor;
+        break;
+      case PetVisualState.idle:
+      case PetVisualState.celebrate:
+      case PetVisualState.sleep:
+      case PetVisualState.greeting:
+      case PetVisualState.interact:
+        stateFactor = PetMotionSpec.idlePartMotionFactor;
+        break;
+    }
+    return stateFactor * _growth.partMotionFactor;
+  }
+
   void _startContinuousLoops() {
-    if (!_breatheController.isAnimating) {
-      _breatheController.repeat(reverse: true);
-    }
-    if (!_swayController.isAnimating) {
-      _swayController.repeat(reverse: true);
-    }
-    if (!_tailController.isAnimating) {
-      _tailController.repeat(reverse: true);
-    }
+    _syncStateAnimations(_effectiveController.visualState);
   }
 
   void _stopAllAnimations() {
@@ -605,6 +1100,9 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
 
     if (_tailController.isAnimating) _tailController.stop();
     _tailController.reset();
+
+    if (_headController.isAnimating) _headController.stop();
+    _headController.reset();
 
     if (_blinkController.isAnimating) _blinkController.stop();
     _blinkController.reset();
@@ -635,6 +1133,15 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     _interactFlashTimer?.cancel();
     _interactFlashTimer = null;
     _interactFlash = false;
+
+    if (_flourishController.isAnimating) _flourishController.stop();
+    _flourishController.reset();
+
+    if (_workCycleController.isAnimating) _workCycleController.stop();
+    _workCycleController.reset();
+
+    _celebrateSettled = false;
+    _greetingSettled = false;
   }
 
   void _syncStateAnimations(PetVisualState state) {
@@ -643,20 +1150,67 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       return;
     }
 
-    // If not idle, stop idle continuous loops and one-shot controllers
-    if (state != PetVisualState.idle) {
+    final settledOneShot = _isSettledOneShot(state);
+    final ambient = _effectiveController.supportsAmbientMotion;
+
+    // --- Part-level micro-motion layer -------------------------------------
+    //
+    // V4.1 `reference/02_动效架构.md` puts Breathe / Sway / Blink / Ear Twitch /
+    // Tail Wag *beneath* the base states. They stay engaged in every ambient
+    // base state (idle / focus / pause / craft) so ears, tail and eyes never
+    // freeze for the length of a long focus session or craft job; only their
+    // amplitude is damped per state (see [_partMotionFactor]).
+    //
+    // V4.1 `designs/motion/11_宠物动效总览.png` titles this layer 固定微动 —
+    // *fixed* micro-motion — so growth may retune its amplitude and cadence but
+    // must never switch a channel off. The growth-gated behaviour is the
+    // separate, additive flourish channel handled below.
+    if (ambient) {
+      if (!_tailController.isAnimating) {
+        _tailController.repeat(reverse: true);
+      }
+      if (!_headController.isAnimating) {
+        _headController.repeat(reverse: true);
+      }
+    } else {
+      _stopPartMotion();
+    }
+
+    // --- Growth-gated flourish layer --------------------------------------
+    // Strictly additive: it only ever runs *on top of* the fixed micro layer,
+    // and only at stages that have developed it. A stage without it is not
+    // missing a channel — it simply has the fixed layer and nothing more.
+    //
+    // The gate is the pool rather than the boolean. The pool *is* the stage's
+    // list of behaviours, and `hasIdleFlourish: false` is the same statement in
+    // boolean form — `pet_idle_behavior_test` pins the two together, so reading
+    // either one makes the same decision. Reading the pool keeps "what plays"
+    // and "whether it plays" in one place instead of two that can drift.
+    if (ambient && _idleFlourishPool.isNotEmpty) {
+      if (!_flourishController.isAnimating) {
+        _flourishController.repeat();
+      }
+    } else if (_flourishController.isAnimating) {
+      _flourishController.stop();
+      _flourishController.reset();
+    }
+
+    // --- Body ambience ----------------------------------------------------
+    // Full body breathing/sway belongs to idle, and to a one-shot trigger that
+    // has settled back into base aliveness.
+    final bodyAmbience = state == PetVisualState.idle || settledOneShot;
+    if (bodyAmbience) {
+      if (!_breatheController.isAnimating) {
+        _breatheController.repeat(reverse: true);
+      }
+      if (!_swayController.isAnimating) {
+        _swayController.repeat(reverse: true);
+      }
+    } else {
       if (_breatheController.isAnimating) _breatheController.stop();
       _breatheController.reset();
       if (_swayController.isAnimating) _swayController.stop();
       _swayController.reset();
-      if (_tailController.isAnimating) _tailController.stop();
-      _tailController.reset();
-      if (_blinkController.isAnimating) _blinkController.stop();
-      _blinkController.reset();
-      if (_earTwitchController.isAnimating) _earTwitchController.stop();
-      _earTwitchController.reset();
-    } else {
-      _startContinuousLoops();
     }
 
     // Focus
@@ -667,6 +1221,35 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     } else {
       if (_focusController.isAnimating) _focusController.stop();
       _focusController.reset();
+    }
+
+    // --- Work-beat clock, shared by the two work loops ---------------------
+    //
+    // One controller serves both 11F (focus) and 11G (craft). Only one of the
+    // two states can be active at a time and leaving either state stops and
+    // resets it, so retargeting the duration can never land mid-cycle. It
+    // repeats without `reverse:` so one controller period is exactly one loop —
+    // 开始 → 工作 → 微动 → 循环 for 11F, 抬手 → 敲击 → 停顿 → 检查 for 11G.
+    //
+    // 11F wants 4–6 s and 11G wants 3–5 s, so the length belongs to the state
+    // rather than to the controller. The per-state body ambience stays on its
+    // own controller (`_focusController` / `_craftController`); the two are
+    // independent, which is what lets a beat change without moving the pose.
+    final beatCycle = switch (state) {
+      PetVisualState.focus => PetMotionSpec.focusWorkCycle,
+      PetVisualState.craft => PetMotionSpec.craftCycle,
+      _ => null,
+    };
+    if (beatCycle != null) {
+      if (_workCycleController.duration != beatCycle) {
+        _workCycleController.duration = beatCycle;
+      }
+      if (!_workCycleController.isAnimating) {
+        _workCycleController.repeat();
+      }
+    } else {
+      if (_workCycleController.isAnimating) _workCycleController.stop();
+      _workCycleController.reset();
     }
 
     // Pause
@@ -689,14 +1272,15 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       _sleepController.reset();
     }
 
-    // Celebrate
+    // Celebrate — a one-shot trigger, never a loop.
     if (state == PetVisualState.celebrate) {
-      if (!_celebrateController.isAnimating) {
-        _celebrateController.repeat();
+      if (!_celebrateSettled && !_celebrateController.isAnimating) {
+        _celebrateController.forward(from: 0.0);
       }
     } else {
       if (_celebrateController.isAnimating) _celebrateController.stop();
       _celebrateController.reset();
+      _celebrateSettled = false;
     }
 
     // Craft
@@ -709,21 +1293,33 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       _craftController.reset();
     }
 
-    // Greeting
+    // Greeting — a one-shot trigger, never a loop.
     if (state == PetVisualState.greeting) {
-      if (!_greetingController.isAnimating) {
-        _greetingController.repeat();
+      if (!_greetingSettled && !_greetingController.isAnimating) {
+        _greetingController.forward(from: 0.0);
       }
     } else {
       if (_greetingController.isAnimating) _greetingController.stop();
       _greetingController.reset();
+      _greetingSettled = false;
     }
+  }
+
+  void _stopPartMotion() {
+    if (_tailController.isAnimating) _tailController.stop();
+    _tailController.reset();
+    if (_headController.isAnimating) _headController.stop();
+    _headController.reset();
+    if (_blinkController.isAnimating) _blinkController.stop();
+    _blinkController.reset();
+    if (_earTwitchController.isAnimating) _earTwitchController.stop();
+    _earTwitchController.reset();
   }
 
   void _onBlinkTrigger() {
     if (!mounted ||
         _reduceMotion ||
-        _effectiveController.visualState != PetVisualState.idle) {
+        !_effectiveController.supportsAmbientMotion) {
       return;
     }
     _blinkController.forward(from: 0.0);
@@ -732,30 +1328,70 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   void _onEarTwitchTrigger() {
     if (!mounted ||
         _reduceMotion ||
-        _effectiveController.visualState != PetVisualState.idle) {
+        !_effectiveController.supportsAmbientMotion) {
       return;
     }
     _earTwitchController.forward(from: 0.0);
   }
 
+  /// The interaction spec for the active base state.
+  ///
+  /// `null` means Mochi does not react in this state — either a one-shot
+  /// celebration is running, or the state has no spec at all. Read fresh on
+  /// every frame and on every trigger, which is why a state change mid-response
+  /// simply retargets the remaining motion.
+  PetInteractionSpec? get _interactionSpec =>
+      PetInteractionSpec.forState(_effectiveController.visualState);
+
+  /// Whether the long-press heart feedback is on screen.
+  ///
+  /// Gated by the spec, so a heart never appears over a running focus session or
+  /// craft job: the per-state split exists precisely so Mochi does not pull
+  /// attention away from the work it is helping with.
+  bool get _showStrokeHeart =>
+      _strokeController.isAnimating &&
+      (_interactionSpec?.strokeShowsHeart ?? false);
+
+  /// The reduced-motion acknowledgement: a brief flash instead of a motion.
+  void _flashInteractAcknowledgement() {
+    _interactFlashTimer?.cancel();
+    setState(() => _interactFlash = true);
+    _interactFlashTimer = Timer(const Duration(milliseconds: 80), () {
+      if (mounted) {
+        setState(() => _interactFlash = false);
+      }
+      _interactFlashTimer = null;
+    });
+  }
+
   void _onInteractTrigger() {
-    if (!mounted || _effectiveController.visualState != PetVisualState.idle) {
-      return;
-    }
+    if (!mounted) return;
+    final spec = _interactionSpec;
+    if (spec == null) return;
 
     if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
-      _interactFlashTimer?.cancel();
-      setState(() => _interactFlash = true);
-      _interactFlashTimer = Timer(const Duration(milliseconds: 80), () {
-        if (mounted) {
-          setState(() => _interactFlash = false);
-        }
-        _interactFlashTimer = null;
-      });
+      _flashInteractAcknowledgement();
       return;
     }
 
+    // The response length belongs to the state, not to a global constant: a
+    // focus glance is 420 ms, an idle response 750 ms.
+    _interactController.duration = spec.tapDuration;
     _interactController.forward(from: 0.0);
+  }
+
+  void _onStrokeTrigger() {
+    if (!mounted) return;
+    final spec = _interactionSpec;
+    if (spec == null) return;
+
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+      _flashInteractAcknowledgement();
+      return;
+    }
+
+    _strokeController.duration = spec.strokeDuration;
+    _strokeController.forward(from: 0.0);
   }
 
   void _onControllerStateChanged() {
@@ -791,15 +1427,42 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         onStartContinuousLoops: _startContinuousLoops,
         onStopContinuousLoops: _stopAllAnimations,
         onTriggerInteract: _onInteractTrigger,
+        onTriggerStroke: _onStrokeTrigger,
       );
       if (_reduceMotion) {
         _effectiveController.stopMotion();
       }
+      _syncGrowthToController();
+    }
+
+    // A growth change is a real change to what is rendered: amplitude, cadence
+    // and whether the delayed head channel exists at all. Re-run the state sync
+    // so the head controller is started or retired immediately, and rebuild so
+    // the maturity scale lands on this frame.
+    if (oldWidget.growthProfile != widget.growthProfile) {
+      _syncGrowthToController();
+      _syncStateAnimations(_effectiveController.visualState);
     }
 
     if (oldWidget.visualState != widget.visualState) {
       _effectiveController.updateState(widget.visualState);
       _syncStateAnimations(widget.visualState);
+    }
+
+    // The phase and the category both change which beats are allowed, so a
+    // change to either has to reach the activity layer before the next frame.
+    if (oldWidget.focusPhase != widget.focusPhase ||
+        oldWidget.focusCategoryId != widget.focusCategoryId) {
+      _focusActivity.setContext(
+        phase: widget.focusPhase,
+        categoryId: widget.focusCategoryId,
+      );
+    }
+
+    // Progress moving is what selects a different craft stage, so it has to
+    // reach the activity layer before the next frame.
+    if (oldWidget.craftProgress != widget.craftProgress) {
+      _craftActivity.setContext(progress: widget.craftProgress);
     }
   }
 
@@ -816,30 +1479,401 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
     _breatheController.dispose();
     _swayController.dispose();
     _tailController.dispose();
+    _headController.dispose();
     _blinkController.dispose();
     _earTwitchController.dispose();
     _focusController.dispose();
     _pauseController.dispose();
     _sleepController.dispose();
+    _celebrateController.removeStatusListener(_onCelebrateStatusChanged);
     _celebrateController.dispose();
     _craftController.dispose();
+    _greetingController.removeStatusListener(_onGreetingStatusChanged);
     _greetingController.dispose();
+    _flourishController.removeListener(_onFlourishTick);
+    _flourishController.dispose();
+    _workCycleController.dispose();
+    _focusActivity.dispose();
+    _craftActivity.dispose();
     _interactFlashTimer?.cancel();
     _interactController.removeStatusListener(_onInteractStatusChanged);
     _interactController.dispose();
+    _strokeController.removeStatusListener(_onStrokeStatusChanged);
+    _strokeController.dispose();
     super.dispose();
+  }
+
+  /// V4.1 binds `focusProgress` / `craftProgress` into the engine. They are
+  /// expressed here as *motion intensity*: the delta of every transform away
+  /// from the neutral pose is scaled, so the pet starts a session calm and
+  /// grows more animated as it approaches completion. The neutral pose itself
+  /// never moves, which keeps the binding free of visual drift.
+  ///
+  /// Returns `1.0` when the active state carries no progress binding.
+  double _progressIntensityFor(PetVisualState state) {
+    double? progress;
+    if (state == PetVisualState.focus) {
+      progress = widget.focusProgress;
+    } else if (state == PetVisualState.craft) {
+      progress = widget.craftProgress;
+    }
+    if (progress == null) return 1.0;
+    final clamped = progress.clamp(0.0, 1.0);
+    return PetMotionSpec.progressIntensityMin +
+        (PetMotionSpec.progressIntensityMax -
+                PetMotionSpec.progressIntensityMin) *
+            clamped;
+  }
+
+  /// Delayed head response: the head counter-rotates against the body sway and
+  /// carries its own longer oscillation, so it drifts in and out of phase with
+  /// the body instead of moving rigidly with it.
+  double _headRotationFor(
+    double bodyRotation, {
+    required bool reduceMotion,
+    double extraHeadTerm = 0.0,
+  }) {
+    if (reduceMotion) return 0.0;
+    return -bodyRotation * PetMotionSpec.headLagFactor +
+        _headAnimation.value +
+        _flourishLookRadians +
+        extraHeadTerm;
+  }
+
+  /// The flourish's ear contribution, in radians.
+  ///
+  /// Read straight off the envelope rather than derived as a ratio of the head
+  /// term. An [PetIdleFlourishKind.earPerk] has no head term at all, so a
+  /// ratio-based derivation would have silenced the one behaviour that is
+  /// *only* ears.
+  ///
+  /// For [PetIdleFlourishKind.lookAround] this is arithmetically the same as the
+  /// ratio it replaced (`ease x 3.0 x 1.4/3.0` versus `ease x 1.4`), so the
+  /// original look-around is unchanged apart from floating-point rounding.
+  double get _flourishEarLeadRadians {
+    final spec = _currentFlourish;
+    if (spec == null) return 0.0;
+    return _flourishWindowEase * spec.earLeadDegrees * math.pi / 180;
+  }
+
+  /// Single authoritative composition of the current motion frame.
+  ///
+  /// Kept in one place so the rendered tree and the `@visibleForTesting`
+  /// accessors can never drift apart.
+  _MotionFrame _frameFor(
+    PetVisualState state, {
+    required bool reduceMotion,
+  }) {
+    // Keep the activity layer in step with the cycle this frame is composed
+    // from. Done here (rather than from a listener) so the rendered tree and the
+    // `@visibleForTesting` accessors can never read different beats.
+    _focusActivity.updateCycle(_workCycleController.value);
+    _craftActivity.updateCycle(_workCycleController.value);
+
+    final settledOneShot = _isSettledOneShot(state);
+    final partFactor = reduceMotion ? 0.0 : _partMotionFactor(state);
+
+    double scale = 1.0;
+    double dy = 0.0;
+    double rotation = 0.0;
+    double earRotation = 0.0;
+    double tailRotation = 0.0;
+    double eyeScaleY = 1.0;
+    double extraHeadTerm = 0.0;
+
+    switch (state) {
+      case PetVisualState.idle:
+        scale = reduceMotion ? 1.0 : _breatheScaleAnimation.value;
+        dy = reduceMotion
+            ? (PetMotionSpec.breatheReducedDyMax * 0.5)
+            : _breatheDyAnimation.value;
+        rotation = reduceMotion ? 0.0 : _swayAnimation.value;
+        earRotation = _earTwitchAnimation.value * partFactor;
+        tailRotation = _tailAnimation.value * partFactor;
+        eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+      case PetVisualState.focus:
+        scale = reduceMotion ? 1.0 : _focusScaleAnimation.value;
+        dy = reduceMotion
+            ? (PetMotionSpec.focusBreatheDyMax * 0.5)
+            : _focusBreatheDyAnimation.value;
+        rotation = reduceMotion ? 0.0 : _focusAngleAnimation.value;
+        // The ambient micro layer stays engaged: a companion that never blinks
+        // or moves its tail through an entire focus session is not alive.
+        earRotation = _earTwitchAnimation.value * partFactor;
+        tailRotation = _tailAnimation.value * partFactor;
+        eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+      case PetVisualState.pause:
+        scale = 1.0;
+        dy = reduceMotion
+            ? (PetMotionSpec.pauseBreatheDyMax * 0.5)
+            : _pauseBreatheDyAnimation.value;
+        rotation = 0.0;
+        earRotation = _earTwitchAnimation.value * partFactor;
+        tailRotation = _tailAnimation.value * partFactor;
+        eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+      case PetVisualState.sleep:
+        scale = 1.0;
+        dy = reduceMotion
+            ? (PetMotionSpec.sleepBreatheDyMax * 0.5)
+            : _sleepBreatheDyAnimation.value;
+        rotation = 0.0;
+        eyeScaleY = 0.10; // Eyes closed in sleep
+      case PetVisualState.celebrate:
+        if (settledOneShot) {
+          // The trigger has played once; hand the pet back to base aliveness.
+          scale = reduceMotion ? 1.0 : _breatheScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.breatheReducedDyMax * 0.5)
+              : _breatheDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _swayAnimation.value;
+          earRotation = _earTwitchAnimation.value * partFactor;
+          tailRotation = _tailAnimation.value * partFactor;
+          eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+        } else {
+          scale = reduceMotion ? 1.0 : _celebrateScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.celebrateBounceDyMax * 0.5)
+              : _celebrateBounceDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _celebrateAngleAnimation.value;
+          earRotation = reduceMotion ? 0.0 : _celebrateAngleAnimation.value;
+          tailRotation = reduceMotion ? 0.0 : -_celebrateAngleAnimation.value;
+          eyeScaleY = 1.0; // Bright joyful gaze
+        }
+      case PetVisualState.craft:
+        scale = reduceMotion ? 1.0 : _craftScaleAnimation.value;
+        dy = reduceMotion
+            ? (PetMotionSpec.craftBreatheDyMax * 0.5)
+            : _craftBreatheDyAnimation.value;
+        rotation = reduceMotion ? 0.0 : _craftTiltAngleAnimation.value;
+        // Craft used to pin ears and tail at 0.0, freezing them for the whole
+        // job. The ambient micro layer keeps them moving independently of the
+        // body tilt.
+        earRotation = _earTwitchAnimation.value * partFactor;
+        tailRotation = _tailAnimation.value * partFactor;
+        eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+      case PetVisualState.greeting:
+        if (settledOneShot) {
+          scale = reduceMotion ? 1.0 : _breatheScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.breatheReducedDyMax * 0.5)
+              : _breatheDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _swayAnimation.value;
+          earRotation = _earTwitchAnimation.value * partFactor;
+          tailRotation = _tailAnimation.value * partFactor;
+          eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
+        } else {
+          scale = reduceMotion ? 1.0 : _greetingScaleAnimation.value;
+          dy = reduceMotion
+              ? (PetMotionSpec.greetingBounceDyMax * 0.5)
+              : _greetingBounceDyAnimation.value;
+          rotation = reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value;
+          earRotation = reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value;
+          tailRotation =
+              reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value * 0.8;
+          eyeScaleY = 1.0; // Welcoming cheerful gaze
+        }
+      case PetVisualState.interact:
+        // `interact` is a trigger, never a settled visual state; the override
+        // below is the only thing that drives it.
+        break;
+    }
+
+    // --- V4.1 binding: focusProgress / craftProgress -> motion intensity ---
+    final intensity = _progressIntensityFor(state);
+    if (intensity != 1.0) {
+      scale = 1.0 + (scale - 1.0) * intensity;
+      dy *= intensity;
+      rotation *= intensity;
+      earRotation *= intensity;
+      tailRotation *= intensity;
+    }
+
+    // --- Growth-gated flourish -------------------------------------------
+    // Applied after the per-state switch so it is purely additive: it offsets
+    // the ears, the tail and (via [_headRotationFor]) the head on top of
+    // whatever the state already does, and never rewrites a state's own
+    // channel. A stage with an empty pool leaves every channel exactly as it
+    // was.
+    if (!reduceMotion) {
+      earRotation += _flourishEarLeadRadians;
+      tailRotation += _flourishTailRadians;
+      // The body-lift term is idle-only. Head, ear and tail are additive by
+      // design — that is what lets a flourish ride along inside a focus session
+      // without disturbing the work loop. The body is different: every other
+      // state already owns its own body ambience (breathe, focus sway, craft
+      // beat), and lifting the body underneath those would fight them rather
+      // than layer onto them.
+      if (state == PetVisualState.idle) {
+        dy += _flourishLiftPx;
+      }
+    }
+
+    // --- Focus work beats (V4.1 `designs/motion/11F_Focus_Work.png`) ------
+    //
+    // 11F gives Focus Work a 4–6 s loop with keyframes 开始 / 工作 / 微动 / 循环.
+    // The current beat scales the focus motion's *delta away from neutral* (so
+    // the neutral pose is never moved — the same discipline the progress binding
+    // uses) and contributes two additive head terms:
+    //
+    // * a bob, one oscillation per loop, from the category flavour;
+    // * a single out-and-back lift, spread across the beat, for `glance` and
+    //   `prepare`.
+    //
+    // Only the focus state has a work cycle, and Reduced Motion suppresses it
+    // entirely — 11F requires Reduced Motion to lower amplitude automatically.
+    if (state == PetVisualState.focus && !reduceMotion) {
+      final beat = _focusActivity.visual;
+
+      final beatScale = beat.amplitudeScale;
+      if (beatScale != 1.0) {
+        scale = 1.0 + (scale - 1.0) * beatScale;
+        dy *= beatScale;
+        rotation *= beatScale;
+        earRotation *= beatScale;
+        tailRotation *= beatScale;
+      }
+
+      final beatEnvelope = math.sin(math.pi * _focusActivity.localProgress);
+      if (beat.dyOffset != 0.0) {
+        dy += beat.dyOffset * beatEnvelope;
+      }
+      if (beat.headDegrees != 0.0) {
+        extraHeadTerm += beat.headDegrees * beatEnvelope * math.pi / 180;
+      }
+
+      if (beat.headBobDegrees != 0.0) {
+        extraHeadTerm += math.sin(2 * math.pi * _workCycleController.value) *
+            beat.headBobDegrees *
+            math.pi /
+            180;
+      }
+      if (beat.headLiftDegrees != 0.0) {
+        extraHeadTerm += math.sin(math.pi * _focusActivity.localProgress) *
+            beat.headLiftDegrees *
+            math.pi /
+            180;
+      }
+    }
+
+    // --- Craft work beats (V4.1 `designs/motion/11G_Craft.png`) ------------
+    //
+    // 11G gives Craft a 3–5 s loop with keyframes 抬手 / 敲击 / 停顿 / 检查 and
+    // binds it to `craftProgress`. Same discipline as the focus beats above: the
+    // beat scales the craft motion's delta away from neutral, so the neutral
+    // pose is never displaced, and it contributes an additive `dy` and head term
+    // spread across its own beat.
+    //
+    // The beat's own envelope is `sin(pi * localProgress)`: zero at the beat's
+    // edges and full at its middle. That is what lets two adjacent beats join
+    // without a step — 抬手 settling into 敲击 reads as one gesture rather than
+    // as a cut between two poses.
+    if (state == PetVisualState.craft && !reduceMotion) {
+      final beat = _craftActivity.visual;
+
+      final beatScale = beat.amplitudeScale;
+      if (beatScale != 1.0) {
+        scale = 1.0 + (scale - 1.0) * beatScale;
+        dy *= beatScale;
+        rotation *= beatScale;
+        earRotation *= beatScale;
+        tailRotation *= beatScale;
+      }
+
+      final beatEnvelope = math.sin(math.pi * _craftActivity.localProgress);
+      if (beat.dyOffset != 0.0) {
+        dy += beat.dyOffset * beatEnvelope;
+      }
+      if (beat.headDegrees != 0.0) {
+        extraHeadTerm += beat.headDegrees * beatEnvelope * math.pi / 180;
+      }
+    }
+
+    // --- Interaction overlay ------------------------------------------------
+    //
+    // Applied *after* the per-state switch and only to the channels the state's
+    // spec owns. That is what makes "Interact outranks Craft/Focus/Pause/Sleep"
+    // concrete rather than decorative: a focus glance takes the head, the ears
+    // and the eyes and leaves the body to the focus sway, so it reads as a
+    // glance *from a working Mochi* instead of replacing the work pose. Idle,
+    // having no commitment to protect, hands over every channel.
+    //
+    // The base state itself is never written here. The overlay is time-bounded
+    // and the state underneath is untouched, so a short interaction returns to
+    // exactly the state it started in — there is nothing to restore and nothing
+    // that can be restored wrongly.
+    final interaction = _interactionSpec;
+    if (interaction != null && !reduceMotion) {
+      final owned = interaction.ownedChannels;
+
+      if (_interactController.isAnimating) {
+        final rise = _interactRise.value;
+        final swing = _interactSwing.value;
+
+        if (owned.contains(PetMotionChannel.scale)) {
+          scale = 1.0 + rise * (interaction.tapScalePeak - 1.0);
+        }
+        if (owned.contains(PetMotionChannel.dy)) {
+          dy = rise * interaction.tapDyPeak;
+        }
+        if (owned.contains(PetMotionChannel.bodyTilt)) {
+          rotation = swing * interaction.tapBodyTiltDegrees * math.pi / 180;
+        }
+        if (owned.contains(PetMotionChannel.ear)) {
+          earRotation = swing * interaction.tapEarTiltDegrees * math.pi / 180;
+        }
+        if (owned.contains(PetMotionChannel.tail)) {
+          tailRotation = swing * interaction.tapTailTiltDegrees * math.pi / 180;
+        }
+        if (owned.contains(PetMotionChannel.eyes)) {
+          eyeScaleY = 1.0 - rise * (1.0 - interaction.tapEyeSquintMin);
+        }
+        if (owned.contains(PetMotionChannel.head)) {
+          extraHeadTerm +=
+              rise * interaction.tapHeadTiltDegrees * math.pi / 180;
+        }
+      }
+
+      // The stroke runs after the tap so that on the channels they share — eyes,
+      // head, ears — a long press wins over a tap that is still settling. The
+      // two cannot fire from one touch (Flutter dispatches either a tap or a
+      // long press, never both), so this only matters for a tap followed
+      // immediately by a long press.
+      if (_strokeController.isAnimating) {
+        final stroke = _strokeEase.value;
+        eyeScaleY = 1.0 - stroke * (1.0 - interaction.strokeEyeClose);
+        earRotation =
+            stroke * interaction.strokeEarDroopDegrees * math.pi / 180;
+        extraHeadTerm +=
+            stroke * interaction.strokeHeadTiltDegrees * math.pi / 180;
+      }
+    }
+
+    // Reduced-motion acknowledgement. Applies wherever an interaction is
+    // allowed — the flash can only be set from a state that has a spec.
+    if (_interactFlash) {
+      scale = 1.02;
+      dy = -1.0;
+    }
+
+    return _MotionFrame(
+      scale: scale,
+      dy: dy,
+      rotation: rotation,
+      earRotation: earRotation,
+      tailRotation: tailRotation,
+      eyeScaleY: eyeScaleY,
+      headRotation: _headRotationFor(
+        rotation,
+        reduceMotion: reduceMotion,
+        extraHeadTerm: extraHeadTerm,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final currentVisualState = _effectiveController.visualState;
-    final isIdle = currentVisualState == PetVisualState.idle;
-    final isFocus = currentVisualState == PetVisualState.focus;
-    final isPause = currentVisualState == PetVisualState.pause;
     final isSleep = currentVisualState == PetVisualState.sleep;
-    final isCelebrate = currentVisualState == PetVisualState.celebrate;
-    final isCraft = currentVisualState == PetVisualState.craft;
-    final isGreeting = currentVisualState == PetVisualState.greeting;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
@@ -850,6 +1884,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         _breatheController,
         _swayController,
         _tailController,
+        _headController,
         _blinkController,
         _earTwitchController,
         _focusController,
@@ -859,113 +1894,42 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         _craftController,
         _greetingController,
         _interactController,
+        _strokeController,
+        _flourishController,
+        _workCycleController,
       ]),
       builder: (context, child) {
-        // Compose transforms: state-gated and respects reduced motion
-        double scale = 1.0;
-        double dy = 0.0;
-        double rotation = 0.0;
-        double earRotation = 0.0;
-        double tailRotation = 0.0;
-        double eyeScaleY = 1.0;
+        final frame = _frameFor(currentVisualState, reduceMotion: reduceMotion);
 
-        if (isIdle) {
-          scale = reduceMotion ? 1.0 : _breatheScaleAnimation.value;
-          dy = reduceMotion
-              ? (PetMotionSpec.breatheReducedDyMax * 0.5)
-              : _breatheDyAnimation.value;
-          rotation = reduceMotion ? 0.0 : _swayAnimation.value;
-          earRotation = reduceMotion ? 0.0 : _earTwitchAnimation.value;
-          tailRotation = reduceMotion ? 0.0 : _tailAnimation.value;
-          eyeScaleY = reduceMotion ? 1.0 : _blinkAnimation.value;
-        } else if (isFocus) {
-          scale = reduceMotion ? 1.0 : _focusScaleAnimation.value;
-          dy = reduceMotion
-              ? (PetMotionSpec.focusBreatheDyMax * 0.5)
-              : _focusBreatheDyAnimation.value;
-          rotation = reduceMotion ? 0.0 : _focusAngleAnimation.value;
-          eyeScaleY = 1.0; // Steady focused gaze
-        } else if (isPause) {
-          scale = 1.0;
-          dy = reduceMotion
-              ? (PetMotionSpec.pauseBreatheDyMax * 0.5)
-              : _pauseBreatheDyAnimation.value;
-          rotation = 0.0;
-          eyeScaleY = 1.0; // Restful gaze
-        } else if (isSleep) {
-          scale = 1.0;
-          dy = reduceMotion
-              ? (PetMotionSpec.sleepBreatheDyMax * 0.5)
-              : _sleepBreatheDyAnimation.value;
-          rotation = 0.0;
-          eyeScaleY = 0.10; // Eyes closed in sleep
-        } else if (isCelebrate) {
-          scale = reduceMotion ? 1.0 : _celebrateScaleAnimation.value;
-          dy = reduceMotion
-              ? (PetMotionSpec.celebrateBounceDyMax * 0.5)
-              : _celebrateBounceDyAnimation.value;
-          rotation = reduceMotion ? 0.0 : _celebrateAngleAnimation.value;
-          earRotation = reduceMotion ? 0.0 : _celebrateAngleAnimation.value;
-          tailRotation = reduceMotion ? 0.0 : -_celebrateAngleAnimation.value;
-          eyeScaleY = 1.0; // Bright joyful gaze
-        } else if (isCraft) {
-          scale = reduceMotion ? 1.0 : _craftScaleAnimation.value;
-          dy = reduceMotion
-              ? (PetMotionSpec.craftBreatheDyMax * 0.5)
-              : _craftBreatheDyAnimation.value;
-          rotation = reduceMotion ? 0.0 : _craftTiltAngleAnimation.value;
-          earRotation = 0.0;
-          tailRotation = 0.0;
-          eyeScaleY = 1.0; // Attentive crafting gaze
-        } else if (isGreeting) {
-          scale = reduceMotion ? 1.0 : _greetingScaleAnimation.value;
-          dy = reduceMotion
-              ? (PetMotionSpec.greetingBounceDyMax * 0.5)
-              : _greetingBounceDyAnimation.value;
-          rotation = reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value;
-          earRotation = reduceMotion ? 0.0 : _greetingTiltAngleAnimation.value;
-          tailRotation = 0.0;
-          eyeScaleY = 1.0; // Welcoming cheerful gaze
-        }
-
-        if (isIdle && _interactFlash) {
-          scale = 1.02;
-          dy = -1.0;
-        } else if (isIdle && !reduceMotion && _interactController.isAnimating) {
-          scale = _interactScaleAnimation.value;
-          dy = _interactDyAnimation.value;
-          rotation = _interactBodyTiltAnimation.value;
-          earRotation = _interactEarTiltAnimation.value;
-          tailRotation = _interactTailTiltAnimation.value;
-          eyeScaleY = _interactEyeSquintAnimation.value;
-        }
+        // Growth's proportion maturation is folded into the same scale about the
+        // same centre as the motion scale. It is deliberately narrow (see
+        // [GrowthStageSpec.maturityScale]) so the character stays obviously the
+        // same character — this is a nudge, not a redesign.
+        final scale = frame.scale * _growth.maturityScale;
 
         return Transform.translate(
-          offset: Offset(0, dy),
+          offset: Offset(0, frame.dy),
           child: Transform.scale(
             scale: scale,
             alignment: Alignment.center,
             child: Transform.rotate(
-              angle: rotation,
+              angle: frame.rotation,
               alignment: Alignment.bottomCenter,
-              child: Container(
+              child: SizedBox(
                 width: widget.size,
                 height: widget.size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: config.bgTint,
-                  border: Border.all(color: config.borderColor, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: config.borderColor.withValues(alpha: 0.2),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
                 child: Stack(
+                  clipBehavior: Clip.none,
                   alignment: Alignment.center,
                   children: [
+                    MochiLayeredRenderer(
+                      size: widget.size,
+                      eyeScaleY: frame.eyeScaleY,
+                      earRotation: frame.earRotation,
+                      sproutRotation: frame.tailRotation * 0.6,
+                      headRotation: frame.headRotation,
+                      headDy: frame.dy * 0.28,
+                    ),
                     // Sleep Zzz floating animation indicator
                     if (isSleep)
                       Positioned(
@@ -992,141 +1956,57 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
                           ),
                         ),
                       ),
-                    // Tail
-                    Positioned(
-                      bottom: widget.size * 0.25,
-                      right: widget.size * 0.16,
-                      child: Transform.rotate(
-                        angle: tailRotation,
-                        alignment: Alignment.bottomLeft,
-                        child: Icon(
-                          Icons.pets,
-                          size: widget.size * 0.20,
-                          color: config.iconColor.withValues(alpha: 0.4),
-                        ),
-                      ),
-                    ),
-                    // Ears
-                    Positioned(
-                      top: widget.size * 0.18,
-                      child: SizedBox(
-                        width: widget.size * 0.65,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Left ear
-                            Transform.rotate(
-                              angle: -earRotation,
-                              alignment: Alignment.bottomRight,
-                              child: Container(
-                                width: widget.size * 0.14,
-                                height: widget.size * 0.18,
-                                decoration: BoxDecoration(
-                                  color:
-                                      config.iconColor.withValues(alpha: 0.7),
-                                  borderRadius:
-                                      BorderRadius.circular(widget.size * 0.08),
-                                ),
-                              ),
+                    // Long-press feedback. Only where the spec allows it: a
+                    // heart over a running focus session or craft job would
+                    // pull attention away from the work Mochi is helping with.
+                    if (_showStrokeHeart)
+                      Positioned(
+                        top: widget.size * 0.10,
+                        right: widget.size * 0.16,
+                        child: Opacity(
+                          opacity: _strokeEase.value,
+                          child: const Text(
+                            '♡',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: AppColors.primarySage,
                             ),
-                            // Right ear (twitches)
-                            Transform.rotate(
-                              angle: earRotation,
-                              alignment: Alignment.bottomLeft,
-                              child: Container(
-                                width: widget.size * 0.14,
-                                height: widget.size * 0.18,
-                                decoration: BoxDecoration(
-                                  color:
-                                      config.iconColor.withValues(alpha: 0.7),
-                                  borderRadius:
-                                      BorderRadius.circular(widget.size * 0.08),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Face / Eyes / Mouth (Mochi Character)
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Eyes
-                        SizedBox(
-                          width: widget.size * 0.38,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Left Eye
-                              Transform.scale(
-                                scaleY: eyeScaleY,
-                                alignment: Alignment.center,
-                                child: Container(
-                                  width: widget.size * 0.085,
-                                  height: widget.size * 0.085,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: config.iconColor,
-                                  ),
-                                ),
-                              ),
-                              // Right Eye
-                              Transform.scale(
-                                scaleY: eyeScaleY,
-                                alignment: Alignment.center,
-                                child: Container(
-                                  width: widget.size * 0.085,
-                                  height: widget.size * 0.085,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: config.iconColor,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ),
                         ),
-                        SizedBox(height: widget.size * 0.04),
-                        // Nose / Mouth
-                        Icon(
-                          Icons.favorite_rounded,
-                          size: widget.size * 0.08,
-                          color: config.iconColor.withValues(alpha: 0.65),
-                        ),
-                      ],
-                    ),
+                      ),
                     // Optional accessory
                     if (widget.accessory != null) widget.accessory!,
-                    // State badge
-                    Positioned(
-                      bottom: widget.size * 0.10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(config.stateIcon,
-                                size: 13, color: config.iconColor),
-                            const SizedBox(width: 4),
-                            Text(
-                              config.label,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: config.iconColor,
-                              ),
+                    if (widget.showStateBadge)
+                      Positioned(
+                        bottom: widget.size * 0.10,
+                        child: ExcludeSemantics(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface.withValues(alpha: 0.92),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                              border: Border.all(color: AppColors.border),
                             ),
-                          ],
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(config.stateIcon,
+                                    size: 13, color: config.iconColor),
+                                const SizedBox(width: 4),
+                                Text(
+                                  config.label,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: config.iconColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -1206,5 +2086,29 @@ class _StateVisualConfig {
     required this.borderColor,
     required this.iconColor,
     required this.stateIcon,
+  });
+}
+
+/// Native Flutter artwork for Android V1. It deliberately keeps the character
+/// separate from the motion transforms above, so every existing state shares
+/// the same Mochi silhouette instead of falling back to a generic pet icon.
+/// Immutable snapshot of the transforms composed for one frame.
+class _MotionFrame {
+  final double scale;
+  final double dy;
+  final double rotation;
+  final double earRotation;
+  final double tailRotation;
+  final double eyeScaleY;
+  final double headRotation;
+
+  const _MotionFrame({
+    required this.scale,
+    required this.dy,
+    required this.rotation,
+    required this.earRotation,
+    required this.tailRotation,
+    required this.eyeScaleY,
+    required this.headRotation,
   });
 }

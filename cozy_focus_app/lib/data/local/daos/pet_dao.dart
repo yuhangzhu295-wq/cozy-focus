@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import '../../../domain/growth/growth_level_curve.dart';
 import '../../../domain/models/pet_models.dart' as domain;
 import '../../../domain/models/enums.dart';
 import '../tables/pet_tables.dart';
@@ -82,11 +83,19 @@ class PetDao extends DatabaseAccessor<AppDatabase> with _$PetDaoMixin {
         adoptedAt: row.adoptedAt as DateTime,
       );
 
+  /// Maps a stored row, reporting the level the XP has actually earned.
+  ///
+  /// `level` shipped as a dead field: nothing derived or incremented it, so
+  /// every row carries its seeded `1` no matter how much XP it has accumulated
+  /// (`MOCHI_GROWTH_STAGE0_AUDIT.md` §A). Settlement now writes the derived
+  /// level, but a row written before that change would still surface a lie, so
+  /// the read path derives it too. `experiencePoints` remains the stored truth;
+  /// `level` is a pure function of it.
   domain.PetProgress _mapProgress(PetProgressTableData row) =>
       domain.PetProgress(
         id: row.id,
         petId: row.petId,
-        level: row.level,
+        level: GrowthLevelCurve.levelForXp(row.experiencePoints),
         experiencePoints: row.experiencePoints,
         totalFocusMinutes: row.totalFocusMinutes,
         happinessScore: row.happinessScore,

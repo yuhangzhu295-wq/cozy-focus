@@ -48,7 +48,9 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/focus/reward',
-      builder: (context, state) => const FocusRewardPage(),
+      builder: (context, state) => FocusRewardPage(
+        sessionId: state.uri.queryParameters['sessionId'],
+      ),
     ),
     // Phase 3: Records & Reports
     GoRoute(

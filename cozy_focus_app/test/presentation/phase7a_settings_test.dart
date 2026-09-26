@@ -13,9 +13,11 @@ void main() {
         '1. SettingsPage renders AppBar with title, back button, and Mochi hero with 个人中心 and subtitle',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const SettingsPage(),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const SettingsPage(),
+          ),
         ),
       );
       await tester.pump();
@@ -26,15 +28,19 @@ void main() {
       expect(find.byType(PetAvatarWidget), findsOneWidget);
       expect(find.text('个人中心'), findsOneWidget);
       expect(find.text('和 Mochi 一起，专注更好的自己'), findsOneWidget);
+      expect(find.text('Mochi 陪伴中'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets(
         '2. SettingsPage renders all seven honest, noninteractive rows with evidence-backed wording',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const SettingsPage(),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const SettingsPage(),
+          ),
         ),
       );
       await tester.pump();
@@ -63,9 +69,11 @@ void main() {
         '3. SettingsPage has no fake controls and two navigation chevrons',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const SettingsPage(),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const SettingsPage(),
+          ),
         ),
       );
       await tester.pump();

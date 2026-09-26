@@ -54,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -75,6 +75,43 @@ class AppDatabase extends _$AppDatabase {
         if (from < 3) {
           await m.addColumn(craftJobs, craftJobs.progressSeconds);
           await _seedRecipes();
+        }
+        // v3 -> v4: preserve entered details from duplicate records before
+        // enforcing one record per session.
+        if (from < 4) {
+          for (final column in ['category_id', 'task_name', 'mood', 'note']) {
+            await customStatement('''
+              UPDATE focus_records AS kept
+              SET $column = (
+                SELECT duplicate.$column
+                FROM focus_records AS duplicate
+                WHERE duplicate.session_id = kept.session_id
+                  AND NULLIF(duplicate.$column, '') IS NOT NULL
+                ORDER BY duplicate.rowid DESC
+                LIMIT 1
+              )
+              WHERE kept.rowid IN (
+                SELECT MIN(rowid) FROM focus_records GROUP BY session_id
+              )
+                AND NULLIF(kept.$column, '') IS NULL
+                AND EXISTS (
+                  SELECT 1 FROM focus_records AS duplicate
+                  WHERE duplicate.session_id = kept.session_id
+                    AND NULLIF(duplicate.$column, '') IS NOT NULL
+                );
+            ''');
+          }
+          await customStatement('''
+            DELETE FROM focus_records
+            WHERE rowid NOT IN (
+              SELECT MIN(rowid)
+              FROM focus_records
+              GROUP BY session_id
+            );
+          ''');
+          await customStatement(
+            'CREATE UNIQUE INDEX IF NOT EXISTS idx_focus_records_session_id ON focus_records(session_id);',
+          );
         }
       },
       beforeOpen: (details) async {

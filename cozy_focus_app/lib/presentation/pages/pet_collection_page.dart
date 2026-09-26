@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
+import '../companion/collection_unlock.dart';
 import '../controllers/craft_controller.dart';
 import '../controllers/growth_controller.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pet_avatar_widget.dart';
+import '../widgets/cozy_furniture_artwork.dart';
+import '../widgets/growth_sub_nav.dart';
+import '../companion/companion_avatar.dart';
+import '../widgets/app_bottom_nav.dart';
 
 /// Catalog item definition for collection items.
 /// Bounded preview catalog mapping to real craft inventory items when available,
@@ -115,6 +121,35 @@ class PetCollectionPage extends ConsumerStatefulWidget {
 class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
   String _selectedCategory = '全部';
 
+  /// Watches the real inventory for items that have just become owned.
+  ///
+  /// Read from a provider rather than owned by this `State`: inventory only
+  /// changes during a focus-session settlement, so a page-scoped tracker would
+  /// take a fresh baseline on every visit and could never observe the
+  /// transition it exists to report. The tracker is fed only collection items,
+  /// so its baseline is about the collection rather than about everything the
+  /// craft system stores.
+  PetCollectionUnlockTracker get _unlockTracker =>
+      ref.read(petCollectionUnlockTrackerProvider);
+
+  /// The one-shot celebration currently on screen, if any.
+  ///
+  /// `null` means "no override": Mochi falls back to whatever the presentation
+  /// mapper derives, which is the normal case. Clearing it needs no memory of
+  /// what came before — the mapper is the answer.
+  PetVisualState? _unlockCelebration;
+
+  /// The name of the item that just unlocked, while the celebration lasts.
+  String? _unlockMessage;
+
+  Timer? _unlockTimer;
+
+  /// How long the unlock celebration stays up.
+  ///
+  /// Long enough to read the item name, short enough not to become a state the
+  /// page is stuck in. 11I is a one-shot for exactly this reason.
+  static const Duration _unlockDisplayDuration = Duration(milliseconds: 2600);
+
   @override
   void initState() {
     super.initState();
@@ -124,9 +159,61 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
   }
 
   @override
+  void dispose() {
+    _unlockTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Reacts to a real, newly-owned collection item.
+  ///
+  /// Driven from a provider listener rather than derived during `build`: an
+  /// unlock is a thing that *happens*, not a thing that is true, and deriving it
+  /// per rebuild would fire once per frame. [PetCollectionUnlockTracker] also
+  /// returns `null` for its first observation, so arriving on the page with a
+  /// full collection celebrates nothing — see the class docs for why that
+  /// matters.
+  void _onInventoryChanged(CraftState craft) {
+    // A loading state is **not an authoritative reading**. `CraftController`
+    // emits `isLoading: true` carrying the *previous* inventory before the rows
+    // arrive, and on a cold controller that previous inventory is empty. Feeding
+    // that to the tracker would establish a false empty baseline, and the very
+    // next real reading would then look like a whole collection being unlocked
+    // at once — the exact false celebration this feature exists to prevent.
+    if (craft.isLoading) return;
+
+    final catalogIds = kCollectionCatalog.map((entry) => entry.id).toSet();
+    final unlockedItemId = _unlockTracker.observe(
+      craft.inventory.where((item) => catalogIds.contains(item.itemId)),
+    );
+    if (unlockedItemId == null || !mounted) return;
+
+    final item = kCollectionCatalog.firstWhere(
+      (entry) => entry.id == unlockedItemId,
+    );
+
+    _unlockTimer?.cancel();
+    setState(() {
+      _unlockCelebration = PetVisualState.celebrate;
+      _unlockMessage = '新收藏：${item.name}！';
+    });
+    _unlockTimer = Timer(_unlockDisplayDuration, () {
+      if (!mounted) return;
+      setState(() {
+        _unlockCelebration = null;
+        _unlockMessage = null;
+      });
+      _unlockTimer = null;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final growthState = ref.watch(growthControllerProvider);
     final craftState = ref.watch(craftControllerProvider);
+
+    ref.listen<CraftState>(craftControllerProvider, (_, next) {
+      _onInventoryChanged(next);
+    });
 
     final Map<String, int> inventoryQuantities = {};
     for (final inv in craftState.inventory) {
@@ -171,86 +258,24 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           children: [
-            _buildSubNavPills(context),
+            const GrowthSubNav(active: GrowthSection.collection),
             const SizedBox(height: 16),
             _buildPetContextHeader(growthState),
             const SizedBox(height: 16),
-            _buildSummaryCard(ownedCount),
+            _buildSummaryCard(ownedCount, kCollectionCatalog.length),
             const SizedBox(height: 16),
             _buildCategoryFilter(categories),
             const SizedBox(height: 16),
             _buildCollectionGrid(filteredItems, inventoryQuantities),
+            const SizedBox(height: 20),
+            _buildEncouragementBanner(),
             const SizedBox(height: 24),
             _buildUnsupportedAchievementSection(),
             const SizedBox(height: 24),
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 2,
-        selectedItemColor: AppColors.primarySage,
-        unselectedItemColor: AppColors.textTertiary,
-        backgroundColor: AppColors.surface,
-        onTap: (index) {
-          if (index == 0) {
-            context.go('/');
-          } else if (index == 1) {
-            context.go('/records');
-          } else if (index == 2) {
-            context.go('/growth');
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: '首页',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_rounded),
-            label: '记录',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.eco_outlined),
-            label: '成长',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubNavPills(BuildContext context) {
-    final tabs = [
-      {'label': 'Mochi', 'route': '/growth', 'active': false},
-      {'label': '房间', 'route': '/room', 'active': false},
-      {'label': '装扮', 'route': '/growth/dress', 'active': false},
-      {'label': '图鉴', 'route': '/growth/collection', 'active': true},
-    ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: tabs.map((tab) {
-          final isActive = tab['active'] as bool;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: ChoiceChip(
-              label: Text(tab['label'] as String),
-              selected: isActive,
-              selectedColor: AppColors.primarySage,
-              labelStyle: TextStyle(
-                color: isActive ? Colors.white : AppColors.textPrimary,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              ),
-              backgroundColor: AppColors.surface,
-              onSelected: (selected) {
-                if (!isActive) {
-                  context.go(tab['route'] as String);
-                }
-              },
-            ),
-          );
-        }).toList(),
-      ),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
     );
   }
 
@@ -280,10 +305,13 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
       ),
       child: Row(
         children: [
-          PetAvatarWidget(
-            visualState: PetVisualState.idle,
+          CompanionAvatar(
             size: 56,
-            message: '${pet.name} 的收藏屋 🌱',
+            message: _unlockMessage ?? '${pet.name} 的收藏屋 🌱',
+            // `null` outside an unlock, so the presentation mapper keeps
+            // deciding and there is no previous state to remember.
+            visualStateOverride: _unlockCelebration,
+            showStateBadge: false,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -314,53 +342,116 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
     );
   }
 
-  Widget _buildSummaryCard(int ownedCount) {
+  /// Reference 10B shows the collection progress as one card: an icon and
+  /// title on the left, the owned/total fraction and percentage on the right,
+  /// and a progress bar underneath. The previous version showed only
+  /// "已拥有 N 件", which told the user nothing about how much is left.
+  Widget _buildSummaryCard(int ownedCount, int totalCount) {
+    final ratio = totalCount == 0 ? 0.0 : ownedCount / totalCount;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.auto_stories_rounded,
-              color: AppColors.primarySage,
-              size: 28,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: const Icon(
+                  Icons.auto_stories_rounded,
+                  color: AppColors.primarySage,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '图鉴收集',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      '用专注，解锁更多美好的事物吧！',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '$ownedCount / $totalCount',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '已收集 ${(ratio * 100).round()}%',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '图鉴预览 · 物品收集',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '已拥有 $ownedCount 件',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: LinearProgressIndicator(
+              value: ratio,
+              minHeight: 8,
+              backgroundColor: AppColors.surfaceMuted,
+              color: AppColors.primarySage,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Reference 10B closes the page with this line.
+  Widget _buildEncouragementBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: const Text(
+        '🌱 生活中的每一份专注，都会让这个小小的世界更丰富。💚',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 12,
+          color: AppColors.primaryDark,
+          height: 1.5,
+        ),
       ),
     );
   }
@@ -404,11 +495,14 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      // Reference 10B lays the catalogue out as a dense four-column grid so the
+      // whole collection is readable at a glance. Two columns made the page
+      // scroll for several screens and hid how much of the set exists.
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.95,
+        crossAxisCount: 4,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 10,
+        childAspectRatio: 0.72,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -419,13 +513,13 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
         return Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(
               color: isOwned ? AppColors.primarySage : AppColors.border,
               width: isOwned ? 1.5 : 1.0,
             ),
           ),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -434,14 +528,16 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
                 alignment: Alignment.center,
                 children: [
                   CircleAvatar(
-                    radius: 28,
+                    radius: 24,
                     backgroundColor: isOwned
                         ? AppColors.primaryLight
                         : AppColors.surfaceMuted,
-                    child: Icon(
-                      item.icon,
-                      size: 28,
-                      color: isOwned ? AppColors.primarySage : Colors.grey,
+                    child: Opacity(
+                      opacity: isOwned ? 1 : 0.48,
+                      child: CozyFurnitureArtwork(
+                        itemId: item.id,
+                        size: 36,
+                      ),
                     ),
                   ),
                   if (!isOwned)
@@ -449,26 +545,26 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
                       right: 0,
                       bottom: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(3),
                         decoration: const BoxDecoration(
                           color: Colors.grey,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.lock_rounded,
-                          size: 12,
+                          size: 10,
                           color: Colors.white,
                         ),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               Text(
                 item.name,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color:
                       isOwned ? AppColors.textPrimary : AppColors.textSecondary,
@@ -476,15 +572,18 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
-                isOwned ? '已拥有 (x$quantity)' : '未收集',
+                isOwned ? '已拥有 x$quantity' : '未收集',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 9,
                   color:
                       isOwned ? AppColors.primarySage : AppColors.textTertiary,
                   fontWeight: isOwned ? FontWeight.bold : FontWeight.normal,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

@@ -25,6 +25,16 @@ class AppColors {
   static const Color accentGold = Color(0xFFE5A93C);
   static const Color accentGoldLight = Color(0xFFFEF8EC);
 
+  /// Ink for the large focus timer figure.
+  ///
+  /// Sampled from the approved page renders rather than chosen: the `25:00`
+  /// figure on page 01 measures `#345C48` across its whole stroke, while page
+  /// 03's timer measures `#000000`. So the big timer is not simply
+  /// [textPrimary] — on Home it is deliberately a deep sage, which is what
+  /// gives the figure its "growing" character instead of reading as a neutral
+  /// number.
+  static const Color timerInk = Color(0xFF345C48);
+
   // Category Colors
   static const Color catStudy = Color(0xFF8BA4C8);
   static const Color catWork = Color(0xFFE08373);

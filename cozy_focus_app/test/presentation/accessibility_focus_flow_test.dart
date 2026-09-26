@@ -64,13 +64,15 @@ void main() {
       );
       await tester.pump();
 
-      // Find the pet interactive Semantics node
+      // Find the pet interactive Semantics node. The hint is per state now —
+      // it used to say "仅空闲时可互动", which stopped being true in STAGE 4:
+      // Mochi answers in every base state, with a different response in each.
       final petSemantics = find.byWidgetPredicate(
         (widget) =>
             widget is Semantics &&
             widget.properties.label == 'Mochi 空闲' &&
             widget.properties.button == true &&
-            widget.properties.hint == '仅空闲时可互动',
+            widget.properties.hint == '点一下会回应，长按可以摸摸头',
       );
       expect(petSemantics, findsOneWidget);
 
@@ -78,16 +80,28 @@ void main() {
         find.byType(PetIdleFallbackView),
       );
       expect(fallback.interactController.isAnimating, isFalse);
+      expect(fallback.strokeController.isAnimating, isFalse);
 
       // Tap on the Semantics / Pet
       await tester.tap(petSemantics);
       await tester.pump();
 
       expect(fallback.interactController.isAnimating, isTrue);
+      expect(fallback.strokeController.isAnimating, isFalse);
       expect(controller.visualState, PetVisualState.idle);
 
       await tester.pump(const Duration(milliseconds: 751));
       expect(fallback.interactController.isAnimating, isFalse);
+
+      // Long press is the "轻抚" gesture and drives its own controller, so the
+      // two gestures cannot swallow each other.
+      await tester.pump(const Duration(milliseconds: 1500));
+      await tester.longPress(petSemantics);
+      await tester.pump();
+
+      expect(fallback.strokeController.isAnimating, isTrue);
+      expect(fallback.interactController.isAnimating, isFalse);
+      expect(controller.visualState, PetVisualState.idle);
     });
 
     testWidgets(
@@ -109,50 +123,38 @@ void main() {
       );
       await tester.pump();
 
-      // Non-idle semantics: exposes state label but not button/hint/onTap
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics &&
-              widget.properties.label == 'Mochi 专注中' &&
-              widget.properties.button != true &&
-              widget.properties.hint == null &&
-              widget.properties.onTap == null,
-        ),
-        findsOneWidget,
-      );
+      // STAGE 4: a non-idle state is still a button, because Mochi answers in
+      // every base state. What changes per state is the *hint*, so a screen
+      // reader user knows whether a tap will interrupt what they are doing.
+      void expectSemantics(String label, String hint) {
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics &&
+                widget.properties.label == label &&
+                widget.properties.button == true &&
+                widget.properties.hint == hint &&
+                widget.properties.onTap != null &&
+                widget.properties.onLongPress != null,
+          ),
+          findsOneWidget,
+          reason: 'no semantics node for "$label" / "$hint"',
+        );
+      }
 
-      // Switching controller state to pause updates semantics label
+      expectSemantics('Mochi 专注中', '点一下会看你一眼，不会打断专注');
+
+      final semanticsHandle = tester.ensureSemantics();
+      expect(find.bySemanticsLabel('Mochi 专注中'), findsOneWidget);
+      semanticsHandle.dispose();
+
       controller.updateState(PetVisualState.pause);
       await tester.pump();
+      expectSemantics('Mochi 暂停中', '点一下会安静地陪着你');
 
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics &&
-              widget.properties.label == 'Mochi 暂停中' &&
-              widget.properties.button != true &&
-              widget.properties.hint == null &&
-              widget.properties.onTap == null,
-        ),
-        findsOneWidget,
-      );
-
-      // Switching controller state to craft updates semantics label
       controller.updateState(PetVisualState.craft);
       await tester.pump();
-
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics &&
-              widget.properties.label == 'Mochi 制作中' &&
-              widget.properties.button != true &&
-              widget.properties.hint == null &&
-              widget.properties.onTap == null,
-        ),
-        findsOneWidget,
-      );
+      expectSemantics('Mochi 制作中', '点一下会回应一下，不会打断制作');
     });
 
     testWidgets('3. HomePage primary focus button provides button Semantics',

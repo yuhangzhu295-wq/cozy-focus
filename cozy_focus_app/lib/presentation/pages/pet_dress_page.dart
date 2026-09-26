@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../domain/models/enums.dart';
 import '../../domain/models/pet_models.dart';
 import '../controllers/growth_controller.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pet_avatar_widget.dart';
+import '../widgets/growth_sub_nav.dart';
+import '../companion/companion_avatar.dart';
+import '../widgets/app_bottom_nav.dart';
 
 /// Presentation metadata for outfit catalog preview items.
 class OutfitPreviewItem {
@@ -99,6 +100,9 @@ class PetDressPage extends ConsumerWidget {
         bottom: false,
         child: CustomScrollView(
           slivers: [
+            const SliverToBoxAdapter(
+              child: GrowthSubNav(active: GrowthSection.dress),
+            ),
             SliverToBoxAdapter(
               child: _buildPetPreviewSection(context, pet),
             ),
@@ -143,8 +147,7 @@ class PetDressPage extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
         child: Column(
           children: [
-            PetAvatarWidget(
-              visualState: PetVisualState.idle,
+            CompanionAvatar(
               size: 150,
               message: '${pet.name} 试衣间 🌱',
             ),
@@ -175,8 +178,7 @@ class PetDressPage extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       child: const Column(
         children: [
-          PetAvatarWidget(
-            visualState: PetVisualState.idle,
+          CompanionAvatar(
             size: 150,
             message: '暂未领养宠物，暂无可用装扮',
           ),
@@ -319,37 +321,6 @@ class PetDressPage extends ConsumerWidget {
   }
 
   Widget _buildBottomNav(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 2,
-      selectedItemColor: AppColors.primarySage,
-      unselectedItemColor: AppColors.textTertiary,
-      backgroundColor: AppColors.surface,
-      onTap: (index) {
-        if (index == 2) {
-          context.go('/growth');
-          return;
-        }
-        switch (index) {
-          case 0:
-            context.go('/');
-          case 1:
-            context.go('/records');
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_rounded),
-          label: '首页',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_rounded),
-          label: '记录',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.eco_outlined),
-          label: '成长',
-        ),
-      ],
-    );
+    return const AppBottomNav(currentIndex: 2);
   }
 }

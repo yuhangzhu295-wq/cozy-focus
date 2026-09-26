@@ -12,7 +12,12 @@ void main() {
     testWidgets('1. DataSyncPage renders honest local-only status',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(theme: AppTheme.lightTheme, home: const DataSyncPage()),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const DataSyncPage(),
+          ),
+        ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
@@ -23,12 +28,19 @@ void main() {
       expect(find.text('没关系～'), findsOneWidget);
       expect(find.text('你的专注数据已安全保存在本机。'), findsOneWidget);
       expect(find.text('数据状态'), findsOneWidget);
+      expect(find.text('Mochi 陪伴中'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('2. DataSyncPage renders the three approved status cards',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(theme: AppTheme.lightTheme, home: const DataSyncPage()),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const DataSyncPage(),
+          ),
+        ),
       );
       await tester.pump();
 
@@ -45,7 +57,12 @@ void main() {
         '3. DataSyncPage has no fake controls or navigation affordances',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(theme: AppTheme.lightTheme, home: const DataSyncPage()),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const DataSyncPage(),
+          ),
+        ),
       );
       await tester.pump();
 

@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import '../../../domain/growth/growth_level_curve.dart';
 import '../../../domain/models/sync_models.dart' show RewardLedger;
 import '../../../domain/models/enums.dart';
 import '../../../domain/repositories/i_atomic_settlement.dart';
@@ -80,11 +81,17 @@ class SettlementDao extends DatabaseAccessor<AppDatabase>
             .get();
         if (progressRows.isNotEmpty) {
           final progress = progressRows.first;
+          final newXp = progress.experiencePoints + entry.experienceEarned;
           await (update(petProgressTable)
                 ..where((t) => t.id.equals(progress.id)))
               .write(PetProgressTableCompanion(
-            experiencePoints:
-                Value(progress.experiencePoints + entry.experienceEarned),
+            // `level` is derived from the new XP rather than carried through.
+            // It shipped as a dead field that settlement wrote back unchanged,
+            // so it never left its seeded value — see
+            // MOCHI_GROWTH_STAGE0_AUDIT.md §A. Deriving it here keeps the
+            // stored truth and the displayed truth the same thing.
+            level: Value(GrowthLevelCurve.levelForXp(newXp)),
+            experiencePoints: Value(newXp),
             totalFocusMinutes: Value(progress.totalFocusMinutes + addedMinutes),
             happinessScore: Value((progress.happinessScore + 5).clamp(0, 100)),
             updatedAt: Value(now),

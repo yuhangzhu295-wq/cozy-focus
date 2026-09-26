@@ -15,9 +15,11 @@ import 'package:cozy_focus_app/presentation/pages/focus_save_page.dart';
 import 'package:cozy_focus_app/presentation/pages/focus_reward_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 import 'package:cozy_focus_app/presentation/widgets/pet_avatar_widget.dart';
+import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 import 'package:cozy_focus_app/domain/models/pet_models.dart' as pet_domain;
 import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
+import 'package:cozy_focus_app/presentation/navigation/app_router.dart';
 import 'package:cozy_focus_app/domain/models/craft_models.dart' as craft_domain;
 
 class WidgetTestClock implements FocusClock {
@@ -99,7 +101,7 @@ void main() {
       expect(find.text('开始专注'), findsOneWidget);
     });
 
-    testWidgets('Screen 01: HomePage displays truthful PetProgress message',
+    testWidgets('Screen 01: HomePage hero invents no numbers of its own',
         (tester) async {
       final progress = pet_domain.PetProgress(
         id: 'mochi_progress_id',
@@ -132,18 +134,22 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      const expectedMessage = 'Lv.3 累计专注 120 分钟';
-      final messageFinder = find.text(expectedMessage);
-      expect(messageFinder, findsOneWidget);
-
+      // Reference 01 gives the hero to the illustration alone, so the hero
+      // carries no speech bubble. That means the page must not print a level or
+      // an XP figure anywhere in the hero either — the truthful level/XP display
+      // lives on the Mochi growth page, which is where the design puts it.
       final avatarFinder = find.byType(PetAvatarWidget);
       expect(avatarFinder, findsOneWidget);
       final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
-      expect(avatarWidget.message, equals(expectedMessage));
+      expect(avatarWidget.message, isNull);
+
+      expect(find.textContaining('累计专注'), findsNothing);
+      expect(find.textContaining('Lv.'), findsNothing);
+      expect(find.textContaining('245'), findsNothing);
     });
 
     testWidgets(
-        'Screen 01: HomePage displays truthful PetProgress message and does not overlap headline at 320x640',
+        'Screen 01: HomePage hero keeps the headline clear of the pet at 320x640',
         (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1.0;
@@ -183,25 +189,24 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      const expectedMessage = 'Lv.3 累计专注 120 分钟';
-      final messageFinder = find.text(expectedMessage);
-      expect(messageFinder, findsOneWidget);
-
       final avatarFinder = find.byType(PetAvatarWidget);
       expect(avatarFinder, findsOneWidget);
-      final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
-      expect(avatarWidget.message, equals(expectedMessage));
 
-      final headlineFinder = find.text('每一次专注都有意义');
+      final headlineFinder = find.text('专注当下，\n让更好的自己慢慢长大。');
       expect(headlineFinder, findsOneWidget);
 
+      // The guard that matters is the headline against the pet itself: the
+      // approved hero has no bubble, so the pet is what the copy must clear.
+      final petFinder = find.byType(MochiLayeredRenderer);
+      expect(petFinder, findsOneWidget);
+
       final headlineRect = tester.getRect(headlineFinder);
-      final messageRect = tester.getRect(messageFinder);
-      expect(headlineRect.overlaps(messageRect), isFalse);
+      final petRect = tester.getRect(petFinder);
+      expect(headlineRect.overlaps(petRect), isFalse);
     });
 
     testWidgets(
-        'Screen 01: HomePage displays truthful PetProgress message and does not overlap headline at 360x800',
+        'Screen 01: HomePage hero keeps the headline clear of the pet at 360x800',
         (tester) async {
       tester.view.physicalSize = const Size(360, 800);
       tester.view.devicePixelRatio = 1.0;
@@ -241,25 +246,24 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      const expectedMessage = 'Lv.3 累计专注 120 分钟';
-      final messageFinder = find.text(expectedMessage);
-      expect(messageFinder, findsOneWidget);
-
       final avatarFinder = find.byType(PetAvatarWidget);
       expect(avatarFinder, findsOneWidget);
       final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
-      expect(avatarWidget.message, equals(expectedMessage));
+      expect(avatarWidget.message, isNull);
 
-      final headlineFinder = find.text('每一次专注都有意义');
+      final headlineFinder = find.text('专注当下，\n让更好的自己慢慢长大。');
       expect(headlineFinder, findsOneWidget);
 
+      final petFinder = find.byType(MochiLayeredRenderer);
+      expect(petFinder, findsOneWidget);
+
       final headlineRect = tester.getRect(headlineFinder);
-      final messageRect = tester.getRect(messageFinder);
-      expect(headlineRect.overlaps(messageRect), isFalse);
+      final petRect = tester.getRect(petFinder);
+      expect(headlineRect.overlaps(petRect), isFalse);
     });
 
     testWidgets(
-        'Screen 01: HomePage handles null PetProgress with 300 hero height',
+        'Screen 01: HomePage handles null PetProgress with 264 hero band',
         (tester) async {
       const homeState = HomeUIState(
         petProgress: null,
@@ -289,16 +293,19 @@ void main() {
 
       expect(find.textContaining('累计专注'), findsNothing);
 
-      final heroFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is SizedBox &&
-            (widget.height == 300 ||
-                (widget.height != null && widget.height! >= 300)),
-      );
-      expect(heroFinder, findsOneWidget);
+      // The hero band is what keeps the pet clear of the headline, and it is
+      // sized from the approved page: reference 01 measures 311.25pt from the
+      // page top to the focus card's margin box, of which the test environment
+      // contributes no status-bar inset.
+      final heroFinder = find
+          .ancestor(
+            of: find.text('和 Mochi 一起'),
+            matching: find.byType(SizedBox),
+          )
+          .first;
       final heroWidget = tester.widget<SizedBox>(heroFinder);
-      expect(heroWidget.height, equals(300));
-      expect(tester.getSize(heroFinder).height, equals(300));
+      expect(heroWidget.height, equals(264));
+      expect(tester.getSize(heroFinder).height, equals(264));
     });
 
     testWidgets('Screen 02: FocusSetupPage renders categories and mode options',
@@ -376,16 +383,93 @@ void main() {
           .cancelSession();
     });
 
-    testWidgets('Screen 04: FocusCompletePage renders celebration and minutes',
-        (tester) async {
+    testWidgets(
+        'Screen 04: FocusCompletePage renders the reference sections and the '
+        'settled reward rates', (tester) async {
+      // Drive a real 25-minute session to `finishing` — the state
+      // FocusActivePage leaves before routing here.
+      final notifier = container.read(focusSessionControllerProvider.notifier);
+      await notifier.startSession(
+        userId: 'test_user',
+        plannedSeconds: 1500,
+        mode: FocusMode.focus,
+        taskName: '写作练习',
+        categoryName: '学习',
+      );
+      testClock.advance(const Duration(minutes: 25));
+      await notifier.completeSession();
+
       await tester
           .pumpWidget(createTestApp(container, const FocusCompletePage()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('专注完成'), findsOneWidget);
-      expect(find.text('Great Work!'), findsOneWidget);
-      expect(find.text('继续保存记录'), findsOneWidget);
+      // Reference 04's three cards, its banner and its single action. The
+      // previous revision rendered none of the cards and titled itself in
+      // English.
+      expect(find.textContaining('专注完成'), findsOneWidget);
+      expect(find.text('本次专注时长'), findsOneWidget);
+      expect(find.text('恭喜获得奖励'), findsOneWidget);
+      expect(find.text('记录一下此刻心情（可选）'), findsOneWidget);
+      expect(find.text('完成并返回首页'), findsOneWidget);
+      expect(find.textContaining('每一次专注，都是在靠近更喜欢自己'), findsOneWidget);
+
+      // The duration is MM:SS, the form the reference prints (25:00).
+      expect(find.text('25:00'), findsOneWidget);
+
+      // RewardService settles 2 coins and 5 XP per whole minute. The page must
+      // not print numbers the ledger will disagree with.
+      expect(find.text('+50'), findsOneWidget);
+      expect(find.text('+125'), findsOneWidget);
+    });
+
+    testWidgets('Screen 04: quick finish persists the record and the mood note',
+        (tester) async {
+      final notifier = container.read(focusSessionControllerProvider.notifier);
+      final session = await notifier.startSession(
+        userId: 'test_user',
+        plannedSeconds: 1500,
+        mode: FocusMode.focus,
+        taskName: '写作练习',
+        categoryName: '学习',
+      );
+      testClock.advance(const Duration(minutes: 25));
+      await notifier.completeSession();
+
+      addTearDown(() => appRouter.go('/'));
+      appRouter.go('/focus/complete');
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            theme: AppTheme.lightTheme,
+            routerConfig: appRouter,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.enterText(find.byType(TextField), '今天状态很好');
+      await tester.pump();
+
+      final cta = find.text('完成并返回首页');
+      await tester.ensureVisible(cta);
+      await tester.pump();
+      await tester.tap(cta);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // The action has to actually persist. A completion screen that renders
+      // correctly but writes nothing is the same class of defect as the
+      // abandoned `finishing` session this flow already shipped once.
+      final record = await db.focusRecordDao.findBySessionId(session.id);
+      expect(record, isNotNull);
+      expect(record!.durationSeconds, 1500);
+      expect(record.note, '今天状态很好');
+      expect(record.mood, isNull,
+          reason: 'reference 04 has no mood picker, so no mood is invented');
+      expect(record.taskName, '写作练习');
     });
 
     testWidgets('Screen 04A: FocusSavePage allows mood selection & save',
@@ -587,7 +671,7 @@ void main() {
     });
 
     testWidgets(
-        'RP-5: Tapping Mochi in focus state does not activate interact cooldown',
+        'RP-5: Tapping Mochi in focus state answers without leaving focus',
         (tester) async {
       const homeState = HomeUIState(
         petProgress: null,
@@ -622,8 +706,13 @@ void main() {
       await tester.tap(avatarFinder);
       await tester.pump();
 
+      // STAGE 4 changed this expectation on purpose. The old contract — "focus
+      // blocks interaction" — meant a user tapping a working Mochi got nothing
+      // at all. The brief requires the opposite: a brief glance, then straight
+      // back to work. The critical constraint is the second line: the base state
+      // is *still focus*, never idle.
       expect(controller.visualState, equals(PetVisualState.focus));
-      expect(controller.isInteractCooldownActive, isFalse);
+      expect(controller.isInteractCooldownActive, isTrue);
     });
   });
 }

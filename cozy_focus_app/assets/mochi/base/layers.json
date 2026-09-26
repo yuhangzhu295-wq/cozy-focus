@@ -1,0 +1,153 @@
+{
+  "source_reference": "docs/cozy_focus_v4_1/designs/pages/10_Mochi成长.png",
+  "source_roi": {
+    "x": 330,
+    "y": 495,
+    "width": 560,
+    "height": 405
+  },
+  "character_crop": {
+    "x": 20,
+    "y": 28,
+    "width": 482,
+    "height": 328,
+    "aspect": 1.469512
+  },
+  "dark_outline_threshold": 150,
+  "feather_px": 3,
+  "z_order": [
+    "body",
+    "ear_left",
+    "ear_right",
+    "sprout",
+    "face",
+    "eye_left",
+    "eye_right"
+  ],
+  "pivots": {
+    "sprout": [
+      233.0,
+      90.0
+    ],
+    "ear_left": [
+      94.0,
+      124.0
+    ],
+    "ear_right": [
+      386.0,
+      152.0
+    ],
+    "eye_left": [
+      157.0,
+      169.0
+    ],
+    "eye_right": [
+      275.0,
+      196.0
+    ],
+    "face": [
+      208.0,
+      207.0
+    ]
+  },
+  "layers": {
+    "body": {
+      "file": "assets/mochi/base/body.png",
+      "size": [
+        482,
+        328
+      ],
+      "bbox": [
+        6,
+        6,
+        475,
+        321
+      ],
+      "pixels": 88999
+    },
+    "ear_left": {
+      "file": "assets/mochi/base/ear_left.png",
+      "size": [
+        482,
+        328
+      ],
+      "bbox": [
+        11,
+        123,
+        106,
+        267
+      ],
+      "pixels": 9704
+    },
+    "ear_right": {
+      "file": "assets/mochi/base/ear_right.png",
+      "size": [
+        482,
+        328
+      ],
+      "bbox": [
+        385,
+        150,
+        475,
+        294
+      ],
+      "pixels": 7096
+    },
+    "sprout": {
+      "file": "assets/mochi/base/sprout.png",
+      "size": [
+        482,
+        328
+      ],
+      "bbox": [
+        166,
+        6,
+        318,
+        95
+      ],
+      "pixels": 5418
+    },
+    "face": {
+      "file": "assets/mochi/base/face.png",
+      "size": [
+        482,
+        328
+      ],
+      "bbox": [
+        86,
+        148,
+        338,
+        270
+      ],
+      "pixels": 14090
+    },
+    "eye_left": {
+      "file": "assets/mochi/base/eye_left.png",
+      "size": [
+        482,
+        328
+      ],
+      "bbox": [
+        135,
+        153,
+        179,
+        178
+      ],
+      "pixels": 804
+    },
+    "eye_right": {
+      "file": "assets/mochi/base/eye_right.png",
+      "size": [
+        482,
+        328
+      ],
+      "bbox": [
+        251,
+        179,
+        296,
+        210
+      ],
+      "pixels": 855
+    }
+  }
+}

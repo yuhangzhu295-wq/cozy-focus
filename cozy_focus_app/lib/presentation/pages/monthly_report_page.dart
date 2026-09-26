@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../domain/models/pet_models.dart';
 import '../../domain/services/statistics_engine.dart';
 import '../controllers/reports_controller.dart';
 import '../theme/app_theme.dart';
@@ -777,11 +778,14 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
     );
   }
 
-  Widget _buildMochiGrowthCard(PeriodReport? report, dynamic petProg) {
+  Widget _buildMochiGrowthCard(PeriodReport? report, PetProgress? petProg) {
     final activeDays = report?.activeDaysCount ?? 0;
     final level = petProg?.level ?? 1;
-    final currentXp = petProg?.currentXp ?? 0;
-    final targetXp = petProg?.xpToNextLevel ?? 100;
+    // Same leveling convention as mochi_growth_page: 100 XP per level,
+    // progress bar reflects XP earned within the current level.
+    const xpPerLevel = 100;
+    final currentXp = (petProg?.experiencePoints ?? 0) % xpPerLevel;
+    const targetXp = xpPerLevel;
     final ratio = targetXp > 0 ? (currentXp / targetXp).clamp(0.0, 1.0) : 0.0;
 
     return Container(

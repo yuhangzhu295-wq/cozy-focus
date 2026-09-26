@@ -1,0 +1,6 @@
+# Copy to android/key.properties and replace every placeholder locally.
+# Do not commit android/key.properties or the referenced keystore.
+storeFile=../keys/cozy-focus-release.jks
+storePassword=REPLACE_WITH_LOCAL_SECRET
+keyAlias=cozy_focus_release
+keyPassword=REPLACE_WITH_LOCAL_SECRET

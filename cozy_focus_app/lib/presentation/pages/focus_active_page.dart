@@ -1,11 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../domain/growth/mochi_growth_profile.dart';
 import '../../domain/models/enums.dart';
+import '../../domain/models/focus_session.dart';
 import '../controllers/focus_session_controller.dart';
+import '../controllers/craft_controller.dart';
+import '../controllers/home_controller.dart';
 import '../controllers/providers.dart';
+import '../companion/companion_avatar.dart';
+import '../companion/pet_encouragement.dart';
+import '../companion/time_of_day.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pet_avatar_widget.dart';
 
 /// Screen 03 / 03A / 03B / 03C: Active Focus — V4.1 visual redesign
 /// Design ref: docs/cozy_focus_v4_1/designs/pages_ascii/03_*.png
@@ -20,17 +28,159 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
     with WidgetsBindingObserver {
   // 03B restore overlay — shown once when status becomes restored
   bool _showRestoreOverlay = false;
+  bool _isRestoring = true;
+
+  // --- Mochi's encouragement channel ---------------------------------------
+  //
+  // The engine decides *whether* Mochi speaks; this page only feeds it the real
+  // session timeline. The scheduler owns no clock of its own, and the message is
+  // rendered inside an `IgnorePointer` bubble, so the channel can neither race
+  // nor intercept the controls below.
+  final PetEncouragementScheduler _encouragement = PetEncouragementScheduler();
+  ProviderSubscription<FocusSessionUIState>? _sessionSubscription;
+
+  /// The channel's own one-second heartbeat, alive only while a session is.
+  ///
+  /// The session controller deliberately cancels its display ticker while a
+  /// session is paused — a stopped timer needs no tick. That makes it the wrong
+  /// clock for this channel: with no heartbeat a bubble would never expire and a
+  /// comfort line could never follow an opening line. So the channel keeps its
+  /// own, and stops it the moment the session ends.
+  Timer? _encouragementTicker;
+  PetMessage? _encouragementMessage;
+  String? _encouragedSessionId;
+
+  /// Whether [session] is paused right now.
+  ///
+  /// One definition, shared by the build path and the encouragement listener, so
+  /// the two can never disagree about whether the user is paused.
+  static bool _isPausedSession(FocusSession session) =>
+      session.status == FocusSessionStatus.paused ||
+      (session.status == FocusSessionStatus.restored &&
+          session.pauseIntervals.isNotEmpty &&
+          session.pauseIntervals.last.pauseEnd == null);
+
+  /// `elapsed / planned`, or `null` when the session carries no usable target.
+  ///
+  /// A flow session sets `plannedSeconds` to 0, and an unknown target must not
+  /// be read as "0% complete" — that would put every flow session in the opening
+  /// band forever.
+  static double? _progressOf(FocusSessionUIState state) {
+    final session = state.session;
+    if (session == null || session.plannedSeconds <= 0) return null;
+    return state.elapsedSeconds / session.plannedSeconds;
+  }
+
+  /// The monotonic timeline the encouragement channel runs on.
+  ///
+  /// Deliberately **not** `state.elapsedSeconds`. A paused session's elapsed time
+  /// freezes — correct for the timer, wrong for this channel: with a frozen
+  /// timeline the bubble could never expire and a comfort line could never
+  /// follow an opening line. "How long has this session been open" advances
+  /// either way, so a pause can be acknowledged and a bubble can fade.
+  static Duration _encouragementTimeline(FocusSession session, DateTime now) {
+    final open = now.difference(session.startAt);
+    return open.isNegative ? Duration.zero : open;
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Reference 03 draws the running craft on this screen, so the page has to
+    // load the craft state itself. It cannot rely on another page having loaded
+    // it: a cold start straight into a restored session never passes through
+    // Home, and the row would then be silently missing.
+    Future.microtask(
+        () => ref.read(craftControllerProvider.notifier).loadAll());
+    Future.microtask(_restoreSession);
+    // Driven by the session's own one-second tick rather than a second clock.
+    // No `fireImmediately`: the first legal message is 25 s into a session, so
+    // there is nothing to decide at t=0.
+    _sessionSubscription = ref.listenManual<FocusSessionUIState>(
+      focusSessionControllerProvider,
+      (_, next) => _syncEncouragement(next),
+    );
+  }
+
+  /// Runs the channel's heartbeat, or stops it when there is nothing to say to.
+  void _setEncouragementHeartbeat({required bool active}) {
+    if (active) {
+      _encouragementTicker ??= Timer.periodic(
+        const Duration(seconds: 1),
+        (_) => _syncEncouragement(ref.read(focusSessionControllerProvider)),
+      );
+    } else {
+      _encouragementTicker?.cancel();
+      _encouragementTicker = null;
+    }
+  }
+
+  /// Feeds the real session timeline to the encouragement engine.
+  ///
+  /// Runs from a provider listener and from the heartbeat, never during build,
+  /// so it cannot raise a rebuild-during-build error. The scheduler is idempotent
+  /// within a second, so the two callers cannot double-spend a message.
+  void _syncEncouragement(FocusSessionUIState state) {
+    if (!mounted) return;
+    final session = state.session;
+
+    if (session == null) {
+      // Session ended: drop the bubble, the spent budget and the heartbeat.
+      _setEncouragementHeartbeat(active: false);
+      if (_encouragedSessionId != null) {
+        _encouragement.reset();
+        _encouragedSessionId = null;
+        if (_encouragementMessage != null) {
+          setState(() => _encouragementMessage = null);
+        }
+      }
+      return;
+    }
+
+    _setEncouragementHeartbeat(active: true);
+
+    // A new session gets a fresh budget rather than inheriting the previous
+    // session's spent one.
+    if (_encouragedSessionId != session.id) {
+      _encouragement.reset();
+      _encouragedSessionId = session.id;
+    }
+
+    // The injected clock, not `DateTime.now()`. The session's `startAt` is
+    // written from this clock, so reading the wall clock here would compare two
+    // different sources of time and misjudge the session's age by whatever the
+    // two disagree on — which in a test is the whole distance from the fixed
+    // test instant to today.
+    final now = ref.read(focusClockProvider).now();
+    final progress = ref.read(homeControllerProvider).petProgress;
+    final message = _encouragement.advance(
+      elapsed: _encouragementTimeline(session, now),
+      isPaused: _isPausedSession(session),
+      timeOfDay: TimeOfDayResolver.resolve(now),
+      growth: MochiGrowthProfile.fromProgress(progress),
+      happinessScore: progress?.happinessScore ?? 0,
+      progress: _progressOf(state),
+    );
+
+    if (!identical(message, _encouragementMessage)) {
+      setState(() => _encouragementMessage = message);
+    }
   }
 
   @override
   void dispose() {
+    _setEncouragementHeartbeat(active: false);
+    _sessionSubscription?.close();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  Future<void> _restoreSession() async {
+    await ref
+        .read(focusSessionControllerProvider.notifier)
+        .restoreSession(ref.read(currentUserIdProvider));
+    if (mounted) setState(() => _isRestoring = false);
   }
 
   @override
@@ -76,8 +226,11 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
             mainAxisSize: MainAxisSize.min,
             children: [
               // Pet avatar — small
-              const PetAvatarWidget(
-                  visualState: PetVisualState.pause, size: 80),
+              const CompanionAvatar(
+                visualStateOverride: PetVisualState.pause,
+                size: 80,
+                showStateBadge: false,
+              ),
               const SizedBox(height: 16),
               const Text(
                 '提前结束专注吗？',
@@ -163,7 +316,10 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
       child: Column(
         children: [
           const Spacer(flex: 2),
-          const PetAvatarWidget(visualState: PetVisualState.focus, size: 120),
+          const CompanionAvatar(
+            visualStateOverride: PetVisualState.focus,
+            size: 120,
+          ),
           const SizedBox(height: 20),
           // Green checkmark
           Container(
@@ -312,6 +468,54 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
   Widget build(BuildContext context) {
     final sessionState = ref.watch(focusSessionControllerProvider);
     final session = sessionState.session;
+    // Reference 03 surfaces the in-progress craft on the running screen, so the
+    // job's real progress is visible without leaving the timer.
+    final craft = ref.watch(craftControllerProvider);
+
+    if (session == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: _isRestoring
+                  ? const CircularProgressIndicator()
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.timer_off_outlined,
+                          color: AppColors.primarySage,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          '没有进行中的专注',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '回到首页开始一段新的专注吧。',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(height: 24),
+                        FilledButton(
+                          onPressed: () => context.go('/'),
+                          child: const Text('返回首页'),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      );
+    }
 
     // Auto-navigate when session completes
     if (sessionState.isCompleted && mounted) {
@@ -320,13 +524,10 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
       });
     }
 
-    final isPaused = session?.status == FocusSessionStatus.paused ||
-        (session?.status == FocusSessionStatus.restored &&
-            session!.pauseIntervals.isNotEmpty &&
-            session.pauseIntervals.last.pauseEnd == null);
+    final isPaused = _isPausedSession(session);
     final isRestored =
-        session?.status == FocusSessionStatus.restored && _showRestoreOverlay;
-    final isFlow = (session?.plannedSeconds ?? 0) == 0;
+        session.status == FocusSessionStatus.restored && _showRestoreOverlay;
+    final isFlow = session.plannedSeconds == 0;
 
     final displayTime = isFlow
         ? _formatDuration(sessionState.elapsedSeconds)
@@ -426,9 +627,27 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: PetAvatarWidget(
-                      visualState: sessionState.petState,
+                    // Goes through CompanionAvatar rather than a bare
+                    // PetAvatarWidget so Mochi carries its real growth stage and
+                    // the page's own session state at the same time. The page
+                    // owns the pause/run distinction, so it supplies the state.
+                    child: CompanionAvatar(
+                      visualStateOverride: sessionState.petState,
                       size: 160,
+                      // Mochi's encouragement line, or `null` for silence. The
+                      // bubble is inside an `IgnorePointer`, so it can never
+                      // absorb a tap meant for the controls below.
+                      message: _encouragementMessage?.text,
+                      focusProgress: _progressOf(sessionState),
+                      // The real category of the running task. Read from the
+                      // session rather than `sessionState.categoryId`, because
+                      // the session is the persisted truth and survives a
+                      // restore, whereas the UI field is only populated on a
+                      // fresh `startSession`.
+                      //
+                      // Read-only: it picks a presentation work flavour and
+                      // never touches statistics, rewards or session semantics.
+                      focusCategoryId: sessionState.session?.categoryId,
                     ),
                   ),
                 ),
@@ -480,6 +699,14 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                               style: const TextStyle(
                                   fontSize: 13, color: AppColors.textSecondary),
                             ),
+
+                            // Reference 03 shows the active craft job here:
+                            // item icon, name, a bar and the real percentage.
+                            if (craft.activeJob != null &&
+                                craft.activeRecipe != null) ...[
+                              const SizedBox(height: 18),
+                              _buildCraftProgress(craft),
+                            ],
 
                             // 03A paused: task + elapsed info
                             if (isPaused) ...[
@@ -605,6 +832,63 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                   );
                 },
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The running session's craft progress, exactly as reference 03 draws it.
+  Widget _buildCraftProgress(CraftState craft) {
+    final recipe = craft.activeRecipe!;
+    final job = craft.activeJob!;
+    final progress = recipe.requiredSeconds > 0
+        ? (job.progressSeconds / recipe.requiredSeconds).clamp(0.0, 1.0)
+        : 0.0;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Text(recipe.icon, style: const TextStyle(fontSize: 24)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '正在制作 ${recipe.name}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: AppColors.border,
+                    color: AppColors.primarySage,
+                    minHeight: 6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${(progress * 100).round()}%',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
             ),
           ),
         ],

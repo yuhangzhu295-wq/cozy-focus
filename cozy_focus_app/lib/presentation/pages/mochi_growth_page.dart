@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../domain/models/enums.dart';
 import '../../domain/models/pet_models.dart';
 import '../controllers/growth_controller.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pet_avatar_widget.dart';
+import '../companion/companion_avatar.dart';
+import '../widgets/growth_sub_nav.dart';
+import '../widgets/app_bottom_nav.dart';
 
 /// Screen: Growth > Mochi Page
 /// Real data-backed pet growth screen for Mochi
@@ -50,6 +51,9 @@ class MochiGrowthPage extends ConsumerWidget {
       slivers: [
         SliverToBoxAdapter(
           child: _buildHeader(context, pet.name),
+        ),
+        const SliverToBoxAdapter(
+          child: GrowthSubNav(active: GrowthSection.mochi),
         ),
         SliverToBoxAdapter(
           child: _buildPetHero(pet.name, progress),
@@ -141,8 +145,7 @@ class MochiGrowthPage extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       child: Column(
         children: [
-          PetAvatarWidget(
-            visualState: PetVisualState.idle,
+          CompanionAvatar(
             size: 160,
             message: '$petName 正在陪伴你成长 🌱',
           ),
@@ -461,8 +464,7 @@ class MochiGrowthPage extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  PetAvatarWidget(
-                    visualState: PetVisualState.idle,
+                  CompanionAvatar(
                     size: 140,
                     message: '${pet.name} 等待开启成长记录 🌱',
                   ),
@@ -519,34 +521,6 @@ class MochiGrowthPage extends ConsumerWidget {
   }
 
   Widget _buildBottomNav(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 2,
-      selectedItemColor: AppColors.primarySage,
-      unselectedItemColor: AppColors.textTertiary,
-      backgroundColor: AppColors.surface,
-      onTap: (index) {
-        if (index == 2) return;
-        switch (index) {
-          case 0:
-            context.go('/');
-          case 1:
-            context.go('/records');
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_rounded),
-          label: '首页',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_rounded),
-          label: '记录',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.eco_outlined),
-          label: '成长',
-        ),
-      ],
-    );
+    return const AppBottomNav(currentIndex: 2);
   }
 }
