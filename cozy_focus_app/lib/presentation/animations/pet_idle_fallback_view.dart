@@ -505,6 +505,10 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   @visibleForTesting
   double get renderedHeadRotation => _renderedFrame.headRotation;
 
+  /// Body vertical offset actually rendered, Reduced Motion included.
+  @visibleForTesting
+  double get renderedBodyDy => _renderedFrame.dy;
+
   /// Whether Reduced Motion is currently in force.
   @visibleForTesting
   bool get isReduceMotionActive => _reduceMotion;
@@ -1727,6 +1731,14 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         rotation *= beatScale;
         earRotation *= beatScale;
         tailRotation *= beatScale;
+      }
+
+      final beatEnvelope = math.sin(math.pi * _focusActivity.localProgress);
+      if (beat.dyOffset != 0.0) {
+        dy += beat.dyOffset * beatEnvelope;
+      }
+      if (beat.headDegrees != 0.0) {
+        extraHeadTerm += beat.headDegrees * beatEnvelope * math.pi / 180;
       }
 
       if (beat.headBobDegrees != 0.0) {

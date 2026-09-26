@@ -50,14 +50,22 @@ class PetFocusActivitySpec {
   /// not as a pause in work.
   final double amplitudeScale;
 
+  /// A subtle vertical offset in logical pixels, spread across the beat.
+  final double dyOffset;
+
   /// A single out-and-back head lift, in degrees, spread across the beat.
   final double headLiftDegrees;
+
+  /// A subtle head rotation offset in degrees, signed.
+  final double headDegrees;
 
   /// A head bob in degrees, one full oscillation per work cycle.
   final double headBobDegrees;
 
   const PetFocusActivitySpec({
     required this.amplitudeScale,
+    this.dyOffset = 0.0,
+    this.headDegrees = 0.0,
     this.headLiftDegrees = 0.0,
     this.headBobDegrees = 0.0,
   });
@@ -70,16 +78,22 @@ class PetFocusActivitySpec {
   static const Map<PetFocusActivity, PetFocusActivitySpec> table = {
     PetFocusActivity.prepare: PetFocusActivitySpec(
       amplitudeScale: 1.12,
+      dyOffset: -0.6,
       headLiftDegrees: 0.6,
     ),
     PetFocusActivity.work: PetFocusActivitySpec(
       amplitudeScale: 1.0,
+      dyOffset: 0.8,
+      headDegrees: 0.8,
     ),
     PetFocusActivity.microIdle: PetFocusActivitySpec(
       amplitudeScale: 0.45,
+      dyOffset: -0.5,
+      headDegrees: -0.4,
     ),
     PetFocusActivity.returning: PetFocusActivitySpec(
       amplitudeScale: 1.04,
+      dyOffset: 0.2,
     ),
     PetFocusActivity.glance: PetFocusActivitySpec(
       amplitudeScale: 1.0,
@@ -425,7 +439,9 @@ class PetFocusActivityController {
     final flavour = PetWorkFlavourSpec.of(_flavour);
     return PetFocusActivitySpec(
       amplitudeScale: beat.amplitudeScale * flavour.amplitudeScale,
+      dyOffset: beat.dyOffset,
       headLiftDegrees: beat.headLiftDegrees,
+      headDegrees: beat.headDegrees,
       headBobDegrees: flavour.headBobDegrees,
     );
   }

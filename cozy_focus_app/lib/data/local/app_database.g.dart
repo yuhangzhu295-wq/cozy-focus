@@ -752,6 +752,10 @@ class $FocusRecordsTable extends FocusRecords
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {sessionId},
+      ];
+  @override
   FocusRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return FocusRecord(

@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/focus_record.dart';
+import '../companion/companion_avatar.dart';
 import '../controllers/providers.dart';
 import '../controllers/records_controller.dart';
 import '../theme/app_theme.dart';
 
 /// Screen 05C: Record Detail Page (05C 记录详情)
 /// Shows:
+/// - Large Mochi hero avatar with peaceful state
 /// - Task name, duration, date & time range
-/// - Category, Mood, Note
+/// - Category, Mood, Note (clean structured cards matching V4.1 hierarchy)
 /// - Real reward settlement summary (focusCoinsEarned & experienceEarned from RewardLedger)
 /// - Secondary confirmation delete dialog (calls IFocusRecordRepository.deleteById)
 /// - Edit dialog for task name, category, mood, note (calls IFocusRecordRepository.update)
@@ -70,7 +72,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
 
     final taskController = TextEditingController(text: r.taskName ?? '');
     final noteController = TextEditingController(text: r.note ?? '');
-    String selectedCategory = r.categoryId ?? 'default';
+    // Fix: never coerce null categoryId to 'default' silently — let user choose
+    String? selectedCategory = r.categoryId;
     String? selectedMood = r.mood; // null = user never selected
 
     final categories = [
@@ -81,7 +84,14 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       {'id': 'other', 'name': '其他', 'icon': Icons.more_horiz_rounded},
     ];
 
-    final moods = ['😊', '😄', '🌿', '😌', '💪', '😴'];
+    final moods = [
+      {'emoji': '😊', 'label': '开心'},
+      {'emoji': '😄', 'label': '愉快'},
+      {'emoji': '🌿', 'label': '平静'},
+      {'emoji': '😌', 'label': '放松'},
+      {'emoji': '💪', 'label': '专注'},
+      {'emoji': '😴', 'label': '疲惫'},
+    ];
 
     final updated = await showDialog<bool>(
       context: context,
@@ -168,18 +178,24 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                             fontWeight: FontWeight.w600,
                             color: AppColors.textSecondary)),
                     const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: moods.map((m) {
-                        final isSel = selectedMood != null && selectedMood == m;
+                        final emoji = m['emoji'] as String;
+                        final label = m['label'] as String;
+                        final isSel =
+                            selectedMood != null && selectedMood == emoji;
                         return GestureDetector(
-                          onTap: () => setDialogState(() => selectedMood = m),
+                          onTap: () =>
+                              setDialogState(() => selectedMood = emoji),
                           child: Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: isSel
                                   ? AppColors.accentPeachLight
-                                  : Colors.transparent,
+                                  : AppColors.backgroundWarm,
                               borderRadius: BorderRadius.circular(AppRadius.md),
                               border: Border.all(
                                 color: isSel
@@ -187,8 +203,23 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                                     : Colors.transparent,
                               ),
                             ),
-                            child:
-                                Text(m, style: const TextStyle(fontSize: 22)),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(emoji,
+                                    style: const TextStyle(fontSize: 18)),
+                                const SizedBox(width: 4),
+                                Text(label,
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: isSel
+                                            ? AppColors.primarySage
+                                            : AppColors.textSecondary,
+                                        fontWeight: isSel
+                                            ? FontWeight.bold
+                                            : FontWeight.normal)),
+                              ],
+                            ),
                           ),
                         );
                       }).toList(),
@@ -199,6 +230,12 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textSecondary)),
+                    const SizedBox(height: 4),
+                    const Text(
+                      '实际时长不可修改；只允许编辑任务、分类、心情和备注',
+                      style: TextStyle(
+                          fontSize: 11, color: AppColors.textTertiary),
+                    ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: noteController,
@@ -245,6 +282,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         taskName: taskController.text.trim().isEmpty
             ? null
             : taskController.text.trim(),
+        // Fix: only write categoryId when the user explicitly selected one
         categoryId: selectedCategory,
         mood: selectedMood,
         note: noteController.text.trim().isEmpty
@@ -343,6 +381,34 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
     }
   }
 
+  Color _categoryColor(String? id) {
+    switch (id) {
+      case 'work':
+        return AppColors.catWork;
+      case 'study':
+        return AppColors.catStudy;
+      case 'reading':
+        return AppColors.catReading;
+      case 'life':
+        return AppColors.catLife;
+      default:
+        return AppColors.catOther;
+    }
+  }
+
+  /// Returns the label text for a mood emoji, e.g. '😊' → '开心'.
+  String _moodLabel(String emoji) {
+    const map = {
+      '😊': '开心',
+      '😄': '愉快',
+      '🌿': '平静',
+      '😌': '放松',
+      '💪': '专注',
+      '😴': '疲惫',
+    };
+    return map[emoji] ?? emoji;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -380,6 +446,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
 
     final r = _record!;
     final minutes = (r.durationSeconds / 60).floor();
+    // Fix: show '<1 分钟' for sessions under one minute
+    final displayMinutes = r.durationSeconds < 60 ? '<1' : '$minutes';
     final timeStr =
         '${_formatDateTime(r.startAt)} - ${_formatDateTime(r.endAt)}';
 
@@ -398,17 +466,42 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontSize: 17,
           ),
         ),
+        // Fix: AppBar right-side 「编辑」entry per V4.1 05C spec
+        actions: [
+          TextButton(
+            onPressed: _showEditDialog,
+            child: const Text(
+              '编辑',
+              style: TextStyle(
+                color: AppColors.primarySage,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Main Hero Card
+              // Mochi Companion Hero
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.only(top: 4, bottom: 12),
+                  child: CompanionAvatar(
+                    size: 140,
+                    message: '专注的每一分都算数 ♡',
+                  ),
+                ),
+              ),
+
+              // Main Session Card
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -418,8 +511,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
@@ -428,12 +521,13 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Text(
                             r.taskName ?? '无特定任务',
                             style: const TextStyle(
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary,
                             ),
@@ -441,49 +535,57 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                              horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
+                            color: _categoryColor(r.categoryId)
+                                .withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: Text(
                             _categoryLabel(r.categoryId),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primarySage,
+                              color: _categoryColor(r.categoryId),
                             ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      _formatDate(r.startAt),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today_rounded,
+                            size: 14, color: AppColors.textTertiary),
+                        const SizedBox(width: 6),
+                        Text(
+                          _formatDate(r.startAt),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                     const Divider(height: 24, color: AppColors.borderLight),
                     Row(
                       children: [
                         const Icon(Icons.access_time_rounded,
-                            size: 20, color: AppColors.primarySage),
-                        const SizedBox(width: 8),
+                            size: 18, color: AppColors.primarySage),
+                        const SizedBox(width: 6),
                         Text(
                           timeStr,
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.textPrimary,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                         const Spacer(),
                         Text(
-                          '$minutes 分钟',
+                          '$displayMinutes 分钟',
                           style: const TextStyle(
-                            fontSize: 20,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primarySage,
                           ),
@@ -493,7 +595,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // Mood & Notes Card
               Container(
@@ -506,30 +608,51 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Text('专注心情：',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary,
-                            )),
-                        Text(
-                          r.mood != null && r.mood!.isNotEmpty
-                              ? r.mood!
-                              : '未记录',
-                          style: const TextStyle(fontSize: 24),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    const Text('专注心得 / 备注：',
+                    const Text('专注心情',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textSecondary,
                         )),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundWarm,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            r.mood != null && r.mood!.isNotEmpty
+                                ? r.mood!
+                                : '🌱',
+                            style: const TextStyle(fontSize: 20),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            r.mood != null && r.mood!.isNotEmpty
+                                ? _moodLabel(r.mood!)
+                                : '未选择心情',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('专注心得 / 备注',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        )),
+                    const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
@@ -552,9 +675,9 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // Rewards Settled Card
+              // Rewards Settled Card — title changed to 「本次成长」
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -571,7 +694,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                             size: 18, color: AppColors.accentPeach),
                         SizedBox(width: 8),
                         Text(
-                          '结算奖励',
+                          '本次成长',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -595,19 +718,23 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                                 const Text('🪙',
                                     style: TextStyle(fontSize: 20)),
                                 const SizedBox(width: 8),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('专注币',
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.textSecondary)),
-                                    Text('+$_rewardCoins',
-                                        style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.textPrimary)),
-                                  ],
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('专注币',
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textSecondary)),
+                                      Text('+$_rewardCoins',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.textPrimary)),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -626,19 +753,23 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                                 const Text('🐾',
                                     style: TextStyle(fontSize: 20)),
                                 const SizedBox(width: 8),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('Mochi 亲密度',
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.textSecondary)),
-                                    Text('+$_rewardXp XP',
-                                        style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.textPrimary)),
-                                  ],
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Mochi 亲密度',
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textSecondary)),
+                                      Text('+$_rewardXp XP',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.textPrimary)),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -646,69 +777,28 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundWarm,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.handyman_outlined,
-                              size: 14, color: AppColors.textTertiary),
-                          SizedBox(width: 6),
-                          Text(
-                            '家具制作：Phase 4 尚未解锁，敬请期待',
-                            style: TextStyle(
-                                fontSize: 11, color: AppColors.textTertiary),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
-              // Actions (Edit & Delete)
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primarySage,
-                        side: const BorderSide(color: AppColors.primarySage),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: const Text('编辑记录',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      onPressed: _showEditDialog,
+              // Bottom action: single full-width delete button (edit moved to AppBar)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                    side: const BorderSide(color: Colors.redAccent),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-                        side: const BorderSide(color: Colors.redAccent),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                      label: const Text('删除记录',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      onPressed: _showDeleteConfirmDialog,
-                    ),
-                  ),
-                ],
+                  icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                  label: const Text('删除记录',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  onPressed: _showDeleteConfirmDialog,
+                ),
               ),
             ],
           ),

@@ -188,24 +188,29 @@ void main() {
       expect(find.text('25 分钟'), findsOneWidget);
       expect(find.text('😊'), findsOneWidget);
       expect(find.text('Finished phase 3 architecture'), findsOneWidget);
-      expect(find.text('编辑记录'), findsOneWidget);
+      // V4.1 05C spec: edit entry moved to AppBar as '编辑' button
+      expect(find.text('编辑'), findsOneWidget);
       expect(find.text('删除记录'), findsOneWidget);
 
       // Tap Edit record button
-      await tester.tap(find.text('编辑记录'));
-      await tester.pumpAndSettle();
+      await tester.tap(find.text('编辑'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('编辑记录'), findsWidgets);
       expect(find.text('取消'), findsOneWidget);
       await tester.tap(find.text('取消'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Tap Delete record button
       await tester.tap(find.text('删除记录'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('确认删除记录？'), findsOneWidget);
       expect(find.text('删除此记录后，相关的统计数据与图表将被重新计算。此操作不可恢复。'), findsOneWidget);
       await tester.tap(find.text('取消'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
     });
 
     testWidgets(

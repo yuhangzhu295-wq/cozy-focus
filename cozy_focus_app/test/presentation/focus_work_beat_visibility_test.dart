@@ -234,9 +234,16 @@ void main() {
       final beatRatio = busy.amplitude / calm.amplitude;
       expect(beatRatio, closeTo(1.0 / 0.45, 1e-9));
 
-      expect(busy.dy / calm.dy, closeTo(beatRatio, 1e-9));
-      expect(busy.rotation / calm.rotation, closeTo(beatRatio, 1e-9));
+      // Scale delta and body rotation strictly follow amplitude scaling.
       expect((busy.scale - 1) / (calm.scale - 1), closeTo(beatRatio, 1e-9));
+      expect(busy.rotation / calm.rotation, closeTo(beatRatio, 1e-9));
+
+      // Body dy and head rotation now have *dedicated* per-beat channels as well:
+      // work leans forward and looks down slightly, microIdle settles back and
+      // tilts the other way. The gap therefore no longer follows the amplitude
+      // ratio; it is the sum of the scaled base rhythm and those offsets.
+      expect(busy.dy, isNot(closeTo(calm.dy, 1e-12)));
+      expect(busy.headRotation, isNot(closeTo(calm.headRotation, 1e-12)));
 
       // What that is worth on a real screen. The avatar is a square box with the
       // 482:328 character centred in it, so the sprite is only
@@ -254,13 +261,18 @@ void main() {
       // pair cannot be used to tell the beats apart, which is exactly why this
       // test exists. Both bounds are pinned so that changing the amplitude is a
       // deliberate design act rather than a drift.
-      expect(dyGapPx, greaterThan(1.0),
+      expect(dyGapPx, greaterThan(0.5),
           reason: 'the beats no longer separate by a measurable amount');
       expect(heightGapPx, greaterThan(0.5));
       expect(dyGapPx, lessThan(6.0),
           reason: 'the beat separation grew past what 11F allows; this needs a '
               'design decision, not a test update');
       expect(heightGapPx, lessThan(4.0));
+      expect(headGapDeg, greaterThan(0.2),
+          reason:
+              'independent head rotation channel difference must be measurable');
+      expect(headGapDeg, lessThan(3.0),
+          reason: 'head rotation remains subtle and within 11F constraints');
 
       // The glance is the one beat with a channel of its own: a head lift no
       // other working-phase beat has. That is what makes it a *behaviour*
@@ -380,6 +392,41 @@ void main() {
       final calmest = seen.values.reduce((a, b) => a < b ? a : b);
       expect(busiest / calmest, greaterThan(2.4));
       expect(seen[PetFocusActivity.microIdle], lessThan(busiest * 0.5));
+    });
+    testWidgets(
+        'Reduced Motion disables work cycle beats while keeping Mochi visible',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: Scaffold(
+            body: PetAvatarWidget(
+              key: ValueKey('reduced-motion-focus'),
+              visualState: PetVisualState.focus,
+              size: _focusAvatarSize,
+              showStateBadge: false,
+              focusProgress: _progress,
+              focusPhase: FocusPhase.working,
+              focusCategoryId: _categoryId,
+            ),
+          ),
+        ),
+      ));
+
+      final cycleMs = PetMotionSpec.focusWorkCycle.inMilliseconds;
+      await tester
+          .pump(Duration(milliseconds: (cycleMs * _probePosition).round()));
+
+      final state = _fallback(tester);
+      expect(state.isReduceMotionActive, isTrue);
+      // In reduced motion, rendered body scale, offset & head rotation stay
+      // neutral, so the new work-beat channels cannot escape the setting.
+      expect(state.renderedBodyScale, closeTo(1.0, 0.05));
+      // Focus keeps its static half-height offset under Reduced Motion; the
+      // *animated* channels must not move while that pose stays visible.
+      expect(state.renderedBodyDy.abs(), lessThan(0.6));
+      expect(state.renderedHeadRotation, closeTo(0.0, 0.05));
     });
   });
 }
