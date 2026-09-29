@@ -1,3 +1,5 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'mochi_visual_provider.dart';
 import 'placeholder_visual_providers.dart';
 import 'runtime/companion_id.dart';
@@ -23,3 +25,13 @@ CompanionVisualRegistry buildCompanionVisualRegistry() {
   registry.register(RabbitVisualProvider(), companionId: CompanionId.rabbit);
   return registry;
 }
+
+/// The registry the presentation layer resolves providers from.
+///
+/// A provider rather than a global, so the fourth-companion contract is
+/// *testable*: a test can register a brand-new companion's provider and assert
+/// that a page renders it with no page edit. It also means nothing in the widget
+/// tree has to know a species to obtain a drawing.
+final companionVisualRegistryProvider = Provider<CompanionVisualRegistry>(
+  (ref) => buildCompanionVisualRegistry(),
+);

@@ -13,7 +13,6 @@ import 'companion_visual_registry.dart';
 import 'runtime/companion_behavior_director.dart';
 import 'runtime/companion_context.dart';
 import 'runtime/companion_id.dart';
-import 'runtime/companion_manifest_data.dart';
 import 'runtime/companion_presentation_clock.dart';
 import 'runtime/companion_renderer.dart';
 import 'runtime/companion_visual_provider.dart';
@@ -114,9 +113,9 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     if (widget.controller == null) {
       _ownedController = PetMotionController();
     }
-    _registry = buildCompanionVisualRegistry();
+    _registry = ref.read(companionVisualRegistryProvider);
     _director = CompanionBehaviorDirector(
-      catalog: bundledCompanionCatalog(),
+      catalog: ref.read(companionCatalogProvider),
       context: _readContext(),
     );
 
@@ -300,6 +299,11 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     ref.watch(homeControllerProvider);
     ref.watch(craftControllerProvider);
     ref.watch(companionSelectionProvider);
+
+    // Watched so a test that substitutes a catalog or a registry sees the
+    // change without any page being aware of it.
+    ref.watch(companionCatalogProvider);
+    ref.watch(companionVisualRegistryProvider);
 
     return CompanionPresentationClock(
       director: _director,

@@ -187,6 +187,35 @@ void main() {
     });
   });
 
+  group('the fourth-companion contract', () {
+    test('no production file mentions the test-only companion', () {
+      // The proof that adding a companion needs no production edit: the fox
+      // exists only in test code, yet it drives the shared director and renders
+      // through the production page widget.
+      final offenders = <String>[];
+      for (final file in dartFilesIn('lib')) {
+        final source = file.readAsStringSync();
+        if (source.contains("'fox'") || source.contains('FoxVisualProvider')) {
+          offenders.add(file.path);
+        }
+      }
+      expect(offenders, isEmpty,
+          reason: 'the fox must be test-only: \$offenders');
+    });
+
+    test('registration is a single centralised touch-point', () {
+      final source = File(
+        'lib/presentation/companion/companion_visual_registry.dart',
+      ).readAsStringSync();
+
+      // One function registers every companion; a new one is a row here plus a
+      // profile, and nothing else in the app changes.
+      expect(source.contains('buildCompanionVisualRegistry'), isTrue);
+      expect(RegExp(r'registry\.register\(').allMatches(source).length,
+          greaterThanOrEqualTo(3));
+    });
+  });
+
   group('the runtime is data-driven', () {
     test('behaviour eligibility comes from the manifest, not a switch', () {
       final source = File(
