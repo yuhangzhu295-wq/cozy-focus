@@ -1,5 +1,6 @@
 import '../focus_phase.dart';
 import 'behavior_recipe.dart';
+import 'companion_ambient_modifiers.dart';
 import 'companion_catalog.dart';
 import 'companion_context.dart';
 import 'companion_pose.dart';
@@ -209,13 +210,33 @@ class CompanionBehaviorDirector {
       return;
     }
 
-    final chosen = _choose(activeRecipe);
-    _macro = chosen;
-    _macroEndsAt = _now +
-        random.durationBetween(
-          activeRecipe.minDuration,
-          activeRecipe.maxDuration,
-        );
+    final modifier = ambientModifier;
+    _macro = _choose(activeRecipe, modifier);
+
+    final dwell = random.durationBetween(
+      activeRecipe.minDuration,
+      activeRecipe.maxDuration,
+    );
+    _macroEndsAt = _now + _scaled(dwell, modifier.dwellScale);
+  }
+
+  /// The growth + time-of-day contribution for the current context.
+  ///
+  /// Both are presentation facts derived from real data — the shared growth
+  /// stage and the wall clock — and neither can reach the reward economy. Task
+  /// contexts get the neutral modifier, so a focus session and a craft job
+  /// present identically at every stage and every hour.
+  AmbientModifier get ambientModifier => CompanionAmbientModifiers.resolve(
+        baseContext: _context.baseContext,
+        growthStage: _context.growthStage,
+        timeOfDayBand: _context.timeOfDay,
+      );
+
+  /// Applies a dwell multiplier, never returning a non-positive duration.
+  static Duration _scaled(Duration base, double scale) {
+    if (scale.isNaN || scale.isInfinite || scale <= 0) return base;
+    final ms = (base.inMilliseconds * scale).round();
+    return Duration(milliseconds: ms < 1 ? 1 : ms);
   }
 
   /// How long an ungrounded context dwells before being re-evaluated.
@@ -238,8 +259,14 @@ class CompanionBehaviorDirector {
 
   /// Chooses one eligible behaviour, honouring weights, glance probability and
   /// the no-immediate-repeat rule.
-  CompanionMacroBehavior _choose(BehaviorRecipe recipe) {
-    var pool = recipe.eligible;
+  CompanionMacroBehavior _choose(
+      BehaviorRecipe recipe, AmbientModifier modifier) {
+    // The ambient pool is the recipe's own list plus whatever growth and the
+    // hour contribute. Additive, so a stage can never take a behaviour away.
+    var pool = <CompanionMacroBehavior>[
+      ...recipe.eligible,
+      ...modifier.extraEligible.where((b) => !recipe.eligible.contains(b)),
+    ];
 
     // No immediate repeat. Skipped when the pool would become empty, otherwise a
     // single-behaviour recipe (craft, celebrate, sleep) could never pick again
