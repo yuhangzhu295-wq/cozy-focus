@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "note": "Companion profiles for the Companion Runtime. Mirrors CozyFocus V4.2.1 manifests/companion_profiles.example.json, extended with interaction and room-anchor profiles. Adding a fourth companion means adding one entry here plus one pose pack and one visual provider registration - no page, director or generic-renderer edit.",
+  "defaultProfile": "dog",
+  "profiles": {
+    "dog": {
+      "displayName": "Mochi",
+      "posePack": "mochi",
+      "runtimeAssets": "GAP",
+      "microMotion": [
+        "breathe",
+        "blink",
+        "ear_twitch",
+        "sprout_sway"
+      ],
+      "behaviorWeights": {
+        "focus_read": 0.3,
+        "focus_write": 0.4,
+        "focus_think": 0.3
+      },
+      "interaction": {
+        "tap": "tapReact",
+        "longPress": "petReact"
+      },
+      "roomAnchors": {
+        "seat": "room_sit",
+        "lie": "room_sleep",
+        "front": "room_read",
+        "work": "room_work"
+      }
+    },
+    "cat": {
+      "displayName": "小猫",
+      "posePack": "cat",
+      "runtimeAssets": "GAP",
+      "microMotion": [
+        "breathe",
+        "blink",
+        "ear_flick",
+        "tail_sweep"
+      ],
+      "behaviorWeights": {
+        "focus_read": 0.25,
+        "focus_write": 0.5,
+        "focus_think": 0.25
+      },
+      "interaction": {
+        "tap": "tapReact",
+        "longPress": "petReact"
+      },
+      "roomAnchors": {
+        "seat": "room_sit",
+        "lie": "room_sleep",
+        "front": "room_read",
+        "work": "room_work"
+      }
+    },
+    "rabbit": {
+      "displayName": "小兔",
+      "posePack": "rabbit",
+      "runtimeAssets": "GAP",
+      "microMotion": [
+        "breathe",
+        "blink",
+        "ear_perk"
+      ],
+      "behaviorWeights": {
+        "focus_read": 0.45,
+        "focus_write": 0.25,
+        "focus_think": 0.3
+      },
+      "interaction": {
+        "tap": "tapReact",
+        "longPress": "petReact"
+      },
+      "roomAnchors": {
+        "seat": "room_sit",
+        "lie": "room_sleep",
+        "front": "room_read",
+        "work": "room_work"
+      }
+    }
+  }
+}

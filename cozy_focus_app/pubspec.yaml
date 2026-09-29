@@ -60,4 +60,5 @@ flutter:
     - assets/images/
     - assets/sounds/
     - assets/mochi/base/
+    - assets/companion/
 

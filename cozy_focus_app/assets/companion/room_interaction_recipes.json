@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "note": "Room interaction recipes for the Companion Runtime. Mirrors CozyFocus V4.2.1 docs/06_Room_Craft_Collection_Recipe_SPEC.md and manifests/room_interaction_recipes.example.json. An item is only eligible when it is owned AND placed AND visible - the presentation layer never rewrites business RoomItem coordinates.",
+  "recipes": {
+    "sofa": {
+      "anchor": "seat",
+      "behavior": "room_sit",
+      "requires": [
+        "owned",
+        "placed",
+        "visible"
+      ]
+    },
+    "rug": {
+      "anchor": "seat",
+      "behavior": "room_sit",
+      "requires": [
+        "owned",
+        "placed",
+        "visible"
+      ]
+    },
+    "bed": {
+      "anchor": "lie",
+      "behavior": "room_sleep",
+      "requires": [
+        "owned",
+        "placed",
+        "visible"
+      ]
+    },
+    "bookshelf": {
+      "anchor": "front",
+      "behavior": "room_read",
+      "requires": [
+        "owned",
+        "placed",
+        "visible"
+      ]
+    },
+    "desk": {
+      "anchor": "work",
+      "behavior": "room_work",
+      "requires": [
+        "owned",
+        "placed",
+        "visible"
+      ]
+    }
+  }
+}

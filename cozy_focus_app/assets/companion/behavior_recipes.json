@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "note": "Behaviour recipes for the Companion Runtime. Mirrors CozyFocus V4.2.1 docs/04_Behavior_Graph_SPEC.md and manifests/behavior_recipes.json. Presentation only: nothing here can reach XP, rewards, a session or a craft job.",
+  "contexts": {
+    "home": {
+      "default": {
+        "eligible": [
+          "idle"
+        ],
+        "minSeconds": 6,
+        "maxSeconds": 14,
+        "noImmediateRepeat": true
+      }
+    },
+    "focus": {
+      "starting": {
+        "eligible": [
+          "prepare",
+          "focus_read"
+        ],
+        "minSeconds": 6,
+        "maxSeconds": 12,
+        "noImmediateRepeat": true
+      },
+      "working": {
+        "eligible": [
+          "focus_read",
+          "focus_write",
+          "focus_think"
+        ],
+        "minSeconds": 8,
+        "maxSeconds": 20,
+        "noImmediateRepeat": true
+      },
+      "deep_focus": {
+        "eligible": [
+          "focus_read",
+          "focus_write",
+          "focus_think"
+        ],
+        "minSeconds": 15,
+        "maxSeconds": 30,
+        "noImmediateRepeat": true,
+        "glanceProbability": 0.15
+      },
+      "finishing": {
+        "eligible": [
+          "focus_write",
+          "focus_read",
+          "glance",
+          "finish"
+        ],
+        "minSeconds": 8,
+        "maxSeconds": 18,
+        "noImmediateRepeat": true
+      }
+    },
+    "pause": {
+      "default": {
+        "eligible": [
+          "pause_rest"
+        ],
+        "minSeconds": 10,
+        "maxSeconds": 22,
+        "noImmediateRepeat": true
+      }
+    },
+    "complete": {
+      "default": {
+        "eligible": [
+          "celebrate"
+        ],
+        "minSeconds": 6,
+        "maxSeconds": 12,
+        "noImmediateRepeat": false
+      }
+    },
+    "craft": {
+      "default": {
+        "eligible": [
+          "craft_work"
+        ],
+        "minSeconds": 8,
+        "maxSeconds": 16,
+        "noImmediateRepeat": false
+      }
+    },
+    "room": {
+      "default": {
+        "eligible": [
+          "room_relax",
+          "idle"
+        ],
+        "minSeconds": 8,
+        "maxSeconds": 18,
+        "noImmediateRepeat": true
+      },
+      "seat": {
+        "eligible": [
+          "room_sit"
+        ],
+        "minSeconds": 12,
+        "maxSeconds": 26,
+        "noImmediateRepeat": false
+      },
+      "lie": {
+        "eligible": [
+          "room_sleep"
+        ],
+        "minSeconds": 16,
+        "maxSeconds": 34,
+        "noImmediateRepeat": false
+      },
+      "front": {
+        "eligible": [
+          "room_read"
+        ],
+        "minSeconds": 12,
+        "maxSeconds": 24,
+        "noImmediateRepeat": true
+      },
+      "work": {
+        "eligible": [
+          "room_work"
+        ],
+        "minSeconds": 10,
+        "maxSeconds": 22,
+        "noImmediateRepeat": true
+      }
+    },
+    "sleep": {
+      "default": {
+        "eligible": [
+          "sleep"
+        ],
+        "minSeconds": 20,
+        "maxSeconds": 40,
+        "noImmediateRepeat": false
+      }
+    }
+  },
+  "overlays": {
+    "tap_react": {
+      "durationMs": [
+        600,
+        1200
+      ],
+      "restorePrevious": true
+    },
+    "pet_react": {
+      "durationMs": [
+        1000,
+        2000
+      ],
+      "restorePrevious": true
+    },
+    "greeting": {
+      "durationMs": [
+        1200,
+        2000
+      ],
+      "restorePrevious": true
+    },
+    "unlock_react": {
+      "durationMs": [
+        1500,
+        2500
+      ],
+      "restorePrevious": true
+    }
+  },
+  "rules": [
+    "presentation_only",
+    "injectable_random_source",
+    "single_scheduler"
+  ]
+}
