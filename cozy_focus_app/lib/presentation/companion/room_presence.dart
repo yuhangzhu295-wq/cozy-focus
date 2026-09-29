@@ -151,10 +151,15 @@ abstract final class PetRoomPresenceResolver {
   /// When several seats qualify, the topmost wins: highest `zIndex`, then the
   /// newer placement, then the larger id. The id tie-break exists so the answer
   /// never depends on the order the rows came back in.
+  /// [eligibleItemIds] lets the caller supply the eligible set from the recipe
+  /// catalog. When omitted the historical positive list is used, so existing
+  /// callers and tests keep their behaviour.
   static PetRoomPresence resolve({
     required List<RoomItem> placed,
     required List<InventoryItem> owned,
+    Set<String>? eligibleItemIds,
   }) {
+    final eligible = eligibleItemIds ?? seatItemIds;
     final ownedItemIds = <String>{
       for (final item in owned)
         if (item.quantity > 0) item.itemId,
@@ -162,7 +167,7 @@ abstract final class PetRoomPresenceResolver {
 
     final candidates = placed
         .where((item) =>
-            seatItemIds.contains(item.itemId) &&
+            eligible.contains(item.itemId) &&
             item.isVisible &&
             ownedItemIds.contains(item.itemId))
         .toList();

@@ -65,6 +65,15 @@ class CompanionAvatar extends ConsumerStatefulWidget {
   /// falling back to the shipped default companion.
   final CompanionId? companionId;
 
+  /// The room anchor the companion is bound to, when the page is the room.
+  ///
+  /// Supplying it is what puts the companion in the *room* base context, and the
+  /// anchor id then selects the behaviour from the recipe catalog — `seat` gives
+  /// `roomSit`, `lie` gives `roomSleep`, and so on. It is a presentation anchor,
+  /// never a business coordinate: the placed `RoomItem`'s own position stays
+  /// authoritative and is not read or written here.
+  final String? roomAnchor;
+
   const CompanionAvatar({
     super.key,
     this.size = 140,
@@ -76,6 +85,7 @@ class CompanionAvatar extends ConsumerStatefulWidget {
     this.focusProgress,
     this.focusCategoryId,
     this.companionId,
+    this.roomAnchor,
   });
 
   @override
@@ -150,7 +160,8 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     if (oldWidget.visualStateOverride != widget.visualStateOverride ||
         oldWidget.focusProgress != widget.focusProgress ||
         oldWidget.focusCategoryId != widget.focusCategoryId ||
-        oldWidget.companionId != widget.companionId) {
+        oldWidget.companionId != widget.companionId ||
+        oldWidget.roomAnchor != widget.roomAnchor) {
       _sync();
     }
   }
@@ -174,6 +185,10 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     required HomeUIState home,
     required CraftState craft,
   }) {
+    // The room anchor is the most specific signal: a page only supplies one when
+    // it really is the room, and the anchor is what selects the behaviour.
+    if (widget.roomAnchor != null) return CompanionBaseContext.room;
+
     final override = widget.visualStateOverride;
     if (override != null) {
       switch (override) {
@@ -226,6 +241,7 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
       growthStage: MochiGrowthProfile.fromProgress(home.petProgress).stage,
       timeOfDay: TimeOfDayResolver.resolve(DateTime.now()),
       reducedMotion: _reducedMotion,
+      roomAnchor: widget.roomAnchor,
     );
   }
 

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../companion/companion_selection.dart';
 import '../../domain/models/craft_models.dart';
 import '../../domain/models/enums.dart';
 import '../companion/companion_avatar.dart';
+import '../companion/companion_selection.dart';
+import '../companion/room_interaction.dart';
+import '../companion/runtime/companion_catalog.dart';
 import '../companion/mochi_layered_renderer.dart';
 import '../companion/room_presence.dart';
 import '../controllers/craft_controller.dart';
@@ -127,7 +129,8 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                           // truth says it should. Drawn above the furniture so
                           // it is visibly *on* its seat, and below the toolbar
                           // so the delete affordance stays reachable.
-                          _buildMochi(craft, canvasWidth, canvasHeight),
+                          _buildMochi(craft, canvasWidth, canvasHeight,
+                              catalog: ref.watch(companionCatalogProvider)),
                           if (_selectedRoomItemId != null)
                             Positioned(
                               top: 12,
@@ -253,11 +256,21 @@ class _RoomPageState extends ConsumerState<RoomPage> {
   ///   rests; the craft presentation belongs to the screens that show the job.
   ///   V4.1's room reference (`09_房间.png`) shows Mochi lying down reading, not
   ///   hammering, which is what `idle` is for.
-  Widget _buildMochi(
-      CraftState craft, double canvasWidth, double canvasHeight) {
+  Widget _buildMochi(CraftState craft, double canvasWidth, double canvasHeight,
+      {required CompanionCatalog catalog}) {
+    // Which furniture the companion may use comes from the recipe catalog, not
+    // from a list in this page: the recipes declare `owned && placed && visible`,
+    // so a page cannot forget one of the three conditions.
+    final target = RoomInteractionResolver.resolve(
+      catalog: catalog,
+      placed: craft.roomItems,
+      owned: craft.inventory,
+    );
+
     final presence = PetRoomPresenceResolver.resolve(
       placed: craft.roomItems,
       owned: craft.inventory,
+      eligibleItemIds: RoomInteractionResolver.eligibleItemIds(catalog),
     );
 
     const size = 92.0;
@@ -285,10 +298,13 @@ class _RoomPageState extends ConsumerState<RoomPage> {
         avatarSize: size,
         feetInsetFraction: MochiLayerAssets.feetInsetFraction,
       ),
-      child: const IgnorePointer(
+      child: IgnorePointer(
         child: CompanionAvatar(
           size: size,
-          visualStateOverride: PetVisualState.idle,
+          // The anchor drives the behaviour: seat → roomSit, lie → roomSleep,
+          // front → roomRead, work → roomWork. A companion on the floor gets no
+          // anchor and falls back to the room's ambient behaviour.
+          roomAnchor: target?.anchor,
           showStateBadge: false,
         ),
       ),

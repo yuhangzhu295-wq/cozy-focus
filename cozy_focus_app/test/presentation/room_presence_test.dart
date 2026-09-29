@@ -7,7 +7,6 @@ import 'package:cozy_focus_app/core/auth/current_user.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart'
     hide FocusSession, Pet, CraftJob, CraftRecipe, InventoryItem, RoomItem;
 import 'package:cozy_focus_app/domain/models/craft_models.dart';
-import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
@@ -422,10 +421,15 @@ void main() {
       );
     });
 
-    testWidgets('the room pins Mochi to idle, not to a running craft job',
+    testWidgets('the room pins Mochi to the room, not to a running craft job',
         (tester) async {
       // The room is where Mochi rests; the craft presentation belongs to the
       // screens that show the job. 09_房间.png shows Mochi lying down reading.
+      //
+      // The room no longer pins a raw visual state. It binds the companion to a
+      // room *anchor*, which is what puts it in the room base context — and a
+      // craft job cannot leak into the room because craft behaviour requires the
+      // craft context, which the director gates on a real active job.
       await container.read(craftControllerProvider.notifier).loadAll();
       await tester.pumpWidget(_app(container, const RoomPage()));
       await tester.pump();
@@ -433,7 +437,7 @@ void main() {
 
       final avatar =
           tester.widget<CompanionAvatar>(find.byType(CompanionAvatar));
-      expect(avatar.visualStateOverride, PetVisualState.idle);
+      expect(avatar.visualStateOverride, isNull);
       expect(avatar.showStateBadge, isFalse);
     });
   });
