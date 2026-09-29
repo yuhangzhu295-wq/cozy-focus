@@ -8,7 +8,6 @@ import '../widgets/pet_avatar_widget.dart';
 import 'focus_phase.dart';
 import 'mochi_pose_spec.dart';
 import 'runtime/companion_context.dart';
-import 'runtime/companion_id.dart';
 import 'runtime/companion_pose.dart';
 import 'runtime/companion_presentation_intent.dart';
 import 'runtime/companion_visual_provider.dart';
@@ -122,14 +121,4 @@ class _MochiPoseAvatar extends ConsumerWidget {
       onLongPressReact: options.onLongPressReact,
     );
   }
-}
-
-/// The app-wide visual registry.
-///
-/// The single centralised registration point the fourth-companion contract
-/// allows. A new companion adds one provider here; nothing else changes.
-CompanionVisualRegistry buildCompanionVisualRegistry() {
-  final registry = CompanionVisualRegistry();
-  registry.register(MochiVisualProvider(), companionId: CompanionId.dog);
-  return registry;
 }

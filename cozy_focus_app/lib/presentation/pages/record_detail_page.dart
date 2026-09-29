@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../companion/companion_selection.dart';
 import '../../domain/models/focus_record.dart';
 import '../companion/companion_avatar.dart';
 import '../controllers/providers.dart';
@@ -411,6 +412,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.background,
@@ -758,8 +760,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Text('Mochi 亲密度',
-                                          style: TextStyle(
+                                      Text('$companionName 亲密度',
+                                          style: const TextStyle(
                                               fontSize: 11,
                                               color: AppColors.textSecondary)),
                                       Text('+$_rewardXp XP',

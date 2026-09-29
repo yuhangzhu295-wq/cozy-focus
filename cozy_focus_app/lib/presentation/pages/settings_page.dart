@@ -1,15 +1,18 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../companion/companion_selection.dart';
 import '../companion/companion_avatar.dart';
 import '../theme/app_theme.dart';
 
 /// Settings Page for Cozy Focus (PHASE-7A)
 /// Honest personal-center / settings view with Mochi hero and noninteractive informational cards.
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -57,18 +60,18 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    CompanionAvatar(
+                    const CompanionAvatar(
                       size: 72,
                       showStateBadge: false,
                     ),
-                    SizedBox(width: 16),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             '个人中心',
                             style: TextStyle(
                               fontSize: 20,
@@ -76,10 +79,10 @@ class SettingsPage extends StatelessWidget {
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          SizedBox(height: 6),
+                          const SizedBox(height: 6),
                           Text(
-                            '和 Mochi 一起，专注更好的自己',
-                            style: TextStyle(
+                            '和 $companionName 一起，专注更好的自己',
+                            style: const TextStyle(
                               fontSize: 13,
                               color: AppColors.textSecondary,
                               height: 1.3,

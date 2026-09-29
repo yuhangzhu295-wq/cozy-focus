@@ -27,7 +27,13 @@
         "lie": "room_sleep",
         "front": "room_read",
         "work": "room_work"
-      }
+      },
+      "tagline": "温柔又治愈的小家伙，总是用温暖的陪伴让你放松心情。",
+      "traits": [
+        "温暖",
+        "陪伴",
+        "治愈"
+      ]
     },
     "cat": {
       "displayName": "小猫",
@@ -53,7 +59,13 @@
         "lie": "room_sleep",
         "front": "room_read",
         "work": "room_work"
-      }
+      },
+      "tagline": "活泼好奇的小伙伴，总能用灵动的互动带给你快乐和动力。",
+      "traits": [
+        "灵动",
+        "陪伴",
+        "活力"
+      ]
     },
     "rabbit": {
       "displayName": "小兔",
@@ -78,7 +90,13 @@
         "lie": "room_sleep",
         "front": "room_read",
         "work": "room_work"
-      }
+      },
+      "tagline": "安静温柔的小伙伴，用轻柔的陪伴，守护你专注的每一刻。",
+      "traits": [
+        "温暖",
+        "陪伴",
+        "温柔"
+      ]
     }
   }
 }

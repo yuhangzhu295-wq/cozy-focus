@@ -63,6 +63,7 @@ class _CompanionRendererState extends State<CompanionRenderer> {
   @override
   Widget build(BuildContext context) {
     final options = CompanionVisualOptions(
+      displayName: widget.options.displayName,
       size: widget.options.size,
       message: widget.options.message,
       accessory: widget.options.accessory,

@@ -23,6 +23,12 @@ class CompanionVisualOptions {
   /// The real focus category id, for a presentation-only work flavour.
   final String? focusCategoryId;
 
+  /// The companion's display name, from its profile.
+  ///
+  /// Supplied so a provider can label its semantics without reaching into the
+  /// catalog itself, and so no page has to hard-code a companion's name.
+  final String displayName;
+
   /// Invoked when the companion is tapped, in addition to any provider-local
   /// reaction. This is how the runtime's overlay reaches the gesture without the
   /// generic renderer knowing a species or a widget.
@@ -32,6 +38,7 @@ class CompanionVisualOptions {
   final VoidCallback? onLongPressReact;
 
   const CompanionVisualOptions({
+    this.displayName = '',
     this.size = 140,
     this.message,
     this.accessory,

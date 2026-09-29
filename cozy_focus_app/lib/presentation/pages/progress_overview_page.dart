@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../companion/companion_selection.dart';
 import '../../domain/models/focus_record.dart';
 import '../controllers/records_controller.dart';
 import '../theme/app_theme.dart';
@@ -257,6 +258,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
 
   // ===== Screen 05A: Today =====
   Widget _buildTodayTab(RecordsState state) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     final sec = state.todaySummary?.totalSeconds ?? 0;
     final count = state.todaySummary?.sessionCount ?? 0;
     final mins = sec ~/ 60;
@@ -270,10 +272,10 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
         .toList();
     final diff = state.todayVsYesterdayMinutes;
     final msg = sec == 0
-        ? '和 Mochi 一起开启今天的专注吧！'
+        ? '和 $companionName 一起开启今天的专注吧！'
         : diff > 0
-            ? '今天也很棒呢，和 Mochi 一起继续加油！💚'
-            : '慢慢来，和 Mochi 一起加油！💚';
+            ? '今天也很棒呢，和 $companionName 一起继续加油！💚'
+            : '慢慢来，和 $companionName 一起加油！💚';
 
     return ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

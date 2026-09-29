@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../companion/companion_selection.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/providers.dart';
@@ -57,6 +58,7 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
 
   @override
   Widget build(BuildContext context) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
@@ -112,12 +114,12 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                   ),
                 ),
                 // Left hero text
-                const Positioned(
+                Positioned(
                   left: 20,
                   top: 100,
                   child: Text(
-                    '和 Mochi 一起\n专注吧！🌱',
-                    style: TextStyle(
+                    '和 $companionName 一起\n专注吧！🌱',
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,

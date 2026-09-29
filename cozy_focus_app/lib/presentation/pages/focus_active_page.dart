@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../companion/companion_selection.dart';
 import '../../domain/growth/mochi_growth_profile.dart';
 import '../../domain/models/enums.dart';
 import '../../domain/models/focus_session.dart';
@@ -466,6 +467,7 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
 
   @override
   Widget build(BuildContext context) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     final sessionState = ref.watch(focusSessionControllerProvider);
     final session = sessionState.session;
     // Reference 03 surfaces the in-progress craft on the running screen, so the
@@ -583,7 +585,7 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                       Text(
                         isPaused
                             ? '休息一下也很好，\n慢下来，是为了走更远的路。'
-                            : '和 Mochi 一起，\n把美好的事情做好。',
+                            : '和 $companionName 一起，\n把美好的事情做好。',
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
@@ -695,7 +697,9 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              isPaused ? '暂停不会清零，可以随时继续' : '保持专注，Mochi 正在陪着你',
+                              isPaused
+                                  ? '暂停不会清零，可以随时继续'
+                                  : '保持专注，$companionName 正在陪着你',
                               style: const TextStyle(
                                   fontSize: 13, color: AppColors.textSecondary),
                             ),

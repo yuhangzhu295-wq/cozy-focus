@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import '../companion/companion_selection.dart';
 import '../../domain/models/pet_models.dart';
 import '../../domain/services/statistics_engine.dart';
 import '../controllers/reports_controller.dart';
@@ -65,9 +66,10 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
 
   Future<void> _shareMonthlyAchievement(
       PeriodReport report, PeriodComparison? comp, int year, int month) async {
+    final companionName = ref.watch(companionDisplayNameProvider);
     final hours = (report.totalSeconds / 3600).toStringAsFixed(1);
     final text =
-        '$year年$month月，我和 Mochi 一起专注了 $hours 小时，共 ${report.sessionCount} 次！🌱\n每一个专注的日子，都在靠近更喜欢的自己 ♡';
+        '$year年$month月，我和 $companionName 一起专注了 $hours 小时，共 ${report.sessionCount} 次！🌱\n每一个专注的日子，都在靠近更喜欢的自己 ♡';
     await SharePlus.instance
         .share(ShareParams(text: text, subject: 'Cozy Focus 月度成就分享'));
   }
@@ -779,6 +781,7 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
   }
 
   Widget _buildMochiGrowthCard(PeriodReport? report, PetProgress? petProg) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     final activeDays = report?.activeDaysCount ?? 0;
     final level = petProg?.level ?? 1;
     // Same leveling convention as mochi_growth_page: 100 XP per level,
@@ -798,13 +801,13 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Text('🤎', style: TextStyle(fontSize: 16)),
-              SizedBox(width: 6),
+              const Text('🤎', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 6),
               Text(
-                'Mochi 的成长',
-                style: TextStyle(
+                '$companionName 的成长',
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -831,9 +834,9 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          '这个月 Mochi 又长大了！',
-                          style: TextStyle(
+                        Text(
+                          '这个月 $companionName 又长大了！',
+                          style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.textSecondary,
                           ),
@@ -876,7 +879,7 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            '和你一度过了 $activeDays 天的专注时光，Mochi 感到好幸福！ ♡',
+            '和你一度过了 $activeDays 天的专注时光，$companionName 感到好幸福！ ♡',
             style: const TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,

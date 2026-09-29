@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../companion/companion_selection.dart';
 import '../../domain/models/craft_models.dart';
 import '../../domain/models/enums.dart';
 import '../companion/companion_avatar.dart';
@@ -45,6 +46,7 @@ class _RoomPageState extends ConsumerState<RoomPage> {
 
   @override
   Widget build(BuildContext context) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     final craft = ref.watch(craftControllerProvider);
 
     return Scaffold(
@@ -52,12 +54,12 @@ class _RoomPageState extends ConsumerState<RoomPage> {
       appBar: AppBar(
         backgroundColor: AppColors.backgroundWarm,
         elevation: 0,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Mochi 的小房间'),
-            Text('把专注过的时间，留在这里',
+            Text('$companionName 的小房间'),
+            const Text('把专注过的时间，留在这里',
                 style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textSecondary,

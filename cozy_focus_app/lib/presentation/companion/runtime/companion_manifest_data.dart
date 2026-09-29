@@ -159,6 +159,8 @@ abstract final class CompanionManifestData {
       id: CompanionId.dog,
       displayName: 'Mochi',
       posePack: 'mochi',
+      tagline: '温柔又治愈的小家伙，总是用温暖的陪伴让你放松心情。',
+      traits: const ['温暖', '陪伴', '治愈'],
       microMotion: const ['breathe', 'blink', 'ear_twitch', 'sprout_sway'],
       weights: const {
         'focus_read': 0.3,
@@ -170,6 +172,8 @@ abstract final class CompanionManifestData {
       id: CompanionId.cat,
       displayName: '小猫',
       posePack: 'cat',
+      tagline: '活泼好奇的小伙伴，总能用灵动的互动带给你快乐和动力。',
+      traits: const ['灵动', '陪伴', '活力'],
       microMotion: const ['breathe', 'blink', 'ear_flick', 'tail_sweep'],
       weights: const {
         'focus_read': 0.25,
@@ -181,6 +185,8 @@ abstract final class CompanionManifestData {
       id: CompanionId.rabbit,
       displayName: '小兔',
       posePack: 'rabbit',
+      tagline: '安静温柔的小伙伴，用轻柔的陪伴，守护你专注的每一刻。',
+      traits: const ['温暖', '陪伴', '温柔'],
       microMotion: const ['breathe', 'blink', 'ear_perk'],
       weights: const {
         'focus_read': 0.45,
@@ -194,6 +200,8 @@ abstract final class CompanionManifestData {
     required CompanionId id,
     required String displayName,
     required String posePack,
+    required String tagline,
+    required List<String> traits,
     required List<String> microMotion,
     required Map<String, double> weights,
   }) =>
@@ -201,6 +209,8 @@ abstract final class CompanionManifestData {
         id: id,
         displayName: displayName,
         posePack: posePack,
+        tagline: tagline,
+        traits: traits,
         // The shipped package states the transparent pose packs are still a
         // production task, so no profile may claim runtime art.
         runtimeAssetsAvailable: false,

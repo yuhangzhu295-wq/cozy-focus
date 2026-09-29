@@ -1,3 +1,4 @@
+import '../companion/companion_selection.dart';
 import '../../domain/models/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -304,6 +305,7 @@ class _FocusCompletePageState extends ConsumerState<FocusCompletePage> {
   }
 
   Widget _buildRewardCard(int coins, int xp) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -328,7 +330,7 @@ class _FocusCompletePageState extends ConsumerState<FocusCompletePage> {
                   icon: Icons.star_rounded,
                   iconColor: AppColors.accentPeach,
                   value: '+$xp',
-                  label: 'Mochi XP',
+                  label: '$companionName XP',
                   caption: '你正在成为更好的自己！',
                 ),
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import '../companion/companion_selection.dart';
 import '../../domain/services/statistics_engine.dart';
 import '../controllers/reports_controller.dart';
 import '../theme/app_theme.dart';
@@ -39,9 +40,10 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
   }
 
   Future<void> _shareYearlyReport(PeriodReport report, int year) async {
+    final companionName = ref.watch(companionDisplayNameProvider);
     final hours = (report.totalSeconds / 3600).toStringAsFixed(1);
     final text =
-        '$year年，我和 Mochi 一起专注了 $hours 小时，累计 ${report.sessionCount} 次，坚持了 ${report.activeDaysCount} 天！🌸\n回顾这一年的专注旅程，看见更好的自己。♡';
+        '$year年，我和 $companionName 一起专注了 $hours 小时，累计 ${report.sessionCount} 次，坚持了 ${report.activeDaysCount} 天！🌸\n回顾这一年的专注旅程，看见更好的自己。♡';
     await SharePlus.instance.share(
       ShareParams(text: text, subject: 'Cozy Focus $year 年度报告分享'),
     );

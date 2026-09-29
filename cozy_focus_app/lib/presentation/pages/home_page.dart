@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../companion/companion_selection.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/focus_session_controller.dart';
@@ -152,6 +153,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   static const double _heroPetSize = 190;
 
   Widget _buildHeroArea(BuildContext context) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     final topInset = MediaQuery.paddingOf(context).top;
 
     return SizedBox(
@@ -170,19 +172,19 @@ class _HomePageState extends ConsumerState<HomePage> {
           Positioned(
             top: topInset + 8,
             left: 20,
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '和 Mochi 一起',
-                  style: TextStyle(
+                  '和 $companionName 一起',
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                     height: 1.15,
                   ),
                 ),
-                Text(
+                const Text(
                   '专注吧！🌱',
                   style: TextStyle(
                     fontSize: 22,
@@ -191,8 +193,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                     height: 1.15,
                   ),
                 ),
-                SizedBox(height: 2),
-                Text(
+                const SizedBox(height: 2),
+                const Text(
                   '专注当下，\n让更好的自己慢慢长大。',
                   style: TextStyle(
                     fontSize: 13,
@@ -450,6 +452,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildStatsPanel(int todayMinutes, int streakDays) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     final progress = (todayMinutes / 240).clamp(0.0, 1.0);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -651,9 +654,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
-            child: const Text(
-              '🌱 小小的坚持，会让 Mochi 和你一起，遇见更棒的明天。💚',
-              style: TextStyle(
+            child: Text(
+              '🌱 小小的坚持，会让 $companionName 和你一起，遇见更棒的明天。💚',
+              style: const TextStyle(
                 fontSize: 11,
                 height: _kLineHeight,
                 color: AppColors.textSecondary,

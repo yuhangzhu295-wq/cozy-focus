@@ -15,6 +15,7 @@ import '../pages/craft_list_page.dart';
 import '../pages/craft_detail_page.dart';
 import '../pages/inventory_page.dart';
 import '../pages/room_page.dart';
+import '../pages/companion_picker_page.dart';
 import '../pages/mochi_growth_page.dart';
 import '../pages/pet_dress_page.dart';
 import '../pages/pet_collection_page.dart';
@@ -64,6 +65,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/growth',
       builder: (context, state) => const MochiGrowthPage(),
+    ),
+    GoRoute(
+      path: '/companions',
+      builder: (context, state) => const CompanionPickerPage(),
     ),
     GoRoute(
       path: '/growth/dress',

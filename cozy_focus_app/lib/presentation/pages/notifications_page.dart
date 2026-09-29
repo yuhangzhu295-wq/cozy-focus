@@ -1,5 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../companion/companion_selection.dart';
 import '../companion/companion_avatar.dart';
 import '../theme/app_theme.dart';
 
@@ -85,11 +87,12 @@ class NotificationsPage extends StatelessWidget {
   }
 }
 
-class _HeroSection extends StatelessWidget {
+class _HeroSection extends ConsumerWidget {
   const _HeroSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -103,18 +106,18 @@ class _HeroSection extends StatelessWidget {
               offset: const Offset(0, 2))
         ],
       ),
-      child: const Row(
+      child: Row(
         children: [
-          CompanionAvatar(
+          const CompanionAvatar(
             size: 72,
             showStateBadge: false,
           ),
-          SizedBox(width: 16),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   '小小提醒\n大大进步！',
                   style: TextStyle(
                     fontSize: 16,
@@ -123,10 +126,10 @@ class _HeroSection extends StatelessWidget {
                     height: 1.3,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
-                  '让 Mochi 在合适的时间陪伴你，养成更好的专注习惯。',
-                  style: TextStyle(
+                  '让 $companionName 在合适的时间陪伴你，养成更好的专注习惯。',
+                  style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
                   ),

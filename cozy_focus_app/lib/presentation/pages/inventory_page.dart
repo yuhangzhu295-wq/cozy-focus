@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../companion/companion_selection.dart';
 import '../../domain/models/craft_models.dart';
 import '../controllers/craft_controller.dart';
 import '../theme/app_theme.dart';
@@ -154,6 +155,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
     required int placedCount,
     required int availableCount,
   }) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -181,20 +183,20 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Mochi 的小房间',
-                      style: TextStyle(
+                      '$companionName 的小房间',
+                      style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
+                    const SizedBox(height: 4),
+                    const Text(
                       '选择一件家具，回到房间安排它的位置',
                       style: TextStyle(
                         fontSize: 12,

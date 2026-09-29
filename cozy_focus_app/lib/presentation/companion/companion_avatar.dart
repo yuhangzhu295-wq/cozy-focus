@@ -8,7 +8,8 @@ import '../controllers/home_controller.dart';
 import '../controllers/pet_motion_controller.dart';
 import 'companion_presentation_mapper.dart';
 import 'focus_phase.dart';
-import 'mochi_visual_provider.dart';
+import 'companion_selection.dart';
+import 'companion_visual_registry.dart';
 import 'runtime/companion_behavior_director.dart';
 import 'runtime/companion_context.dart';
 import 'runtime/companion_id.dart';
@@ -60,7 +61,8 @@ class CompanionAvatar extends ConsumerStatefulWidget {
   /// The real `categoryId` of the running focus task, if any.
   final String? focusCategoryId;
 
-  /// Which companion to present. Defaults to the shipped default companion.
+  /// Which companion to present. When omitted the persisted selection is used,
+  /// falling back to the shipped default companion.
   final CompanionId? companionId;
 
   const CompanionAvatar({
@@ -91,7 +93,8 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
   /// Reduced motion, read from the platform once per dependency change.
   bool _reducedMotion = false;
 
-  CompanionId get _companionId => widget.companionId ?? CompanionId.dog;
+  CompanionId get _companionId =>
+      widget.companionId ?? ref.read(companionSelectionProvider);
 
   PetMotionController get _controller => widget.controller ?? _ownedController!;
 
@@ -109,6 +112,13 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
 
     // Business state is pushed into the director from provider listeners, never
     // from build, so a context change can never raise a rebuild-during-build.
+    // A companion switch is a business-independent presentation change, but the
+    // director must be rebuilt for it, so the selection is watched like any other
+    // input rather than read once.
+    ref.listenManual<CompanionId>(
+      companionSelectionProvider,
+      (_, __) => _sync(),
+    );
     _homeSubscription = ref.listenManual<HomeUIState>(
       homeControllerProvider,
       (_, __) => _sync(),
@@ -273,6 +283,7 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     // Watch so the avatar follows business state changes.
     ref.watch(homeControllerProvider);
     ref.watch(craftControllerProvider);
+    ref.watch(companionSelectionProvider);
 
     return CompanionPresentationClock(
       director: _director,
@@ -280,6 +291,7 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
         intent: intent,
         registry: _registry,
         options: CompanionVisualOptions(
+          displayName: _director.profile.displayName,
           size: widget.size,
           message: widget.message,
           accessory: widget.accessory,

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import '../companion/companion_selection.dart';
 import '../../domain/services/statistics_engine.dart';
 import '../controllers/reports_controller.dart';
 import '../theme/app_theme.dart';
@@ -87,15 +88,17 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
 
   Future<void> _shareWeeklyAchievement(
       PeriodReport report, PeriodComparison? comp) async {
+    final companionName = ref.watch(companionDisplayNameProvider);
     final hours = (report.totalSeconds / 3600).toStringAsFixed(1);
     final text =
-        '这一周我在 Cozy Focus 和 Mochi 一起专注了 $hours 小时，共 ${report.sessionCount} 次！🌸\n保持温柔坚定的节奏，生活更温暖 ♡';
+        '这一周我在 Cozy Focus 和 $companionName 一起专注了 $hours 小时，共 ${report.sessionCount} 次！🌸\n保持温柔坚定的节奏，生活更温暖 ♡';
     await SharePlus.instance
         .share(ShareParams(text: text, subject: 'Cozy Focus 周成就分享'));
   }
 
   @override
   Widget build(BuildContext context) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     final state = ref.watch(reportsControllerProvider);
     final report = state.weeklyReport;
     final comp = state.weeklyComparison;
@@ -430,9 +433,9 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    const Text(
-                                      'Mochi 为你感到骄傲！\n继续保持这种温柔而坚定的节奏，下周也一起加油吧！ ♡',
-                                      style: TextStyle(
+                                    Text(
+                                      '$companionName 为你感到骄傲！\n继续保持这种温柔而坚定的节奏，下周也一起加油吧！ ♡',
+                                      style: const TextStyle(
                                         fontSize: 12,
                                         color: AppColors.textSecondary,
                                         height: 1.3,

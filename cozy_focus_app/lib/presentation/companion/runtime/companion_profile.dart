@@ -16,6 +16,12 @@ class CompanionProfile {
   /// Which pose pack (visual provider) draws this companion.
   final String posePack;
 
+  /// One-line character description, used by the companion picker.
+  final String tagline;
+
+  /// Short trait chips, used by the companion picker.
+  final List<String> traits;
+
   /// Whether production runtime pose assets exist yet.
   ///
   /// `"GAP"` means they do not. The runtime is honest about this: it reports the
@@ -46,6 +52,8 @@ class CompanionProfile {
     required this.id,
     required this.displayName,
     required this.posePack,
+    this.tagline = '',
+    this.traits = const [],
     this.runtimeAssetsAvailable = false,
     this.microMotion = const [],
     this.behaviorWeights = const {},
@@ -85,6 +93,8 @@ class CompanionProfile {
       id: id,
       displayName: json['displayName'] as String? ?? id.value,
       posePack: json['posePack'] as String? ?? id.value,
+      tagline: json['tagline'] as String? ?? '',
+      traits: (json['traits'] as List?)?.cast<String>() ?? const [],
       runtimeAssetsAvailable: (json['runtimeAssets'] as String?) != 'GAP',
       microMotion: (json['microMotion'] as List?)?.cast<String>() ?? const [],
       behaviorWeights: Map.unmodifiable(weights),

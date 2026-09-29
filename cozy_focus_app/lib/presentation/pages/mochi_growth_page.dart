@@ -5,6 +5,7 @@ import '../../domain/models/pet_models.dart';
 import '../controllers/growth_controller.dart';
 import '../theme/app_theme.dart';
 import '../companion/companion_avatar.dart';
+import '../companion/companion_selection.dart';
 import '../widgets/growth_sub_nav.dart';
 import '../widgets/app_bottom_nav.dart';
 
@@ -43,6 +44,15 @@ class MochiGrowthPage extends ConsumerWidget {
     final pet = state.pet!;
     final progress = state.progress;
 
+    // The displayed name comes from the *selected* companion's profile, not from
+    // the stored pet row. Progress is shared, so a stored name would keep saying
+    // "Mochi" after the user chose the cat — presentation must follow the
+    // selection while the shared business progress stays exactly where it is.
+    final companionName = ref
+        .watch(companionCatalogProvider)
+        .profileFor(ref.watch(companionSelectionProvider))
+        .displayName;
+
     if (progress == null) {
       return _buildMissingProgressState(context, pet);
     }
@@ -50,13 +60,13 @@ class MochiGrowthPage extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
-          child: _buildHeader(context, pet.name),
+          child: _buildHeader(context, companionName),
         ),
         const SliverToBoxAdapter(
-          child: GrowthSubNav(active: GrowthSection.mochi),
+          child: GrowthSubNav(active: GrowthSection.companion),
         ),
         SliverToBoxAdapter(
-          child: _buildPetHero(pet.name, progress),
+          child: _buildPetHero(companionName, progress),
         ),
         SliverToBoxAdapter(
           child: _buildGrowthStatsGrid(progress),
@@ -103,6 +113,32 @@ class MochiGrowthPage extends ConsumerWidget {
             ),
           ),
           const Spacer(),
+          TextButton.icon(
+            key: const Key('growth_companion_picker_button'),
+            onPressed: () => context.push('/companions'),
+            icon: const Icon(
+              Icons.pets_outlined,
+              size: 18,
+              color: AppColors.primaryDark,
+            ),
+            label: const Text(
+              '伙伴',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryDark,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.surface,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                side: const BorderSide(color: AppColors.border),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           TextButton.icon(
             key: const Key('growth_collection_button'),
             onPressed: () => context.go('/growth/collection'),
@@ -403,6 +439,7 @@ class MochiGrowthPage extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -424,9 +461,9 @@ class MochiGrowthPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              '开始第一次专注，领养你的专属 Mochi 吧！',
-              style: TextStyle(
+            Text(
+              '开始第一次专注，领养你的专属 $companionName 吧！',
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
               ),

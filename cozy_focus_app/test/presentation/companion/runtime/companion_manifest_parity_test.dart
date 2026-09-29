@@ -36,6 +36,8 @@ void main() {
 
       expect(b.displayName, a.displayName, reason: '${id.value}.displayName');
       expect(b.posePack, a.posePack, reason: '${id.value}.posePack');
+      expect(b.tagline, a.tagline, reason: '${id.value}.tagline');
+      expect(b.traits, a.traits, reason: '${id.value}.traits');
       expect(b.runtimeAssetsAvailable, a.runtimeAssetsAvailable,
           reason: '${id.value}.runtimeAssets');
       expect(b.microMotion, a.microMotion, reason: '${id.value}.microMotion');

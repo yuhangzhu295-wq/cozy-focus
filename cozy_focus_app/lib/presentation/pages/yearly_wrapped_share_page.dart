@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import '../companion/companion_selection.dart';
 import '../controllers/reports_controller.dart';
 import '../services/wrapped_export_service.dart';
 import '../theme/app_theme.dart';
@@ -68,11 +69,12 @@ class _YearlyWrappedSharePageState
     int days,
     int sessions,
   ) async {
+    final companionName = ref.watch(companionDisplayNameProvider);
     if (_isSharing) return;
     setState(() => _isSharing = true);
     try {
       final shareText = '✨ My $year Focus Journey with Cozy Focus ✨\n'
-          '这一年，我和 Mochi 一起坚持专注了 $hours 小时，'
+          '这一年，我和 $companionName 一起坚持专注了 $hours 小时，'
           '累计 $sessions 次，达成 $days 个专注日！\n'
           '每一次平静专注的时光，都在成为更温暖坚定的自己。♡\n'
           '#CozyFocus #FocusWithMochi';
@@ -287,7 +289,7 @@ class _YearlyWrappedSharePageState
 
 /// Stateless card widget placed inside RepaintBoundary.
 /// Contains only shareable stats — no private notes, no task names.
-class WrappedShareCard extends StatelessWidget {
+class WrappedShareCard extends ConsumerWidget {
   const WrappedShareCard({
     super.key,
     required this.year,
@@ -304,7 +306,8 @@ class WrappedShareCard extends StatelessWidget {
   final int petLevel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -377,7 +380,7 @@ class WrappedShareCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
             child: Text(
-              'Mochi · Lv.$petLevel 陪伴伙伴',
+              '$companionName · Lv.$petLevel 陪伴伙伴',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -402,7 +405,7 @@ class WrappedShareCard extends StatelessWidget {
                 Container(width: 1, height: 28, color: AppColors.borderLight),
                 // Pet level comes from real PetProgress; defaults to Lv.1 when
                 // Phase 5 is not yet implemented — never a fake high number.
-                _buildStatItem('Mochi 等级', 'Lv.$petLevel'),
+                _buildStatItem('$companionName 等级', 'Lv.$petLevel'),
               ],
             ),
           ),

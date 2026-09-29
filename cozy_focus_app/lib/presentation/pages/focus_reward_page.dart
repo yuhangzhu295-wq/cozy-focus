@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../companion/companion_selection.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/craft_controller.dart';
@@ -144,6 +145,7 @@ class _FocusRewardPageState extends ConsumerState<FocusRewardPage> {
   }
 
   Widget _buildCraftSection(BuildContext context, CraftState craft) {
+    final companionName = ref.watch(companionDisplayNameProvider);
     // Active job exists — show real progress
     if (craft.activeJob != null && craft.activeRecipe != null) {
       final job = craft.activeJob!;
@@ -245,10 +247,10 @@ class _FocusRewardPageState extends ConsumerState<FocusRewardPage> {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            '用专注时间制作家具，装饰 Mochi 的小房间',
+          Text(
+            '用专注时间制作家具，装饰 $companionName 的小房间',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: AppColors.textTertiary,
               height: 1.5,
