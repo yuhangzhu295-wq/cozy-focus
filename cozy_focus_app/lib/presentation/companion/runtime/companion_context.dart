@@ -136,7 +136,14 @@ class CompanionContext {
   /// The overlay currently covering the macro behaviour.
   final CompanionOverlay overlay;
 
-  /// Long-arc focus phase, or `null` when no session is under way.
+  /// Whether a real focus session is under way.
+  ///
+  /// Kept separate from [focusPhase] on purpose: a page knows a session is live
+  /// from the session engine even when it has no progress figure to hand over, and
+  /// "is a session running" must not silently become "is progress known".
+  final bool hasActiveSession;
+
+  /// Long-arc focus phase, or `null` when the phase is not known.
   final FocusPhase? focusPhase;
 
   /// `elapsed / target` for the running focus session, or `null`.
@@ -168,6 +175,7 @@ class CompanionContext {
     required this.baseContext,
     this.macroBehavior,
     this.overlay = CompanionOverlay.none,
+    this.hasActiveSession = false,
     this.focusPhase,
     this.focusProgress,
     this.craftProgress,
@@ -176,9 +184,6 @@ class CompanionContext {
     this.reducedMotion = false,
     this.roomAnchor,
   });
-
-  /// Whether a real focus session is under way.
-  bool get hasActiveSession => focusPhase != null;
 
   /// Whether a real craft job is active. Craft behaviour is gated on this.
   bool get hasActiveCraft => craftProgress != null;
@@ -189,6 +194,7 @@ class CompanionContext {
     CompanionMacroBehavior? macroBehavior,
     bool clearMacroBehavior = false,
     CompanionOverlay? overlay,
+    bool? hasActiveSession,
     FocusPhase? focusPhase,
     bool clearFocus = false,
     double? focusProgress,
@@ -206,6 +212,7 @@ class CompanionContext {
       macroBehavior:
           clearMacroBehavior ? null : (macroBehavior ?? this.macroBehavior),
       overlay: overlay ?? this.overlay,
+      hasActiveSession: hasActiveSession ?? this.hasActiveSession,
       focusPhase: clearFocus ? null : (focusPhase ?? this.focusPhase),
       focusProgress: clearFocus ? null : (focusProgress ?? this.focusProgress),
       craftProgress: clearCraft ? null : (craftProgress ?? this.craftProgress),

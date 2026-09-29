@@ -1,3 +1,4 @@
+import '../../domain/models/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -246,6 +247,11 @@ class _FocusCompletePageState extends ConsumerState<FocusCompletePage> {
               child: CompanionAvatar(
                 size: _heroPetSize,
                 showStateBadge: false,
+                // Completion is the one moment the companion celebrates, and the
+                // session has already ended here — so the state cannot be derived
+                // from a live session and has to be stated by the page that knows
+                // what just happened.
+                visualStateOverride: PetVisualState.celebrate,
               ),
             ),
           ),

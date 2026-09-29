@@ -23,6 +23,14 @@ class CompanionVisualOptions {
   /// The real focus category id, for a presentation-only work flavour.
   final String? focusCategoryId;
 
+  /// Invoked when the companion is tapped, in addition to any provider-local
+  /// reaction. This is how the runtime's overlay reaches the gesture without the
+  /// generic renderer knowing a species or a widget.
+  final VoidCallback? onTapReact;
+
+  /// Invoked when the companion is long-pressed.
+  final VoidCallback? onLongPressReact;
+
   const CompanionVisualOptions({
     this.size = 140,
     this.message,
@@ -31,6 +39,8 @@ class CompanionVisualOptions {
     this.controller,
     this.focusProgress,
     this.focusCategoryId,
+    this.onTapReact,
+    this.onLongPressReact,
   });
 }
 

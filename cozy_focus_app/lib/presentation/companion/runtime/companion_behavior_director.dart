@@ -224,7 +224,10 @@ class CompanionBehaviorDirector {
   /// Whether the current base context is backed by real business truth.
   bool get _contextIsGrounded => switch (_context.baseContext) {
         CompanionBaseContext.craft => _context.hasActiveCraft,
-        CompanionBaseContext.focus => _context.hasActiveSession,
+        // A session is grounded when the page says one is running, or when it
+        // supplied a phase. Both are real business truth; neither is inferred.
+        CompanionBaseContext.focus =>
+          _context.hasActiveSession || _context.focusPhase != null,
         CompanionBaseContext.home ||
         CompanionBaseContext.pause ||
         CompanionBaseContext.complete ||

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../../domain/growth/mochi_growth_profile.dart';
 import '../../domain/models/enums.dart';
 import '../companion/focus_phase.dart';
+import '../companion/mochi_pose_prop.dart';
+import '../companion/mochi_pose_spec.dart';
 import '../companion/pet_craft_activity.dart';
 import '../companion/pet_focus_activity.dart';
 import '../companion/pet_idle_behavior.dart';
@@ -63,6 +65,22 @@ class PetIdleFallbackView extends StatefulWidget {
   /// never written: statistics, rewards and session semantics are untouched.
   final String? focusCategoryId;
 
+  /// The V4.2.1 pose to present, or `null` for the legacy state-only rendering.
+  ///
+  /// ## What this adds, and why it is a pose rather than more parameters
+  ///
+  /// The runtime selects a *pose* (`CompanionPose`), and the pose carries a
+  /// posture plus a prop. The posture retargets channels this renderer already
+  /// owns, and the prop changes the silhouette — which is what lets
+  /// `focusRead` / `focusWrite` / `focusThink` be told apart at a glance instead
+  /// of differing by a few degrees of head pitch.
+  ///
+  /// It is applied *on top of* the state frame, so every existing state animation
+  /// (breathe, sway, blink, work cycle, celebration) keeps running. A pose
+  /// therefore refines the presentation rather than replacing it, and a caller
+  /// that passes nothing gets exactly the previous behaviour.
+  final MochiPoseSpec? poseSpec;
+
   const PetIdleFallbackView({
     super.key,
     required this.visualState,
@@ -76,6 +94,7 @@ class PetIdleFallbackView extends StatefulWidget {
     this.growthProfile,
     this.focusPhase,
     this.focusCategoryId,
+    this.poseSpec,
   });
 
   @override
@@ -1901,6 +1920,10 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
       builder: (context, child) {
         final frame = _frameFor(currentVisualState, reduceMotion: reduceMotion);
 
+        // The V4.2.1 pose, composed *on top of* the state frame. Neutral when the
+        // caller supplied none, so every pre-existing caller is unaffected.
+        final pose = _resolvePose(reduceMotion: reduceMotion);
+
         // Growth's proportion maturation is folded into the same scale about the
         // same centre as the motion scale. It is deliberately narrow (see
         // [GrowthStageSpec.maturityScale]) so the character stays obviously the
@@ -1908,7 +1931,7 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         final scale = frame.scale * _growth.maturityScale;
 
         return Transform.translate(
-          offset: Offset(0, frame.dy),
+          offset: Offset(0, frame.dy + pose.bodyDy),
           child: Transform.scale(
             scale: scale,
             alignment: Alignment.center,
@@ -1924,12 +1947,23 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
                   children: [
                     MochiLayeredRenderer(
                       size: widget.size,
-                      eyeScaleY: frame.eyeScaleY,
-                      earRotation: frame.earRotation,
-                      sproutRotation: frame.tailRotation * 0.6,
-                      headRotation: frame.headRotation,
-                      headDy: frame.dy * 0.28,
+                      eyeScaleY: frame.eyeScaleY * pose.eyeScaleY,
+                      earRotation: frame.earRotation + pose.earRotation,
+                      sproutRotation:
+                          frame.tailRotation * 0.6 + pose.sproutRotation,
+                      headRotation: frame.headRotation + pose.headRotation,
+                      headDy: frame.dy * 0.28 + pose.headDy,
                     ),
+                    // The prop that makes the pose's silhouette distinct. It is
+                    // what separates reading from writing from thinking, so it
+                    // is drawn even under reduced motion — only its float stops.
+                    if (pose.prop != MochiPosePropKind.none)
+                      MochiPoseProp(
+                        kind: pose.prop,
+                        size: widget.size,
+                        phase: _swayController.value,
+                        reducedMotion: reduceMotion,
+                      ),
                     // Sleep Zzz floating animation indicator
                     if (isSleep)
                       Positioned(
@@ -2015,6 +2049,19 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
         );
       },
     );
+  }
+
+  /// The pose in force for this frame.
+  ///
+  /// Reduced motion preserves the semantic pose — the prop and the eye squash are
+  /// kept — and damps only the movement channels, per
+  /// `docs/04_Behavior_Graph_SPEC.md`. A reading Mochi therefore still reads as
+  /// reading with motion off, which is the whole point of the rule.
+  MochiPoseSpec _resolvePose({required bool reduceMotion}) {
+    final spec = widget.poseSpec;
+    if (spec == null) return const MochiPoseSpec();
+    final scaled = spec.scaledTo(widget.size);
+    return reduceMotion ? MochiPoseSpecs.damped(scaled) : scaled;
   }
 
   _StateVisualConfig _getConfig(PetVisualState state) {

@@ -54,10 +54,20 @@ class _CompanionPresentationClockState extends State<CompanionPresentationClock>
   late final Ticker _ticker;
   Duration _lastElapsed = Duration.zero;
 
+  /// The intent the subtree was last built for.
+  ///
+  /// Compared against the director's *current* intent every tick rather than
+  /// against what `advanceTo` itself changed. An overlay can be triggered from a
+  /// gesture between ticks, and in that case `advanceTo` sees an unchanged intent
+  /// on both sides of its own call — so comparing only its return value would
+  /// drop the rebuild and the overlay would never appear.
+  late CompanionPresentationIntent _lastIntent;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _lastIntent = widget.director.intent;
     _ticker = createTicker(_onTick)..start();
   }
 
@@ -81,9 +91,11 @@ class _CompanionPresentationClockState extends State<CompanionPresentationClock>
 
   void _onTick(Duration elapsed) {
     _lastElapsed = elapsed;
-    final changed = widget.director.advanceTo(elapsed);
-    if (changed) {
-      final intent = widget.director.intent;
+    widget.director.advanceTo(elapsed);
+
+    final intent = widget.director.intent;
+    if (intent != _lastIntent) {
+      _lastIntent = intent;
       widget.onIntentChanged?.call(intent);
       if (mounted) setState(() {});
     }

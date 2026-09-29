@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../domain/growth/mochi_growth_profile.dart';
 import '../../domain/models/enums.dart';
 import '../companion/focus_phase.dart';
+import '../companion/mochi_pose_spec.dart';
 import '../controllers/pet_motion_controller.dart';
 import 'pet_idle_fallback_view.dart';
 import 'rive_pet_adapter.dart';
@@ -30,6 +31,9 @@ class PetMotionView extends StatelessWidget {
   /// Real focus `categoryId`; see [PetIdleFallbackView.focusCategoryId].
   final String? focusCategoryId;
 
+  /// The V4.2.1 pose; see [PetIdleFallbackView.poseSpec].
+  final MochiPoseSpec? poseSpec;
+
   const PetMotionView({
     super.key,
     required this.visualState,
@@ -45,6 +49,7 @@ class PetMotionView extends StatelessWidget {
     this.growthProfile,
     this.focusPhase,
     this.focusCategoryId,
+    this.poseSpec,
   });
 
   double? get _visualFocusProgress => _normalizeProgress(focusProgress);
@@ -69,6 +74,7 @@ class PetMotionView extends StatelessWidget {
         growthProfile: growthProfile,
         focusPhase: focusPhase,
         focusCategoryId: focusCategoryId,
+        poseSpec: poseSpec,
       );
 
       if (enableRive) {

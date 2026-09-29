@@ -6,52 +6,62 @@ import '../../domain/models/enums.dart';
 import '../controllers/craft_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/pet_motion_controller.dart';
-import '../widgets/pet_avatar_widget.dart';
 import 'companion_presentation_mapper.dart';
 import 'focus_phase.dart';
+import 'mochi_visual_provider.dart';
+import 'runtime/companion_behavior_director.dart';
+import 'runtime/companion_context.dart';
+import 'runtime/companion_id.dart';
+import 'runtime/companion_manifest_data.dart';
+import 'runtime/companion_presentation_clock.dart';
+import 'runtime/companion_renderer.dart';
+import 'runtime/companion_visual_provider.dart';
+import 'time_of_day.dart';
 
-/// The single, business-driven Mochi presentation used across pages.
+/// The single, business-driven companion presentation used across pages.
 ///
-/// Pages must never hard-code a [PetVisualState] for the companion. They place
-/// a [CompanionAvatar] and it derives the pet's state (and progress bindings)
-/// from the real controllers, so Mochi can never claim to be idle while a
-/// focus session or a craft job is actually running.
+/// ## What changed in the V4.2.1 reconstruction
 ///
-/// Derivation is deliberately read-only. It watches [homeControllerProvider]
-/// (which loads itself) and [craftControllerProvider] (which is loaded by the
-/// pages that own craft flows), and it never starts a timer of its own — the
-/// focus session ticker stays owned solely by the focus flow.
+/// It used to derive a `PetVisualState` and hand it to the renderer. It now
+/// drives the [CompanionBehaviorDirector]: real business state becomes a
+/// [CompanionContext], the director schedules a macro behaviour from the data
+/// manifests, and a visual provider draws the resulting pose.
+///
+/// Pages are unaffected. They still place a `CompanionAvatar` and pass nothing
+/// but a size and an optional message. They still never name a state, an asset or
+/// a species — which is why no page needed editing for this change, and why none
+/// will need editing for the next companion.
+///
+/// ## It owns no business state
+///
+/// Every input is a read of an existing controller. Nothing is written back. The
+/// focus session, craft job, XP and records remain owned exactly where they were;
+/// this widget only decides how the companion *looks* while they run.
 class CompanionAvatar extends ConsumerStatefulWidget {
   final double size;
   final String? message;
   final bool showStateBadge;
   final Widget? accessory;
 
-  /// Optional externally owned controller. When omitted the avatar owns one and
-  /// disposes it with itself.
+  /// Optional externally owned motion controller. When omitted the avatar owns
+  /// one and disposes it with itself.
   final PetMotionController? controller;
 
   /// Optional explicit visual state.
   ///
-  /// [CompanionPresentationMapper] can tell "a session is active" but not
-  /// "the session is paused", so a page that knows better (the focus screen)
-  /// passes the state it derived from the session engine. When omitted, the
-  /// state is derived from business controllers as before.
+  /// A page that knows better than the coarse controller derivation (the focus
+  /// screen knows a session is *paused*) passes the state it derived. It is
+  /// mapped onto a base context, so the director still owns the behaviour.
   final PetVisualState? visualStateOverride;
 
   /// Optional explicit focus progress (`elapsed / target`).
-  ///
-  /// The focus screen already computes this from the session engine, so it can
-  /// hand it over rather than have the avatar re-derive it. The long-arc focus
-  /// phase is resolved from it — see [FocusPhaseResolver].
   final double? focusProgress;
 
   /// The real `categoryId` of the running focus task, if any.
-  ///
-  /// Used only to pick a presentation-only work flavour. The avatar does not
-  /// watch the focus session provider (it deliberately never owns the focus
-  /// ticker), so the page supplies this.
   final String? focusCategoryId;
+
+  /// Which companion to present. Defaults to the shipped default companion.
+  final CompanionId? companionId;
 
   const CompanionAvatar({
     super.key,
@@ -63,6 +73,7 @@ class CompanionAvatar extends ConsumerStatefulWidget {
     this.visualStateOverride,
     this.focusProgress,
     this.focusCategoryId,
+    this.companionId,
   });
 
   @override
@@ -74,6 +85,14 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
   ProviderSubscription<HomeUIState>? _homeSubscription;
   ProviderSubscription<CraftState>? _craftSubscription;
 
+  late final CompanionBehaviorDirector _director;
+  late final CompanionVisualRegistry _registry;
+
+  /// Reduced motion, read from the platform once per dependency change.
+  bool _reducedMotion = false;
+
+  CompanionId get _companionId => widget.companionId ?? CompanionId.dog;
+
   PetMotionController get _controller => widget.controller ?? _ownedController!;
 
   @override
@@ -82,6 +101,14 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     if (widget.controller == null) {
       _ownedController = PetMotionController();
     }
+    _registry = buildCompanionVisualRegistry();
+    _director = CompanionBehaviorDirector(
+      catalog: bundledCompanionCatalog(),
+      context: _readContext(),
+    );
+
+    // Business state is pushed into the director from provider listeners, never
+    // from build, so a context change can never raise a rebuild-during-build.
     _homeSubscription = ref.listenManual<HomeUIState>(
       homeControllerProvider,
       (_, __) => _sync(),
@@ -94,6 +121,31 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduced = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduced != _reducedMotion) {
+      _reducedMotion = reduced;
+      _sync();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant CompanionAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A page can change what it wants presented *after* the first frame — the
+    // collection page overrides the state for a moment when a real unlock
+    // happens. That has to be pushed into the director, not merely passed down,
+    // or the override would silently never appear.
+    if (oldWidget.visualStateOverride != widget.visualStateOverride ||
+        oldWidget.focusProgress != widget.focusProgress ||
+        oldWidget.focusCategoryId != widget.focusCategoryId ||
+        oldWidget.companionId != widget.companionId) {
+      _sync();
+    }
+  }
+
+  @override
   void dispose() {
     _homeSubscription?.close();
     _craftSubscription?.close();
@@ -101,66 +153,44 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     super.dispose();
   }
 
-  @override
-  void didUpdateWidget(covariant CompanionAvatar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // A page can change what it wants Mochi to present *after* the first frame —
-    // the collection page overrides the state for a moment when a real unlock
-    // happens. That has to be pushed into the controller rather than merely
-    // passed down as a parameter: `PetAvatarWidget` reads `controller.visualState`
-    // whenever a controller is supplied, so a changed parameter alone would be
-    // ignored and the override would silently never appear.
-    if (oldWidget.visualStateOverride != widget.visualStateOverride ||
-        oldWidget.focusProgress != widget.focusProgress ||
-        oldWidget.focusCategoryId != widget.focusCategoryId) {
-      _sync();
-    }
-  }
-
-  PetVisualState _deriveVisualState() {
+  /// Maps the page's optional override and the real controllers onto a base
+  /// context.
+  ///
+  /// The order matters and is the same precedence the pre-V4.2.1 mapper used:
+  /// an explicit page override wins, then a live session, then a live craft job,
+  /// then idle. Keeping one precedence is what stops the badge and the behaviour
+  /// from ever disagreeing.
+  CompanionBaseContext _baseContextFor({
+    required HomeUIState home,
+    required CraftState craft,
+  }) {
     final override = widget.visualStateOverride;
-    if (override != null) return override;
-    final homeState = ref.read(homeControllerProvider);
-    final craftState = ref.read(craftControllerProvider);
-    return CompanionPresentationMapper.visualStateFor(
-      hasActiveSession: homeState.hasActiveSession,
-      hasActiveCraft: craftState.activeJob != null,
-    );
-  }
-
-  /// Resolves Mochi's growth from the real `PetProgress` truth.
-  ///
-  /// Read-only: it derives a stage from XP and happiness and writes nothing
-  /// back. `PetProgress.level` itself is now derived from XP in the data layer
-  /// too, so the stored and presented values can no longer disagree.
-  MochiGrowthProfile _growthProfile() {
-    final homeState = ref.read(homeControllerProvider);
-    return MochiGrowthProfile.fromProgress(homeState.petProgress);
-  }
-
-  /// Pushes business state into the motion controller.
-  ///
-  /// Runs from provider listeners, never during build, so it cannot raise a
-  /// rebuild-during-build error.
-  void _sync() {
-    if (!mounted) return;
-    final visualState = _deriveVisualState();
-    if (_controller.visualState != visualState) {
-      _controller.updateState(visualState);
+    if (override != null) {
+      switch (override) {
+        case PetVisualState.pause:
+          return CompanionBaseContext.pause;
+        case PetVisualState.sleep:
+          return CompanionBaseContext.sleep;
+        case PetVisualState.craft:
+          return CompanionBaseContext.craft;
+        case PetVisualState.focus:
+          return CompanionBaseContext.focus;
+        case PetVisualState.celebrate:
+          return CompanionBaseContext.complete;
+        case PetVisualState.idle:
+        case PetVisualState.greeting:
+        case PetVisualState.interact:
+          return CompanionBaseContext.home;
+      }
     }
-    // Growth owns the blink / ear-twitch cadence, so the controller has to be
-    // told whenever the stage moves. Idempotent when the stage is unchanged.
-    final growth = _growthProfile();
-    _controller.updateMotionCadence(
-      blinkIntervalScale: growth.blinkIntervalScale,
-      earTwitchIntervalScale: growth.earTwitchIntervalScale,
-    );
+    if (home.hasActiveSession) return CompanionBaseContext.focus;
+    if (craft.activeJob != null) return CompanionBaseContext.craft;
+    return CompanionBaseContext.home;
   }
 
-  double? _craftProgress() {
-    final craftState = ref.read(craftControllerProvider);
-    final job = craftState.activeJob;
-    final requiredSeconds = craftState.activeRecipe?.requiredSeconds ?? 0;
+  double? _craftProgress(CraftState craft) {
+    final job = craft.activeJob;
+    final requiredSeconds = craft.activeRecipe?.requiredSeconds ?? 0;
     if (job == null || requiredSeconds <= 0) return null;
     return CompanionPresentationMapper.normalizedProgress(
       job.progressSeconds,
@@ -168,13 +198,74 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     );
   }
 
-  /// Resolves the long-arc focus phase from the real session progress.
-  ///
-  /// Only the focus visual state has a work cycle, so a phase is reported only
-  /// then — a paused session must not keep presenting work beats.
-  FocusPhase? _focusPhase() {
-    if (_deriveVisualState() != PetVisualState.focus) return null;
-    return FocusPhaseResolver.resolve(widget.focusProgress);
+  /// Builds the current business snapshot.
+  CompanionContext _readContext() {
+    final home = ref.read(homeControllerProvider);
+    final craft = ref.read(craftControllerProvider);
+
+    return CompanionContext(
+      companionId: _companionId,
+      baseContext: _baseContextFor(home: home, craft: craft),
+      // The phase is what makes a running session *grounded*: without it the
+      // director would refuse to schedule work behaviour, which is the same rule
+      // that stops an idle craft job animating.
+      hasActiveSession: home.hasActiveSession,
+      focusPhase: FocusPhaseResolver.resolve(widget.focusProgress),
+      focusProgress: widget.focusProgress,
+      craftProgress: _craftProgress(craft),
+      growthStage: MochiGrowthProfile.fromProgress(home.petProgress).stage,
+      timeOfDay: TimeOfDayResolver.resolve(DateTime.now()),
+      reducedMotion: _reducedMotion,
+    );
+  }
+
+  /// Pushes current business state into the director and the motion controller.
+  void _sync() {
+    if (!mounted) return;
+
+    _director.updateContext(_readContext());
+
+    // Growth owns the blink / ear-twitch cadence, so the controller has to be
+    // told whenever the stage moves. Idempotent when the stage is unchanged.
+    final home = ref.read(homeControllerProvider);
+    final growth = MochiGrowthProfile.fromProgress(home.petProgress);
+    _controller.updateMotionCadence(
+      blinkIntervalScale: growth.blinkIntervalScale,
+      earTwitchIntervalScale: growth.earTwitchIntervalScale,
+    );
+
+    // Keep the legacy controller's visual state in step, so the micro-motion
+    // gating (which states sustain ambient motion) stays correct.
+    final visualState = _legacyVisualStateFor(_director.context.baseContext);
+    if (_controller.visualState != visualState) {
+      _controller.updateState(visualState);
+    }
+  }
+
+  static PetVisualState _legacyVisualStateFor(CompanionBaseContext context) {
+    switch (context) {
+      case CompanionBaseContext.home:
+      case CompanionBaseContext.room:
+        return PetVisualState.idle;
+      case CompanionBaseContext.focus:
+        return PetVisualState.focus;
+      case CompanionBaseContext.pause:
+        return PetVisualState.pause;
+      case CompanionBaseContext.complete:
+        return PetVisualState.celebrate;
+      case CompanionBaseContext.craft:
+        return PetVisualState.craft;
+      case CompanionBaseContext.sleep:
+        return PetVisualState.sleep;
+    }
+  }
+
+  void _triggerTapReact() {
+    _director.triggerOverlay(_director.profile.tapOverlay);
+  }
+
+  void _triggerLongPressReact() {
+    _director.triggerOverlay(_director.profile.longPressOverlay);
   }
 
   @override
@@ -183,18 +274,23 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     ref.watch(homeControllerProvider);
     ref.watch(craftControllerProvider);
 
-    return PetAvatarWidget(
-      visualState: _deriveVisualState(),
-      size: widget.size,
-      message: widget.message,
-      controller: _controller,
-      accessory: widget.accessory,
-      focusProgress: widget.focusProgress,
-      focusPhase: _focusPhase(),
-      focusCategoryId: widget.focusCategoryId,
-      craftProgress: _craftProgress(),
-      showStateBadge: widget.showStateBadge,
-      growthProfile: _growthProfile(),
+    return CompanionPresentationClock(
+      director: _director,
+      builder: (context, intent) => CompanionRendererFor(
+        intent: intent,
+        registry: _registry,
+        options: CompanionVisualOptions(
+          size: widget.size,
+          message: widget.message,
+          accessory: widget.accessory,
+          showStateBadge: widget.showStateBadge,
+          controller: _controller,
+          focusProgress: widget.focusProgress,
+          focusCategoryId: widget.focusCategoryId,
+          onTapReact: _triggerTapReact,
+          onLongPressReact: _triggerLongPressReact,
+        ),
+      ),
     );
   }
 }

@@ -70,6 +70,8 @@ class _CompanionRendererState extends State<CompanionRenderer> {
       controller: _controller,
       focusProgress: widget.options.focusProgress,
       focusCategoryId: widget.options.focusCategoryId,
+      onTapReact: widget.options.onTapReact,
+      onLongPressReact: widget.options.onLongPressReact,
     );
 
     return widget.provider.build(context, widget.intent, options);

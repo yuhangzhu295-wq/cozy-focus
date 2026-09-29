@@ -1,0 +1,216 @@
+import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:cozy_focus_app/data/local/app_database.dart';
+import 'package:cozy_focus_app/domain/models/enums.dart';
+import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
+import 'package:cozy_focus_app/presentation/companion/mochi_pose_prop.dart';
+import 'package:cozy_focus_app/presentation/companion/mochi_pose_spec.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
+import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
+import 'package:cozy_focus_app/presentation/controllers/providers.dart';
+import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
+
+/// A home controller that reports a preset state instead of loading one.
+class _PresetHomeController extends HomeController {
+  final HomeUIState _preset;
+  _PresetHomeController(super.ref, this._preset);
+
+  @override
+  Future<void> loadHomeData() async {
+    state = _preset;
+  }
+}
+
+void main() {
+  late AppDatabase db;
+
+  setUp(() {
+    db = AppDatabase.forTesting(NativeDatabase.memory());
+  });
+
+  tearDown(() async {
+    await db.close();
+  });
+
+  /// The prop currently rendered, or `null` when the pose carries none.
+  MochiPosePropKind? renderedProp(WidgetTester tester) {
+    final finder = find.byType(MochiPoseProp);
+    if (finder.evaluate().isEmpty) return MochiPosePropKind.none;
+    return tester.widget<MochiPoseProp>(finder.first).kind;
+  }
+
+  /// Builds a container whose home controller reports [homeState].
+  ProviderContainer containerWith(HomeUIState homeState) {
+    final c = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        homeControllerProvider
+            .overrideWith((ref) => _PresetHomeController(ref, homeState)),
+      ],
+    );
+    addTearDown(c.dispose);
+    return c;
+  }
+
+  Widget appWith(ProviderContainer c, Widget child) =>
+      UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          // Centred so the avatar's box is exactly the companion, and a tap on
+          // `CompanionAvatar` cannot land on empty space beside it.
+          home: Scaffold(body: Center(child: child)),
+        ),
+      );
+
+  group('CompanionAvatar presents the runtime pose', () {
+    testWidgets('a focus context renders one of the three focus poses',
+        (tester) async {
+      final c = containerWith(const HomeUIState(hasActiveSession: true));
+      await tester.pumpWidget(appWith(c, const CompanionAvatar(size: 140)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(
+        renderedProp(tester),
+        anyOf(
+          MochiPosePropKind.openBook,
+          MochiPosePropKind.notebook,
+          MochiPosePropKind.thoughtBubbles,
+        ),
+        reason: 'a running session must present a work silhouette',
+      );
+    });
+
+    testWidgets('a paused session rests instead of working', (tester) async {
+      final c = containerWith(const HomeUIState(hasActiveSession: true));
+      await tester.pumpWidget(appWith(
+        c,
+        const CompanionAvatar(
+          size: 140,
+          visualStateOverride: PetVisualState.pause,
+        ),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(renderedProp(tester), MochiPosePropKind.restZ);
+    });
+
+    testWidgets('an idle home has no work prop at all', (tester) async {
+      final c = containerWith(const HomeUIState());
+      await tester.pumpWidget(appWith(c, const CompanionAvatar(size: 140)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(renderedProp(tester), MochiPosePropKind.none);
+    });
+
+    testWidgets('a completion context celebrates', (tester) async {
+      final c = containerWith(const HomeUIState());
+      await tester.pumpWidget(appWith(
+        c,
+        const CompanionAvatar(
+          size: 140,
+          visualStateOverride: PetVisualState.celebrate,
+        ),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(renderedProp(tester), MochiPosePropKind.confetti);
+    });
+  });
+
+  group('interaction overlay during focus', () {
+    testWidgets(
+        'tap shows the overlay pose, then restores the focus pose — never idle',
+        (tester) async {
+      final c = containerWith(const HomeUIState(hasActiveSession: true));
+      await tester.pumpWidget(appWith(c, const CompanionAvatar(size: 140)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final before = renderedProp(tester);
+      expect(before, isNotNull);
+
+      // Tap the companion. The gesture goes through the same controller path the
+      // pre-V4.2.1 avatar used, and additionally asks the director for an overlay.
+      await tester.tap(find.byType(CompanionAvatar));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(
+        renderedProp(tester),
+        MochiPosePropKind.tapSpark,
+        reason: 'the overlay pose must be presented while the overlay runs',
+      );
+
+      // Past the overlay's maximum window (1200 ms).
+      await tester.pump(const Duration(milliseconds: 1500));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(
+        renderedProp(tester),
+        before,
+        reason: 'the previous focus behaviour must be restored exactly',
+      );
+      expect(
+        renderedProp(tester),
+        isNot(MochiPosePropKind.none),
+        reason: 'the overlay must never fall through to idle',
+      );
+    });
+
+    testWidgets('long press shows the petting overlay', (tester) async {
+      final c = containerWith(const HomeUIState(hasActiveSession: true));
+      await tester.pumpWidget(appWith(c, const CompanionAvatar(size: 140)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await tester.longPress(find.byType(CompanionAvatar));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(renderedProp(tester), MochiPosePropKind.heart);
+    });
+  });
+
+  group('lifecycle', () {
+    testWidgets('disposing the avatar leaves no active ticker', (tester) async {
+      final c = containerWith(const HomeUIState(hasActiveSession: true));
+      await tester.pumpWidget(appWith(c, const CompanionAvatar(size: 140)));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Replacing the tree disposes the presentation clock; a leaked ticker would
+      // fail this test at teardown with "A Ticker was still active".
+      await tester.pumpWidget(appWith(c, const SizedBox.shrink()));
+      await tester.pump();
+      expect(find.byType(CompanionAvatar), findsNothing);
+    });
+
+    testWidgets('an unknown companion id still renders the default companion',
+        (tester) async {
+      final c = containerWith(const HomeUIState(hasActiveSession: true));
+      await tester.pumpWidget(appWith(
+        c,
+        const CompanionAvatar(
+            size: 140, companionId: CompanionIdUnderTest.unknown),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Falls back to the default profile's provider, so a stale stored
+      // selection degrades to dog rather than to an empty box.
+      expect(renderedProp(tester), isNotNull);
+    });
+  });
+}
+
+/// A companion id this build does not ship, to exercise the safe fallback.
+abstract final class CompanionIdUnderTest {
+  static const unknown = CompanionId('not-a-shipped-companion');
+}

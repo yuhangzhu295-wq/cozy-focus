@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../domain/growth/mochi_growth_profile.dart';
 import '../../domain/models/enums.dart';
 import '../companion/focus_phase.dart';
+import '../companion/mochi_pose_spec.dart';
 import '../animations/pet_interaction_spec.dart';
 import '../animations/pet_motion_view.dart';
 import '../animations/rive_pet_adapter.dart';
@@ -42,6 +43,20 @@ class PetAvatarWidget extends StatelessWidget {
   /// Real focus `categoryId`; see [PetIdleFallbackView.focusCategoryId].
   final String? focusCategoryId;
 
+  /// The V4.2.1 pose; see [PetIdleFallbackView.poseSpec].
+  final MochiPoseSpec? poseSpec;
+
+  /// Invoked in addition to the controller's own reaction when Mochi is tapped.
+  ///
+  /// The V4.2.1 runtime routes the *overlay pose* through the behavior director,
+  /// while the existing controller keeps owning the interact cooldown. Both are
+  /// wanted, and neither replaces the other, so this is an addition rather than a
+  /// second gesture path.
+  final VoidCallback? onTapReact;
+
+  /// Invoked in addition to the controller's own reaction on long press.
+  final VoidCallback? onLongPressReact;
+
   const PetAvatarWidget({
     super.key,
     required this.visualState,
@@ -58,6 +73,9 @@ class PetAvatarWidget extends StatelessWidget {
     this.growthProfile,
     this.focusPhase,
     this.focusCategoryId,
+    this.poseSpec,
+    this.onTapReact,
+    this.onLongPressReact,
   });
 
   String _petSemanticLabel(PetVisualState state) {
@@ -153,21 +171,29 @@ class PetAvatarWidget extends StatelessWidget {
             onTap: controller != null && _respondsToTouch(activeState)
                 ? () {
                     controller!.triggerInteract();
+                    onTapReact?.call();
                   }
                 : null,
             onLongPress: controller != null && _respondsToTouch(activeState)
                 ? () {
                     controller!.triggerStroke();
+                    onLongPressReact?.call();
                   }
                 : null,
             child: controller != null
                 ? GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: controller!.triggerInteract,
+                    onTap: () {
+                      controller!.triggerInteract();
+                      onTapReact?.call();
+                    },
                     // Long press is the "轻抚" gesture: a hold, not a poke. It
                     // shares the interact gate but has its own cooldown, so the
                     // two gestures cannot swallow each other.
-                    onLongPress: controller!.triggerStroke,
+                    onLongPress: () {
+                      controller!.triggerStroke();
+                      onLongPressReact?.call();
+                    },
                     child: PetMotionView(
                       visualState: activeState,
                       size: size,
@@ -182,6 +208,7 @@ class PetAvatarWidget extends StatelessWidget {
                       growthProfile: growthProfile,
                       focusPhase: focusPhase,
                       focusCategoryId: focusCategoryId,
+                      poseSpec: poseSpec,
                     ),
                   )
                 : PetMotionView(
