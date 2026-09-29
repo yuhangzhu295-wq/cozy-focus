@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../animations/pet_motion_spec.dart';
+import '../controllers/pet_motion_controller.dart';
 import 'mochi_pose_prop.dart';
 import 'mochi_pose_spec.dart';
 import 'runtime/companion_pose.dart';
@@ -108,13 +111,25 @@ abstract final class CompanionSilhouettes {
 /// renderer, so the three companions genuinely share one presentation system —
 /// only the leaf drawing differs, which is exactly the division the V4.2.1
 /// architecture asks for.
-class ProceduralCompanionArt extends StatelessWidget {
+///
+/// ## Micro-motion is drawn here, not merely declared
+///
+/// Every companion's profile lists micro-motion channels (`breathe`, `blink`, …).
+/// The approved Mochi renderer drives them with its own controllers; a
+/// placeholder that drew a still image would make those declarations a lie, and
+/// would leave a cat or rabbit visibly frozen next to a dog that breathes. So
+/// this widget owns one breathing controller and one blink timer, using the same
+/// [PetMotionSpec] constants the dog uses, and releases both with itself.
+class ProceduralCompanionArt extends StatefulWidget {
   final CompanionSilhouette silhouette;
   final CompanionPose pose;
   final MochiPoseSpec poseSpec;
   final double size;
-  final double phase;
   final bool reducedMotion;
+
+  /// Injectable blink cadence, so a test is deterministic. Production uses the
+  /// natural random scheduler the rest of the motion layer uses.
+  final IPetMotionScheduler? scheduler;
 
   const ProceduralCompanionArt({
     super.key,
@@ -122,40 +137,133 @@ class ProceduralCompanionArt extends StatelessWidget {
     required this.pose,
     required this.poseSpec,
     required this.size,
-    this.phase = 0.0,
     this.reducedMotion = false,
+    this.scheduler,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final spec = reducedMotion ? MochiPoseSpecs.damped(poseSpec) : poseSpec;
+  State<ProceduralCompanionArt> createState() => _ProceduralCompanionArtState();
+}
 
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          ExcludeSemantics(
-            child: CustomPaint(
-              size: Size(size, size),
-              painter: _SilhouettePainter(
-                silhouette: silhouette,
-                spec: spec,
-                phase: reducedMotion ? 0.0 : phase,
-              ),
+class _ProceduralCompanionArtState extends State<ProceduralCompanionArt>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _breathe;
+  late final IPetMotionScheduler _scheduler;
+  Timer? _blinkTimer;
+  Timer? _blinkEndTimer;
+  bool _eyesClosed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduler = widget.scheduler ?? DefaultPetMotionScheduler();
+    _breathe = AnimationController(
+      vsync: this,
+      duration: PetMotionSpec.breatheCycle,
+    );
+    if (!widget.reducedMotion) {
+      _breathe.repeat(reverse: true);
+      _scheduleBlink();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ProceduralCompanionArt old) {
+    super.didUpdateWidget(old);
+    // Reduced motion can be switched while the companion is on screen.
+    if (old.reducedMotion != widget.reducedMotion) {
+      if (widget.reducedMotion) {
+        _breathe.stop();
+        _breathe.value = 0.0;
+        _cancelBlink();
+        _eyesClosed = false;
+      } else {
+        _breathe.repeat(reverse: true);
+        _scheduleBlink();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _cancelBlink();
+    _breathe.dispose();
+    super.dispose();
+  }
+
+  void _cancelBlink() {
+    _blinkTimer?.cancel();
+    _blinkTimer = null;
+    _blinkEndTimer?.cancel();
+    _blinkEndTimer = null;
+  }
+
+  void _scheduleBlink() {
+    _blinkTimer?.cancel();
+    _blinkTimer = Timer(_scheduler.nextBlinkInterval(), () {
+      if (!mounted || widget.reducedMotion) return;
+      setState(() => _eyesClosed = true);
+      _blinkEndTimer?.cancel();
+      _blinkEndTimer = Timer(PetMotionSpec.blinkDuration, () {
+        if (!mounted) return;
+        setState(() => _eyesClosed = false);
+        _scheduleBlink();
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = widget.reducedMotion
+        ? MochiPoseSpecs.damped(widget.poseSpec)
+        : widget.poseSpec;
+    final size = widget.size;
+
+    return AnimatedBuilder(
+      animation: _breathe,
+      builder: (context, _) {
+        // A breath is a small scale about the base, never a translation: the
+        // companion must not appear to float off its furniture.
+        final breathScale = widget.reducedMotion
+            ? 1.0
+            : PetMotionSpec.breatheScaleMin +
+                (PetMotionSpec.breatheScaleMax -
+                        PetMotionSpec.breatheScaleMin) *
+                    _breathe.value;
+
+        return Transform.scale(
+          scale: breathScale,
+          alignment: Alignment.bottomCenter,
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                ExcludeSemantics(
+                  child: CustomPaint(
+                    size: Size(size, size),
+                    painter: _SilhouettePainter(
+                      silhouette: widget.silhouette,
+                      spec: spec,
+                      phase: 0.0,
+                      eyesClosed: _eyesClosed,
+                    ),
+                  ),
+                ),
+                if (spec.prop != MochiPosePropKind.none)
+                  MochiPoseProp(
+                    kind: spec.prop,
+                    size: size,
+                    phase: _breathe.value,
+                    reducedMotion: widget.reducedMotion,
+                  ),
+              ],
             ),
           ),
-          if (spec.prop != MochiPosePropKind.none)
-            MochiPoseProp(
-              kind: spec.prop,
-              size: size,
-              phase: phase,
-              reducedMotion: reducedMotion,
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -165,10 +273,14 @@ class _SilhouettePainter extends CustomPainter {
   final MochiPoseSpec spec;
   final double phase;
 
+  /// Whether the blink channel has the eyes shut this frame.
+  final bool eyesClosed;
+
   _SilhouettePainter({
     required this.silhouette,
     required this.spec,
     required this.phase,
+    this.eyesClosed = false,
   });
 
   double _float(double amplitude) => math.sin(phase * 2 * math.pi) * amplitude;
@@ -337,7 +449,9 @@ class _SilhouettePainter extends CustomPainter {
 
     // Eyes: closed happy arcs, squashed by the pose's eye channel so a resting
     // companion visibly closes them.
-    final eyeOpen = spec.eyeScaleY.clamp(0.0, 1.4);
+    // A blink closes the eyes whatever the pose says: it is a micro-motion, not
+    // a pose change, so it composes with the pose rather than replacing it.
+    final eyeOpen = eyesClosed ? 0.0 : spec.eyeScaleY.clamp(0.0, 1.4);
     final eyeR = headR * 0.20;
     for (final side in [-1.0, 1.0]) {
       final ex = headCx + side * headR * 0.36;

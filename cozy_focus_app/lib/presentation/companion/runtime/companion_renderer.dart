@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 
 import '../../controllers/pet_motion_controller.dart';
-import 'companion_id.dart';
 import 'companion_presentation_intent.dart';
 import 'companion_visual_provider.dart';
 
@@ -78,48 +77,3 @@ class _CompanionRendererState extends State<CompanionRenderer> {
     return widget.provider.build(context, widget.intent, options);
   }
 }
-
-/// Resolves and renders in one step, for callers that hold a registry.
-///
-/// Kept separate from [CompanionRenderer] so a test can drive a provider directly
-/// with no registry, and so a caller that already resolved a provider does not
-/// pay for a second lookup.
-class CompanionRendererFor extends StatelessWidget {
-  final CompanionPresentationIntent intent;
-  final CompanionVisualRegistry registry;
-  final CompanionVisualOptions options;
-
-  /// Rendered when no provider is registered for the intent's companion.
-  ///
-  /// A missing provider is an authoring error, not a runtime state, so the
-  /// fallback is intentionally inert rather than a second drawing path.
-  final Widget? noProviderFallback;
-
-  const CompanionRendererFor({
-    super.key,
-    required this.intent,
-    required this.registry,
-    this.options = const CompanionVisualOptions(),
-    this.noProviderFallback,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = registry.providerForCompanion(intent.companionId);
-    if (provider == null) {
-      return noProviderFallback ?? const SizedBox.shrink();
-    }
-    return CompanionRenderer(
-      intent: intent,
-      provider: provider,
-      options: options,
-    );
-  }
-}
-
-/// Convenience for a companion id with no intent yet.
-///
-/// Used by diagnostics and tests to assert that a companion can be drawn at all
-/// before any behaviour has been scheduled.
-bool hasVisualProvider(CompanionVisualRegistry registry, CompanionId id) =>
-    registry.providerForCompanion(id) != null;

@@ -49,11 +49,21 @@ class AmbientModifier {
 abstract final class CompanionAmbientModifiers {
   const CompanionAmbientModifiers._();
 
-  /// The contexts whose pools may vary. Task contexts are excluded on purpose.
+  /// The contexts whose pools may vary.
+  ///
+  /// Task contexts are excluded on purpose: a focus session and a craft job must
+  /// present identically at every stage and hour.
+  ///
+  /// `complete` is excluded for a different reason, and it is not an oversight.
+  /// Completion is a one-shot moment whose whole purpose is to celebrate. Adding
+  /// the hour's restful beats to its pool would mean that late at night the
+  /// companion celebrated only about a third of the time and looked sleepy the
+  /// rest — which contradicts "Completion must visibly celebrate". Ambient
+  /// variety belongs where the companion is idling, not where it is marking a
+  /// finished session.
   static const Set<CompanionBaseContext> ambientContexts = {
     CompanionBaseContext.home,
     CompanionBaseContext.room,
-    CompanionBaseContext.complete,
   };
 
   /// Per-stage contribution. Growth is **additive**: a later stage keeps

@@ -84,11 +84,11 @@ Backed up (copied, originals untouched) to `C:\Users\zyu33\Documents\CozyFocus-S
 |---|---|
 | `dart format --output=none --set-exit-if-changed lib test` | **PASS** (204 files, 0 changed) |
 | `flutter analyze --fatal-infos --no-pub` | **PASS** (No issues found) |
-| `flutter test --no-pub` | **PASS — 830 / 830** |
+| `flutter test --no-pub` | **PASS — 835 / 835** |
 | `flutter build apk --debug` | **PASS** |
 | `git diff --check` | **PASS** (clean) |
 
-BASELINE_TESTS = 684/684 · FINAL_TESTS = **830/830**
+BASELINE_TESTS = 684/684 · FINAL_TESTS = **835/835**
 
 The historical 801 is not the target and was not treated as one; 822 is the
 fresh measurement.
@@ -98,8 +98,8 @@ fresh measurement.
 | Field | Value |
 |---|---|
 | Path | `cozy_focus_app/build/app/outputs/flutter-apk/app-debug.apk` |
-| Size | 125,351,205 bytes |
-| SHA256 | `7e8a9ef498e125f03ee297638249c1d002c0f76de0f9f3a959eda0a63028dd97` |
+| Size | 125,354,833 bytes |
+| SHA256 | `fb3d67483ae044a22863fa4d637f5806f1a161e3bf83fc37d6a40b5aa4563ba3` |
 
 ## 7. Architecture gates
 
@@ -157,15 +157,84 @@ ASSET_GAP = **OPEN** for all three companions' runtime pose packs.
 
 | Review | Status |
 |---|---|
-| CLAUDE (`11/claude-sonnet-4-6`) | **NOT RUN** — the owner instructed that the GPT and Claude models not be used at this time |
+| CLAUDE (`11/claude-sonnet-4-6`) | **NOT RUN** — the owner instructed that the GPT and Claude models not be used |
 | GPT-6 SOL (`11/gpt-6-sol`) | **NOT RUN** — same instruction |
+| Replacement review | **RUN** — a critical self-review with the orchestrator model, at the owner's instruction to complete the outstanding work with the current model only |
 
-CLAUDE_P0 / CLAUDE_P1 / GPT6_SOL_P0 / GPT6_SOL_P1 = **NOT_ASSESSED**
-GPT6_SOL_DECISION = **NOT_ASSESSED**
+**This is a self-review, not the independent review the brief specifies.** The
+same model that wrote the code reviewed it, so it cannot provide the
+independence the brief is asking for. It is recorded here as a substitute, not
+as an equivalent.
 
-Their gates (P0=0, P1=0) therefore remain **unmet**, not satisfied. The
-reconstruction's own gates are green, but the independent architecture and
-integration reviews the brief requires have not happened.
+### Architecture review (substitute for the Claude pass)
+
+Scope: the whole reconstruction diff against the recovery source
+(68 files, ~8,600 insertions).
+
+| Severity | Count | Items |
+|---|---|---|
+| P0 | **0** | — |
+| P1 | **2** | found and fixed, below |
+| P2 | **3** | found and fixed, below |
+
+**P1-1 — completion could present `sleep` instead of celebrating.** Slice E
+made `complete` an "ambient" context, so the late-night modifier injected
+restful beats into the completion pool. Probed across seeds: the companion
+celebrated only about a third of the time and looked sleepy the rest, which
+contradicts "Completion must visibly celebrate". Completion is a one-shot
+moment, not an ambient state; it is now excluded from ambient modifiers, with a
+regression test over every hour, every stage and 25 seeds.
+
+**P1-2 — an unknown companion id rendered an empty box.** §46 requires an
+unknown id to fall back safely to the dog. The *profile* fell back, so the
+companion was named Mochi, but the renderer resolved its provider from the raw
+id and drew nothing at all. The provider is now resolved through the resolved
+profile's pose pack, so the name and the picture cannot disagree.
+
+**P2-1 — the placeholder companions declared micro-motion they never drove.**
+Every profile lists `breathe` / `blink` / `ear_flick` channels, but the
+procedural renderer drew a still image, so a cat or rabbit was visibly frozen
+beside a dog that breathes. The placeholder now owns one breathing controller
+and one blink timer on the same `PetMotionSpec` constants, releases both, and
+stops them under reduced motion. Verified on device: the cat blinks and
+breathes.
+
+**P2-2 — a vacuous test was hiding P1-2.** The unknown-companion test asserted
+`isNotNull` on a non-nullable enum, so it could never fail. It now asserts what
+is actually on screen.
+
+**P2-3 — dead code.** `CompanionRendererFor` and `hasVisualProvider` were
+written and then orphaned by the P1-2 fix; both removed. `loadFromAssets` had
+no caller and no test — it is the documented alternative to the bundled tables,
+so it is now covered by a test that loads the real manifests through it rather
+than deleting it.
+
+### Integration review (substitute for the GPT-6 Sol pass)
+
+Asked whether the reconstruction satisfies the explicit V4.2.1 contract, not
+whether the architecture is theoretically perfect.
+
+| Contract item | Verdict |
+|---|---|
+| Business → Context → Director → Recipe → Intent → Renderer | met |
+| One shared director, no per-species engine | met (asserted) |
+| No second business state machine | met (the director cannot reach one) |
+| Page-level species branches = 0 | met (asserted) |
+| Generic-renderer species branches = 0 | met (asserted) |
+| Fourth companion needs no page or engine edit | met (proved with a test-only companion) |
+| Overlay never overwrites base context | met (restore by construction; verified on device) |
+| Pause must not schedule focus behaviour | met (enforced by recipe data) |
+| Craft behaviour only with a real job | met (gated, and asserted) |
+| Room interaction only when owned ∧ placed ∧ visible | met (declared as data) |
+| Reduced motion preserves the semantic pose | met (asserted) |
+| Deterministic behaviour tests | met (injected seed) |
+| Asset gap declared, not hidden | met — still **open** |
+| Independent reviewer sign-off | **NOT MET** — this is a self-review |
+
+CLAUDE_P0 = 0 · CLAUDE_P1 = 0 (substitute review, not the specified reviewer)
+GPT6_SOL_P0 = 0 · GPT6_SOL_P1 = 0 (substitute review, not the specified reviewer)
+GPT6_SOL_DECISION = **PASS against the contract**, with the independence caveat
+above. The one contract item genuinely unmet is the independent review itself.
 
 ## 11. Known limitations (stated, not hidden)
 
@@ -173,8 +242,10 @@ integration reviews the brief requires have not happened.
    props are honest placeholders, not production assets.
 2. **Cat and rabbit are placeholders.** They are the correct species and use the
    shared pose vocabulary, but they are procedurally drawn, not painted.
-3. **Claude and GPT-6 Sol reviews were not run**, per the owner's instruction.
-   The final independent review gate is therefore open.
+3. **The independent reviews were not run.** A self-review with the
+   orchestrator model was done instead, at the owner's instruction. It found and
+   fixed two P1s, but the same model wrote the code, so it cannot substitute for
+   the independent gate the brief specifies.
 4. **The V4.2 room scenes are not implemented.** The designs place the
    companion in a furnished scene; the app keeps the V4.1 treatment and carries
    the V4.2 interaction on top, per the brief's own priority rule.

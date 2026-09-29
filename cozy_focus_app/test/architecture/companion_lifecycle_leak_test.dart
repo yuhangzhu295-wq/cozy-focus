@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_selection.dart';
+import 'package:cozy_focus_app/presentation/companion/procedural_companion_art.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_behavior_director.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_context.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
@@ -243,6 +244,54 @@ void main() {
       await tester.pumpWidget(app(c, const SizedBox.shrink()));
       await tester.pump();
       expect(tester.binding.transientCallbackCount, 0);
+    });
+  });
+
+  group('a placeholder companion releases its micro-motion', () {
+    testWidgets('the cat animates, and releases everything on disposal',
+        (tester) async {
+      final c = containerWith(const HomeUIState());
+      final selection = c.read(companionSelectionProvider.notifier);
+      await selection.select(CompanionId.cat);
+
+      await tester.pumpWidget(app(c, const CompanionAvatar(size: 140)));
+      await tester.pump();
+
+      // Breathing is a repeating controller, so a frame callback is expected
+      // while it is mounted — that is the point of the fix.
+      expect(
+        tester.binding.transientCallbackCount,
+        greaterThan(0),
+        reason: 'a placeholder companion must not be frozen',
+      );
+
+      await tester.pumpWidget(app(c, const SizedBox.shrink()));
+      await tester.pump();
+
+      // Disposal must release the breathing controller and both blink timers; a
+      // survivor fails this test at teardown with "A Timer is still pending".
+      expect(find.byType(ProceduralCompanionArt), findsNothing);
+      expect(tester.binding.transientCallbackCount, 0);
+    });
+
+    testWidgets('reduced motion stops the breathing entirely', (tester) async {
+      final c = containerWith(const HomeUIState());
+      await c
+          .read(companionSelectionProvider.notifier)
+          .select(CompanionId.rabbit);
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: app(c, const CompanionAvatar(size: 140)),
+        ),
+      );
+      await tester.pump();
+
+      // The semantic pose is preserved; only the movement is dropped.
+      expect(find.byType(ProceduralCompanionArt), findsOneWidget);
+      expect(tester.binding.transientCallbackCount, 0,
+          reason: 'reduced motion must stop the breathing controller');
     });
   });
 

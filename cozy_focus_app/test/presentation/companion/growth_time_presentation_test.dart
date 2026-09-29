@@ -159,6 +159,7 @@ void main() {
         CompanionBaseContext.craft,
         CompanionBaseContext.pause,
         CompanionBaseContext.sleep,
+        CompanionBaseContext.complete,
       ]) {
         final modifier = CompanionAmbientModifiers.resolve(
           baseContext: context,
@@ -167,6 +168,51 @@ void main() {
         );
         expect(modifier.extraEligible, isEmpty, reason: context.id);
         expect(modifier.dwellScale, 1.0, reason: context.id);
+      }
+    });
+  });
+
+  group('completion always celebrates', () {
+    test('at every hour and every stage, and for many seeds', () {
+      // Regression: completion was once an "ambient" context, so the late-night
+      // modifier injected restful beats into its pool and the companion looked
+      // sleepy about two thirds of the time instead of celebrating.
+      for (final band in TimeOfDayBand.values) {
+        for (final stage in GrowthStage.values) {
+          for (var seed = 0; seed < 25; seed++) {
+            final d = CompanionBehaviorDirector(
+              catalog: catalog,
+              context: CompanionContext(
+                companionId: CompanionId.dog,
+                baseContext: CompanionBaseContext.complete,
+                growthStage: stage,
+                timeOfDay: band,
+              ),
+              random: SeededRandomSource(seed),
+            );
+            expect(
+              d.currentMacroBehavior,
+              CompanionMacroBehavior.celebrate,
+              reason: 'band=${band.label} stage=$stage seed=$seed',
+            );
+          }
+        }
+      }
+    });
+
+    test('and it keeps celebrating as the behaviour is re-picked', () {
+      final d = CompanionBehaviorDirector(
+        catalog: catalog,
+        context: const CompanionContext(
+          companionId: CompanionId.dog,
+          baseContext: CompanionBaseContext.complete,
+          timeOfDay: TimeOfDayBand.lateNight,
+        ),
+        random: SeededRandomSource(7),
+      );
+      for (var ms = 0; ms <= 120000; ms += 1000) {
+        d.advanceTo(Duration(milliseconds: ms));
+        expect(d.currentMacroBehavior, CompanionMacroBehavior.celebrate);
       }
     });
   });

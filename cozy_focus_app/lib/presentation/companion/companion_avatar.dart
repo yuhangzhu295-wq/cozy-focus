@@ -285,6 +285,22 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     }
   }
 
+  /// The provider that draws [id].
+  ///
+  /// Resolved through the *catalog's* profile first, so an id this build does
+  /// not ship degrades to the default companion's pack rather than to an empty
+  /// box. The profile already falls back that way; resolving the drawing any
+  /// other way would let the name and the picture disagree — the companion would
+  /// be called Mochi while nothing was drawn at all.
+  CompanionVisualProvider _providerFor(CompanionId id) {
+    final pack = ref.read(companionCatalogProvider).profileFor(id).posePack;
+    return _registry.providerForPack(pack) ??
+        _registry.providerForCompanion(id) ??
+        _registry.providerForPack(
+          ref.read(companionCatalogProvider).defaultProfileId.value,
+        )!;
+  }
+
   void _triggerTapReact() {
     _director.triggerOverlay(_director.profile.tapOverlay);
   }
@@ -295,21 +311,19 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch so the avatar follows business state changes.
+    // Watched so the avatar follows business state changes. The catalog and the
+    // registry are deliberately *not* watched: they are read once when the
+    // director is built, because they are constant for this widget's lifetime.
+    // Watching them would only cause rebuilds that change nothing.
     ref.watch(homeControllerProvider);
     ref.watch(craftControllerProvider);
     ref.watch(companionSelectionProvider);
 
-    // Watched so a test that substitutes a catalog or a registry sees the
-    // change without any page being aware of it.
-    ref.watch(companionCatalogProvider);
-    ref.watch(companionVisualRegistryProvider);
-
     return CompanionPresentationClock(
       director: _director,
-      builder: (context, intent) => CompanionRendererFor(
+      builder: (context, intent) => CompanionRenderer(
         intent: intent,
-        registry: _registry,
+        provider: _providerFor(intent.companionId),
         options: CompanionVisualOptions(
           displayName: _director.profile.displayName,
           size: widget.size,

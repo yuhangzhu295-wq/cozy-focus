@@ -2,6 +2,9 @@ import 'package:cozy_focus_app/presentation/companion/focus_phase.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_catalog.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_context.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_manifest_data.dart';
+import 'dart:io';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'catalog_test_support.dart';
@@ -19,6 +22,37 @@ void main() {
   setUp(() {
     fromJson = loadShippedCatalog();
     bundled = bundledCompanionCatalog();
+  });
+
+  test('the asset-loading path produces the same catalog as the runtime one',
+      () async {
+    // `loadFromAssets` is the documented alternative to the bundled tables — the
+    // path a build would take if the manifests ever moved out of Dart. It had no
+    // caller and no test, so nothing would have noticed it breaking.
+    final loaded = await CompanionCatalog.loadFromAssets(
+      bundle: _FileAssetBundle(),
+    );
+
+    expect(loaded.companionIds.length, fromJson.companionIds.length);
+    for (final id in fromJson.companionIds) {
+      expect(
+        loaded.profileFor(id).displayName,
+        fromJson.profileFor(id).displayName,
+        reason: id.value,
+      );
+    }
+    expect(
+      loaded
+          .recipeFor(CompanionBaseContext.focus, phase: FocusPhase.working)!
+          .eligible
+          .map((b) => b.id)
+          .toList(),
+      fromJson
+          .recipeFor(CompanionBaseContext.focus, phase: FocusPhase.working)!
+          .eligible
+          .map((b) => b.id)
+          .toList(),
+    );
   });
 
   test('the same companions are declared', () {
@@ -121,4 +155,16 @@ void main() {
       expect(b.requires, a.requires, reason: '$itemId requires');
     }
   });
+}
+
+/// An [AssetBundle] that reads the real manifest files from disk.
+///
+/// The point is to exercise the loader against the shipped data rather than
+/// against a stub, without needing a Flutter binding.
+class _FileAssetBundle extends CachingAssetBundle {
+  @override
+  Future<ByteData> load(String key) async {
+    final bytes = File(key).readAsBytesSync();
+    return ByteData.view(Uint8List.fromList(bytes).buffer);
+  }
 }

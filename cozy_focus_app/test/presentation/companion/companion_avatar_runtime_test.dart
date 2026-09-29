@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
+import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_prop.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_spec.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
@@ -222,8 +223,25 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       // Falls back to the default profile's provider, so a stale stored
-      // selection degrades to dog rather than to an empty box.
-      expect(renderedProp(tester), isNotNull);
+      // selection degrades to the dog rather than to an empty box.
+      //
+      // This asserted `isNotNull` on a non-nullable enum, which could never
+      // fail, and so it hid the fact that the renderer was resolving the
+      // provider by the *raw* id and drawing nothing at all. The assertion is
+      // now about what is actually on screen.
+      expect(
+        find.byType(MochiLayeredRenderer),
+        findsOneWidget,
+        reason: 'an unknown companion must fall back to the default companion',
+      );
+      expect(
+        renderedProp(tester),
+        anyOf(
+          MochiPosePropKind.openBook,
+          MochiPosePropKind.notebook,
+          MochiPosePropKind.thoughtBubbles,
+        ),
+      );
     });
   });
 }
