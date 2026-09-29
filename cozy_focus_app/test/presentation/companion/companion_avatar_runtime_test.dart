@@ -9,6 +9,7 @@ import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_prop.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_spec.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_presentation_clock.dart';
 import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
@@ -156,7 +157,9 @@ void main() {
       // pre-V4.2.1 avatar used, and additionally asks the director for an overlay.
       await tester.tap(find.byType(CompanionAvatar));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 16));
+      // The presentation scheduler ticks on an interval rather than every frame,
+      // so the overlay appears on the next tick rather than the next frame.
+      await tester.pump(CompanionPresentationClock.tickInterval);
 
       expect(
         renderedProp(tester),
@@ -166,7 +169,7 @@ void main() {
 
       // Past the overlay's maximum window (1200 ms).
       await tester.pump(const Duration(milliseconds: 1500));
-      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(CompanionPresentationClock.tickInterval);
 
       expect(
         renderedProp(tester),
@@ -188,7 +191,7 @@ void main() {
 
       await tester.longPress(find.byType(CompanionAvatar));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(CompanionPresentationClock.tickInterval);
 
       expect(renderedProp(tester), MochiPosePropKind.heart);
     });

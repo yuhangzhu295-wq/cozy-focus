@@ -84,11 +84,11 @@ Backed up (copied, originals untouched) to `C:\Users\zyu33\Documents\CozyFocus-S
 |---|---|
 | `dart format --output=none --set-exit-if-changed lib test` | **PASS** (204 files, 0 changed) |
 | `flutter analyze --fatal-infos --no-pub` | **PASS** (No issues found) |
-| `flutter test --no-pub` | **PASS — 822 / 822** |
+| `flutter test --no-pub` | **PASS — 830 / 830** |
 | `flutter build apk --debug` | **PASS** |
 | `git diff --check` | **PASS** (clean) |
 
-BASELINE_TESTS = 684/684 · FINAL_TESTS = **822/822**
+BASELINE_TESTS = 684/684 · FINAL_TESTS = **830/830**
 
 The historical 801 is not the target and was not treated as one; 822 is the
 fresh measurement.
@@ -98,8 +98,8 @@ fresh measurement.
 | Field | Value |
 |---|---|
 | Path | `cozy_focus_app/build/app/outputs/flutter-apk/app-debug.apk` |
-| Size | 125,352,670 bytes |
-| SHA256 | `e5163de6f0067f00cfc713d6237314cf5dfaee7f06b7c0e4beea83346c4f45e2` |
+| Size | 125,351,205 bytes |
+| SHA256 | `7e8a9ef498e125f03ee297638249c1d002c0f76de0f9f3a959eda0a63028dd97` |
 
 ## 7. Architecture gates
 
@@ -248,7 +248,47 @@ V4.2 interaction art for the app's look, so the shipped screens keep the V4.1
 treatment and carry the V4.2 *interaction* on top. This is a real difference
 from the design images and is recorded rather than glossed.
 
-## 15. Final status
+## 15. Scheduler and resource audit (§61, §65)
+
+The presentation scheduler was a `Ticker`. It satisfied "one scheduler", but a
+ticker holds a transient frame callback for as long as it runs, so the engine
+was asked for a frame **every vsync forever** — an idle companion kept the app
+from ever settling. For an app whose purpose is to sit quietly beside a focus
+timer that is a real battery cost for no visual benefit.
+
+It is now a single periodic timer at 250 ms. The director's decisions are
+seconds-scale (a behaviour dwells 8–30 s, an overlay 0.6–2.5 s), so a quarter of
+a second is imperceptible while being roughly sixty times cheaper. Frame-rate
+interpolation stays with the renderer's own AnimationControllers, which is what
+§61 asks for.
+
+Two consequences worth recording:
+
+- elapsed presentation time is now accumulated from ticks rather than read from
+  a `Stopwatch`. A stopwatch reads wall-clock time, which a widget test's fake
+  clock does not advance, so a stopwatch would have made every timing behaviour
+  untestable.
+- hidden time is not presentation time: the timer is cancelled while the app is
+  not visible, so a resumed app shows the companion mid-behaviour instead of
+  having silently skipped several.
+
+Audit results (`test/architecture/companion_lifecycle_leak_test.dart`):
+
+| Check | Result |
+|---|---|
+| The clock holds no frame callback (mounted in isolation) | PASS |
+| No pending timer survives disposal | PASS |
+| A supplied motion controller returns to 0 listeners / 0 timers | PASS |
+| Repeated companion switching accumulates nothing | PASS |
+| Background then foreground resumes without advancing time | PASS |
+| Reduced-motion toggling mid-flight leaves no pending timer | PASS |
+| The director's source owns no Timer / Ticker / subscription / listener | PASS |
+
+Re-verified on device after the change: all three work poses still cycle, and
+long press shows the heart overlay then restores the writing pose rather than
+falling to idle. 0 crash / 0 ANR / 0 app exception.
+
+## 16. Final status
 
 | Field | Value |
 |---|---|
