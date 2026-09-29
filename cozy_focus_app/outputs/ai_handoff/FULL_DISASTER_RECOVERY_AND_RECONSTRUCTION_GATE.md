@@ -84,13 +84,13 @@ Backed up (copied, originals untouched) to `C:\Users\zyu33\Documents\CozyFocus-S
 |---|---|
 | `dart format --output=none --set-exit-if-changed lib test` | **PASS** (204 files, 0 changed) |
 | `flutter analyze --fatal-infos --no-pub` | **PASS** (No issues found) |
-| `flutter test --no-pub` | **PASS — 821 / 821** |
+| `flutter test --no-pub` | **PASS — 822 / 822** |
 | `flutter build apk --debug` | **PASS** |
 | `git diff --check` | **PASS** (clean) |
 
-BASELINE_TESTS = 684/684 · FINAL_TESTS = **821/821**
+BASELINE_TESTS = 684/684 · FINAL_TESTS = **822/822**
 
-The historical 801 is not the target and was not treated as one; 821 is the
+The historical 801 is not the target and was not treated as one; 822 is the
 fresh measurement.
 
 ### APK
@@ -98,8 +98,8 @@ fresh measurement.
 | Field | Value |
 |---|---|
 | Path | `cozy_focus_app/build/app/outputs/flutter-apk/app-debug.apk` |
-| Size | 125,352,348 bytes |
-| SHA256 | `25b3ef025891827c392d1e7f75b766505b92f562f26e05b3d5b6cec4067bd60b` |
+| Size | 125,352,670 bytes |
+| SHA256 | `e5163de6f0067f00cfc713d6237314cf5dfaee7f06b7c0e4beea83346c4f45e2` |
 
 ## 7. Architecture gates
 
@@ -175,10 +175,13 @@ integration reviews the brief requires have not happened.
    shared pose vocabulary, but they are procedurally drawn, not painted.
 3. **Claude and GPT-6 Sol reviews were not run**, per the owner's instruction.
    The final independent review gate is therefore open.
-4. **Release signing is NOT_RECOVERED.** `android/key.properties` and the
+4. **The V4.2 room scenes are not implemented.** The designs place the
+   companion in a furnished scene; the app keeps the V4.1 treatment and carries
+   the V4.2 interaction on top, per the brief's own priority rule.
+5. **Release signing is NOT_RECOVERED.** `android/key.properties` and the
    keystore were lost with the workspace and were not invented. The Gradle
    script falls back to debug signing.
-5. **Emulator GPU.** `-gpu swiftshader_indirect` segfaulted the emulator once;
+6. **Emulator GPU.** `-gpu swiftshader_indirect` segfaulted the emulator once;
    it was restarted with `-gpu host` and was stable thereafter. An emulator
    renderer issue, not an application defect.
 
@@ -190,7 +193,62 @@ JSON files that the test suite regenerates on every run.
 
 REMOTE_CHECKPOINT_STATUS = **PRESENT** for all seven commits.
 
-## 13. Final status
+## 13. Final emulator gate (completed on the final artifact)
+
+The whole §75 journey was walked on the build above, not on an earlier one.
+
+| Step | Result |
+|---|---|
+| HOME | PASS |
+| DOG focus — three distinct work behaviours | **PASS** — reading (open book), writing (notebook + pencil), thinking (thought bubbles), captured as a 16-frame contact sheet over 96s, plus the `starting` phase's neutral prepare beat |
+| DOG tap during focus | PASS — exclamation overlay; state stayed 专注中 |
+| DOG long press during focus | PASS — heart overlay; state stayed 专注中 |
+| Focus restore | PASS — a 33:06 session survived several app restarts and resumed via 恢复专注, then completed |
+| Pause | PASS — "Mochi 休息中" with resting markers |
+| Complete | PASS — "Mochi 庆祝中" with confetti |
+| CAT selection / restart / focus / interaction | PASS (verified in Slice C and re-verified here) |
+| RABBIT selection / restart / focus / interaction | PASS — long ears, puff tail, shared reading prop |
+| GROWTH | PASS — name, tab and copy follow the selection |
+| CRAFT inactive | PASS — 8 craftable, no active section |
+| CRAFT active | PASS — job started, "0 / 20 分钟", craftable list dropped to 7; a second job is refused with 当前有其他制作任务进行中 |
+| COLLECTION | PASS — truthful ownership; unlock transition pinned by `collection_unlock_test.dart` |
+| ROOM unowned | PASS — shown as 未收集 in the Collection |
+| ROOM owned / unplaced | PASS — the inventory panel correctly reports nothing placeable while the only owned sofa is placed |
+| ROOM placed | PASS — two placed sofas; the newer placement wins the tie-break |
+| ROOM pet interaction | PASS — the companion sits on the resolved seat |
+| DRESS | PASS — states plainly that no dress data is connected |
+| REDUCED MOTION | PASS — the writing pose is preserved with motion damped |
+| background / foreground | PASS — no stuck state, no duplicate message |
+
+logcat over the whole journey: **0 crash / 0 ANR / 0 app exception**.
+
+One inconsistency was found and fixed during this pass: the dog reported
+"Mochi 空闲" while in the room, because the renderer's state enum has no
+"in the room" value, while the cat and rabbit said "在房间". The runtime now
+supplies the truthful label from the base context. `822/822`.
+
+## 14. Visual QA against the V4.2.1 designs
+
+Judged on the criteria §66 sets — identity, pose distinction, scale,
+hierarchy, interaction meaning, room context — and not on pixel matching,
+because the package states its page art is conceptual.
+
+| Criterion | Verdict |
+|---|---|
+| Identity | **PASS** — Mochi is the approved V4.1 layered art, unchanged |
+| Pose distinction | **PASS** — the three work poses are told apart at avatar size |
+| Scale and hierarchy | **PASS** — layouts are the V4.1 screens; the runtime did not move them |
+| Interaction meaning | **PASS** — tap and long press read as reactions, and neither interrupts the work |
+| Room context | **PASS** — the companion sits on resolved furniture |
+
+**Declared gap.** The V4.2 page designs place the companion in a *scene* —
+a desk and chair, a cushion and a carrot, a room interior. Those scenes are
+not implemented. §31 of the brief puts the V4.1 base visual language above the
+V4.2 interaction art for the app's look, so the shipped screens keep the V4.1
+treatment and carry the V4.2 *interaction* on top. This is a real difference
+from the design images and is recorded rather than glossed.
+
+## 15. Final status
 
 | Field | Value |
 |---|---|

@@ -46,6 +46,13 @@ class PetAvatarWidget extends StatelessWidget {
   /// The V4.2.1 pose; see [PetIdleFallbackView.poseSpec].
   final MochiPoseSpec? poseSpec;
 
+  /// Overrides the generated state label.
+  ///
+  /// [PetVisualState] has no "in the room" value, so a page that knows the
+  /// companion is in the room would otherwise be announced as "空闲". The
+  /// runtime knows the base context, so it supplies the truthful wording.
+  final String? semanticLabelOverride;
+
   /// Invoked in addition to the controller's own reaction when Mochi is tapped.
   ///
   /// The V4.2.1 runtime routes the *overlay pose* through the behavior director,
@@ -76,6 +83,7 @@ class PetAvatarWidget extends StatelessWidget {
     this.poseSpec,
     this.onTapReact,
     this.onLongPressReact,
+    this.semanticLabelOverride,
   });
 
   String _petSemanticLabel(PetVisualState state) {
@@ -166,7 +174,7 @@ class PetAvatarWidget extends StatelessWidget {
           ],
           Semantics(
             button: controller != null && _respondsToTouch(activeState),
-            label: _petSemanticLabel(activeState),
+            label: semanticLabelOverride ?? _petSemanticLabel(activeState),
             hint: controller != null ? _touchHint(activeState) : null,
             onTap: controller != null && _respondsToTouch(activeState)
                 ? () {

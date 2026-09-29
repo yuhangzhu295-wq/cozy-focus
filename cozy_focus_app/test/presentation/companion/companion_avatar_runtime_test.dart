@@ -109,6 +109,21 @@ void main() {
       expect(renderedProp(tester), MochiPosePropKind.none);
     });
 
+    testWidgets('a room anchor announces the room, not idle', (tester) async {
+      final c = containerWith(const HomeUIState());
+      await tester.pumpWidget(appWith(
+        c,
+        const CompanionAvatar(size: 140, roomAnchor: 'seat'),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // The renderer's state enum has no "in the room" value, so without the
+      // override a companion sitting in its room would be announced as idle.
+      expect(find.bySemanticsLabel(RegExp('在房间')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('空闲')), findsNothing);
+    });
+
     testWidgets('a completion context celebrates', (tester) async {
       final c = containerWith(const HomeUIState());
       await tester.pumpWidget(appWith(

@@ -117,6 +117,9 @@ class _MochiPoseAvatar extends ConsumerWidget {
       focusPhase: FocusPhaseResolver.resolve(intent.focusProgress),
       focusCategoryId: options.focusCategoryId,
       poseSpec: poseSpec,
+      semanticLabelOverride: intent.baseContext == CompanionBaseContext.room
+          ? '${options.displayName} 在房间'
+          : null,
       onTapReact: options.onTapReact,
       onLongPressReact: options.onLongPressReact,
     );
