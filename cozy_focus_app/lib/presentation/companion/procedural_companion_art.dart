@@ -131,6 +131,13 @@ class ProceduralCompanionArt extends StatefulWidget {
   /// natural random scheduler the rest of the motion layer uses.
   final IPetMotionScheduler? scheduler;
 
+  /// Invoked each time a blink begins.
+  ///
+  /// A diagnostics seam, not an animation control: the blink itself is drawn
+  /// here, and this exists so a test can assert that a blink *happens* rather
+  /// than inferring it from a frame-callback count.
+  final VoidCallback? onBlink;
+
   const ProceduralCompanionArt({
     super.key,
     required this.silhouette,
@@ -139,6 +146,7 @@ class ProceduralCompanionArt extends StatefulWidget {
     required this.size,
     this.reducedMotion = false,
     this.scheduler,
+    this.onBlink,
   });
 
   @override
@@ -202,6 +210,7 @@ class _ProceduralCompanionArtState extends State<ProceduralCompanionArt>
     _blinkTimer?.cancel();
     _blinkTimer = Timer(_scheduler.nextBlinkInterval(), () {
       if (!mounted || widget.reducedMotion) return;
+      widget.onBlink?.call();
       setState(() => _eyesClosed = true);
       _blinkEndTimer?.cancel();
       _blinkEndTimer = Timer(PetMotionSpec.blinkDuration, () {

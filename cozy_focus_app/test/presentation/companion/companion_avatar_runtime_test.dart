@@ -38,7 +38,8 @@ void main() {
   });
 
   /// The prop currently rendered, or `null` when the pose carries none.
-  MochiPosePropKind? renderedProp(WidgetTester tester) {
+  /// The prop on screen. Never null: an absent prop *is* `none`.
+  MochiPosePropKind renderedProp(WidgetTester tester) {
     final finder = find.byType(MochiPoseProp);
     if (finder.evaluate().isEmpty) return MochiPosePropKind.none;
     return tester.widget<MochiPoseProp>(finder.first).kind;
@@ -152,7 +153,17 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       final before = renderedProp(tester);
-      expect(before, isNotNull);
+      // The real precondition: a running session presents a work silhouette, so
+      // the restore below is compared against something meaningful. This read
+      // `isNotNull` on a value that can never be null, which could not fail.
+      expect(
+        before,
+        anyOf(
+          MochiPosePropKind.openBook,
+          MochiPosePropKind.notebook,
+          MochiPosePropKind.thoughtBubbles,
+        ),
+      );
 
       // Tap the companion. The gesture goes through the same controller path the
       // pre-V4.2.1 avatar used, and additionally asks the director for an overlay.
