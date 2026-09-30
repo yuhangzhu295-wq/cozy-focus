@@ -49,7 +49,7 @@ class CatVisualProvider extends CompanionVisualProvider {
     CompanionPresentationIntent intent,
     CompanionVisualOptions options,
   ) {
-    final spec = CompanionSpriteArt.specFor(companionKey, intent.pose);
+    final spec = CompanionSpriteArt.resolveFor(companionKey, intent.pose);
     return PlaceholderCompanionAvatar(
       silhouette: CompanionSilhouettes.cat,
       intent: intent,
@@ -79,7 +79,7 @@ class RabbitVisualProvider extends CompanionVisualProvider {
     CompanionPresentationIntent intent,
     CompanionVisualOptions options,
   ) {
-    final spec = CompanionSpriteArt.specFor(companionKey, intent.pose);
+    final spec = CompanionSpriteArt.resolveFor(companionKey, intent.pose);
     return PlaceholderCompanionAvatar(
       silhouette: CompanionSilhouettes.rabbit,
       intent: intent,

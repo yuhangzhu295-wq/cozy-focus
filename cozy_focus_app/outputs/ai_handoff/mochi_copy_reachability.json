@@ -1,0 +1,2512 @@
+{
+  "scenarios": 180,
+  "grid_key_format": "<timeOfDayBand>/h<happiness>",
+  "reachable_by_grid_key": {
+    "morning/h20": [
+      "finishingSupport",
+      "midpointSupport",
+      "pauseComfort",
+      "startEncouragement"
+    ],
+    "morning/h80": [
+      "finishingSupport",
+      "focusCompanion",
+      "pauseComfort",
+      "startEncouragement"
+    ],
+    "midday/h20": [
+      "finishingSupport",
+      "midpointSupport",
+      "pauseComfort",
+      "startEncouragement"
+    ],
+    "midday/h80": [
+      "finishingSupport",
+      "focusCompanion",
+      "pauseComfort",
+      "startEncouragement"
+    ],
+    "afternoon/h20": [
+      "finishingSupport",
+      "midpointSupport",
+      "pauseComfort",
+      "startEncouragement"
+    ],
+    "afternoon/h80": [
+      "finishingSupport",
+      "focusCompanion",
+      "pauseComfort",
+      "startEncouragement"
+    ],
+    "evening/h20": [
+      "finishingSupport",
+      "midpointSupport",
+      "pauseComfort",
+      "startEncouragement"
+    ],
+    "evening/h80": [
+      "finishingSupport",
+      "focusCompanion",
+      "pauseComfort",
+      "startEncouragement"
+    ],
+    "lateNight/h20": [
+      "finishingSupport",
+      "lateNightCare",
+      "pauseComfort",
+      "startEncouragement"
+    ],
+    "lateNight/h80": [
+      "finishingSupport",
+      "lateNightCare",
+      "pauseComfort",
+      "startEncouragement"
+    ]
+  },
+  "earliest_second": {
+    "startEncouragement": 25,
+    "finishingSupport": 277,
+    "pauseComfort": 76,
+    "focusCompanion": 175,
+    "lateNightCare": 175,
+    "midpointSupport": 270
+  },
+  "earliest_in_scenario": {
+    "startEncouragement": "5m/morning/h20/none",
+    "finishingSupport": "5m/morning/h20/none",
+    "pauseComfort": "5m/morning/h20/1pause",
+    "focusCompanion": "5m/morning/h80/none",
+    "lateNightCare": "5m/lateNight/h20/none",
+    "midpointSupport": "10m/morning/h20/none"
+  },
+  "entry_points_outside_decide": {
+    "greeting/midday": "returnGreeting",
+    "greeting/lateNight": "lateNightCare",
+    "touchResponse": "petTouchResponse",
+    "completionPraise": "completionPraise"
+  },
+  "messages_per_scenario": {
+    "5m/morning/h20/none": 2,
+    "5m/morning/h20/1pause": 2,
+    "5m/morning/h20/2pauses": 2,
+    "5m/morning/h80/none": 2,
+    "5m/morning/h80/1pause": 2,
+    "5m/morning/h80/2pauses": 2,
+    "5m/midday/h20/none": 2,
+    "5m/midday/h20/1pause": 2,
+    "5m/midday/h20/2pauses": 2,
+    "5m/midday/h80/none": 2,
+    "5m/midday/h80/1pause": 2,
+    "5m/midday/h80/2pauses": 2,
+    "5m/afternoon/h20/none": 2,
+    "5m/afternoon/h20/1pause": 2,
+    "5m/afternoon/h20/2pauses": 2,
+    "5m/afternoon/h80/none": 2,
+    "5m/afternoon/h80/1pause": 2,
+    "5m/afternoon/h80/2pauses": 2,
+    "5m/evening/h20/none": 2,
+    "5m/evening/h20/1pause": 2,
+    "5m/evening/h20/2pauses": 2,
+    "5m/evening/h80/none": 2,
+    "5m/evening/h80/1pause": 2,
+    "5m/evening/h80/2pauses": 2,
+    "5m/lateNight/h20/none": 2,
+    "5m/lateNight/h20/1pause": 2,
+    "5m/lateNight/h20/2pauses": 2,
+    "5m/lateNight/h80/none": 2,
+    "5m/lateNight/h80/1pause": 2,
+    "5m/lateNight/h80/2pauses": 2,
+    "10m/morning/h20/none": 3,
+    "10m/morning/h20/1pause": 2,
+    "10m/morning/h20/2pauses": 2,
+    "10m/morning/h80/none": 3,
+    "10m/morning/h80/1pause": 2,
+    "10m/morning/h80/2pauses": 2,
+    "10m/midday/h20/none": 3,
+    "10m/midday/h20/1pause": 2,
+    "10m/midday/h20/2pauses": 2,
+    "10m/midday/h80/none": 3,
+    "10m/midday/h80/1pause": 2,
+    "10m/midday/h80/2pauses": 2,
+    "10m/afternoon/h20/none": 3,
+    "10m/afternoon/h20/1pause": 2,
+    "10m/afternoon/h20/2pauses": 2,
+    "10m/afternoon/h80/none": 3,
+    "10m/afternoon/h80/1pause": 2,
+    "10m/afternoon/h80/2pauses": 2,
+    "10m/evening/h20/none": 3,
+    "10m/evening/h20/1pause": 2,
+    "10m/evening/h20/2pauses": 2,
+    "10m/evening/h80/none": 3,
+    "10m/evening/h80/1pause": 2,
+    "10m/evening/h80/2pauses": 2,
+    "10m/lateNight/h20/none": 3,
+    "10m/lateNight/h20/1pause": 2,
+    "10m/lateNight/h20/2pauses": 2,
+    "10m/lateNight/h80/none": 3,
+    "10m/lateNight/h80/1pause": 2,
+    "10m/lateNight/h80/2pauses": 2,
+    "15m/morning/h20/none": 3,
+    "15m/morning/h20/1pause": 3,
+    "15m/morning/h20/2pauses": 2,
+    "15m/morning/h80/none": 3,
+    "15m/morning/h80/1pause": 3,
+    "15m/morning/h80/2pauses": 2,
+    "15m/midday/h20/none": 3,
+    "15m/midday/h20/1pause": 3,
+    "15m/midday/h20/2pauses": 2,
+    "15m/midday/h80/none": 3,
+    "15m/midday/h80/1pause": 3,
+    "15m/midday/h80/2pauses": 2,
+    "15m/afternoon/h20/none": 3,
+    "15m/afternoon/h20/1pause": 3,
+    "15m/afternoon/h20/2pauses": 2,
+    "15m/afternoon/h80/none": 3,
+    "15m/afternoon/h80/1pause": 3,
+    "15m/afternoon/h80/2pauses": 2,
+    "15m/evening/h20/none": 3,
+    "15m/evening/h20/1pause": 3,
+    "15m/evening/h20/2pauses": 2,
+    "15m/evening/h80/none": 3,
+    "15m/evening/h80/1pause": 3,
+    "15m/evening/h80/2pauses": 2,
+    "15m/lateNight/h20/none": 3,
+    "15m/lateNight/h20/1pause": 3,
+    "15m/lateNight/h20/2pauses": 2,
+    "15m/lateNight/h80/none": 3,
+    "15m/lateNight/h80/1pause": 3,
+    "15m/lateNight/h80/2pauses": 2,
+    "25m/morning/h20/none": 3,
+    "25m/morning/h20/1pause": 3,
+    "25m/morning/h20/2pauses": 2,
+    "25m/morning/h80/none": 3,
+    "25m/morning/h80/1pause": 3,
+    "25m/morning/h80/2pauses": 2,
+    "25m/midday/h20/none": 3,
+    "25m/midday/h20/1pause": 3,
+    "25m/midday/h20/2pauses": 2,
+    "25m/midday/h80/none": 3,
+    "25m/midday/h80/1pause": 3,
+    "25m/midday/h80/2pauses": 2,
+    "25m/afternoon/h20/none": 3,
+    "25m/afternoon/h20/1pause": 3,
+    "25m/afternoon/h20/2pauses": 2,
+    "25m/afternoon/h80/none": 3,
+    "25m/afternoon/h80/1pause": 3,
+    "25m/afternoon/h80/2pauses": 2,
+    "25m/evening/h20/none": 3,
+    "25m/evening/h20/1pause": 3,
+    "25m/evening/h20/2pauses": 2,
+    "25m/evening/h80/none": 3,
+    "25m/evening/h80/1pause": 3,
+    "25m/evening/h80/2pauses": 2,
+    "25m/lateNight/h20/none": 3,
+    "25m/lateNight/h20/1pause": 3,
+    "25m/lateNight/h20/2pauses": 2,
+    "25m/lateNight/h80/none": 3,
+    "25m/lateNight/h80/1pause": 3,
+    "25m/lateNight/h80/2pauses": 2,
+    "45m/morning/h20/none": 3,
+    "45m/morning/h20/1pause": 3,
+    "45m/morning/h20/2pauses": 3,
+    "45m/morning/h80/none": 3,
+    "45m/morning/h80/1pause": 3,
+    "45m/morning/h80/2pauses": 3,
+    "45m/midday/h20/none": 3,
+    "45m/midday/h20/1pause": 3,
+    "45m/midday/h20/2pauses": 3,
+    "45m/midday/h80/none": 3,
+    "45m/midday/h80/1pause": 3,
+    "45m/midday/h80/2pauses": 3,
+    "45m/afternoon/h20/none": 3,
+    "45m/afternoon/h20/1pause": 3,
+    "45m/afternoon/h20/2pauses": 3,
+    "45m/afternoon/h80/none": 3,
+    "45m/afternoon/h80/1pause": 3,
+    "45m/afternoon/h80/2pauses": 3,
+    "45m/evening/h20/none": 3,
+    "45m/evening/h20/1pause": 3,
+    "45m/evening/h20/2pauses": 3,
+    "45m/evening/h80/none": 3,
+    "45m/evening/h80/1pause": 3,
+    "45m/evening/h80/2pauses": 3,
+    "45m/lateNight/h20/none": 3,
+    "45m/lateNight/h20/1pause": 3,
+    "45m/lateNight/h20/2pauses": 3,
+    "45m/lateNight/h80/none": 3,
+    "45m/lateNight/h80/1pause": 3,
+    "45m/lateNight/h80/2pauses": 3,
+    "90m/morning/h20/none": 3,
+    "90m/morning/h20/1pause": 3,
+    "90m/morning/h20/2pauses": 3,
+    "90m/morning/h80/none": 3,
+    "90m/morning/h80/1pause": 3,
+    "90m/morning/h80/2pauses": 3,
+    "90m/midday/h20/none": 3,
+    "90m/midday/h20/1pause": 3,
+    "90m/midday/h20/2pauses": 3,
+    "90m/midday/h80/none": 3,
+    "90m/midday/h80/1pause": 3,
+    "90m/midday/h80/2pauses": 3,
+    "90m/afternoon/h20/none": 3,
+    "90m/afternoon/h20/1pause": 3,
+    "90m/afternoon/h20/2pauses": 3,
+    "90m/afternoon/h80/none": 3,
+    "90m/afternoon/h80/1pause": 3,
+    "90m/afternoon/h80/2pauses": 3,
+    "90m/evening/h20/none": 3,
+    "90m/evening/h20/1pause": 3,
+    "90m/evening/h20/2pauses": 3,
+    "90m/evening/h80/none": 3,
+    "90m/evening/h80/1pause": 3,
+    "90m/evening/h80/2pauses": 3,
+    "90m/lateNight/h20/none": 3,
+    "90m/lateNight/h20/1pause": 3,
+    "90m/lateNight/h20/2pauses": 3,
+    "90m/lateNight/h80/none": 3,
+    "90m/lateNight/h80/1pause": 3,
+    "90m/lateNight/h80/2pauses": 3
+  },
+  "timeline": {
+    "5m/morning/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 277,
+        "kind": "finishingSupport"
+      }
+    ],
+    "5m/morning/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/morning/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/morning/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "5m/morning/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/morning/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/midday/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 277,
+        "kind": "finishingSupport"
+      }
+    ],
+    "5m/midday/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/midday/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/midday/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "5m/midday/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/midday/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/afternoon/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 277,
+        "kind": "finishingSupport"
+      }
+    ],
+    "5m/afternoon/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/afternoon/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/afternoon/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "5m/afternoon/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/afternoon/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/evening/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 277,
+        "kind": "finishingSupport"
+      }
+    ],
+    "5m/evening/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/evening/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/evening/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "5m/evening/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/evening/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/lateNight/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      }
+    ],
+    "5m/lateNight/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/lateNight/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/lateNight/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      }
+    ],
+    "5m/lateNight/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "5m/lateNight/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 76,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/morning/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 270,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 553,
+        "kind": "finishingSupport"
+      }
+    ],
+    "10m/morning/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/morning/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/morning/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 553,
+        "kind": "finishingSupport"
+      }
+    ],
+    "10m/morning/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/morning/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/midday/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 270,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 553,
+        "kind": "finishingSupport"
+      }
+    ],
+    "10m/midday/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/midday/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/midday/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 553,
+        "kind": "finishingSupport"
+      }
+    ],
+    "10m/midday/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/midday/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/afternoon/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 270,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 553,
+        "kind": "finishingSupport"
+      }
+    ],
+    "10m/afternoon/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/afternoon/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/afternoon/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 553,
+        "kind": "finishingSupport"
+      }
+    ],
+    "10m/afternoon/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/afternoon/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/evening/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 270,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 553,
+        "kind": "finishingSupport"
+      }
+    ],
+    "10m/evening/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/evening/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/evening/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 553,
+        "kind": "finishingSupport"
+      }
+    ],
+    "10m/evening/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/evening/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/lateNight/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 553,
+        "kind": "finishingSupport"
+      }
+    ],
+    "10m/lateNight/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/lateNight/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/lateNight/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 553,
+        "kind": "finishingSupport"
+      }
+    ],
+    "10m/lateNight/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "10m/lateNight/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 151,
+        "kind": "pauseComfort"
+      }
+    ],
+    "15m/morning/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 405,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 829,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/morning/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 226,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 889,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/morning/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 226,
+        "kind": "pauseComfort"
+      }
+    ],
+    "15m/morning/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 829,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/morning/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 889,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/morning/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "15m/midday/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 405,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 829,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/midday/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 226,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 889,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/midday/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 226,
+        "kind": "pauseComfort"
+      }
+    ],
+    "15m/midday/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 829,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/midday/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 889,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/midday/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "15m/afternoon/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 405,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 829,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/afternoon/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 226,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 889,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/afternoon/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 226,
+        "kind": "pauseComfort"
+      }
+    ],
+    "15m/afternoon/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 829,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/afternoon/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 889,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/afternoon/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "15m/evening/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 405,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 829,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/evening/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 226,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 889,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/evening/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 226,
+        "kind": "pauseComfort"
+      }
+    ],
+    "15m/evening/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 829,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/evening/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 889,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/evening/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "15m/lateNight/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 829,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/lateNight/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 889,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/lateNight/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      }
+    ],
+    "15m/lateNight/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 829,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/lateNight/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 889,
+        "kind": "finishingSupport"
+      }
+    ],
+    "15m/lateNight/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      }
+    ],
+    "25m/morning/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 675,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 1381,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/morning/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 376,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 1441,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/morning/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 376,
+        "kind": "pauseComfort"
+      }
+    ],
+    "25m/morning/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 1381,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/morning/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 1441,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/morning/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "25m/midday/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 675,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 1381,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/midday/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 376,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 1441,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/midday/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 376,
+        "kind": "pauseComfort"
+      }
+    ],
+    "25m/midday/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 1381,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/midday/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 1441,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/midday/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "25m/afternoon/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 675,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 1381,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/afternoon/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 376,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 1441,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/afternoon/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 376,
+        "kind": "pauseComfort"
+      }
+    ],
+    "25m/afternoon/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 1381,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/afternoon/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 1441,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/afternoon/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "25m/evening/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 675,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 1381,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/evening/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 376,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 1441,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/evening/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 376,
+        "kind": "pauseComfort"
+      }
+    ],
+    "25m/evening/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 1381,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/evening/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 1441,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/evening/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      }
+    ],
+    "25m/lateNight/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 1381,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/lateNight/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 1441,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/lateNight/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      }
+    ],
+    "25m/lateNight/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 1381,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/lateNight/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 1441,
+        "kind": "finishingSupport"
+      }
+    ],
+    "25m/lateNight/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      }
+    ],
+    "45m/morning/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1215,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 2485,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/morning/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 676,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 2545,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/morning/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 676,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 2605,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/morning/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2485,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/morning/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2545,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/morning/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2605,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/midday/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1215,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 2485,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/midday/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 676,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 2545,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/midday/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 676,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 2605,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/midday/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2485,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/midday/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2545,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/midday/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2605,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/afternoon/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1215,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 2485,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/afternoon/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 676,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 2545,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/afternoon/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 676,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 2605,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/afternoon/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2485,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/afternoon/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2545,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/afternoon/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2605,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/evening/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1215,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 2485,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/evening/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 676,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 2545,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/evening/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 676,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 2605,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/evening/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2485,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/evening/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2545,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/evening/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 2605,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/lateNight/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 2485,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/lateNight/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 2545,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/lateNight/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 2605,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/lateNight/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 2485,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/lateNight/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 2545,
+        "kind": "finishingSupport"
+      }
+    ],
+    "45m/lateNight/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 2605,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/morning/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 2430,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 4969,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/morning/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1351,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 5029,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/morning/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1351,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 5089,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/morning/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 4969,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/morning/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 5029,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/morning/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 5089,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/midday/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 2430,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 4969,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/midday/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1351,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 5029,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/midday/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1351,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 5089,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/midday/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 4969,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/midday/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 5029,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/midday/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 5089,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/afternoon/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 2430,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 4969,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/afternoon/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1351,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 5029,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/afternoon/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1351,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 5089,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/afternoon/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 4969,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/afternoon/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 5029,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/afternoon/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 5089,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/evening/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 2430,
+        "kind": "midpointSupport"
+      },
+      {
+        "second": 4969,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/evening/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1351,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 5029,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/evening/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 1351,
+        "kind": "pauseComfort"
+      },
+      {
+        "second": 5089,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/evening/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 4969,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/evening/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 5029,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/evening/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "focusCompanion"
+      },
+      {
+        "second": 5089,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/lateNight/h20/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 4969,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/lateNight/h20/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 5029,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/lateNight/h20/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 5089,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/lateNight/h80/none": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 4969,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/lateNight/h80/1pause": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 5029,
+        "kind": "finishingSupport"
+      }
+    ],
+    "90m/lateNight/h80/2pauses": [
+      {
+        "second": 25,
+        "kind": "startEncouragement"
+      },
+      {
+        "second": 175,
+        "kind": "lateNightCare"
+      },
+      {
+        "second": 5089,
+        "kind": "finishingSupport"
+      }
+    ]
+  }
+}

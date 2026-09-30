@@ -35,6 +35,25 @@ abstract final class CompanionSpriteArt {
     return spec;
   }
 
+  /// The spec to *draw* for `(companionKey, pose)`.
+  ///
+  /// Unlike [specFor], this honours the pack's semantic fallback, so a room
+  /// anchor reuses the sprite action it stands for — `bookshelf → focus_read`,
+  /// `desk → focus_write` — instead of needing a duplicate room-only sequence.
+  /// The fallback never leaves the species: it can only reach an action in this
+  /// companion's own pack.
+  ///
+  /// Returns `null` only when the pack has no sequence at all to offer, which is
+  /// the caller's cue to draw whatever real art it has.
+  static CompanionActionSpec? resolveFor(
+    String companionKey,
+    CompanionPose pose,
+  ) {
+    final manifest = CompanionActionManifestData.forCompanion(companionKey);
+    if (manifest == null) return null;
+    return manifest.resolve(pose);
+  }
+
   /// The state word shown in the badge, in the app's own vocabulary.
   static String stateLabel(CompanionBaseContext context) {
     switch (context) {

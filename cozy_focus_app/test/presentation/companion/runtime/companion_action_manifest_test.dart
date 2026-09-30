@@ -248,6 +248,43 @@ void main() {
   });
 
   group('reduced motion', () {
+    test('room anchors reuse a semantic action instead of duplicating art', () {
+      // The brief forbids generating room-only variants unless visual evidence
+      // proves they are needed. A bookshelf reads and a desk writes, so those
+      // anchors resolve to the focus sequences that already exist.
+      final dog = CompanionActionManifestData.forCompanion('dog')!;
+
+      expect(dog.hasExactAction(CompanionPose.roomRead), isFalse,
+          reason: 'a room-only duplicate must not exist without evidence');
+      expect(dog.resolve(CompanionPose.roomRead)?.actionId, 'focus_read',
+          reason: 'bookshelf must reuse the reading sequence');
+      expect(dog.resolve(CompanionPose.roomWork)?.actionId, 'focus_write',
+          reason: 'desk must reuse the writing sequence');
+
+      // The dog pack has no `sleep` sequence yet, so the bed degrades to idle
+      // rather than borrowing one. It becomes `sleep` the moment that sequence
+      // lands, with no code change.
+      final bed = dog.resolve(CompanionPose.roomSleep);
+      expect(bed, isNotNull, reason: 'the bed must still present something');
+      expect(bed!.actionId,
+          dog.hasExactAction(CompanionPose.sleep) ? 'sleep' : 'idle');
+
+      // Whatever it resolves to, it is always the same companion's frames.
+      for (final pose in const [
+        CompanionPose.roomRead,
+        CompanionPose.roomWork,
+        CompanionPose.roomSleep,
+        CompanionPose.roomSit,
+        CompanionPose.roomRelax,
+      ]) {
+        final spec = dog.resolve(pose);
+        if (spec == null) continue;
+        for (final frame in spec.frames) {
+          expect(frame, startsWith('assets/companions/dog/'));
+        }
+      }
+    });
+
     test('holds a frame from the same action', () {
       for (final companion in shipped) {
         final manifest = CompanionActionManifestData.forCompanion(companion)!;

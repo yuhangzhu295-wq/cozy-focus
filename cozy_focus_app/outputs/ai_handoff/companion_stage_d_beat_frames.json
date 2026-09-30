@@ -1,0 +1,61 @@
+{
+  "generated_by": "test/presentation/focus_work_beat_visibility_test.dart",
+  "note": "TEST-ONLY data. No business value is created or changed by generating this file.",
+  "method": "One cycle position, three phases, everything else equal. The phase is the only differing input, and its only effect on the body channels is the beat amplitude.",
+  "design_ref": "designs/motion/11F_Focus_Work.png",
+  "probe": {
+    "cycle_position": 0.7,
+    "avatar_size_pt": 160.0,
+    "sprite_height_pt": 108.87966804979253,
+    "device_pixel_ratio": 2.625,
+    "category_id": "study",
+    "focus_progress": 0.3
+  },
+  "frames": [
+    {
+      "phase": "working",
+      "cycle_position": 0.7,
+      "activity": "work",
+      "amplitude_scale": 0.92,
+      "progress_intensity": 0.685,
+      "body_scale": 1.0061244623488932,
+      "body_dy_pt": -0.4919416789511269,
+      "body_rotation_deg": 0.3124349798524381,
+      "head_rotation_deg": 0.4967862319694689
+    },
+    {
+      "phase": "deepFocus",
+      "cycle_position": 0.7,
+      "activity": "microIdle",
+      "amplitude_scale": 0.41400000000000003,
+      "progress_intensity": 0.685,
+      "body_scale": 1.002756008057002,
+      "body_dy_pt": -0.7775137090174666,
+      "body_rotation_deg": 0.14059574093359714,
+      "head_rotation_deg": -0.028728462799477827
+    },
+    {
+      "phase": "finishing",
+      "cycle_position": 0.7,
+      "activity": "glance",
+      "amplitude_scale": 0.92,
+      "progress_intensity": 0.685,
+      "body_scale": 1.0061244623488932,
+      "body_dy_pt": -0.7655577936116608,
+      "body_rotation_deg": 0.3124349798524381,
+      "head_rotation_deg": 2.1284260056347013
+    }
+  ],
+  "measured": {
+    "beat_amplitude_ratio": 2.2222222222222223,
+    "body_dy_gap_pt": 0.28557203006633974,
+    "body_dy_gap_physical_px": 0.7496265789241419,
+    "sprite_height_gap_physical_px": 0.962734985997799,
+    "head_rotation_gap_deg": 0.5255146947689467,
+    "glance_head_lift_vs_work_deg": 1.6316397736652322,
+    "glance_crown_displacement_pt_min": 1.5503096252748056,
+    "glance_crown_displacement_pt_max": 3.1006192505496113,
+    "glance_crown_displacement_physical_px_min": 4.0695627663463645,
+    "glance_crown_displacement_physical_px_max": 8.139125532692729
+  }
+}

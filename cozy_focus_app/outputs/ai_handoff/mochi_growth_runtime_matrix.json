@@ -1,0 +1,446 @@
+{
+  "generated_by": "test/presentation/mochi_growth_runtime_matrix_test.dart",
+  "note": "TEST-ONLY data. No business value is created or changed by generating this file.",
+  "stages": [
+    {
+      "stage": "sprout",
+      "display_name": "幼芽期",
+      "level_range": "1-3",
+      "resolved_level": 1,
+      "test_only_xp": 0,
+      "visual_profile": {
+        "maturity_scale": 0.94,
+        "part_motion_factor": 0.8,
+        "blink_interval_scale": 1.15,
+        "ear_twitch_interval_scale": 1.2,
+        "has_idle_flourish": false,
+        "flourish_interval_scale": 1.0,
+        "flourish_cycle_ms": 15000.0,
+        "idle_personality": "gentle"
+      },
+      "size_ratio": 0.94,
+      "available_behaviour_count": 0,
+      "idle_behaviours": [],
+      "idle_sample": {
+        "behaviour": null,
+        "cycle_value_at_sample": 0.0,
+        "observed_head_yaw_deg": 0.0,
+        "observed_ear_lead_deg": 0.0,
+        "observed_tail_wag_deg": 0.0,
+        "observed_body_lift_px": 0.0,
+        "declared_peak_head_yaw_deg": 0.0,
+        "declared_peak_ear_lead_deg": 0.0,
+        "declared_peak_tail_wag_deg": 0.0,
+        "declared_peak_body_lift_px": 0.0,
+        "rendered_body_scale": 1.0000881009101867,
+        "rendered_head_rotation_rad": 0.003428019376823934
+      },
+      "focus_sample": {
+        "progress": 0.3,
+        "phase": "working",
+        "activity": "work",
+        "amplitude_scale": 0.92,
+        "flavour": "reading",
+        "rendered_body_scale": 1.0040965921544345
+      },
+      "touch_sample": {
+        "spec": "friendly",
+        "answers": true,
+        "tap_duration_ms": 750,
+        "stroke_duration_ms": 900,
+        "tap_head_tilt_deg": 0.0,
+        "tap_ear_tilt_deg": 6.0,
+        "tap_tail_tilt_deg": 5.0,
+        "stroke_shows_heart": true,
+        "owned_channels": [
+          "bodyTilt",
+          "dy",
+          "ear",
+          "eyes",
+          "scale",
+          "tail"
+        ]
+      }
+    },
+    {
+      "stage": "seedling",
+      "display_name": "幼苗期",
+      "level_range": "4-9",
+      "resolved_level": 4,
+      "test_only_xp": 300,
+      "visual_profile": {
+        "maturity_scale": 0.97,
+        "part_motion_factor": 0.9,
+        "blink_interval_scale": 1.05,
+        "ear_twitch_interval_scale": 1.08,
+        "has_idle_flourish": true,
+        "flourish_interval_scale": 1.25,
+        "flourish_cycle_ms": 18750.0,
+        "idle_personality": "steady"
+      },
+      "size_ratio": 0.97,
+      "available_behaviour_count": 2,
+      "idle_behaviours": [
+        "LOOK_AROUND",
+        "EAR_PERK"
+      ],
+      "idle_sample": {
+        "behaviour": "LOOK_AROUND",
+        "cycle_value_at_sample": 0.912,
+        "observed_head_yaw_deg": 1.104373658054035,
+        "observed_ear_lead_deg": 0.5153743737585497,
+        "observed_tail_wag_deg": 0.0,
+        "observed_body_lift_px": 0.0,
+        "declared_peak_head_yaw_deg": 3.0,
+        "declared_peak_ear_lead_deg": 1.4,
+        "declared_peak_tail_wag_deg": 0.0,
+        "declared_peak_body_lift_px": 0.0,
+        "rendered_body_scale": 1.0135638063326478,
+        "rendered_head_rotation_rad": 0.04665650354843186
+      },
+      "focus_sample": {
+        "progress": 0.3,
+        "phase": "working",
+        "activity": "work",
+        "amplitude_scale": 0.92,
+        "flavour": "reading",
+        "rendered_body_scale": 1.0040965921544345
+      },
+      "touch_sample": {
+        "spec": "friendly",
+        "answers": true,
+        "tap_duration_ms": 750,
+        "stroke_duration_ms": 900,
+        "tap_head_tilt_deg": 0.0,
+        "tap_ear_tilt_deg": 6.0,
+        "tap_tail_tilt_deg": 5.0,
+        "stroke_shows_heart": true,
+        "owned_channels": [
+          "bodyTilt",
+          "dy",
+          "ear",
+          "eyes",
+          "scale",
+          "tail"
+        ]
+      }
+    },
+    {
+      "stage": "growing",
+      "display_name": "成长期",
+      "level_range": "10-19",
+      "resolved_level": 10,
+      "test_only_xp": 900,
+      "visual_profile": {
+        "maturity_scale": 1.0,
+        "part_motion_factor": 1.0,
+        "blink_interval_scale": 1.0,
+        "ear_twitch_interval_scale": 1.0,
+        "has_idle_flourish": true,
+        "flourish_interval_scale": 1.0,
+        "flourish_cycle_ms": 15000.0,
+        "idle_personality": "lively"
+      },
+      "size_ratio": 1.0,
+      "available_behaviour_count": 3,
+      "idle_behaviours": [
+        "TAIL_SWEEP",
+        "LOOK_AROUND",
+        "EAR_PERK"
+      ],
+      "idle_sample": {
+        "behaviour": "TAIL_SWEEP",
+        "cycle_value_at_sample": 0.94,
+        "observed_head_yaw_deg": 1.1412678195541834,
+        "observed_ear_lead_deg": 0.4755282581475765,
+        "observed_tail_wag_deg": 4.279754323328189,
+        "observed_body_lift_px": 0.0,
+        "declared_peak_head_yaw_deg": 1.2,
+        "declared_peak_ear_lead_deg": 0.5,
+        "declared_peak_tail_wag_deg": 4.5,
+        "declared_peak_body_lift_px": 0.0,
+        "rendered_body_scale": 1.0062345695495605,
+        "rendered_head_rotation_rad": -0.006036211138988015
+      },
+      "focus_sample": {
+        "progress": 0.3,
+        "phase": "working",
+        "activity": "work",
+        "amplitude_scale": 0.92,
+        "flavour": "reading",
+        "rendered_body_scale": 1.0040965921544345
+      },
+      "touch_sample": {
+        "spec": "friendly",
+        "answers": true,
+        "tap_duration_ms": 750,
+        "stroke_duration_ms": 900,
+        "tap_head_tilt_deg": 0.0,
+        "tap_ear_tilt_deg": 6.0,
+        "tap_tail_tilt_deg": 5.0,
+        "stroke_shows_heart": true,
+        "owned_channels": [
+          "bodyTilt",
+          "dy",
+          "ear",
+          "eyes",
+          "scale",
+          "tail"
+        ]
+      }
+    },
+    {
+      "stage": "blooming",
+      "display_name": "绽放期",
+      "level_range": "20-30",
+      "resolved_level": 20,
+      "test_only_xp": 1900,
+      "visual_profile": {
+        "maturity_scale": 1.03,
+        "part_motion_factor": 1.1,
+        "blink_interval_scale": 0.92,
+        "ear_twitch_interval_scale": 0.9,
+        "has_idle_flourish": true,
+        "flourish_interval_scale": 0.75,
+        "flourish_cycle_ms": 11250.0,
+        "idle_personality": "content"
+      },
+      "size_ratio": 1.03,
+      "available_behaviour_count": 4,
+      "idle_behaviours": [
+        "SETTLE",
+        "LOOK_AROUND",
+        "EAR_PERK",
+        "TAIL_SWEEP"
+      ],
+      "idle_sample": {
+        "behaviour": "SETTLE",
+        "cycle_value_at_sample": 0.9866666666666666,
+        "observed_head_yaw_deg": 0.3660629787682226,
+        "observed_ear_lead_deg": 0.2440419858454817,
+        "observed_tail_wag_deg": 0.6101049646137043,
+        "observed_body_lift_px": 0.569431300306124,
+        "declared_peak_head_yaw_deg": 0.9,
+        "declared_peak_ear_lead_deg": 0.6,
+        "declared_peak_tail_wag_deg": 1.5,
+        "declared_peak_body_lift_px": 1.4,
+        "rendered_body_scale": 1.01000012922287,
+        "rendered_head_rotation_rad": 0.029220825437068776
+      },
+      "focus_sample": {
+        "progress": 0.3,
+        "phase": "working",
+        "activity": "work",
+        "amplitude_scale": 0.92,
+        "flavour": "reading",
+        "rendered_body_scale": 1.0040965921544345
+      },
+      "touch_sample": {
+        "spec": "friendly",
+        "answers": true,
+        "tap_duration_ms": 750,
+        "stroke_duration_ms": 900,
+        "tap_head_tilt_deg": 0.0,
+        "tap_ear_tilt_deg": 6.0,
+        "tap_tail_tilt_deg": 5.0,
+        "stroke_shows_heart": true,
+        "owned_channels": [
+          "bodyTilt",
+          "dy",
+          "ear",
+          "eyes",
+          "scale",
+          "tail"
+        ]
+      }
+    }
+  ],
+  "focus_beat_schedule": {
+    "starting": [
+      {
+        "start": 0.0,
+        "end": 0.45,
+        "activity": "prepare"
+      },
+      {
+        "start": 0.45,
+        "end": 0.8,
+        "activity": "work"
+      },
+      {
+        "start": 0.8,
+        "end": 1.0,
+        "activity": "microIdle"
+      }
+    ],
+    "working": [
+      {
+        "start": 0.0,
+        "end": 0.12,
+        "activity": "prepare"
+      },
+      {
+        "start": 0.12,
+        "end": 0.55,
+        "activity": "work"
+      },
+      {
+        "start": 0.55,
+        "end": 0.68,
+        "activity": "microIdle"
+      },
+      {
+        "start": 0.68,
+        "end": 0.86,
+        "activity": "work"
+      },
+      {
+        "start": 0.86,
+        "end": 1.0,
+        "activity": "returning"
+      }
+    ],
+    "deepFocus": [
+      {
+        "start": 0.0,
+        "end": 0.06,
+        "activity": "prepare"
+      },
+      {
+        "start": 0.06,
+        "end": 0.62,
+        "activity": "work"
+      },
+      {
+        "start": 0.62,
+        "end": 0.86,
+        "activity": "microIdle"
+      },
+      {
+        "start": 0.86,
+        "end": 1.0,
+        "activity": "work"
+      }
+    ],
+    "finishing": [
+      {
+        "start": 0.0,
+        "end": 0.08,
+        "activity": "prepare"
+      },
+      {
+        "start": 0.08,
+        "end": 0.46,
+        "activity": "work"
+      },
+      {
+        "start": 0.46,
+        "end": 0.58,
+        "activity": "microIdle"
+      },
+      {
+        "start": 0.58,
+        "end": 0.76,
+        "activity": "glance"
+      },
+      {
+        "start": 0.76,
+        "end": 1.0,
+        "activity": "work"
+      }
+    ]
+  },
+  "interaction_specs": {
+    "idle": {
+      "spec": "friendly",
+      "answers": true,
+      "tap_duration_ms": 750,
+      "stroke_duration_ms": 900,
+      "tap_head_tilt_deg": 0.0,
+      "tap_ear_tilt_deg": 6.0,
+      "tap_tail_tilt_deg": 5.0,
+      "stroke_shows_heart": true,
+      "owned_channels": [
+        "bodyTilt",
+        "dy",
+        "ear",
+        "eyes",
+        "scale",
+        "tail"
+      ]
+    },
+    "focus": {
+      "spec": "glance",
+      "answers": true,
+      "tap_duration_ms": 420,
+      "stroke_duration_ms": 700,
+      "tap_head_tilt_deg": 3.5,
+      "tap_ear_tilt_deg": 4.0,
+      "tap_tail_tilt_deg": 0.0,
+      "stroke_shows_heart": false,
+      "owned_channels": [
+        "ear",
+        "eyes",
+        "head"
+      ]
+    },
+    "craft": {
+      "spec": "react",
+      "answers": true,
+      "tap_duration_ms": 450,
+      "stroke_duration_ms": 700,
+      "tap_head_tilt_deg": 1.5,
+      "tap_ear_tilt_deg": 5.0,
+      "tap_tail_tilt_deg": 0.0,
+      "stroke_shows_heart": false,
+      "owned_channels": [
+        "dy",
+        "ear",
+        "eyes",
+        "head"
+      ]
+    },
+    "pause": {
+      "spec": "soothe",
+      "answers": true,
+      "tap_duration_ms": 700,
+      "stroke_duration_ms": 1000,
+      "tap_head_tilt_deg": -2.0,
+      "tap_ear_tilt_deg": -4.0,
+      "tap_tail_tilt_deg": 6.0,
+      "stroke_shows_heart": true,
+      "owned_channels": [
+        "ear",
+        "eyes",
+        "head",
+        "tail"
+      ]
+    },
+    "celebrate": {
+      "spec": null,
+      "answers": false
+    },
+    "sleep": {
+      "spec": "drowsy",
+      "answers": true,
+      "tap_duration_ms": 500,
+      "stroke_duration_ms": 800,
+      "tap_head_tilt_deg": 0.0,
+      "tap_ear_tilt_deg": 2.5,
+      "tap_tail_tilt_deg": 0.0,
+      "stroke_shows_heart": false,
+      "owned_channels": [
+        "ear",
+        "eyes"
+      ]
+    },
+    "greeting": {
+      "spec": null,
+      "answers": false
+    },
+    "interact": {
+      "spec": null,
+      "answers": false
+    }
+  }
+}

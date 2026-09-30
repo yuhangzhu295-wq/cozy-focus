@@ -80,7 +80,9 @@ class MochiVisualProvider extends CompanionVisualProvider {
     CompanionPresentationIntent intent,
     CompanionVisualOptions options,
   ) {
-    final spec = CompanionSpriteArt.specFor(companionKey, intent.pose);
+    // Resolved, not exact: a room anchor reuses the action it stands for
+    // (bookshelf reads, desk writes) rather than needing its own sequence.
+    final spec = CompanionSpriteArt.resolveFor(companionKey, intent.pose);
     return _MochiPoseAvatar(
       intent: intent,
       options: options,
