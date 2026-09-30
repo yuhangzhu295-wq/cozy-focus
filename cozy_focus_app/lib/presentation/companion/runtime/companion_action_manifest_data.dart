@@ -109,7 +109,7 @@ abstract final class CompanionActionManifestData {
           loopMode: SpriteLoopMode.loop,
           interruptible: true,
           reducedMotionFrames: [0],
-          targetFrameCount: 3,
+          targetFrameCount: 1,
         ),
         'pause_rest': CompanionActionSpec(
           actionId: 'pause_rest',
@@ -152,6 +152,8 @@ abstract final class CompanionActionManifestData {
           actionId: 'tap_react',
           frames: [
             'assets/companions/dog/tap_react_000.png',
+            'assets/companions/dog/tap_react_001.png',
+            'assets/companions/dog/tap_react_002.png',
           ],
           fps: 8,
           loopMode: SpriteLoopMode.once,
@@ -218,7 +220,7 @@ abstract final class CompanionActionManifestData {
           loopMode: SpriteLoopMode.loop,
           interruptible: true,
           reducedMotionFrames: [0],
-          targetFrameCount: 3,
+          targetFrameCount: 1,
         ),
       },
       semanticFallback: {

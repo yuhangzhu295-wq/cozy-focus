@@ -98,7 +98,7 @@
       ],
       "fps": 5,
       "loopMode": "loop",
-      "targetFrameCount": 3,
+      "targetFrameCount": 1,
       "interruptible": true,
       "overlayBehavior": "pause",
       "returnBehavior": "resume",
@@ -154,7 +154,9 @@
     },
     "tap_react": {
       "frames": [
-        "tap_react_000.png"
+        "tap_react_000.png",
+        "tap_react_001.png",
+        "tap_react_002.png"
       ],
       "fps": 8,
       "loopMode": "once",

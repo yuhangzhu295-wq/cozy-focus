@@ -6,7 +6,12 @@ APP = r"C:\Users\zyu33\Documents\Codex\2026-09-07\new-chat\cozy_focus_app"
 
 # Per-action playback contract (spec §22 frame targets, §41 manifest fields).
 ACTION_SPEC = {
-    "idle":        {"fps": 5, "loop": "loop",      "frames": 3},
+    # `idle` is rendered by the approved layered rig, whose whole content is
+    # micro-motion (breathe, blink, ear twitch, sprout sway) and whose cadence
+    # comes from the real growth stage. The pack carries one canonical idle
+    # drawing for archival and fallback use, so its target is 1, not 3: the
+    # animation for this action lives in the renderer, not in a frame sequence.
+    "idle":        {"fps": 5, "loop": "loop",      "frames": 1},
     "focus_read":  {"fps": 5, "loop": "pingpong",  "frames": 3},
     "focus_write": {"fps": 5, "loop": "loop",      "frames": 4},
     "focus_think": {"fps": 4, "loop": "pingpong",  "frames": 3},
