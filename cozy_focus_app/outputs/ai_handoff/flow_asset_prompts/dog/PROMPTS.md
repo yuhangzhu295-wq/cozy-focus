@@ -84,6 +84,9 @@ opaque JPEG at 1K. Alpha is produced locally instead — see
 | dog | `pause_rest` | 000 | `idle_000` | 1 | `pause_000.jpg` | Accepted. |
 | dog | `pause_rest` | 001 | `idle_000` | 1 | `pause_001.jpg` | Accepted. |
 | dog | `tap_react` | 000 | `idle_000` | 1 | `tap_000.jpg` | Accepted. |
+| dog | `pet_react` | 000 | `idle_000` | 1 | `pet_000.jpg` | Accepted. |
+| dog | `pet_react` | 001 | `idle_000` | 2 | `pet_001.jpg` | Attempt 1 produced an unrelated character: the reference ingredient had not attached, so the model had no identity to preserve. Regenerated with the chip verified present. |
+| dog | `pet_react` | 002 | `idle_000` | 3 | `pet_002.jpg` | Attempt 1 duplicated frame 1; attempt 2 stood the character up and added a ground shadow, breaking continuity. Attempt 3 pinned the seated posture explicitly. |
 
 ## Rejected / blocked generations
 

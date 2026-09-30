@@ -64,7 +64,7 @@ carry scene background and UI text by construction.
 
 | Companion | Actions | Frames |
 |---|---|---|
-| dog | `focus_read` (3), `focus_write` (4), `focus_think` (3), `pause_rest` (2), `tap_react` (1), `idle` (1) | 14 |
+| dog | `focus_read` (3), `focus_write` (4), `focus_think` (3), `pause_rest` (2), `pet_react` (3), `tap_react` (1), `idle` (1) | 17 |
 | cat | — | 0 |
 | rabbit | — | 0 |
 
@@ -86,7 +86,7 @@ produced, because no visual evidence showed it was needed.
 ## 3. Honest status
 
 **Not finished: cat and rabbit have no production art, and the dog pack is
-partial.** 6 of the 10 requested dog actions exist; `pet_react`, `craft_work`,
+partial.** 7 of the 10 requested dog actions exist; `craft_work`,
 `celebrate` and `sleep` are still drawn by the rig.
 
 **Why, and why it was not worked around.** Flow's generation path became
@@ -168,12 +168,12 @@ DOG_MASTER:    PASS
 CAT_MASTER:    FAIL  (not produced)
 RABBIT_MASTER: FAIL  (not produced)
 
-DOG_ACTIONS_READY:    6/10   (focus_read, focus_write, focus_think,
-                              pause_rest, tap_react, idle)
+DOG_ACTIONS_READY:    7/10   (focus_read, focus_write, focus_think,
+                              pause_rest, pet_react, tap_react, idle)
 CAT_ACTIONS_READY:    0/10
 RABBIT_ACTIONS_READY: 0/10
 
-DOG_FRAME_COUNT:    14
+DOG_FRAME_COUNT:    17
 CAT_FRAME_COUNT:    0
 RABBIT_FRAME_COUNT: 0
 
@@ -188,7 +188,7 @@ FOCUS_READ:  PASS
 FOCUS_WRITE: PASS
 FOCUS_THINK: PASS
 TAP_REACT:   PASS
-PET_REACT:   FAIL  (no sequence; rig draws it)
+PET_REACT:   PASS
 CRAFT_WORK:  FAIL  (no sequence; rig draws it)
 CELEBRATE:   FAIL  (no sequence; rig draws it)
 PAUSE:       PASS
