@@ -122,5 +122,13 @@
     "tap_react": "idle",
     "pet_react": "idle"
   },
+  "drawAliases": {
+    "finish": "focus_write",
+    "micro_rest": "pause_rest",
+    "room_read": "focus_read",
+    "room_work": "focus_write",
+    "room_sleep": "sleep",
+    "room_relax": "pause_rest"
+  },
   "generatedFrom": "production_report_dog.json"
 }

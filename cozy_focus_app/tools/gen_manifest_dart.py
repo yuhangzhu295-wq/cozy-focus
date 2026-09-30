@@ -49,6 +49,10 @@ def emit(companion):
     for k in sorted(m.get("semanticFallback", {})):
         lines.append("        %s: %s," % (dart_str(k), dart_str(m["semanticFallback"][k])))
     lines.append("      },")
+    lines.append("      drawAliases: {")
+    for k in sorted(m.get("drawAliases", {})):
+        lines.append("        %s: %s," % (dart_str(k), dart_str(m["drawAliases"][k])))
+    lines.append("      },")
     lines.append("    ),")
     return "\n".join(lines)
 

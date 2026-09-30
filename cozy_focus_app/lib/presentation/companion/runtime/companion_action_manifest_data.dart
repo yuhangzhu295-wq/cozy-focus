@@ -127,6 +127,14 @@ abstract final class CompanionActionManifestData {
         'sleep': 'pause_rest',
         'tap_react': 'idle',
       },
+      drawAliases: {
+        'finish': 'focus_write',
+        'micro_rest': 'pause_rest',
+        'room_read': 'focus_read',
+        'room_relax': 'pause_rest',
+        'room_sleep': 'sleep',
+        'room_work': 'focus_write',
+      },
     ),
   };
 

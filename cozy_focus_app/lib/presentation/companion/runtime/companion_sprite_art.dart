@@ -51,7 +51,7 @@ abstract final class CompanionSpriteArt {
   ) {
     final manifest = CompanionActionManifestData.forCompanion(companionKey);
     if (manifest == null) return null;
-    return manifest.resolve(pose);
+    return manifest.specForRendering(pose);
   }
 
   /// The state word shown in the badge, in the app's own vocabulary.

@@ -159,6 +159,14 @@ class CompanionActionManifest {
   /// degrades *within* the species: requested -> semantic sibling -> idle.
   final Map<String, String> semanticFallback;
 
+  /// requested action -> the action whose *drawing* it reuses.
+  ///
+  /// A strict subset of [semanticFallback], and the only map rendering consults.
+  /// A behaviour-only chain such as `celebrate -> idle` belongs in
+  /// [semanticFallback] but must never become a drawing: replacing a celebration
+  /// with a placid idle drawing is worse than the caller's own fallback.
+  final Map<String, String> drawAliases;
+
   const CompanionActionManifest({
     required this.companionId,
     required this.posePack,
@@ -168,6 +176,7 @@ class CompanionActionManifest {
     required this.centerAnchor,
     required this.actions,
     this.semanticFallback = const {},
+    this.drawAliases = const {},
   });
 
   /// The action ids this companion really ships.
@@ -194,6 +203,26 @@ class CompanionActionManifest {
     final idle = actions['idle'];
     if (idle != null && !idle.isEmpty) return idle;
     return null;
+  }
+
+  /// Resolves [pose] for *rendering*, which is stricter than [resolve].
+  ///
+  /// It honours only the explicitly declared [drawAliases] entries — the
+  /// room anchors that stand for a focus action — and returns `null` otherwise.
+  ///
+  /// It deliberately does **not** fall through to `idle`. Substituting the idle
+  /// sequence for, say, `celebrate` would replace a rig pose that carries a
+  /// confetti accent with a placid idle drawing, which is a worse answer than the
+  /// caller's own fallback. `idle` as a last resort is a *behaviour selection*
+  /// rule (see [resolve]); it is not a drawing rule.
+  CompanionActionSpec? specForRendering(CompanionPose pose) {
+    final direct = actions[pose.id];
+    if (direct != null && !direct.isEmpty) return direct;
+    final fallbackId = drawAliases[pose.id];
+    if (fallbackId == null) return null;
+    final fallback = actions[fallbackId];
+    if (fallback == null || fallback.isEmpty) return null;
+    return fallback;
   }
 
   /// Whether [pose] is served by its *own* action rather than a fallback.
@@ -238,6 +267,9 @@ class CompanionActionManifest {
       centerAnchor: (json['centerAnchor'] as num?)?.toInt() ?? 0,
       actions: Map.unmodifiable(actions),
       semanticFallback: ((json['semanticFallback'] as Map?) ?? const {}).map(
+        (k, v) => MapEntry(k as String, v as String),
+      ),
+      drawAliases: ((json['drawAliases'] as Map?) ?? const {}).map(
         (k, v) => MapEntry(k as String, v as String),
       ),
     );

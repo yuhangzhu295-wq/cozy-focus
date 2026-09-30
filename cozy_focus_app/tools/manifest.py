@@ -23,6 +23,8 @@ ACTION_SPEC = {
     "room_relax":  {"fps": 4, "loop": "loop",      "frames": 3},
 }
 
+# The full behaviour fallback chain: requested action -> same-species sibling ->
+# idle. This is what the *director* degrades through when an action is missing.
 SEMANTIC_FALLBACK = {
     "idle": "idle", "prepare": "idle", "glance": "idle", "finish": "focus_write",
     "micro_rest": "pause_rest", "focus_read": "idle", "focus_write": "idle",
@@ -31,6 +33,37 @@ SEMANTIC_FALLBACK = {
     "room_read": "focus_read", "room_work": "focus_write",
     "room_sleep": "sleep", "room_relax": "pause_rest",
     "tap_react": "idle", "pet_react": "idle",
+}
+
+# Only the aliases where the two actions are genuinely the *same drawing*.
+#
+# `semanticFallback` also contains behaviour-only chains (celebrate -> idle,
+# tap_react -> idle). Those must never be used as a drawing substitution: an idle
+# sprite standing in for a celebration replaces a pose that carries a confetti
+# accent with a placid one, which is worse than the rig's own fallback.
+DRAW_ALIASES = {
+    "finish": "focus_write",
+    "micro_rest": "pause_rest",
+    "room_read": "focus_read",
+    "room_work": "focus_write",
+    "room_sleep": "sleep",
+    "room_relax": "pause_rest",
+}
+
+
+# Only the aliases where the two actions are genuinely the *same drawing*.
+#
+# SEMANTIC_FALLBACK also contains behaviour-only chains (celebrate -> idle,
+# tap_react -> idle). Those must never be used as a drawing substitution: an idle
+# sprite standing in for a celebration replaces a pose that carries a confetti
+# accent with a placid one, which is worse than the rig's own fallback.
+DRAW_ALIASES = {
+    "finish": "focus_write",
+    "micro_rest": "pause_rest",
+    "room_read": "focus_read",
+    "room_work": "focus_write",
+    "room_sleep": "sleep",
+    "room_relax": "pause_rest",
 }
 
 
@@ -67,6 +100,8 @@ def build(companion):
         "centerAnchor": int(round(sum(centers) / len(centers))) if centers else 511,
         "actions": actions,
         "semanticFallback": SEMANTIC_FALLBACK,
+        "drawAliases": DRAW_ALIASES,
+        "drawAliases": DRAW_ALIASES,
         "generatedFrom": f"production_report_{companion}.json",
     }
     path = os.path.join(out_dir, "manifest.json")

@@ -245,6 +245,19 @@ void main() {
       );
       expect(manifest.resolve(CompanionPose.focusRead)?.actionId, 'room_read');
     });
+
+    test('a behaviour-only chain never becomes a drawing', () {
+      // `celebrate -> idle` is a legitimate behaviour fallback and an
+      // illegitimate drawing one. Substituting the idle sequence would replace a
+      // pose that carries a confetti accent with a placid drawing.
+      final dog = CompanionActionManifestData.forCompanion('dog')!;
+      expect(dog.semanticFallback[CompanionPose.celebrate.id], 'idle');
+      expect(dog.specForRendering(CompanionPose.celebrate), isNull);
+      expect(dog.specForRendering(CompanionPose.tapReact), isNotNull,
+          reason: 'tap_react has its own sequence');
+      expect(dog.specForRendering(CompanionPose.petReact), isNull,
+          reason: 'pet_react has no sequence yet');
+    });
   });
 
   group('reduced motion', () {
@@ -256,18 +269,20 @@ void main() {
 
       expect(dog.hasExactAction(CompanionPose.roomRead), isFalse,
           reason: 'a room-only duplicate must not exist without evidence');
-      expect(dog.resolve(CompanionPose.roomRead)?.actionId, 'focus_read',
+      expect(
+          dog.specForRendering(CompanionPose.roomRead)?.actionId, 'focus_read',
           reason: 'bookshelf must reuse the reading sequence');
-      expect(dog.resolve(CompanionPose.roomWork)?.actionId, 'focus_write',
+      expect(
+          dog.specForRendering(CompanionPose.roomWork)?.actionId, 'focus_write',
           reason: 'desk must reuse the writing sequence');
 
-      // The dog pack has no `sleep` sequence yet, so the bed degrades to idle
-      // rather than borrowing one. It becomes `sleep` the moment that sequence
-      // lands, with no code change.
-      final bed = dog.resolve(CompanionPose.roomSleep);
-      expect(bed, isNotNull, reason: 'the bed must still present something');
-      expect(bed!.actionId,
-          dog.hasExactAction(CompanionPose.sleep) ? 'sleep' : 'idle');
+      // The dog pack has no `sleep` sequence yet. Behaviour selection may still
+      // degrade to idle, but rendering must not: substituting the idle drawing
+      // for the bed pose would be worse than the rig's own fallback. It becomes
+      // `sleep` the moment that sequence lands, with no code change.
+      expect(dog.resolve(CompanionPose.roomSleep)?.actionId, 'idle');
+      expect(dog.specForRendering(CompanionPose.roomSleep), isNull,
+          reason: 'a missing drawing must not be substituted from idle');
 
       // Whatever it resolves to, it is always the same companion's frames.
       for (final pose in const [
@@ -277,7 +292,7 @@ void main() {
         CompanionPose.roomSit,
         CompanionPose.roomRelax,
       ]) {
-        final spec = dog.resolve(pose);
+        final spec = dog.specForRendering(pose);
         if (spec == null) continue;
         for (final frame in spec.frames) {
           expect(frame, startsWith('assets/companions/dog/'));
