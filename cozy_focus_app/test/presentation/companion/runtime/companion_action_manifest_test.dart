@@ -252,13 +252,22 @@ void main() {
       // pose that carries a confetti accent with a placid drawing.
       final dog = CompanionActionManifestData.forCompanion('dog')!;
       expect(dog.semanticFallback[CompanionPose.celebrate.id], 'idle');
-      expect(dog.specForRendering(CompanionPose.celebrate), isNull);
+      // The behaviour chain still says "degrade to idle", but the drawing is the
+      // celebration's own sequence — the chain was never consulted for it.
+      expect(
+          dog.specForRendering(CompanionPose.celebrate)?.actionId, 'celebrate');
       expect(dog.specForRendering(CompanionPose.tapReact), isNotNull,
           reason: 'tap_react has its own sequence');
       expect(dog.specForRendering(CompanionPose.petReact), isNotNull,
           reason: 'pet_react has its own sequence');
-      expect(dog.specForRendering(CompanionPose.craftWork), isNull,
-          reason: 'craft_work has no sequence yet');
+      expect(dog.specForRendering(CompanionPose.craftWork), isNotNull,
+          reason: 'craft_work has its own sequence');
+      expect(dog.specForRendering(CompanionPose.celebrate), isNotNull,
+          reason: 'celebrate has its own sequence');
+      expect(dog.specForRendering(CompanionPose.sleep), isNotNull,
+          reason: 'sleep has its own sequence');
+      // A pose the pack genuinely does not cover still falls through to the rig.
+      expect(dog.specForRendering(CompanionPose.greeting), isNull);
     });
   });
 
@@ -282,8 +291,11 @@ void main() {
       // degrade to idle, but rendering must not: substituting the idle drawing
       // for the bed pose would be worse than the rig's own fallback. It becomes
       // `sleep` the moment that sequence lands, with no code change.
-      expect(dog.resolve(CompanionPose.roomSleep)?.actionId, 'idle');
-      expect(dog.specForRendering(CompanionPose.roomSleep), isNull,
+      // With the sleep sequence now shipped, the bed reuses it directly.
+      expect(dog.resolve(CompanionPose.roomSleep)?.actionId, 'sleep');
+      expect(dog.specForRendering(CompanionPose.roomSleep)?.actionId, 'sleep');
+      // A pose with no sequence and no alias must not borrow a drawing at all.
+      expect(dog.specForRendering(CompanionPose.greeting), isNull,
           reason: 'a missing drawing must not be substituted from idle');
 
       // Whatever it resolves to, it is always the same companion's frames.

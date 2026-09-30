@@ -163,7 +163,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(renderedProp(tester), MochiPosePropKind.confetti);
+      // Completion is presented by the production celebration sequence; the
+      // code-drawn confetti accent is only what the rig draws for poses the pack
+      // does not cover.
+      expect(renderedSpriteAction(tester), 'celebrate');
     });
   });
 

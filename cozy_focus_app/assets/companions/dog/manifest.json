@@ -8,6 +8,41 @@
   "groundBaseline": 919,
   "centerAnchor": 511,
   "actions": {
+    "celebrate": {
+      "frames": [
+        "celebrate_000.png",
+        "celebrate_001.png",
+        "celebrate_002.png",
+        "celebrate_003.png",
+        "celebrate_004.png"
+      ],
+      "fps": 8,
+      "loopMode": "once",
+      "targetFrameCount": 5,
+      "interruptible": false,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "craft_work": {
+      "frames": [
+        "craft_work_000.png",
+        "craft_work_001.png",
+        "craft_work_002.png",
+        "craft_work_003.png"
+      ],
+      "fps": 5,
+      "loopMode": "loop",
+      "targetFrameCount": 4,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "focus_read": {
       "frames": [
         "focus_read_000.png",
@@ -95,6 +130,21 @@
       "fps": 6,
       "loopMode": "once",
       "targetFrameCount": 3,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "sleep": {
+      "frames": [
+        "sleep_000.png",
+        "sleep_001.png"
+      ],
+      "fps": 3,
+      "loopMode": "loop",
+      "targetFrameCount": 2,
       "interruptible": true,
       "overlayBehavior": "pause",
       "returnBehavior": "resume",

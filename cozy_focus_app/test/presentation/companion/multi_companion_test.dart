@@ -163,6 +163,9 @@ void main() {
         CompanionPose.rest,
         CompanionPose.tapReact,
         CompanionPose.petReact,
+        CompanionPose.craftWork,
+        CompanionPose.celebrate,
+        CompanionPose.sleep,
       };
 
       for (final id in CompanionManifestData.profiles.keys) {

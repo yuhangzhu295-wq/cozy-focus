@@ -31,6 +31,35 @@ abstract final class CompanionActionManifestData {
       groundBaseline: 919,
       centerAnchor: 511,
       actions: {
+        'celebrate': CompanionActionSpec(
+          actionId: 'celebrate',
+          frames: [
+            'assets/companions/dog/celebrate_000.png',
+            'assets/companions/dog/celebrate_001.png',
+            'assets/companions/dog/celebrate_002.png',
+            'assets/companions/dog/celebrate_003.png',
+            'assets/companions/dog/celebrate_004.png',
+          ],
+          fps: 8,
+          loopMode: SpriteLoopMode.once,
+          interruptible: false,
+          reducedMotionFrames: [0],
+          targetFrameCount: 5,
+        ),
+        'craft_work': CompanionActionSpec(
+          actionId: 'craft_work',
+          frames: [
+            'assets/companions/dog/craft_work_000.png',
+            'assets/companions/dog/craft_work_001.png',
+            'assets/companions/dog/craft_work_002.png',
+            'assets/companions/dog/craft_work_003.png',
+          ],
+          fps: 5,
+          loopMode: SpriteLoopMode.loop,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 4,
+        ),
         'focus_read': CompanionActionSpec(
           actionId: 'focus_read',
           frames: [
@@ -106,6 +135,18 @@ abstract final class CompanionActionManifestData {
           interruptible: true,
           reducedMotionFrames: [0],
           targetFrameCount: 3,
+        ),
+        'sleep': CompanionActionSpec(
+          actionId: 'sleep',
+          frames: [
+            'assets/companions/dog/sleep_000.png',
+            'assets/companions/dog/sleep_001.png',
+          ],
+          fps: 3,
+          loopMode: SpriteLoopMode.loop,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 2,
         ),
         'tap_react': CompanionActionSpec(
           actionId: 'tap_react',
