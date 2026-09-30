@@ -64,7 +64,7 @@ carry scene background and UI text by construction.
 
 | Companion | Actions | Frames |
 |---|---|---|
-| dog | `focus_read` (3), `focus_write` (4), `focus_think` (3), `pause_rest` (2), `pet_react` (3), `tap_react` (1), `idle` (1) | 17 |
+| dog | all ten requested actions | 28 |
 | cat | — | 0 |
 | rabbit | — | 0 |
 
@@ -85,9 +85,10 @@ produced, because no visual evidence showed it was needed.
 
 ## 3. Honest status
 
-**Not finished: cat and rabbit have no production art, and the dog pack is
-partial.** 7 of the 10 requested dog actions exist; `craft_work`,
-`celebrate` and `sleep` are still drawn by the rig.
+**Not finished: cat and rabbit have no production art.** The dog pack is
+complete: all ten requested actions ship as production sequences. Every pose the
+dog pack does not cover (a greeting, a glance) still falls through to the approved
+rig rather than borrowing a neighbouring action.
 
 **Why, and why it was not worked around.** Flow's generation path became
 unavailable part-way through the session: the agent chat panel failed every request
@@ -168,12 +169,11 @@ DOG_MASTER:    PASS
 CAT_MASTER:    FAIL  (not produced)
 RABBIT_MASTER: FAIL  (not produced)
 
-DOG_ACTIONS_READY:    7/10   (focus_read, focus_write, focus_think,
-                              pause_rest, pet_react, tap_react, idle)
+DOG_ACTIONS_READY:    10/10
 CAT_ACTIONS_READY:    0/10
 RABBIT_ACTIONS_READY: 0/10
 
-DOG_FRAME_COUNT:    17
+DOG_FRAME_COUNT:    28
 CAT_FRAME_COUNT:    0
 RABBIT_FRAME_COUNT: 0
 
@@ -189,10 +189,10 @@ FOCUS_WRITE: PASS
 FOCUS_THINK: PASS
 TAP_REACT:   PASS
 PET_REACT:   PASS
-CRAFT_WORK:  FAIL  (no sequence; rig draws it)
-CELEBRATE:   FAIL  (no sequence; rig draws it)
+CRAFT_WORK:  PASS
+CELEBRATE:   PASS
 PAUSE:       PASS
-SLEEP:       FAIL  (no sequence; rig draws it)
+SLEEP:       PASS
 ROOM_REUSE:  PASS  (semantic alias, no duplicate art)
 REDUCED_MOTION: PASS
 BUSINESS_ISOLATION: PASS

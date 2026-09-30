@@ -12,6 +12,7 @@ import 'package:cozy_focus_app/presentation/companion/procedural_companion_art.d
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_behavior_director.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_context.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_player.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_presentation_clock.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/random_source.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
@@ -257,19 +258,29 @@ void main() {
       await tester.pumpWidget(app(c, const CompanionAvatar(size: 140)));
       await tester.pump();
 
-      // Breathing is a repeating controller, so a frame callback is expected
-      // while it is mounted — that is the point of the fix.
-      expect(
-        tester.binding.transientCallbackCount,
-        greaterThan(0),
-        reason: 'a placeholder companion must not be frozen',
-      );
+      // Two channels can present the cat. Where it has a production sequence the
+      // sequence is its own animation and the placeholder's breathing controller
+      // is not in the tree at all; where it does not, the procedural art breathes
+      // and a frame callback is expected while it is mounted.
+      final presentingSprites =
+          find.byType(CompanionSpritePlayer).evaluate().isNotEmpty;
+      if (presentingSprites) {
+        expect(find.byType(ProceduralCompanionArt), findsNothing,
+            reason: 'a sprite sequence replaces the procedural placeholder');
+      } else {
+        expect(
+          tester.binding.transientCallbackCount,
+          greaterThan(0),
+          reason: 'a placeholder companion must not be frozen',
+        );
+      }
 
       await tester.pumpWidget(app(c, const SizedBox.shrink()));
       await tester.pump();
 
       // Disposal must release the breathing controller and both blink timers; a
       // survivor fails this test at teardown with "A Timer is still pending".
+      expect(find.byType(CompanionSpritePlayer), findsNothing);
       expect(find.byType(ProceduralCompanionArt), findsNothing);
       expect(tester.binding.transientCallbackCount, 0);
     });

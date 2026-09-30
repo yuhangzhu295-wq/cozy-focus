@@ -152,9 +152,9 @@ void main() {
         registry: buildCompanionVisualRegistry(),
       );
 
-      // The dog now ships real sprite sequences for the focus actions, so those
-      // poses resolve; every pose that does not have one must still report
-      // ASSET_GAP rather than quietly borrowing a neighbouring action.
+      // Which poses ship real art, per companion. Every pose *not* listed must
+      // still report ASSET_GAP rather than quietly borrowing a neighbouring
+      // action, and no companion may claim art it does not have.
       const dogPosesWithArt = {
         CompanionPose.idle,
         CompanionPose.focusRead,
@@ -168,11 +168,20 @@ void main() {
         CompanionPose.sleep,
       };
 
+      // The cat pack is being produced; it currently covers only these two.
+      const catPosesWithArt = {
+        CompanionPose.idle,
+        CompanionPose.focusRead,
+      };
+
       for (final id in CompanionManifestData.profiles.keys) {
         for (final pose in CompanionPose.values) {
           final result = resolver.resolve(id, pose);
-          final expected =
-              id == CompanionId.dog && dogPosesWithArt.contains(pose);
+          final expected = switch (id) {
+            CompanionId.dog => dogPosesWithArt.contains(pose),
+            CompanionId.cat => catPosesWithArt.contains(pose),
+            _ => false,
+          };
           expect(
             result.hasProductionAsset,
             expected,
@@ -185,8 +194,8 @@ void main() {
         }
       }
 
-      // The cat and rabbit ship no production art at all yet.
-      for (final id in const [CompanionId.cat, CompanionId.rabbit]) {
+      // The rabbit ships no production art at all yet.
+      for (final id in const [CompanionId.rabbit]) {
         expect(
           resolver.audit(id).values.where((r) => r.hasProductionAsset),
           isEmpty,
