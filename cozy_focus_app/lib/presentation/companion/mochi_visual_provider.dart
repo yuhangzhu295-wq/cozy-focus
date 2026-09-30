@@ -7,9 +7,12 @@ import '../controllers/home_controller.dart';
 import '../widgets/pet_avatar_widget.dart';
 import 'focus_phase.dart';
 import 'mochi_pose_spec.dart';
+import 'runtime/companion_action_manifest.dart';
+import 'runtime/companion_action_manifest_data.dart';
 import 'runtime/companion_context.dart';
 import 'runtime/companion_pose.dart';
 import 'runtime/companion_presentation_intent.dart';
+import 'runtime/companion_sprite_art.dart';
 import 'runtime/companion_visual_provider.dart';
 
 /// Mochi's visual provider — the leaf where dog-specific drawing lives.
@@ -20,28 +23,56 @@ import 'runtime/companion_visual_provider.dart';
 /// deals in [CompanionPose] and never in art. That is what lets a fourth
 /// companion be added without touching the director, the renderer, or any page.
 ///
-/// ## It draws the approved V4.1 art
+/// ## Two renderers, one identity
 ///
-/// The provider does not redraw Mochi. It drives the existing approved layered
-/// renderer through [PetAvatarWidget], adding the V4.2.1 pose as a posture plus a
-/// prop. Mochi's identity is therefore preserved exactly, and the pose layer is
-/// additive.
+/// The provider prefers a **production sprite sequence** when the action pack has
+/// one for the requested pose — a different drawing per action, which is what a
+/// macro action actually is. For any pose the pack does not cover it keeps the
+/// approved V4.1 layered rig plus the pose posture, rather than substituting a
+/// neighbouring action's sprites: a missing action degrades to the best drawing
+/// that really exists, never to a different action pretending to be it.
 ///
-/// ## The asset gap is declared, not hidden
+/// ## The asset gap is declared per pose, not per companion
 ///
-/// [productionPoses] is empty, and that is the truthful answer: the V4.2.1
-/// package states the transparent pose packs are still a production task
-/// (`docs/08_Runtime_Asset_GAP.md`). The poses are carried by code-drawn fallback
-/// props, and the runtime reports `ASSET_GAP` for every one of them rather than
-/// claiming finished art.
+/// [productionPoses] is exactly the set of poses with a shipped sprite sequence.
+/// A partial pack therefore lands as a partial improvement, and the resolver
+/// still reports `ASSET_GAP` for the rest.
 class MochiVisualProvider extends CompanionVisualProvider {
   MochiVisualProvider();
+
+  /// The companion id whose action pack this provider draws.
+  static const String companionKey = 'dog';
+
+  /// Poses where the approved layered rig stays authoritative.
+  ///
+  /// `idle` is the one action whose entire content *is* micro-motion — breathe,
+  /// blink, ear twitch, sprout sway — and whose cadence is driven by the real
+  /// growth stage. Replacing it with a short sequence would make the companion
+  /// less alive, not more, and would drop that growth integration. The sprite
+  /// pack exists to give the *macro* actions a distinct silhouette, which is
+  /// precisely what `idle` does not need.
+  ///
+  /// This is a rendering-fidelity decision, not an asset gap: the idle sequence
+  /// still ships and still counts as a production pose.
+  static const Set<String> layeredPoses = {'idle'};
 
   @override
   String get posePackId => 'mochi';
 
+  /// The poses Mochi ships a real sprite sequence for.
+  static final Set<CompanionPose> spritePoses = _spritePoses();
+
+  static Set<CompanionPose> _spritePoses() {
+    final manifest = CompanionActionManifestData.forCompanion(companionKey);
+    if (manifest == null) return const <CompanionPose>{};
+    return {
+      for (final pose in CompanionPose.values)
+        if (manifest.hasExactAction(pose)) pose,
+    };
+  }
+
   @override
-  Set<CompanionPose> get productionPoses => const <CompanionPose>{};
+  Set<CompanionPose> get productionPoses => spritePoses;
 
   @override
   Widget build(
@@ -49,10 +80,12 @@ class MochiVisualProvider extends CompanionVisualProvider {
     CompanionPresentationIntent intent,
     CompanionVisualOptions options,
   ) {
+    final spec = CompanionSpriteArt.specFor(companionKey, intent.pose);
     return _MochiPoseAvatar(
       intent: intent,
       options: options,
       poseSpec: MochiPoseSpecs.of(intent.pose),
+      spriteSpec: layeredPoses.contains(intent.pose.id) ? null : spec,
     );
   }
 }
@@ -67,10 +100,14 @@ class _MochiPoseAvatar extends ConsumerWidget {
   final CompanionVisualOptions options;
   final MochiPoseSpec poseSpec;
 
+  /// The production sequence for this pose, when the dog pack ships one.
+  final CompanionActionSpec? spriteSpec;
+
   const _MochiPoseAvatar({
     required this.intent,
     required this.options,
     required this.poseSpec,
+    this.spriteSpec,
   });
 
   /// Maps the runtime's base context onto the renderer's existing state enum.
@@ -117,6 +154,7 @@ class _MochiPoseAvatar extends ConsumerWidget {
       focusPhase: FocusPhaseResolver.resolve(intent.focusProgress),
       focusCategoryId: options.focusCategoryId,
       poseSpec: poseSpec,
+      spriteSpec: spriteSpec,
       semanticLabelOverride: intent.baseContext == CompanionBaseContext.room
           ? '${options.displayName} 在房间'
           : null,

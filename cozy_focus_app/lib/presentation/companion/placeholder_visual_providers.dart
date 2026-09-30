@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'mochi_pose_spec.dart';
 import 'procedural_companion_art.dart';
+import 'runtime/companion_action_manifest.dart';
+import 'runtime/companion_action_manifest_data.dart';
 import 'runtime/companion_context.dart';
 import 'runtime/companion_pose.dart';
 import 'runtime/companion_presentation_intent.dart';
+import 'runtime/companion_sprite_art.dart';
+import 'runtime/companion_sprite_player.dart';
 import 'runtime/companion_visual_provider.dart';
 
 /// Visual providers for companions whose production art does not exist yet.
@@ -17,8 +21,9 @@ import 'runtime/companion_visual_provider.dart';
 ///
 /// So each of these draws its own character — a cat with triangle ears, whiskers
 /// and a slender tail; a rabbit with long ears and a puff tail — from the shared
-/// pose vocabulary. They are placeholders, they are visibly not finished art, and
-/// [productionPoses] is empty so every pose resolves to `ASSET_GAP`.
+/// pose vocabulary, and each declares exactly the poses it really ships. As soon
+/// as an action pack exists for a companion, its frames take over for those poses
+/// with no code change here beyond the manifest.
 ///
 /// ## One engine, three companions
 ///
@@ -29,48 +34,73 @@ import 'runtime/companion_visual_provider.dart';
 class CatVisualProvider extends CompanionVisualProvider {
   CatVisualProvider();
 
+  /// The companion id whose action pack this provider draws.
+  static const String companionKey = 'cat';
+
   @override
   String get posePackId => 'cat';
 
   @override
-  Set<CompanionPose> get productionPoses => const <CompanionPose>{};
+  Set<CompanionPose> get productionPoses => _spritePosesFor(companionKey);
 
   @override
   Widget build(
     BuildContext context,
     CompanionPresentationIntent intent,
     CompanionVisualOptions options,
-  ) =>
-      PlaceholderCompanionAvatar(
-        silhouette: CompanionSilhouettes.cat,
-        intent: intent,
-        options: options,
-        poseSpec: MochiPoseSpecs.of(intent.pose),
-      );
+  ) {
+    final spec = CompanionSpriteArt.specFor(companionKey, intent.pose);
+    return PlaceholderCompanionAvatar(
+      silhouette: CompanionSilhouettes.cat,
+      intent: intent,
+      options: options,
+      poseSpec: MochiPoseSpecs.of(intent.pose),
+      spriteSpec: spec,
+    );
+  }
 }
 
 /// The rabbit's provider. See [CatVisualProvider] for the shared rationale.
 class RabbitVisualProvider extends CompanionVisualProvider {
   RabbitVisualProvider();
 
+  /// The companion id whose action pack this provider draws.
+  static const String companionKey = 'rabbit';
+
   @override
   String get posePackId => 'rabbit';
 
   @override
-  Set<CompanionPose> get productionPoses => const <CompanionPose>{};
+  Set<CompanionPose> get productionPoses => _spritePosesFor(companionKey);
 
   @override
   Widget build(
     BuildContext context,
     CompanionPresentationIntent intent,
     CompanionVisualOptions options,
-  ) =>
-      PlaceholderCompanionAvatar(
-        silhouette: CompanionSilhouettes.rabbit,
-        intent: intent,
-        options: options,
-        poseSpec: MochiPoseSpecs.of(intent.pose),
-      );
+  ) {
+    final spec = CompanionSpriteArt.specFor(companionKey, intent.pose);
+    return PlaceholderCompanionAvatar(
+      silhouette: CompanionSilhouettes.rabbit,
+      intent: intent,
+      options: options,
+      poseSpec: MochiPoseSpecs.of(intent.pose),
+      spriteSpec: spec,
+    );
+  }
+}
+
+/// The poses a companion ships a real sprite sequence for.
+///
+/// Read from the action manifest, so a pack that lands later widens this set
+/// without a code edit.
+Set<CompanionPose> _spritePosesFor(String companionKey) {
+  final manifest = CompanionActionManifestData.forCompanion(companionKey);
+  if (manifest == null) return const <CompanionPose>{};
+  return {
+    for (final pose in CompanionPose.values)
+      if (manifest.hasExactAction(pose)) pose,
+  };
 }
 
 /// Shared widget for a procedurally drawn companion.
@@ -85,12 +115,16 @@ class PlaceholderCompanionAvatar extends StatelessWidget {
   final CompanionVisualOptions options;
   final MochiPoseSpec poseSpec;
 
+  /// The production sequence for this pose, when this companion ships one.
+  final CompanionActionSpec? spriteSpec;
+
   const PlaceholderCompanionAvatar({
     super.key,
     required this.silhouette,
     required this.intent,
     required this.options,
     required this.poseSpec,
+    this.spriteSpec,
   });
 
   /// The state word shown in the badge, in the app's own vocabulary.
@@ -119,13 +153,23 @@ class PlaceholderCompanionAvatar extends StatelessWidget {
     final state = stateLabel(intent.baseContext);
     final controller = options.controller;
 
-    final art = ProceduralCompanionArt(
-      silhouette: silhouette,
-      pose: intent.pose,
-      poseSpec: poseSpec,
-      size: options.size,
-      reducedMotion: intent.reducedMotion,
-    );
+    // A production sequence wins for the poses it covers; the procedural
+    // silhouette draws every pose it does not. Both paths are the same
+    // companion, so this is a fidelity step, never a substitution.
+    final Widget art = spriteSpec != null && !spriteSpec!.isEmpty
+        ? CompanionSpritePlayer(
+            spec: spriteSpec!,
+            size: options.size,
+            reducedMotion: intent.reducedMotion,
+            semanticLabel: '$name $state',
+          )
+        : ProceduralCompanionArt(
+            silhouette: silhouette,
+            pose: intent.pose,
+            poseSpec: poseSpec,
+            size: options.size,
+            reducedMotion: intent.reducedMotion,
+          );
 
     return Column(
       mainAxisSize: MainAxisSize.min,

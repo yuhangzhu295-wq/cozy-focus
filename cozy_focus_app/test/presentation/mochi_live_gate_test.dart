@@ -5,6 +5,7 @@ import 'package:cozy_focus_app/domain/models/craft_models.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_idle_fallback_view.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_player.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_motion_spec.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
@@ -84,9 +85,34 @@ PetIdleFallbackViewState _fallback(WidgetTester tester) => tester
     .state<PetIdleFallbackViewState>(find.byType(PetIdleFallbackView).first);
 
 /// The visual state the renderer actually received — i.e. what the user sees.
-PetVisualState _renderedState(WidgetTester tester) => tester
-    .widget<PetIdleFallbackView>(find.byType(PetIdleFallbackView).first)
-    .visualState;
+///
+/// Two renderers can be on screen. The approved layered rig reports its state
+/// directly; a production sprite sequence reports the action it is playing, which
+/// this maps back onto the same vocabulary. Reading whichever is present keeps the
+/// assertion about what the user sees rather than about which channel drew it.
+PetVisualState _renderedState(WidgetTester tester) {
+  final fallbackFinder = find.byType(PetIdleFallbackView);
+  if (fallbackFinder.evaluate().isNotEmpty) {
+    return tester.widget<PetIdleFallbackView>(fallbackFinder.first).visualState;
+  }
+  final spriteFinder = find.byType(CompanionSpritePlayer);
+  if (spriteFinder.evaluate().isNotEmpty) {
+    return _stateForAction(
+      tester.widget<CompanionSpritePlayer>(spriteFinder.first).spec.actionId,
+    );
+  }
+  fail('no companion renderer is on screen');
+}
+
+/// The base state a production action presents.
+PetVisualState _stateForAction(String actionId) => switch (actionId) {
+      'focus_read' || 'focus_write' || 'focus_think' => PetVisualState.focus,
+      'pause_rest' => PetVisualState.pause,
+      'craft_work' => PetVisualState.craft,
+      'celebrate' => PetVisualState.celebrate,
+      'sleep' => PetVisualState.sleep,
+      _ => PetVisualState.idle,
+    };
 
 CraftJob _job({required int progressSeconds}) => CraftJob(
       id: 'job-live-1',

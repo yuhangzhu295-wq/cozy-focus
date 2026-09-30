@@ -61,4 +61,5 @@ flutter:
     - assets/sounds/
     - assets/mochi/base/
     - assets/companion/
+    - assets/companions/dog/
 

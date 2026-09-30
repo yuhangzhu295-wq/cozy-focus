@@ -1,0 +1,126 @@
+{
+  "companionId": "dog",
+  "posePack": "mochi",
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "groundBaseline": 919,
+  "centerAnchor": 511,
+  "actions": {
+    "focus_read": {
+      "frames": [
+        "focus_read_000.png",
+        "focus_read_001.png",
+        "focus_read_002.png"
+      ],
+      "fps": 5,
+      "loopMode": "pingpong",
+      "targetFrameCount": 3,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "focus_think": {
+      "frames": [
+        "focus_think_000.png",
+        "focus_think_001.png",
+        "focus_think_002.png"
+      ],
+      "fps": 4,
+      "loopMode": "pingpong",
+      "targetFrameCount": 3,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "focus_write": {
+      "frames": [
+        "focus_write_000.png",
+        "focus_write_001.png",
+        "focus_write_002.png",
+        "focus_write_003.png"
+      ],
+      "fps": 5,
+      "loopMode": "loop",
+      "targetFrameCount": 4,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "idle": {
+      "frames": [
+        "idle_000.png"
+      ],
+      "fps": 5,
+      "loopMode": "loop",
+      "targetFrameCount": 3,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "pause_rest": {
+      "frames": [
+        "pause_rest_000.png",
+        "pause_rest_001.png"
+      ],
+      "fps": 3,
+      "loopMode": "pingpong",
+      "targetFrameCount": 2,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "tap_react": {
+      "frames": [
+        "tap_react_000.png"
+      ],
+      "fps": 8,
+      "loopMode": "once",
+      "targetFrameCount": 3,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    }
+  },
+  "semanticFallback": {
+    "idle": "idle",
+    "prepare": "idle",
+    "glance": "idle",
+    "finish": "focus_write",
+    "micro_rest": "pause_rest",
+    "focus_read": "idle",
+    "focus_write": "idle",
+    "focus_think": "idle",
+    "craft_work": "idle",
+    "celebrate": "idle",
+    "pause_rest": "idle",
+    "sleep": "pause_rest",
+    "room_sit": "idle",
+    "room_read": "focus_read",
+    "room_work": "focus_write",
+    "room_sleep": "sleep",
+    "room_relax": "pause_rest",
+    "tap_react": "idle",
+    "pet_react": "idle"
+  },
+  "generatedFrom": "production_report_dog.json"
+}

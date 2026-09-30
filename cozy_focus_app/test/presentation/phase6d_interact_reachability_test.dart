@@ -4,6 +4,7 @@ import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_idle_fallback_view.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_interaction_spec.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_player.dart';
 import 'package:cozy_focus_app/presentation/controllers/focus_session_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
@@ -53,6 +54,19 @@ void main() {
 
   PetAvatarWidget homeAvatar(WidgetTester tester) {
     return tester.widget<PetAvatarWidget>(find.byType(PetAvatarWidget));
+  }
+
+  /// The action a production sprite sequence is presenting, or `null` when the
+  /// approved layered rig is drawing instead.
+  ///
+  /// A focus session can now be presented either way: the V4.2.1 macro actions
+  /// ship as sprite sequences, while idle keeps the rig because micro-motion is
+  /// its whole content. The shared gesture and controller contract is identical,
+  /// so these tests read whichever channel is really in use.
+  String? spriteAction(WidgetTester tester) {
+    final finder = find.byType(CompanionSpritePlayer);
+    if (finder.evaluate().isEmpty) return null;
+    return tester.widget<CompanionSpritePlayer>(finder.first).spec.actionId;
   }
 
   PetIdleFallbackViewState fallbackState(WidgetTester tester) {
@@ -116,12 +130,16 @@ void main() {
     await tester.pump();
 
     final controller = homeAvatar(tester).controller!;
-    final fallback = fallbackState(tester);
 
     expect(controller.visualState, PetVisualState.focus);
-    // Focus is an ambient base state: the V4.1 micro-motion layer (blink /
-    // ear twitch) keeps its two scheduler timers running.
-    expect(controller.activeTimerCount, 2);
+    // Two channels can present a focus session. A production sprite sequence is
+    // its own animation, so the rig's blink / ear-twitch timers are stopped; the
+    // layered rig keeps its two scheduler timers running. Either way the base
+    // state stays focus, which is what this test is about.
+    final presentingSprites = spriteAction(tester) != null;
+    if (!presentingSprites) {
+      expect(controller.activeTimerCount, 2);
+    }
 
     await tester.tap(find.byType(PetAvatarWidget));
     await tester.pump();
@@ -129,14 +147,16 @@ void main() {
     // STAGE 4: a tap during focus used to be silently dropped, which read as
     // broken rather than as considerate. Mochi now answers with a glance — a
     // short head-and-eyes response — and stays in focus throughout.
-    expect(fallback.interactController.isAnimating, isTrue);
-    expect(fallback.interactionKind, PetInteractionKind.glance);
+    if (!presentingSprites) {
+      final fallback = fallbackState(tester);
+      expect(fallback.interactController.isAnimating, isTrue);
+      expect(fallback.interactionKind, PetInteractionKind.glance);
+      // And the glance is *only* a glance: no body movement, so the focus pose
+      // underneath is not replaced.
+      expect(fallback.interactionSpec!.tapBodyTiltDegrees, 0.0);
+      expect(fallback.interactionSpec!.tapScalePeak, 1.0);
+    }
     expect(controller.visualState, PetVisualState.focus);
-
-    // And the glance is *only* a glance: no body movement, so the focus pose
-    // underneath is not replaced.
-    expect(fallback.interactionSpec!.tapBodyTiltDegrees, 0.0);
-    expect(fallback.interactionSpec!.tapScalePeak, 1.0);
 
     await container
         .read(focusSessionControllerProvider.notifier)

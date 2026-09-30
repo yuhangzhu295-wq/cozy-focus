@@ -23,6 +23,10 @@ coverage/
 .DS_Store
 Thumbs.db
 
+# Local asset-production staging (Flow downloads, references, rejects).
+# Only approved runtime assets are committed, under assets/companions/.
+.asset_staging/
+
 # Android generated / local config
 android/local.properties
 android/.gradle/

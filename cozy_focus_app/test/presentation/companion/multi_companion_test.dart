@@ -146,23 +146,48 @@ void main() {
       expect(registry.registeredPacks.toSet(), {'mochi', 'cat', 'rabbit'});
     });
 
-    test('every companion reports ASSET_GAP — no pose pack is finished art',
-        () {
+    test('the asset gap is reported per pose, and never overstated', () {
       final resolver = CompanionAssetResolver(
         catalog: bundledCompanionCatalog(),
         registry: buildCompanionVisualRegistry(),
       );
 
+      // The dog now ships real sprite sequences for the focus actions, so those
+      // poses resolve; every pose that does not have one must still report
+      // ASSET_GAP rather than quietly borrowing a neighbouring action.
+      const dogPosesWithArt = {
+        CompanionPose.idle,
+        CompanionPose.focusRead,
+        CompanionPose.focusWrite,
+        CompanionPose.focusThink,
+        CompanionPose.rest,
+        CompanionPose.tapReact,
+      };
+
       for (final id in CompanionManifestData.profiles.keys) {
         for (final pose in CompanionPose.values) {
           final result = resolver.resolve(id, pose);
+          final expected =
+              id == CompanionId.dog && dogPosesWithArt.contains(pose);
           expect(
             result.hasProductionAsset,
-            isFalse,
-            reason: '${id.value}/${pose.id} claims production art',
+            expected,
+            reason: '${id.value}/${pose.id} asset expectation',
           );
-          expect(result.gapReason, isNotNull, reason: '${id.value}/${pose.id}');
+          if (!expected) {
+            expect(result.gapReason, isNotNull,
+                reason: '${id.value}/${pose.id}');
+          }
         }
+      }
+
+      // The cat and rabbit ship no production art at all yet.
+      for (final id in const [CompanionId.cat, CompanionId.rabbit]) {
+        expect(
+          resolver.audit(id).values.where((r) => r.hasProductionAsset),
+          isEmpty,
+          reason: '${id.value} must not claim art it does not have',
+        );
       }
     });
 

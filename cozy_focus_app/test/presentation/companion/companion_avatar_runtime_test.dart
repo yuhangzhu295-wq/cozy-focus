@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
-import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_prop.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_player.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_spec.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_presentation_clock.dart';
@@ -45,6 +45,21 @@ void main() {
     return tester.widget<MochiPoseProp>(finder.first).kind;
   }
 
+  /// The action id the sprite player is presenting, or `null` when the approved
+  /// layered rig is drawing instead.
+  ///
+  /// The V4.2.1 macro actions are now carried by *production sprite sequences* —
+  /// a different drawing per action — rather than by a code-drawn prop layered
+  /// onto the one approved silhouette. These tests assert what is actually on
+  /// screen, so they follow the renderer that is really in use for each pose.
+  String? renderedSpriteAction(WidgetTester tester) {
+    final finder = find.byType(CompanionSpritePlayer);
+    if (finder.evaluate().isEmpty) return null;
+    return tester.widget<CompanionSpritePlayer>(finder.first).spec.actionId;
+  }
+
+  const focusActions = ['focus_read', 'focus_write', 'focus_think'];
+
   /// Builds a container whose home controller reports [homeState].
   ProviderContainer containerWith(HomeUIState homeState) {
     final c = ProviderContainer(
@@ -78,12 +93,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(
-        renderedProp(tester),
-        anyOf(
-          MochiPosePropKind.openBook,
-          MochiPosePropKind.notebook,
-          MochiPosePropKind.thoughtBubbles,
-        ),
+        renderedSpriteAction(tester),
+        anyOf(focusActions),
         reason: 'a running session must present a work silhouette',
       );
     });
@@ -100,7 +111,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(renderedProp(tester), MochiPosePropKind.restZ);
+      expect(renderedSpriteAction(tester), 'pause_rest');
     });
 
     testWidgets('an idle home has no work prop at all', (tester) async {
@@ -153,17 +164,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       final before = renderedProp(tester);
+      final beforeAction = renderedSpriteAction(tester);
       // The real precondition: a running session presents a work silhouette, so
       // the restore below is compared against something meaningful. This read
       // `isNotNull` on a value that can never be null, which could not fail.
-      expect(
-        before,
-        anyOf(
-          MochiPosePropKind.openBook,
-          MochiPosePropKind.notebook,
-          MochiPosePropKind.thoughtBubbles,
-        ),
-      );
+      expect(beforeAction, anyOf(focusActions));
 
       // Tap the companion. The gesture goes through the same controller path the
       // pre-V4.2.1 avatar used, and additionally asks the director for an overlay.
@@ -174,8 +179,8 @@ void main() {
       await tester.pump(CompanionPresentationClock.tickInterval);
 
       expect(
-        renderedProp(tester),
-        MochiPosePropKind.tapSpark,
+        renderedSpriteAction(tester),
+        'tap_react',
         reason: 'the overlay pose must be presented while the overlay runs',
       );
 
@@ -184,15 +189,16 @@ void main() {
       await tester.pump(CompanionPresentationClock.tickInterval);
 
       expect(
-        renderedProp(tester),
-        before,
+        renderedSpriteAction(tester),
+        beforeAction,
         reason: 'the previous focus behaviour must be restored exactly',
       );
       expect(
-        renderedProp(tester),
-        isNot(MochiPosePropKind.none),
+        renderedSpriteAction(tester),
+        isNot('idle'),
         reason: 'the overlay must never fall through to idle',
       );
+      expect(renderedProp(tester), before);
     });
 
     testWidgets('long press shows the petting overlay', (tester) async {
@@ -205,7 +211,16 @@ void main() {
       await tester.pump();
       await tester.pump(CompanionPresentationClock.tickInterval);
 
-      expect(renderedProp(tester), MochiPosePropKind.heart);
+      // Two channels can carry an overlay pose: a production sprite sequence
+      // when the pack ships one for that action, and the code-drawn prop layered
+      // on the approved rig otherwise. `pet_react` has no sequence yet, so this
+      // asserts whichever channel is really in use rather than assuming one.
+      final petAction = renderedSpriteAction(tester);
+      if (petAction != null) {
+        expect(petAction, 'pet_react');
+      } else {
+        expect(renderedProp(tester), MochiPosePropKind.heart);
+      }
     });
   });
 
@@ -241,17 +256,9 @@ void main() {
       // provider by the *raw* id and drawing nothing at all. The assertion is
       // now about what is actually on screen.
       expect(
-        find.byType(MochiLayeredRenderer),
-        findsOneWidget,
+        renderedSpriteAction(tester),
+        anyOf(focusActions),
         reason: 'an unknown companion must fall back to the default companion',
-      );
-      expect(
-        renderedProp(tester),
-        anyOf(
-          MochiPosePropKind.openBook,
-          MochiPosePropKind.notebook,
-          MochiPosePropKind.thoughtBubbles,
-        ),
       );
     });
   });
