@@ -120,7 +120,20 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(renderedProp(tester), MochiPosePropKind.none);
+      // The point is that an idle home shows no *work* silhouette. It is not
+      // `none`: late at night the ambient pool legitimately adds a resting beat,
+      // so asserting `none` made this test depend on the wall clock and fail
+      // whenever the suite ran after midnight.
+      expect(
+        renderedProp(tester),
+        isNot(
+          anyOf(
+            MochiPosePropKind.openBook,
+            MochiPosePropKind.notebook,
+            MochiPosePropKind.thoughtBubbles,
+          ),
+        ),
+      );
     });
 
     testWidgets('a room anchor announces the room, not idle', (tester) async {

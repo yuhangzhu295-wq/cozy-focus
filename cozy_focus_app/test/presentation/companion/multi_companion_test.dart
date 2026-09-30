@@ -162,6 +162,7 @@ void main() {
         CompanionPose.focusThink,
         CompanionPose.rest,
         CompanionPose.tapReact,
+        CompanionPose.petReact,
       };
 
       for (final id in CompanionManifestData.profiles.keys) {

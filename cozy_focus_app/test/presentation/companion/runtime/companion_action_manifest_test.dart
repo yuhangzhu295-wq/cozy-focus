@@ -255,8 +255,10 @@ void main() {
       expect(dog.specForRendering(CompanionPose.celebrate), isNull);
       expect(dog.specForRendering(CompanionPose.tapReact), isNotNull,
           reason: 'tap_react has its own sequence');
-      expect(dog.specForRendering(CompanionPose.petReact), isNull,
-          reason: 'pet_react has no sequence yet');
+      expect(dog.specForRendering(CompanionPose.petReact), isNotNull,
+          reason: 'pet_react has its own sequence');
+      expect(dog.specForRendering(CompanionPose.craftWork), isNull,
+          reason: 'craft_work has no sequence yet');
     });
   });
 

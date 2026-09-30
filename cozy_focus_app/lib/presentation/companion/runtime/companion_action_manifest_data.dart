@@ -94,6 +94,19 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 2,
         ),
+        'pet_react': CompanionActionSpec(
+          actionId: 'pet_react',
+          frames: [
+            'assets/companions/dog/pet_react_000.png',
+            'assets/companions/dog/pet_react_001.png',
+            'assets/companions/dog/pet_react_002.png',
+          ],
+          fps: 6,
+          loopMode: SpriteLoopMode.once,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 3,
+        ),
         'tap_react': CompanionActionSpec(
           actionId: 'tap_react',
           frames: [
