@@ -204,6 +204,8 @@ abstract final class CompanionActionManifestData {
           actionId: 'focus_read',
           frames: [
             'assets/companions/cat/focus_read_000.png',
+            'assets/companions/cat/focus_read_001.png',
+            'assets/companions/cat/focus_read_002.png',
           ],
           fps: 5,
           loopMode: SpriteLoopMode.pingPong,

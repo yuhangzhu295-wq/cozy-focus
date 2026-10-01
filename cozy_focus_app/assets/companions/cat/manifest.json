@@ -10,7 +10,9 @@
   "actions": {
     "focus_read": {
       "frames": [
-        "focus_read_000.png"
+        "focus_read_000.png",
+        "focus_read_001.png",
+        "focus_read_002.png"
       ],
       "fps": 5,
       "loopMode": "pingpong",
