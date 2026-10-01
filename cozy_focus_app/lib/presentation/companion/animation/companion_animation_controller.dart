@@ -1,24 +1,8 @@
 import 'animation_state.dart';
+import 'animation_state_machine.dart';
+import 'animation_state_machine_data.dart';
 import '../runtime/companion_pose.dart';
 import '../runtime/companion_presentation_intent.dart';
-
-/// What posture the character is in, and therefore which transitions are needed
-/// to get somewhere else.
-///
-/// Posture is the animation layer's own bookkeeping — it is not business state
-/// and not a pose. It exists so the controller can answer "do I need to sit down
-/// before I can write?" without asking the behaviour layer, which has no
-/// vocabulary for the question.
-enum AnimationPosture {
-  /// On all fours / standing. Reading, writing and crafting are not available.
-  standing,
-
-  /// At a desk or on a seat. The work states live here.
-  seated,
-
-  /// Lying down. Only sleep lives here.
-  lying;
-}
 
 /// One entry in the play queue: what to draw, and how long before it hands over.
 class _QueuedState {
@@ -71,14 +55,12 @@ class _QueuedState {
 /// sustained state behind it, so the companion can never be found looping its
 /// own sit-down.
 class CompanionAnimationController {
-  /// How long each transition holds before handing over.
+  /// The machine this controller consults.
   ///
-  /// These are the animation layer's own durations — a posture change is a
-  /// drawing concern, not a behaviour dwell — so they do not come from the
-  /// behaviour recipes. Stage 2 moves them into the state-machine manifest.
-  static const Duration sitDownDuration = Duration(milliseconds: 600);
-  static const Duration standUpDuration = Duration(milliseconds: 550);
-  static const Duration wakeUpDuration = Duration(milliseconds: 700);
+  /// Injected rather than read from a global so a test can supply a machine with
+  /// one hop removed and assert the companion simply does not make it. Defaults
+  /// to the shipped data.
+  final AnimationStateMachine machine;
 
   /// The animation drawn right now.
   AnimationState _current = AnimationState.idle;
@@ -95,7 +77,10 @@ class CompanionAnimationController {
   /// Time as of the last [advanceTo]. Monotonic in the caller's clock.
   Duration _now = Duration.zero;
 
-  CompanionAnimationController({CompanionPresentationIntent? intent}) {
+  CompanionAnimationController({
+    CompanionPresentationIntent? intent,
+    AnimationStateMachine? machine,
+  }) : machine = machine ?? AnimationStateMachineData.bundled {
     if (intent != null) setIntent(intent);
   }
 
@@ -166,7 +151,7 @@ class CompanionAnimationController {
       changed = true;
     }
     if (_queue.isNotEmpty) {
-      _posture = _postureOf(_queue.last.state);
+      _posture = machine.postureFor(_queue.last.state);
     }
     return changed;
   }
@@ -174,7 +159,7 @@ class CompanionAnimationController {
   /// Rebuilds the queue for a (possibly new) sustained target.
   void _replan(CompanionPresentationIntent intent) {
     final target = _sustainedTarget;
-    final targetPosture = _postureOf(target);
+    final targetPosture = machine.postureFor(target);
 
     // An overlay is brief and returns to what it covered, so it never triggers a
     // posture change: a companion that stands up to acknowledge a tap and then
@@ -186,7 +171,10 @@ class CompanionAnimationController {
       return;
     }
 
-    final entry = _entryTransition(from: _posture, to: targetPosture);
+    final entry = machine.transitionBetween(
+      from: _posture,
+      to: targetPosture,
+    );
     if (entry == null) {
       _queue = [_QueuedState(target, null)];
       _current = target;
@@ -194,7 +182,7 @@ class CompanionAnimationController {
       return;
     }
 
-    final entryEndsAt = _now + _durationOf(entry);
+    final entryEndsAt = _now + machine.durationOf(entry);
     _queue = [
       _QueuedState(entry, entryEndsAt),
       _QueuedState(target, null),
@@ -205,108 +193,10 @@ class CompanionAnimationController {
 
   /// The sustained animation a behaviour asks for.
   ///
-  /// A pure projection: input is the pose the director chose, output is one
-  /// animation state. No branch on a companion, a page or a level.
-  AnimationState _targetFor(CompanionPresentationIntent intent) {
-    switch (intent.pose) {
-      case CompanionPose.focusWrite:
-      case CompanionPose.finish:
-      case CompanionPose.roomWork:
-        return AnimationState.focusWrite;
-      case CompanionPose.focusRead:
-      case CompanionPose.roomRead:
-        return AnimationState.focusRead;
-      case CompanionPose.focusThink:
-        return AnimationState.focusThink;
-      case CompanionPose.craftWork:
-        return AnimationState.craftWork;
-      case CompanionPose.celebrate:
-        return AnimationState.happy;
-      case CompanionPose.sleep:
-      case CompanionPose.roomSleep:
-        return AnimationState.sleep;
-      case CompanionPose.tapReact:
-      case CompanionPose.petReact:
-      case CompanionPose.unlockReact:
-      case CompanionPose.greeting:
-        return AnimationState.interact;
-      case CompanionPose.idle:
-      case CompanionPose.prepare:
-      case CompanionPose.glance:
-      case CompanionPose.microRest:
-      case CompanionPose.rest:
-      case CompanionPose.roomSit:
-      case CompanionPose.roomRelax:
-        return AnimationState.idle;
-    }
-  }
-
-  /// Which posture an animation leaves the character in.
-  static AnimationPosture _postureOf(AnimationState state) {
-    switch (state) {
-      case AnimationState.focusWrite:
-      case AnimationState.focusRead:
-      case AnimationState.focusThink:
-      case AnimationState.craftWork:
-        return AnimationPosture.seated;
-      case AnimationState.sleep:
-        return AnimationPosture.lying;
-      case AnimationState.idle:
-      case AnimationState.happy:
-      case AnimationState.sad:
-      case AnimationState.interact:
-      case AnimationState.walk:
-      case AnimationState.sitDown:
-      case AnimationState.standUp:
-      case AnimationState.wakeUp:
-        return AnimationPosture.standing;
-    }
-  }
-
-  /// The transition needed to move between postures, or `null` when none is.
-  ///
-  /// Standing to standing and seated to seated are both already there. Lying to
-  /// seated goes through standing, which is what `wake_up` then `sit_down`
-  /// express; the controller queues only the first because the second is decided
-  /// once the first completes and the posture is known.
-  static AnimationState? _entryTransition({
-    required AnimationPosture from,
-    required AnimationPosture to,
-  }) {
-    if (from == to) return null;
-    switch (to) {
-      case AnimationPosture.seated:
-      case AnimationPosture.lying:
-        // Both destinations are reached by sitting: the character settles before
-        // it sleeps. Lying adds a sleep transition afterwards, which is planned
-        // once this one completes and the posture is settled.
-        return AnimationState.sitDown;
-      case AnimationPosture.standing:
-        return from == AnimationPosture.lying
-            ? AnimationState.wakeUp
-            : AnimationState.standUp;
-    }
-  }
-
-  static Duration _durationOf(AnimationState state) {
-    switch (state) {
-      case AnimationState.sitDown:
-        return sitDownDuration;
-      case AnimationState.standUp:
-        return standUpDuration;
-      case AnimationState.wakeUp:
-        return wakeUpDuration;
-      case AnimationState.idle:
-      case AnimationState.focusWrite:
-      case AnimationState.focusRead:
-      case AnimationState.focusThink:
-      case AnimationState.craftWork:
-      case AnimationState.sleep:
-      case AnimationState.happy:
-      case AnimationState.sad:
-      case AnimationState.interact:
-      case AnimationState.walk:
-        return Duration.zero;
-    }
-  }
+  /// Read from the machine's projection table rather than switched on here, so
+  /// adding a pose is a row in `animation_states.json` plus one in the mirror —
+  /// not a new `case`. A pose the machine does not list falls back to `idle`,
+  /// which is the one state every companion ships.
+  AnimationState _targetFor(CompanionPresentationIntent intent) =>
+      machine.projectionFor(intent.pose.id) ?? AnimationState.idle;
 }

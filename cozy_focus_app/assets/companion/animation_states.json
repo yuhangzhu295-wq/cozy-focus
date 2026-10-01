@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "note": "Authoring source for the companion animation state machine. The runtime reads a Dart mirror of this file (animation_state_machine_data.dart) so the first frame never waits on an asset load; animation_state_machine_parity_test.dart fails if the two drift. Adding a transition is a row here plus a row in the mirror - no controller edit.",
+  "postures": {
+    "standing": "On all fours or upright. The work states are not available here.",
+    "seated": "At a desk or on a seat. The work states live here.",
+    "lying": "Lying down. Only sleep lives here."
+  },
+  "postureOf": {
+    "idle": "standing",
+    "walk": "standing",
+    "sit_down": "standing",
+    "stand_up": "standing",
+    "wake_up": "standing",
+    "happy": "standing",
+    "sad": "standing",
+    "interact": "standing",
+    "focus_write": "seated",
+    "focus_read": "seated",
+    "focus_think": "seated",
+    "craft_work": "seated",
+    "sleep": "lying"
+  },
+  "transitionDurationsMs": {
+    "sit_down": 600,
+    "stand_up": 550,
+    "wake_up": 700
+  },
+  "entryTransitions": [
+    {
+      "from": "standing",
+      "to": "seated",
+      "state": "sit_down"
+    },
+    {
+      "from": "standing",
+      "to": "lying",
+      "state": "sit_down"
+    },
+    {
+      "from": "seated",
+      "to": "standing",
+      "state": "stand_up"
+    },
+    {
+      "from": "seated",
+      "to": "lying",
+      "state": "sit_down"
+    },
+    {
+      "from": "lying",
+      "to": "standing",
+      "state": "wake_up"
+    },
+    {
+      "from": "lying",
+      "to": "seated",
+      "state": "wake_up"
+    }
+  ],
+  "poseProjections": {
+    "idle": "idle",
+    "prepare": "idle",
+    "glance": "idle",
+    "micro_rest": "idle",
+    "pause_rest": "idle",
+    "room_sit": "idle",
+    "room_relax": "idle",
+    "focus_write": "focus_write",
+    "finish": "focus_write",
+    "room_work": "focus_write",
+    "focus_read": "focus_read",
+    "room_read": "focus_read",
+    "focus_think": "focus_think",
+    "craft_work": "craft_work",
+    "celebrate": "happy",
+    "sleep": "sleep",
+    "room_sleep": "sleep",
+    "tap_react": "interact",
+    "pet_react": "interact",
+    "greeting": "interact",
+    "unlock_react": "interact"
+  }
+}

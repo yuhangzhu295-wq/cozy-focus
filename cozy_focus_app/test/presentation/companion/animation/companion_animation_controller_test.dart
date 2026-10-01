@@ -1,4 +1,5 @@
 import 'package:cozy_focus_app/presentation/companion/animation/animation_state.dart';
+import 'package:cozy_focus_app/presentation/companion/animation/animation_state_machine.dart';
 import 'package:cozy_focus_app/presentation/companion/animation/companion_animation_controller.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_context.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
@@ -175,8 +176,7 @@ void main() {
       expect(controller.currentState, AnimationState.sitDown);
 
       // The same behaviour re-pushed — what an unrelated rebuild looks like.
-      final changed =
-          controller.setIntent(intentFor(CompanionPose.focusWrite));
+      final changed = controller.setIntent(intentFor(CompanionPose.focusWrite));
       expect(changed, isFalse);
       expect(controller.currentState, AnimationState.sitDown,
           reason: 'a rebuild must not restart the transition');

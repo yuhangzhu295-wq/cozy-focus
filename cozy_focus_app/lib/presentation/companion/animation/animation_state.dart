@@ -24,38 +24,45 @@
 enum AnimationState {
   // --- Sustained states ----------------------------------------------------
   /// Breathing in place. Multi-frame; a single PNG is not an idle loop.
-  idle('idle'),
+  idle('idle', 'idle'),
 
-  focusWrite('focus_write'),
-  focusRead('focus_read'),
-  focusThink('focus_think'),
+  focusWrite('focus_write', 'focus_write'),
+  focusRead('focus_read', 'focus_read'),
+  focusThink('focus_think', 'focus_think'),
 
   /// Making something at the desk.
-  craftWork('craft_work'),
+  craftWork('craft_work', 'craft_work'),
 
-  sleep('sleep'),
+  sleep('sleep', 'sleep'),
 
   /// The sustained state of the `celebrate` behaviour.
-  happy('celebrate'),
+  happy('happy', 'celebrate'),
 
   /// The sustained state of a low-mood beat.
-  sad('sad'),
+  sad('sad', 'sad'),
 
   /// Responding to a tap or a stroke.
-  interact('interact'),
+  interact('interact', 'interact'),
 
   // --- Transitional states -------------------------------------------------
   /// Travelling across the room. Driven by locomotion, never by a tween.
-  walk('walk'),
+  walk('walk', 'walk'),
 
   /// Standing to seated.
-  sitDown('sit_down'),
+  sitDown('sit_down', 'sit_down'),
 
   /// Seated to standing.
-  standUp('stand_up'),
+  standUp('stand_up', 'stand_up'),
 
   /// Sleeping to awake.
-  wakeUp('wake_up');
+  wakeUp('wake_up', 'wake_up');
+
+  /// The state's own wire id, matching `animation_states.json`.
+  ///
+  /// Distinct from [assetActionId]: the two differ for `happy`, whose frames
+  /// were authored as `celebrate`. Parsing on the asset id would make the state
+  /// unaddressable by its own name.
+  final String id;
 
   /// The sprite-action id this state draws.
   ///
@@ -65,7 +72,7 @@ enum AnimationState {
   /// here rather than a lookup scattered through the renderers.
   final String assetActionId;
 
-  const AnimationState(this.assetActionId);
+  const AnimationState(this.id, this.assetActionId);
 
   /// Whether this state is a transition into a sustained state.
   ///
@@ -83,10 +90,14 @@ enum AnimationState {
   /// all, which reads as a glitch rather than as a decision.
   bool get isInterruptible => !isTransitional;
 
+  /// Parses the state's own wire id, not its asset action id.
+  ///
+  /// `happy` is addressed as `happy` in the manifest even though it draws the
+  /// `celebrate` frames; parsing on the asset id would make the two collide.
   static AnimationState? fromId(String? id) {
     if (id == null) return null;
     for (final state in AnimationState.values) {
-      if (state.assetActionId == id) return state;
+      if (state.id == id) return state;
     }
     return null;
   }
