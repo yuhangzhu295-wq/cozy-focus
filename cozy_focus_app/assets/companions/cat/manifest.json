@@ -22,6 +22,22 @@
         0
       ]
     },
+    "focus_think": {
+      "frames": [
+        "focus_think_000.png",
+        "focus_think_001.png",
+        "focus_think_002.png"
+      ],
+      "fps": 4,
+      "loopMode": "pingpong",
+      "targetFrameCount": 3,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "idle": {
       "frames": [
         "idle_000.png"

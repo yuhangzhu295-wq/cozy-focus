@@ -172,6 +172,7 @@ void main() {
       const catPosesWithArt = {
         CompanionPose.idle,
         CompanionPose.focusRead,
+        CompanionPose.focusThink,
       };
 
       for (final id in CompanionManifestData.profiles.keys) {
