@@ -5,11 +5,15 @@ import '../../domain/models/craft_models.dart';
 import '../../domain/models/enums.dart';
 import '../companion/companion_avatar.dart';
 import '../companion/companion_selection.dart';
-import '../companion/room_interaction.dart';
-import '../companion/runtime/companion_catalog.dart';
 import '../companion/mochi_layered_renderer.dart';
 import '../companion/room_presence.dart';
+import '../companion/room/anchor_point.dart';
+import '../companion/room/companion_placement.dart';
+import '../companion/room/furniture_catalog.dart';
+import '../companion/room/furniture_use_panel.dart';
+import '../companion/room/room_simulation.dart';
 import '../controllers/craft_controller.dart';
+import '../controllers/focus_session_controller.dart';
 import '../theme/app_theme.dart';
 import '../../core/geometry/room_geometry.dart';
 import '../widgets/cozy_furniture_artwork.dart';
@@ -39,17 +43,83 @@ class _RoomPageState extends ConsumerState<RoomPage> {
   String? _selectedRoomItemId;
   bool _showInventoryPanel = false;
 
+  /// The furniture the player asked the companion to use, awaiting their
+  /// choice of action.
+  ///
+  /// Held in UI state rather than in the simulation: the panel is a question,
+  /// and a question is not part of the companion's state.
+  RoomItem? _useTarget;
+
+  /// The anchor the companion was last drawn at.
+  ///
+  /// Used to animate only genuine travel: the first placement snaps, and a
+  /// change of anchor moves.
+  String? _lastAnchorId;
+
+  /// Whether the room's real placement has been loaded at least once.
+  ///
+  /// The companion is not drawn before this. `CraftState` starts with
+  /// `isLoading == false` and empty lists, so without the flag the first frame
+  /// would place the companion on the *floor* and the next would animate it
+  /// across the room to the seat the player actually owns — a slide that looks
+  /// like a bug and that leaves the settled position unreadable.
+  bool _dataReady = false;
+
+  RoomSimulationController? get _sim => _simulator;
+
+  /// The simulation loop this page started.
+  ///
+  /// Held directly rather than looked up through `ref` in [dispose]. A test may
+  /// dispose the provider container before the widget tree is finalized, and
+  /// `ref.read` on a disposed container throws — which would leave the timer
+  /// running and fail teardown with "A Timer is still pending". Capturing the
+  /// instance means teardown never depends on the container still being alive.
+  RoomSimulationController? _simulator;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-        () => ref.read(craftControllerProvider.notifier).loadAll());
+    _simulator = ref.read(roomSimulationProvider.notifier);
+    Future.microtask(() async {
+      await ref.read(craftControllerProvider.notifier).loadAll();
+      // Once the real placement is known, give the companion a chance to
+      // decide rather than waiting up to a tick to look alive.
+      if (!mounted) return;
+      _sim?.evaluateNow();
+      setState(() => _dataReady = true);
+    });
+    // The loop starts here rather than in the provider so it is bounded by the
+    // page that shows it: a room nobody is looking at does not need to tick, and
+    // a test that unmounts the page has nothing left running.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _simulator?.start();
+    });
+  }
+
+  @override
+  void dispose() {
+    // Stopping here is what makes teardown clean: a periodic timer that outlives
+    // the widget tree fails the test framework's own invariant.
+    _simulator?.stop();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final companionName = ref.watch(companionDisplayNameProvider);
     final craft = ref.watch(craftControllerProvider);
+    final simulation = ref.watch(roomSimulationProvider);
+    final session = ref.watch(focusSessionControllerProvider);
+    final isPaused = session.session?.status == FocusSessionStatus.paused;
+
+    // A paused session is the brief's *break*: the companion heads for the sofa
+    // instead of continuing to work. The room reads the same session truth the
+    // focus page does, and pushing it in after the frame avoids a
+    // rebuild-during-build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _sim?.setFocusPaused(isPaused);
+    });
 
     return Scaffold(
       backgroundColor: AppColors.backgroundWarm,
@@ -87,8 +157,7 @@ class _RoomPageState extends ConsumerState<RoomPage> {
           : Column(
               children: [
                 const GrowthSubNav(active: GrowthSection.room),
-                // Room canvas — fills available space; LayoutBuilder provides
-                // real canvas dimensions for normalised coordinate mapping.
+                CompanionVitalsBar(simulation: simulation),
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
@@ -115,23 +184,52 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                                       _selectedRoomItemId == item.id
                                           ? null
                                           : item.id;
+                                  _useTarget = item;
                                 });
                               },
-                              // Called once on drag-end with final normalised coords.
                               onMoveEnd: (nx, ny) async {
                                 await ref
                                     .read(craftControllerProvider.notifier)
                                     .moveRoomItem(item.id, nx, ny);
+                                // The anchors move with their furniture, so the
+                                // companion re-decides against the new layout
+                                // rather than standing where the item used to be.
+                                if (mounted) _sim?.evaluateNow();
                               },
                             );
                           }),
-                          // Mochi itself, standing where the real placement
-                          // truth says it should. Drawn above the furniture so
-                          // it is visibly *on* its seat, and below the toolbar
-                          // so the delete affordance stays reachable.
-                          _buildMochi(craft, canvasWidth, canvasHeight,
-                              catalog: ref.watch(companionCatalogProvider)),
-                          if (_selectedRoomItemId != null)
+                          if (_dataReady)
+                            _buildCompanion(
+                              craft: craft,
+                              simulation: simulation,
+                              canvasWidth: canvasWidth,
+                              canvasHeight: canvasHeight,
+                            ),
+                          if (_useTarget != null)
+                            Positioned(
+                              left: 12,
+                              right: 12,
+                              bottom: 12,
+                              child: FurnitureUsePanel(
+                                roomItem: _useTarget!,
+                                label: _labelFor(craft, _useTarget!),
+                                unlocked: _owns(craft, _useTarget!.itemId),
+                                onDismiss: () =>
+                                    setState(() => _useTarget = null),
+                                onUse: (action) {
+                                  _sim?.requestAction(
+                                    itemId: _useTarget!.itemId,
+                                    actionId: action.id,
+                                    roomItemId: _useTarget!.id,
+                                  );
+                                  setState(() {
+                                    _useTarget = null;
+                                    _selectedRoomItemId = null;
+                                  });
+                                },
+                              ),
+                            ),
+                          if (_selectedRoomItemId != null && _useTarget == null)
                             Positioned(
                               top: 12,
                               right: 12,
@@ -140,6 +238,7 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                                   await ref
                                       .read(craftControllerProvider.notifier)
                                       .removeRoomItem(_selectedRoomItemId!);
+                                  if (mounted) _sim?.evaluateNow();
                                   setState(() => _selectedRoomItemId = null);
                                 },
                                 onDeselect: () =>
@@ -176,7 +275,6 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                     },
                   ),
                 ),
-
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   height: _showInventoryPanel ? 220 : 0,
@@ -190,12 +288,15 @@ class _RoomPageState extends ConsumerState<RoomPage> {
                             await ref
                                 .read(craftControllerProvider.notifier)
                                 .placeItem(recipe.outputItemId, x, y);
+                            // New furniture means a new anchor and possibly a
+                            // new behaviour, which is the acceptance test
+                            // *unlock changes gameplay*.
+                            if (mounted) _sim?.evaluateNow();
                             setState(() => _showInventoryPanel = false);
                           },
                         )
                       : const SizedBox.shrink(),
                 ),
-
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -236,93 +337,100 @@ class _RoomPageState extends ConsumerState<RoomPage> {
     );
   }
 
-  /// Places Mochi in the room, on a seat resolved from real data.
-  ///
-  /// The seat is not a decoration: [PetRoomPresenceResolver] reads the same
-  /// `room_items` rows the canvas draws and the same `inventory` rows the
-  /// placement panel counts, and only reports a seat when the item is both
-  /// **owned** and **placed**. When nothing qualifies Mochi stands on the floor,
-  /// so an empty room still shows Mochi in it.
-  ///
-  /// Two deliberate choices:
-  ///
-  /// * The avatar is behind an [IgnorePointer]. Mochi sits *on* furniture, so it
-  ///   necessarily overlaps the one item the user may want to tap to move or
-  ///   delete. Letting Mochi swallow that tap would make the seat it is sitting
-  ///   on impossible to select — a worse bug than a pet that does not respond
-  ///   while you are decorating. This is the same structural reasoning that puts
-  ///   the speech bubble behind an `IgnorePointer` on the focus screen.
-  /// * The state is pinned to [PetVisualState.idle]. The room is where Mochi
-  ///   rests; the craft presentation belongs to the screens that show the job.
-  ///   V4.1's room reference (`09_房间.png`) shows Mochi lying down reading, not
-  ///   hammering, which is what `idle` is for.
-  Widget _buildMochi(CraftState craft, double canvasWidth, double canvasHeight,
-      {required CompanionCatalog catalog}) {
-    // Which furniture the companion may use comes from the recipe catalog, not
-    // from a list in this page: the recipes declare `owned && placed && visible`,
-    // so a page cannot forget one of the three conditions.
-    final target = RoomInteractionResolver.resolve(
-      catalog: catalog,
-      placed: craft.roomItems,
-      owned: craft.inventory,
-    );
+  /// Whether the player owns [itemId].
+  static bool _owns(CraftState craft, String itemId) {
+    for (final item in craft.inventory) {
+      if (item.itemId == itemId && item.quantity > 0) return true;
+    }
+    return false;
+  }
 
-    final presence = PetRoomPresenceResolver.resolve(
-      placed: craft.roomItems,
-      owned: craft.inventory,
-      eligibleItemIds: RoomInteractionResolver.eligibleItemIds(catalog),
-    );
+  /// The player-facing name of a placed item.
+  static String _labelFor(CraftState craft, RoomItem item) {
+    for (final recipe in craft.recipes) {
+      if (recipe.outputItemId == item.itemId) return recipe.name;
+    }
+    return FurnitureCatalog.forId(item.itemId)?.label ?? item.itemId;
+  }
+
+  /// Places the companion where the simulation says it is.
+  ///
+  /// The position is not "the topmost seat" any more: it is wherever the chosen
+  /// action happens, which the simulation decided from vitals, time, placement
+  /// and the player's request. This widget only turns that anchor into pixels.
+  Widget _buildCompanion({
+    required CraftState craft,
+    required RoomSimulationState simulation,
+    required double canvasWidth,
+    required double canvasHeight,
+  }) {
+    final anchors = _anchorsFor(craft);
+    final anchor =
+        _anchorFor(anchors, simulation.activity.anchorId) ?? floorAnchor;
 
     const size = 92.0;
-
-    // The resolved point is the *seat item's anchor*, which the canvas treats as
-    // the item's centre — not the surface Mochi's feet rest on. Two measured
-    // corrections turn it into a feet position; see [PetSeatPlacement].
-    final seat = _seatItemFor(craft, presence.seatItemId);
-    final feetY = PetSeatPlacement.feetY(
-      seatAnchorY: presence.y * canvasHeight,
-      seatRenderedSize: seat == null ? 0.0 : _kFurnitureItemSize * seat.scale,
-      seatSurfaceFraction: seat == null
-          ? PetRoomPresenceResolver.defaultSeatSurfaceFraction
-          : PetRoomPresenceResolver.seatSurfaceFraction(seat.itemId),
+    final box = CompanionPlacement.boxFor(
+      anchor: anchor,
+      canvasWidth: canvasWidth,
+      canvasHeight: canvasHeight,
+      avatarSize: size,
+      feetInsetFraction: MochiLayerAssets.feetInsetFraction,
     );
 
-    return Positioned(
-      left: presence.x * canvasWidth - size / 2,
-      // The avatar's box is square and the character is centred inside it, so
-      // the box's bottom edge is *below* the paws. Anchoring by that edge is
-      // what "put the pet on the sofa" naturally reads as, and it leaves Mochi
-      // hovering ~15 pt above the cushions.
-      top: PetSeatPlacement.boxTop(
-        feetY: feetY,
-        avatarSize: size,
-        feetInsetFraction: MochiLayerAssets.feetInsetFraction,
-      ),
+    // Animated so travelling between anchors is visible as movement rather than
+    // as a jump — the brief asks for the companion to *walk* to the desk, not to
+    // teleport.
+    //
+    // Only an anchor *change* animates. The first time the companion is placed
+    // there is nowhere to travel from, and animating that first step would slide
+    // it across the room whenever the page opened — and would also make the
+    // settled position unreadable until the animation finished.
+    final previousAnchorId = _lastAnchorId;
+    _lastAnchorId = anchor.id;
+    final isTravelling =
+        previousAnchorId != null && previousAnchorId != anchor.id;
+
+    return AnimatedPositioned(
+      duration:
+          isTravelling ? const Duration(milliseconds: 700) : Duration.zero,
+      curve: Curves.easeInOut,
+      left: box.left,
+      top: box.top,
       child: IgnorePointer(
         child: CompanionAvatar(
           size: size,
-          // The anchor drives the behaviour: seat → roomSit, lie → roomSleep,
-          // front → roomRead, work → roomWork. A companion on the floor gets no
-          // anchor and falls back to the room's ambient behaviour.
-          roomAnchor: target?.anchor,
+          // The anchor's role picks the posture the sprite pipeline presents;
+          // the simulation chose *which* anchor, so the two cannot disagree.
+          roomAnchor: _anchorRoleFor(anchor.itemId),
           showStateBadge: false,
         ),
       ),
     );
   }
 
-  /// The placed row [seatItemId] came from, or `null` when Mochi is on the
-  /// floor.
-  ///
-  /// [PetRoomPresenceResolver] deliberately returns only the id, so the one
-  /// thing the geometry still needs — the item's `scale` — is looked up here
-  /// rather than duplicated into [PetRoomPresence].
-  static RoomItem? _seatItemFor(CraftState craft, String? seatItemId) {
-    if (seatItemId == null) return null;
-    for (final item in craft.roomItems) {
-      if (item.itemId == seatItemId) return item;
+  static Map<String, AnchorPoint> _anchorsFor(CraftState craft) =>
+      FurnitureAnchorRegistry.build(
+        placed: craft.roomItems,
+        owned: craft.inventory,
+        eligibleItemIds: FurnitureCatalog.itemIds,
+        surfaceFractionFor: PetRoomPresenceResolver.seatSurfaceFraction,
+      );
+
+  static AnchorPoint? _anchorFor(
+    Map<String, AnchorPoint> anchors,
+    String anchorId,
+  ) {
+    for (final anchor in anchors.values) {
+      if (anchor.id == anchorId) return anchor;
     }
     return null;
+  }
+
+  /// The interaction-point role an item declares, for the renderer's posture.
+  static String? _anchorRoleFor(String itemId) {
+    final entity = FurnitureCatalog.forId(itemId);
+    if (entity == null || entity.interactionPoints.isEmpty) return null;
+    return entity.interactionPoints.first;
   }
 
   Widget _buildRoomBackground() {

@@ -147,7 +147,15 @@ void main() {
 
       // The renderer's state enum has no "in the room" value, so without the
       // override a companion sitting in its room would be announced as idle.
-      expect(find.bySemanticsLabel(RegExp('在房间')), findsOneWidget);
+      //
+      // `findsWidgets` rather than `findsOneWidget`: the outer `Semantics` and
+      // the `GestureDetector`'s internal gesture node both resolve to the same
+      // label, and whether the second materialises depends on whether a
+      // semantics handle was already enabled earlier in the suite. Counting
+      // widgets therefore made this test pass alone and fail in a full run. The
+      // invariant actually under test is *presence of the room wording and
+      // absence of the idle wording*, which is what is asserted here.
+      expect(find.bySemanticsLabel(RegExp('在房间')), findsWidgets);
       expect(find.bySemanticsLabel(RegExp('空闲')), findsNothing);
     });
 

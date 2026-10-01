@@ -650,7 +650,17 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(_renderedState(tester), PetVisualState.idle);
+      // The invariant is that nothing running means no *work* presentation.
+      // It is not literally `idle`: late at night the ambient modifier
+      // legitimately adds a sleeping beat to the home pool, so a strict
+      // `idle` assertion makes this test depend on the wall clock and fail
+      // whenever the suite happens to run after 23:00.
+      expect(
+        _renderedState(tester),
+        anyOf(PetVisualState.idle, PetVisualState.sleep),
+      );
+      expect(_renderedState(tester), isNot(PetVisualState.focus));
+      expect(_renderedState(tester), isNot(PetVisualState.craft));
     });
 
     testWidgets('CompanionAvatar follows the business state it is given',
