@@ -205,6 +205,9 @@ abstract final class CompanionActionManifestData {
           frames: [
             'assets/companions/cat/celebrate_000.png',
             'assets/companions/cat/celebrate_001.png',
+            'assets/companions/cat/celebrate_002.png',
+            'assets/companions/cat/celebrate_003.png',
+            'assets/companions/cat/celebrate_004.png',
           ],
           fps: 8,
           loopMode: SpriteLoopMode.once,

@@ -11,7 +11,10 @@
     "celebrate": {
       "frames": [
         "celebrate_000.png",
-        "celebrate_001.png"
+        "celebrate_001.png",
+        "celebrate_002.png",
+        "celebrate_003.png",
+        "celebrate_004.png"
       ],
       "fps": 8,
       "loopMode": "once",
