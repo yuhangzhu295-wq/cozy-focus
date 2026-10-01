@@ -200,6 +200,18 @@ abstract final class CompanionActionManifestData {
       groundBaseline: 919,
       centerAnchor: 511,
       actions: {
+        'celebrate': CompanionActionSpec(
+          actionId: 'celebrate',
+          frames: [
+            'assets/companions/cat/celebrate_000.png',
+            'assets/companions/cat/celebrate_001.png',
+          ],
+          fps: 8,
+          loopMode: SpriteLoopMode.once,
+          interruptible: false,
+          reducedMotionFrames: [0],
+          targetFrameCount: 5,
+        ),
         'focus_read': CompanionActionSpec(
           actionId: 'focus_read',
           frames: [
@@ -236,6 +248,18 @@ abstract final class CompanionActionManifestData {
           interruptible: true,
           reducedMotionFrames: [0],
           targetFrameCount: 1,
+        ),
+        'pause_rest': CompanionActionSpec(
+          actionId: 'pause_rest',
+          frames: [
+            'assets/companions/cat/pause_rest_000.png',
+            'assets/companions/cat/pause_rest_001.png',
+          ],
+          fps: 3,
+          loopMode: SpriteLoopMode.pingPong,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 2,
         ),
       },
       semanticFallback: {

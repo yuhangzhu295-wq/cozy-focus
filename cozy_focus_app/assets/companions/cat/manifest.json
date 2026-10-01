@@ -8,6 +8,21 @@
   "groundBaseline": 919,
   "centerAnchor": 511,
   "actions": {
+    "celebrate": {
+      "frames": [
+        "celebrate_000.png",
+        "celebrate_001.png"
+      ],
+      "fps": 8,
+      "loopMode": "once",
+      "targetFrameCount": 5,
+      "interruptible": false,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "focus_read": {
       "frames": [
         "focus_read_000.png",
@@ -47,6 +62,21 @@
       "fps": 5,
       "loopMode": "loop",
       "targetFrameCount": 1,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "pause_rest": {
+      "frames": [
+        "pause_rest_000.png",
+        "pause_rest_001.png"
+      ],
+      "fps": 3,
+      "loopMode": "pingpong",
+      "targetFrameCount": 2,
       "interruptible": true,
       "overlayBehavior": "pause",
       "returnBehavior": "resume",

@@ -173,6 +173,8 @@ void main() {
         CompanionPose.idle,
         CompanionPose.focusRead,
         CompanionPose.focusThink,
+        CompanionPose.rest,
+        CompanionPose.celebrate,
       };
 
       for (final id in CompanionManifestData.profiles.keys) {
