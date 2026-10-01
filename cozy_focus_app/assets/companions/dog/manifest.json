@@ -98,7 +98,7 @@
       ],
       "fps": 5,
       "loopMode": "loop",
-      "targetFrameCount": 1,
+      "targetFrameCount": 6,
       "interruptible": true,
       "overlayBehavior": "pause",
       "returnBehavior": "resume",

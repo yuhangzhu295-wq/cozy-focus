@@ -70,6 +70,12 @@ class CompanionActionSpec {
   final List<int> reducedMotionFrames;
 
   /// The frame count the production brief targets for this action.
+  ///
+  /// This is **production intent**, declared by the asset brief — never a
+  /// transcription of how many frames happen to exist on disk. Every action once
+  /// declared a target equal to its actual frame count, which made [isComplete]
+  /// a tautology that could only return `true`: the asset gate then reported
+  /// `ACTIONS_PENDING_FRAMES: none` while `idle` shipped a single frame.
   final int targetFrameCount;
 
   const CompanionActionSpec({
@@ -86,8 +92,30 @@ class CompanionActionSpec {
 
   int get frameCount => frames.length;
 
+  /// The fewest frames a sequence needs before it is an animation at all.
+  ///
+  /// One frame is a still image. V4.3 Phase 3 forbids single-PNG loops, so a
+  /// one-frame sequence is a *placeholder* — real art that still draws — and
+  /// never a completed action.
+  static const int minimumViableFrames = 2;
+
+  /// The target a sequence must reach, never below the viability floor.
+  ///
+  /// Taking the larger of the declared target and [minimumViableFrames] is what
+  /// stops the gate from being silenced again by declaring
+  /// `targetFrameCount: 1` next to a single frame. A declaration cannot lower
+  /// the bar; it can only raise it.
+  int get effectiveTargetFrameCount => targetFrameCount < minimumViableFrames
+      ? minimumViableFrames
+      : targetFrameCount;
+
   /// Whether this action has every frame the brief asks for.
-  bool get isComplete => frames.length >= targetFrameCount;
+  bool get isComplete => frames.length >= effectiveTargetFrameCount;
+
+  /// Whether the sequence is long enough to read as motion rather than as a
+  /// still. Distinct from [isComplete]: a 2-frame `celebrate` moves but is far
+  /// short of the 5 the brief asks for.
+  bool get isAnimatable => frames.length >= minimumViableFrames;
 
   /// The frame to hold when motion is reduced.
   String? get reducedMotionFrame {

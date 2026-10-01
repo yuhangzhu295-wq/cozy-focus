@@ -109,7 +109,7 @@ abstract final class CompanionActionManifestData {
           loopMode: SpriteLoopMode.loop,
           interruptible: true,
           reducedMotionFrames: [0],
-          targetFrameCount: 1,
+          targetFrameCount: 6,
         ),
         'pause_rest': CompanionActionSpec(
           actionId: 'pause_rest',
@@ -250,7 +250,7 @@ abstract final class CompanionActionManifestData {
           loopMode: SpriteLoopMode.loop,
           interruptible: true,
           reducedMotionFrames: [0],
-          targetFrameCount: 1,
+          targetFrameCount: 6,
         ),
         'pause_rest': CompanionActionSpec(
           actionId: 'pause_rest',

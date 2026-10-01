@@ -1,3 +1,4 @@
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_manifest.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_manifest_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,10 +25,23 @@ void main() {
         final manifest = CompanionActionManifestData.forCompanion(companion)!;
         for (final entry in manifest.actions.entries) {
           final spec = entry.value;
+          // Asserted against the *effective* target, not the declared one.
+          // The old form re-implemented `isComplete` in the test, so it passed
+          // even when the declared target had been slaved to the frame count —
+          // which is how a one-frame `idle` reported itself complete.
           expect(
             spec.isComplete,
-            spec.frames.length >= spec.targetFrameCount,
+            spec.frames.length >= spec.effectiveTargetFrameCount,
             reason: '$companion/${entry.key} completeness must be computed',
+          );
+
+          // The floor is the structural guard: no declaration may lower the bar
+          // below a real animation. This is what stops the gate being silenced
+          // again by writing `targetFrameCount: 1` beside a single frame.
+          expect(
+            spec.effectiveTargetFrameCount,
+            greaterThanOrEqualTo(CompanionActionSpec.minimumViableFrames),
+            reason: '$companion/${entry.key} target dropped below the floor',
           );
 
           if (!spec.isComplete) {
@@ -50,6 +64,31 @@ void main() {
             // ignore: avoid_print
             print('INCOMPLETE $companion: ${manifest.incompleteActions}');
           }
+        }
+      }
+    });
+
+    test('a target is production intent, not a transcription of the disk', () {
+      // The failure this catches is silent and self-sealing: if every action
+      // declares a target equal to its frame count, `isComplete` is true
+      // everywhere and the gate prints `none` while the pack is unfinished.
+      //
+      // A short action is real art and is allowed to ship. What is not allowed
+      // is *declaring* it finished, so the check is per-action rather than a
+      // whole-pack count: it fails on the action that was transcribed, and
+      // stays green on the ones the brief genuinely targets.
+      for (final companion in shipped) {
+        final manifest = CompanionActionManifestData.forCompanion(companion)!;
+        for (final entry in manifest.actions.entries) {
+          final spec = entry.value;
+          expect(
+            spec.targetFrameCount > 1 || spec.frames.length > 1,
+            isTrue,
+            reason:
+                '$companion/${entry.key} declares a ${spec.targetFrameCount}'
+                '-frame target beside ${spec.frames.length} frame(s): the target '
+                'was transcribed from the disk instead of from the asset brief',
+          );
         }
       }
     });

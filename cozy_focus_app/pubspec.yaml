@@ -61,5 +61,9 @@ flutter:
     - assets/sounds/
     - assets/mochi/base/
     - assets/companion/
+    # One entry per companion sprite pack: Flutter does not recurse into
+    # subdirectories, so a pack added under assets/companions/ is invisible to
+    # the bundle until it is named here. See docs/companion_assets.md.
     - assets/companions/dog/
+    - assets/companions/cat/
 
