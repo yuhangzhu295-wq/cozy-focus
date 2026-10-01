@@ -300,6 +300,21 @@ void main() {
       expect(FurnitureCatalog.forId('wall_painting'), isNull);
       expect(FurnitureCatalog.forId(''), isNull);
     });
+    test('action labels read cleanly under the prefix', () {
+      // The affordance renders '让 Mochi ${action.label}'. A label that already
+      // names the companion produced '让 Mochi 让 Mochi 休息' on the device —
+      // a real bug that shipped to the emulator before it was caught here.
+      for (final entity in FurnitureCatalog.entities.values) {
+        for (final action in entity.actions) {
+          expect(action.label.contains('Mochi'), isFalse,
+              reason: '${entity.id}/${action.id} duplicates the subject');
+          expect(action.label.contains('让'), isFalse,
+              reason: '${entity.id}/${action.id} duplicates the verb');
+          expect(action.label.trim(), action.label,
+              reason: '${entity.id}/${action.id} has stray whitespace');
+        }
+      }
+    });
   });
 
   group('the vitals stay in range', () {

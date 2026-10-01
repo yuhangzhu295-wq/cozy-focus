@@ -65,7 +65,7 @@ abstract final class FurnitureCatalog {
       ),
       FurnitureAction(
         id: 'rest',
-        label: '让 Mochi 休息',
+        label: '休息',
         companionAction: 'pause_rest',
         triggers: [FurnitureTrigger.playerTap, FurnitureTrigger.energyLow],
         effect: FurnitureEffect(energy: 10, mood: 5),
@@ -106,7 +106,7 @@ abstract final class FurnitureCatalog {
       ),
       FurnitureAction(
         id: 'study',
-        label: '让 Mochi 学习',
+        label: '学习',
         companionAction: 'focus_think',
         triggers: [FurnitureTrigger.focusRunning, FurnitureTrigger.playerTap],
         effect: FurnitureEffect(focus: 10, energy: -4),
@@ -135,7 +135,7 @@ abstract final class FurnitureCatalog {
     actions: [
       FurnitureAction(
         id: 'read',
-        label: '让 Mochi 看书',
+        label: '看书',
         companionAction: 'focus_read',
         triggers: [FurnitureTrigger.playerTap, FurnitureTrigger.idle],
         effect: FurnitureEffect(
@@ -173,7 +173,7 @@ abstract final class FurnitureCatalog {
     actions: [
       FurnitureAction(
         id: 'sleep',
-        label: '让 Mochi 睡觉',
+        label: '睡觉',
         companionAction: 'sleep',
         triggers: [
           FurnitureTrigger.night,
