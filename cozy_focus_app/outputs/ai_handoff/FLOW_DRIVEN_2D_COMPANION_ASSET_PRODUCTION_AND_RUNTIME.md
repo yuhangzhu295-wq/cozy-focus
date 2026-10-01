@@ -64,8 +64,8 @@ carry scene background and UI text by construction.
 
 | Companion | Actions | Frames |
 |---|---|---|
-| dog | all ten requested actions | 28 |
-| cat | `idle` (1), `focus_read` (1) | 2 |
+| dog | all ten requested actions | 30 |
+| cat | `idle` (1), `focus_read` (3), `focus_think` (3) | 7 |
 | rabbit | — | 0 |
 
 Every frame is a normalised 1024x1024 transparent PNG sharing one ground baseline
@@ -85,18 +85,23 @@ produced, because no visual evidence showed it was needed.
 
 ## 3. Honest status
 
-**The dog pack is complete and the cat is started; the rabbit has no art.** All
-ten requested dog actions ship as production sequences, and the cat has its
-approved master plus two frames. Every pose a pack does not cover still falls
+**The dog pack is complete, the cat is a third done, and the rabbit has no art.**
+All ten requested dog actions ship as production sequences at full frame count,
+and the cat ships three of its ten with all of their frames. Every pose a pack does not cover still falls
 through to that companion own art rather than borrowing another companion frames.
 
-The cat is the harder case and is worth recording. Its master came out correctly
-on the first attempt, but its second reading frame would not hold the book
-colour: three attempts returned a blue cover against the reference warm brown.
-Fur, pose and identity all held; only the prop drifted. Because the frame plays
-between two brown-book frames at 5 fps, shipping it would read as a flash, which
-the acceptance criteria forbid, so it is recorded as a reject instead of shipped
-as a compromise.
+The cat was the harder case and is worth recording. Its master came out correctly
+on the first attempt, and prop-free actions were straightforward, but the reading
+sequence would not hold the book colour: three attempts all returned a blue cover
+against the reference warm brown, with fur, pose and identity correct and only the
+prop drifting.
+
+The fix was to stop regenerating the pose. The approved first frame is attached
+as the edit base and only the eye movement is requested. Regenerating gave the
+model freedom to reinterpret the prop and it took that freedom every time; editing
+the finished frame with an explicit do-not-change list keeps the book, the palette
+and the canvas fixed. The two attempts that failed before the technique changed
+are recorded as rejects.
 
 **Why, and why it was not worked around.** Flow's generation path became
 unavailable part-way through the session: the agent chat panel failed every request
@@ -178,11 +183,11 @@ CAT_MASTER:    PASS
 RABBIT_MASTER: FAIL  (not produced)
 
 DOG_ACTIONS_READY:    10/10
-CAT_ACTIONS_READY:    2/10   (idle, focus_read)
+CAT_ACTIONS_READY:    3/10   (idle, focus_read, focus_think)
 RABBIT_ACTIONS_READY: 0/10
 
-DOG_FRAME_COUNT:    28
-CAT_FRAME_COUNT:    2
+DOG_FRAME_COUNT:    30
+CAT_FRAME_COUNT:    7
 RABBIT_FRAME_COUNT: 0
 
 ALPHA_VALIDATION:  PASS
