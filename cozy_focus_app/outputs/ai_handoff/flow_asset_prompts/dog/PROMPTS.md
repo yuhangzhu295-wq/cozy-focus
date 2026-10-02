@@ -427,3 +427,38 @@ refused across two quiet periods, so the batch is not yet correct in the pack.
 **It is deliberately not shipped.** A four-frame "sit down" that cuts straight to
 seated is the same class of defect as a single-frame idle: it passes every
 mechanical gate and still looks wrong.
+
+### sit_down: the midpoint cannot be generated from either endpoint
+
+Three attempts at `sit_down_001`, each with a different reference and a different
+strength of wording:
+
+| ingredient | wording | resulting aspect | reading |
+|---|---|---|---|
+| seated master | "lowering... clearly not yet seated" | 1.050 | fully seated |
+| standing ref | "still mostly upright, only the first hint of a fold" | 0.780 | fully standing |
+| standing ref | "already dropped well below standing height, haunches close to the ground" | 1.246 | neither - wider than seated, IoU 0.463 to standing |
+
+The seated reference produces seated. The standing reference with cautious
+wording produces standing. The standing reference with forceful wording produces
+a distorted pose that is wider than either endpoint.
+
+**The reference determines the pose and the prompt only moves it off that pose in
+a different direction; it does not interpolate between the two.** That is why
+`stand_up` worked - its frames 001-003 were anchored to standing and its frame
+001 happened to land at aspect 0.834, between the endpoints - and why `sit_down`
+has not.
+
+Two honest routes, and both are product calls rather than technical ones:
+
+1. **Reverse `stand_up`.** It already contains a genuine midpoint (0.834) and a
+   real descent when read backwards: 003 -> 002 -> 001 -> 000 is standing -> mid
+   -> mid -> seated. Reusing a verified sequence in reverse is ordinary practice
+   for a four-frame 2D transition, but the art was authored for rising, and
+   whether it reads correctly as lowering cannot be judged without eyes on it.
+2. **Declare `sit_down` as a two-frame cut** in the contract and ship it as one.
+   Honest, and visibly a cut.
+
+`sit_down` is not shipped. A four-frame sit-down that cuts straight to seated
+passes every mechanical gate - canvas, anchor, alpha, distinctness - and still
+looks wrong, which is the same class of defect as the single-frame idle.
