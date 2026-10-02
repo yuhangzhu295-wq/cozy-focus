@@ -146,14 +146,15 @@ void main() {
 
     test('the dog pack ships every requested action', () {
       final dog = CompanionActionManifestData.forCompanion('dog')!;
-      // Ten at V4.3 Phase 0; `walk` landed in batch 2 and `stand_up` in batch 3.
-      expect(dog.actionIds.length, 12);
+      // Ten at V4.3 Phase 0; walk, stand_up and sit_down landed in batches 2-4.
+      expect(dog.actionIds.length, 13);
       expect(
         dog.actionIds,
         containsAll(const [
           'idle',
           'walk',
           'stand_up',
+          'sit_down',
           'focus_read',
           'focus_write',
           'focus_think',

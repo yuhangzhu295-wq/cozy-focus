@@ -116,10 +116,11 @@ void main() {
       final planned = bundled.actionIds.difference(runtime.actionIds);
       expect(
         planned,
-        {'sit_down'},
+        <String>{},
         reason: 'the planned set changed - update this expectation only if the '
-            'art really landed or was really replanned. walk landed in batch 2 '
-            'and stand_up in batch 3.',
+            'art really landed or was really replanned. walk landed in batch 2, '
+            'stand_up in batch 3 and sit_down in batch 4, so nothing is '
+            'contracted-but-unproduced any more.',
       );
       for (final actionId in planned) {
         expect(runtime.specFor(actionId), isNull,

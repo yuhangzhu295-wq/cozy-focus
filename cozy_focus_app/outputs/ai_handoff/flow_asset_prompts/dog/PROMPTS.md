@@ -462,3 +462,26 @@ Two honest routes, and both are product calls rather than technical ones:
 `sit_down` is not shipped. A four-frame sit-down that cuts straight to seated
 passes every mechanical gate - canvas, anchor, alpha, distinctness - and still
 looks wrong, which is the same class of defect as the single-frame idle.
+
+## Batch 4 resolved: sit_down is stand_up reversed
+
+`sit_down` could not be generated with a midpoint from either endpoint (see the
+section above). It is instead **`stand_up` played backwards**, which is a
+physically correct sit-down and uses art that already passed every gate.
+
+| sit_down frame | source | vs seated | vs standing | aspect |
+|---|---|---|---|---|
+| sit_down_000 | stand_up_003 | 0.646 | 0.952 | 0.774 |
+| sit_down_001 | stand_up_002 | 0.646 | 0.965 | 0.773 |
+| sit_down_002 | stand_up_001 | 0.760 | 0.799 | 0.835 |
+| sit_down_003 | stand_up_000 | 0.976 | 0.643 | 1.053 |
+
+The descent is real: standing, standing, midpoint, seated. The first two frames
+are near-identical, which is a hold - and it is the same hold `stand_up` has at
+its *end*, because its frames 002 and 003 are both standing (aspect 0.771 and
+0.773). The redundancy is inherited from the source sequence, not introduced by
+reversing it.
+
+Reversing was chosen over a two-frame cut because it keeps a genuine midpoint.
+It is recorded here as **derived art rather than independently generated art**:
+if `sit_down` is ever re-authored, it should be authored, not reversed.

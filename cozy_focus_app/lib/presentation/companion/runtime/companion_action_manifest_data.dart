@@ -141,6 +141,20 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 3,
         ),
+        'sit_down': CompanionActionSpec(
+          actionId: 'sit_down',
+          frames: [
+            'assets/companions/dog/sit_down_000.png',
+            'assets/companions/dog/sit_down_001.png',
+            'assets/companions/dog/sit_down_002.png',
+            'assets/companions/dog/sit_down_003.png',
+          ],
+          fps: 8,
+          loopMode: SpriteLoopMode.once,
+          interruptible: false,
+          reducedMotionFrames: [0],
+          targetFrameCount: 4,
+        ),
         'sleep': CompanionActionSpec(
           actionId: 'sleep',
           frames: [
