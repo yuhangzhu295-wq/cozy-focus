@@ -166,6 +166,22 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 3,
         ),
+        'walk': CompanionActionSpec(
+          actionId: 'walk',
+          frames: [
+            'assets/companions/dog/walk_000.png',
+            'assets/companions/dog/walk_001.png',
+            'assets/companions/dog/walk_002.png',
+            'assets/companions/dog/walk_003.png',
+            'assets/companions/dog/walk_004.png',
+            'assets/companions/dog/walk_005.png',
+          ],
+          fps: 8,
+          loopMode: SpriteLoopMode.loop,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 6,
+        ),
       },
       semanticFallback: {
         'celebrate': 'idle',
