@@ -309,6 +309,8 @@ abstract final class CompanionActionManifestData {
           frames: [
             'assets/companions/cat/focus_write_000.png',
             'assets/companions/cat/focus_write_001.png',
+            'assets/companions/cat/focus_write_002.png',
+            'assets/companions/cat/focus_write_003.png',
           ],
           fps: 5,
           loopMode: SpriteLoopMode.loop,

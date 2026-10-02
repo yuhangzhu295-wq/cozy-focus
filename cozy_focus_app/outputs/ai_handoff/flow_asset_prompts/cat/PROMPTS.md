@@ -417,3 +417,37 @@ cat: **13 actions / 47 frames**. Complete: `idle` (6/6), `walk` (6/6),
 `sit_down` (4/4), `stand_up` (4/4), `craft_work` (4/4), `celebrate` (5/5),
 `focus_read` (3/3), `focus_think` (3/3), `pause_rest` (2/2), `tap_react` (3/3),
 `pet_react` (3/3), `sleep` (2/2). Partial: `focus_write` (2/4).
+
+---
+
+# Session 7 — focus_write completed; the cat pack is done
+
+## The last two frames
+
+`focus_write` had two of four frames. The pencil-and-notebook prop was already
+established, so the prop-edit technique applied: the edit base is the project
+tile **"Kitten lowering pencil on notebook"**, verified against the local
+`write_000`/`write_001` before use, and the prompt asked only for the pencil to
+move while listing the notebook, the face, the tail and the palette as
+do-not-change.
+
+| Frame | Beat | Attempts |
+|---|---|---|
+| `focus_write_002` | the pencil travels a short stroke to the right along the page | 1 |
+| `focus_write_003` | the pencil lifts clear of the page at the end of the stroke | 1 |
+
+## Milestone
+
+**cat: 13 actions / 49 frames.** That is the dog's exact shape — same thirteen
+actions, same forty-nine frames, and every action now meets its frame count:
+
+| | dog | cat |
+|---|---|---|
+| actions | 13 | 13 |
+| frames | 49 | 49 |
+| actions short of their frame count | 0 | 0 |
+
+The cat is no longer a partially-sprited companion. Before this work it had one
+idle frame and no locomotion at all; it now presents the same behaviour
+vocabulary as the dog from the same manifest contract, with no pose falling back
+to a neighbour's art.

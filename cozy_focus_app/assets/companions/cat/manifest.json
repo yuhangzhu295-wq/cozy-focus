@@ -78,7 +78,9 @@
     "focus_write": {
       "frames": [
         "focus_write_000.png",
-        "focus_write_001.png"
+        "focus_write_001.png",
+        "focus_write_002.png",
+        "focus_write_003.png"
       ],
       "fps": 5,
       "loopMode": "loop",
