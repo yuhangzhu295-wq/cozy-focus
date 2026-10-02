@@ -117,3 +117,45 @@ the Flow project as rejects and are not downloaded into the pack.
    the canvas, then `python tools/manifest.py <companion>` and
    `python tools/gen_manifest_dart.py`.
 
+
+## Batch 1 — idle 001-002 (generated, awaiting visual review)
+
+V4.3 Phase 3b, batch 1. Prompts are in `idle_batch1.md`; the ingredient for
+every frame is `idle_000` (the tile labelled *Character seated in neutral idle*),
+not the rig and not the previous frame.
+
+| Companion | Action | Frame | Master reference | Attempts | Staged output | Notes |
+|---|---|---|---|---|---|---|
+| dog | `idle` | 001 | `idle_000` | 2 | `idle_001.jpg` | First Start click was ignored; the second submitted. Tile appears as *Character breathing idle pose va…* |
+| dog | `idle` | 002 | `idle_000` | 2 | `idle_002.jpg` | Submitted after a page reload. Tile appears as *Character idle animation frame*. The project grid does not show a new tile until it is reloaded. |
+
+Both frames were measured through `tools/productionise.py`'s own
+`extract_alpha` / `normalise` / `measure` before being accepted into the pack:
+
+| frame | visual bounds | centre | bottom | contract |
+|---|---|---|---|---|
+| `idle_001` | (93,124)-(929,919) | 511.0 | 919 | within 2px |
+| `idle_002` | (101,124)-(922,919) | 511.5 | 919 | within 2px |
+
+`idle_001`'s bounds are identical to the shipped `idle_000`, which is the
+expected result: `normalise` scales the subject to 78% of canvas height and
+centres it, so a frame drawn at a different raw scale still lands on the same
+contract.
+
+They are **not** in the pack yet. `idle`'s loop mode is `loop`, so two or three
+frames would alternate faster than a breath — a flicker, which is worse than the
+current still. The sequence ships when all six exist.
+
+### Blocked: frames 003-005
+
+`Start generation` stops accepting input after two generations in a session.
+The prompt and ingredient are set up correctly and the button reports
+`disabled: false`, but the Angular handler does not fire. Tried: `cua` coordinate
+click, a full synthetic sequence (`pointerdown`/`mousedown`/`pointerup`/
+`mouseup`/`click`), Enter in the prompt box, hover-then-click, a neutral click to
+take focus first, and repeated page reloads. Frame 002 needed a reload to
+submit; frames 003-005 did not submit across four reload-and-retry cycles.
+
+This matches the soft rate limit already recorded above ("We noticed some
+unusual activity", reached after roughly 14 generations). It may also be that
+the button requires a trusted gesture the automation cannot produce.
