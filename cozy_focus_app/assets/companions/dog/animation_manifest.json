@@ -4,11 +4,11 @@
   "companionId": "dog",
   "posePack": "mochi",
   "canvas": {
-    "width": 1024,
-    "height": 1024
+    "width": 512,
+    "height": 512
   },
-  "groundBaseline": 919,
-  "centerAnchor": 511,
+  "groundBaseline": 458,
+  "centerAnchor": 255,
   "anchorTolerancePx": 2,
   "firstBatch": [
     "idle",

@@ -7,7 +7,7 @@ from PIL import Image, ImageFilter
 APP = r"C:\Users\zyu33\Documents\Codex\2026-09-07\new-chat\cozy_focus_app"
 STAGE = os.path.join(APP, ".asset_staging", "flow")
 PROD = os.path.join(APP, "assets", "companions")
-CANVAS = 1024
+CANVAS = 512
 SUBJECT_H = 0.78
 BASELINE_Y = 0.90
 

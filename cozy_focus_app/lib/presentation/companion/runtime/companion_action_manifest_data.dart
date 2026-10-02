@@ -26,10 +26,10 @@ abstract final class CompanionActionManifestData {
     'dog': CompanionActionManifest(
       companionId: 'dog',
       posePack: 'mochi',
-      canvasWidth: 1024,
-      canvasHeight: 1024,
-      groundBaseline: 919,
-      centerAnchor: 511,
+      canvasWidth: 512,
+      canvasHeight: 512,
+      groundBaseline: 458,
+      centerAnchor: 255,
       actions: {
         'celebrate': CompanionActionSpec(
           actionId: 'celebrate',
@@ -244,10 +244,10 @@ abstract final class CompanionActionManifestData {
     'cat': CompanionActionManifest(
       companionId: 'cat',
       posePack: 'cat',
-      canvasWidth: 1024,
-      canvasHeight: 1024,
-      groundBaseline: 919,
-      centerAnchor: 511,
+      canvasWidth: 512,
+      canvasHeight: 512,
+      groundBaseline: 458,
+      centerAnchor: 255,
       actions: {
         'celebrate': CompanionActionSpec(
           actionId: 'celebrate',

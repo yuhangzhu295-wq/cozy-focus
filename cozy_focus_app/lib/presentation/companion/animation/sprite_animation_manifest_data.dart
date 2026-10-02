@@ -29,10 +29,10 @@ abstract final class SpriteAnimationManifestData {
   static const SpriteAnimationManifest mochi = SpriteAnimationManifest(
     companionId: 'dog',
     posePack: 'mochi',
-    canvasWidth: 1024,
-    canvasHeight: 1024,
-    groundBaseline: 919,
-    centerAnchor: 511,
+    canvasWidth: 512,
+    canvasHeight: 512,
+    groundBaseline: 458,
+    centerAnchor: 255,
     anchorTolerancePx: 2,
     firstBatch: ['idle', 'walk', 'sit_down', 'stand_up'],
     assets: {
