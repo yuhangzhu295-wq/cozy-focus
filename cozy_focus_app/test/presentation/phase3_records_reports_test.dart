@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart' hide FocusRecord;
@@ -17,6 +18,10 @@ import 'package:cozy_focus_app/presentation/pages/monthly_report_page.dart';
 import 'package:cozy_focus_app/presentation/pages/yearly_report_page.dart';
 import 'package:cozy_focus_app/presentation/pages/yearly_wrapped_share_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
+
+/// A fresh router per test. The shared global kept its location between tests
+/// in a file, so each test silently inherited the previous one's route.
+late GoRouter router;
 
 class Phase3TestClock implements FocusClock {
   DateTime _now;
@@ -42,6 +47,7 @@ void main() {
   late ProviderContainer container;
 
   setUp(() async {
+    router = createAppRouter();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     testClock = Phase3TestClock(DateTime(2026, 9, 8, 14, 0, 0));
     container = ProviderContainer(
@@ -110,13 +116,13 @@ void main() {
       await recordRepo.deleteById('rec-1');
       await recordRepo.deleteById('rec-2');
 
-      appRouter.go('/progress');
+      router.go('/progress');
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
             theme: AppTheme.lightTheme,
-            routerConfig: appRouter,
+            routerConfig: router,
           ),
         ),
       );

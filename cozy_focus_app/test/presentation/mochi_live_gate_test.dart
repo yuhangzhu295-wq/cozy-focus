@@ -24,6 +24,11 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+
+/// A fresh router per test. The shared global kept its location between tests
+/// in a file, so each test silently inherited the previous one's route.
+late GoRouter router;
 
 /// Deterministic blink / ear-twitch scheduler for lifecycle assertions.
 class _FixedScheduler implements IPetMotionScheduler {
@@ -175,6 +180,7 @@ void main() {
   late AppDatabase db;
 
   setUp(() {
+    router = createAppRouter();
     db = AppDatabase.forTesting(NativeDatabase.memory());
   });
 
@@ -764,7 +770,7 @@ void main() {
           container: container,
           child: MaterialApp.router(
             theme: AppTheme.lightTheme,
-            routerConfig: appRouter,
+            routerConfig: router,
           ),
         ),
       );
@@ -788,18 +794,18 @@ void main() {
       addTearDown(container.dispose);
 
       await mountRouter(tester, container);
-      appRouter.go('/');
+      router.go('/');
       await settle(tester);
       expect(_renderedState(tester), PetVisualState.craft);
 
       // Navigate to a page that never loads craft itself.
-      appRouter.go('/growth');
+      router.go('/growth');
       await settle(tester);
       expect(_renderedState(tester), PetVisualState.craft,
           reason: 'Leaving Home must not reset Mochi to idle');
 
       // And back again.
-      appRouter.go('/');
+      router.go('/');
       await settle(tester);
       expect(_renderedState(tester), PetVisualState.craft,
           reason: 'Returning to Home must not reset Mochi to idle');
@@ -811,15 +817,15 @@ void main() {
       addTearDown(container.dispose);
 
       await mountRouter(tester, container);
-      appRouter.go('/');
+      router.go('/');
       await settle(tester);
       expect(_renderedState(tester), PetVisualState.focus);
 
-      appRouter.go('/progress');
+      router.go('/progress');
       await settle(tester);
       expect(_renderedState(tester), PetVisualState.focus);
 
-      appRouter.go('/');
+      router.go('/');
       await settle(tester);
       expect(_renderedState(tester), PetVisualState.focus);
     });

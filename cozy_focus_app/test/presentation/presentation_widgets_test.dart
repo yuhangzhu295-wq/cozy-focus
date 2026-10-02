@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart';
@@ -20,6 +21,10 @@ import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
 import 'package:cozy_focus_app/presentation/navigation/app_router.dart';
 import 'package:cozy_focus_app/domain/models/craft_models.dart' as craft_domain;
+
+/// A fresh router per test. The shared global kept its location between tests
+/// in a file, so each test silently inherited the previous one's route.
+late GoRouter router;
 
 class WidgetTestClock implements FocusClock {
   DateTime _now;
@@ -73,6 +78,7 @@ void main() {
   late ProviderContainer container;
 
   setUp(() {
+    router = createAppRouter();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     testClock = WidgetTestClock(DateTime(2026, 9, 8, 10, 0, 0));
     container = ProviderContainer(
@@ -435,14 +441,14 @@ void main() {
       testClock.advance(const Duration(minutes: 25));
       await notifier.completeSession();
 
-      addTearDown(() => appRouter.go('/'));
-      appRouter.go('/focus/complete');
+      addTearDown(() => router.go('/'));
+      router.go('/focus/complete');
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
             theme: AppTheme.lightTheme,
-            routerConfig: appRouter,
+            routerConfig: router,
           ),
         ),
       );

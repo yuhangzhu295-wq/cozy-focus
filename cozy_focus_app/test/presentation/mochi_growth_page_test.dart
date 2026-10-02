@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart'
@@ -20,6 +21,10 @@ import 'package:cozy_focus_app/presentation/navigation/app_router.dart';
 import 'package:cozy_focus_app/presentation/pages/mochi_growth_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 import 'package:cozy_focus_app/core/auth/current_user.dart';
+
+/// A fresh router per test. The shared global kept its location between tests
+/// in a file, so each test silently inherited the previous one's route.
+late GoRouter router;
 
 class _TestClock implements FocusClock {
   final DateTime _now;
@@ -43,7 +48,7 @@ Widget createRouterTestApp(ProviderContainer container) {
     container: container,
     child: MaterialApp.router(
       theme: AppTheme.lightTheme,
-      routerConfig: appRouter,
+      routerConfig: router,
     ),
   );
 }
@@ -54,6 +59,7 @@ void main() {
   late ProviderContainer container;
 
   setUp(() async {
+    router = createAppRouter();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     clock = _TestClock(DateTime(2026, 9, 12, 10, 0, 0));
     container = ProviderContainer(
@@ -158,7 +164,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      appRouter.go('/growth');
+      router.go('/growth');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -183,20 +189,26 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      appRouter.go('/growth');
+      router.go('/growth');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
       final buttonFinder = find.byKey(const Key('growth_collection_button'));
       expect(buttonFinder, findsOneWidget);
-      expect(find.text('图鉴'), findsOneWidget);
+      // Scoped to the button. The page also renders GrowthSubNav, which carries
+      // its own 图鉴 pill, so an unscoped text match finds two and only ever
+      // found one while the shared router leaked a location into this test.
+      expect(
+        find.descendant(of: buttonFinder, matching: find.text('图鉴')),
+        findsOneWidget,
+      );
 
       await tester.tap(buttonFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(
-        appRouter.routerDelegate.currentConfiguration.uri.toString(),
+        router.routerDelegate.currentConfiguration.uri.toString(),
         equals('/growth/collection'),
       );
     });

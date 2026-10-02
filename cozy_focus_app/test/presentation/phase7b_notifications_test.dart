@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cozy_focus_app/presentation/navigation/app_router.dart';
 import 'package:cozy_focus_app/presentation/pages/home_page.dart';
@@ -8,7 +9,12 @@ import 'package:cozy_focus_app/presentation/pages/notifications_page.dart';
 import 'package:cozy_focus_app/presentation/widgets/pet_avatar_widget.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 
+/// A fresh router per test. The shared global kept its location between tests
+/// in a file, so each test silently inherited the previous one's route.
+late GoRouter router;
+
 void main() {
+  setUp(() => router = createAppRouter());
   group('Phase 7B NotificationsPage Tests', () {
     testWidgets(
         '1. NotificationsPage renders title, back arrow icon, and PetAvatarWidget',
@@ -23,7 +29,6 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-
       expect(find.text('通知设置'), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
       expect(find.byType(PetAvatarWidget), findsOneWidget);
@@ -122,12 +127,12 @@ void main() {
           container: container,
           child: MaterialApp.router(
             theme: AppTheme.lightTheme,
-            routerConfig: appRouter,
+            routerConfig: router,
           ),
         ),
       );
 
-      appRouter.go('/');
+      router.go('/');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 

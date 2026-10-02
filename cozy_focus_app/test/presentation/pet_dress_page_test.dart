@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart'
@@ -25,6 +26,10 @@ import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 import 'package:cozy_focus_app/presentation/widgets/pet_avatar_widget.dart';
 import 'package:cozy_focus_app/core/auth/current_user.dart';
 
+/// A fresh router per test. The shared global kept its location between tests
+/// in a file, so each test silently inherited the previous one's route.
+late GoRouter router;
+
 class _TestClock implements FocusClock {
   final DateTime _now;
   _TestClock(this._now);
@@ -47,7 +52,7 @@ Widget createRouterTestApp(ProviderContainer container) {
     container: container,
     child: MaterialApp.router(
       theme: AppTheme.lightTheme,
-      routerConfig: appRouter,
+      routerConfig: router,
     ),
   );
 }
@@ -58,6 +63,7 @@ void main() {
   late ProviderContainer container;
 
   setUp(() async {
+    router = createAppRouter();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     clock = _TestClock(DateTime(2026, 9, 12, 10, 0, 0));
     container = ProviderContainer(
@@ -66,11 +72,11 @@ void main() {
         focusClockProvider.overrideWithValue(clock),
       ],
     );
-    appRouter.go('/');
+    router.go('/');
   });
 
   tearDown(() async {
-    appRouter.go('/');
+    router.go('/');
     container.dispose();
     await db.close();
   });
@@ -82,7 +88,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      appRouter.go('/growth/dress');
+      router.go('/growth/dress');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(PetDressPage), findsOneWidget);
@@ -94,7 +100,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      appRouter.go('/dress');
+      router.go('/dress');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(PetDressPage), findsOneWidget);
@@ -199,7 +205,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      appRouter.go('/growth/dress');
+      router.go('/growth/dress');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -209,11 +215,11 @@ void main() {
           matching: find.byIcon(Icons.home_rounded)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
-      expect(appRouter.routerDelegate.currentConfiguration.uri.toString(),
+      expect(router.routerDelegate.currentConfiguration.uri.toString(),
           equals('/'));
 
       // Back to dress page
-      appRouter.go('/growth/dress');
+      router.go('/growth/dress');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -223,11 +229,11 @@ void main() {
           matching: find.byIcon(Icons.bar_chart_rounded)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
-      expect(appRouter.routerDelegate.currentConfiguration.uri.toString(),
+      expect(router.routerDelegate.currentConfiguration.uri.toString(),
           equals('/records'));
 
       // Back to dress page
-      appRouter.go('/growth/dress');
+      router.go('/growth/dress');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -237,7 +243,7 @@ void main() {
           matching: find.byIcon(Icons.eco_outlined)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
-      expect(appRouter.routerDelegate.currentConfiguration.uri.toString(),
+      expect(router.routerDelegate.currentConfiguration.uri.toString(),
           equals('/growth'));
     });
   });

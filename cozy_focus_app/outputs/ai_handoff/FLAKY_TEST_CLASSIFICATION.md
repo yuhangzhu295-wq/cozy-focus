@@ -89,30 +89,57 @@ than no comment.
 
 ---
 
-## Class 2 — REAL HAZARD, NOT CURRENTLY FLAKY (deferred)
+## Class 2 — FIXED: the shared global router leaked location between tests
 
-`appRouter` is a **top-level global `GoRouter`**
-(`lib/presentation/navigation/app_router.dart:27`). Nine test files import it
-and several call `appRouter.go(…)` on it directly.
+`appRouter` was a **top-level global `GoRouter`**
+(`lib/presentation/navigation/app_router.dart`). Nine test files imported it and
+between them called `appRouter.go(…)` 44 times.
 
-Within a file every `testWidgets` shares that one instance, so the current
-location leaks from one test into the next: a test that assumes it starts at
-`/` actually starts wherever the previous test left off.
+Within a file every `testWidgets` shared that one instance, so the current
+location leaked from each test into the next.
 
-It is **deterministic today** because Flutter runs tests within a file in
-declaration order. So this is not the cause of anything currently failing. It is
-still a hazard, because:
+**Measured, not assumed.** A two-test probe was run against the old code:
 
-- every test in such a file silently depends on the ones before it;
-- any reordering, or a `--test-randomize-ordering-seed` run, would expose it;
-- adding a test in the middle of a file can break a later one.
+```
+probe A: pumpWidget, router.go('/growth')      -> location '/growth'
+probe B: no navigation at all                  -> start=/growth afterPump=/growth
+```
 
-**Not fixed here.** Moving the router behind a provider (or exposing a factory)
-touches nine test files plus the app bootstrap — a broad blast radius for
-something that is not currently red. It belongs in P13 Hardening with its own
-verification, not in a flake fix.
+Probe B began at `/growth` because probe A had gone there. Every test in such a
+file silently inherited its predecessor's route.
 
----
+**Fix.** `appRouter` became a factory plus one production instance:
+
+```dart
+GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(…);
+
+/// The router the application runs on. Not a shared test fixture.
+final GoRouter appRouter = createAppRouter();
+```
+
+`main.dart` is unchanged — it still runs the single [appRouter]. Each of the nine
+test files declares a file-scoped `late GoRouter router`, builds a fresh one in
+`setUp`, and no longer touches the global.
+
+**The fix immediately exposed a test that had been passing for the wrong
+reason.** `mochi_growth_page_test` asserted `find.text('图鉴')` finds exactly one
+widget. The Growth page renders its own collection button *and* `GrowthSubNav`,
+which carries a 图鉴 pill — so the page legitimately contains two. The assertion
+only ever held while the leaked router left the page in a state where one
+rendered. It is now scoped to the button:
+
+```dart
+expect(
+  find.descendant(of: buttonFinder, matching: find.text('图鉴')),
+  findsOneWidget,
+);
+```
+
+That is the hazard demonstrated end to end: an assertion that was never a true
+invariant, kept green by shared mutable state.
+
+Verified: `dart format` clean, `flutter analyze --fatal-infos` clean, and three
+consecutive full-suite runs at 1091/1091 with zero failures.
 
 ## Class 3 — ENVIRONMENT-DEPENDENT BY DESIGN (not a flake)
 
@@ -129,5 +156,5 @@ as a known limitation rather than a bug.
 | Class | Count | Status |
 |---|---|---|
 | Uncontrolled inputs in `CompanionAvatar` (clock + RNG) | 2 tests | **FIXED**, 3× green full suite |
-| Global `appRouter` shared across tests in a file | 9 files affected | hazard, deferred to P13 |
+| Global `appRouter` shared across tests in a file | 9 files | **FIXED** — factory + per-file instance |
 | Real-clock tick in the room simulation | 1 | by design, documented |
