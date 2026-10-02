@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/craft_models.dart';
 import '../../domain/models/enums.dart';
+import '../companion/animation/animation_state.dart';
+import '../companion/animation/locomotion_controller.dart';
 import '../companion/companion_avatar.dart';
 import '../companion/companion_selection.dart';
 import '../companion/mochi_layered_renderer.dart';
@@ -39,7 +42,8 @@ class RoomPage extends ConsumerStatefulWidget {
   ConsumerState<RoomPage> createState() => _RoomPageState();
 }
 
-class _RoomPageState extends ConsumerState<RoomPage> {
+class _RoomPageState extends ConsumerState<RoomPage>
+    with SingleTickerProviderStateMixin {
   String? _selectedRoomItemId;
   bool _showInventoryPanel = false;
 
@@ -50,11 +54,27 @@ class _RoomPageState extends ConsumerState<RoomPage> {
   /// and a question is not part of the companion's state.
   RoomItem? _useTarget;
 
-  /// The anchor the companion was last drawn at.
+  /// Where the companion is between anchors.
   ///
-  /// Used to animate only genuine travel: the first placement snaps, and a
-  /// change of anchor moves.
-  String? _lastAnchorId;
+  /// Replaces `AnimatedPositioned`, which moved a box with a tween and left the
+  /// sprite showing one still image the whole way. This produces a gait as well
+  /// as a position, so the walk frames have something to select on.
+  final LocomotionController _locomotion = LocomotionController();
+
+  /// The anchor the current trip set off from, so the drawn box can be
+  /// interpolated between two real placements rather than between two numbers.
+  AnchorPoint? _travelFrom;
+
+  /// Drives [_locomotion] while a trip is under way, and only then.
+  ///
+  /// A ticker rather than a periodic timer: travel is short and bounded, and it
+  /// must be smooth while it lasts. It is created per trip and disposed on
+  /// arrival, so a settled companion asks the engine for no frames at all.
+  Ticker? _travelTicker;
+
+  /// The simulation's anchor, so travel starts on a real decision rather than
+  /// on a rebuild.
+  ProviderSubscription<RoomSimulationState>? _simulationSubscription;
 
   /// Whether the room's real placement has been loaded at least once.
   ///
@@ -86,6 +106,22 @@ class _RoomPageState extends ConsumerState<RoomPage> {
       // decide rather than waiting up to a tick to look alive.
       if (!mounted) return;
       _sim?.evaluateNow();
+      if (!mounted) return;
+
+      // Record where the companion first appears, and place it there without
+      // travelling. This is the "first placement snaps" rule, and it has to run
+      // here rather than on the first anchor *change*: the opening decision is
+      // often the floor, so the first change is usually the real journey to a
+      // seat — snapping on that change would swallow exactly the walk this
+      // phase exists to produce.
+      final opening = _anchorFor(
+            _anchorsFor(ref.read(craftControllerProvider)),
+            ref.read(roomSimulationProvider).activity.anchorId,
+          ) ??
+          floorAnchor;
+      _travelFrom = opening;
+      _locomotion.snapTo(opening);
+
       setState(() => _dataReady = true);
     });
     // The loop starts here rather than in the provider so it is bounded by the
@@ -94,6 +130,17 @@ class _RoomPageState extends ConsumerState<RoomPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _simulator?.start();
     });
+
+    // Travel begins on a real decision, not during build. Detecting the anchor
+    // change here also removes the old `_lastAnchorId` write that used to happen
+    // inside `_buildCompanion`, which was a build-time side effect.
+    _simulationSubscription = ref.listenManual<RoomSimulationState>(
+      roomSimulationProvider,
+      (previous, next) {
+        if (previous?.activity.anchorId == next.activity.anchorId) return;
+        _onAnchorChanged(next.activity.anchorId);
+      },
+    );
   }
 
   @override
@@ -101,7 +148,53 @@ class _RoomPageState extends ConsumerState<RoomPage> {
     // Stopping here is what makes teardown clean: a periodic timer that outlives
     // the widget tree fails the test framework's own invariant.
     _simulator?.stop();
+    _simulationSubscription?.close();
+    _travelTicker?.dispose();
     super.dispose();
+  }
+
+  /// The anchors the current placement defines.
+  Map<String, AnchorPoint> _anchorsFor(CraftState craft) =>
+      FurnitureAnchorRegistry.build(
+        placed: craft.roomItems,
+        owned: craft.inventory,
+        eligibleItemIds: FurnitureCatalog.itemIds,
+        surfaceFractionFor: PetRoomPresenceResolver.seatSurfaceFraction,
+      );
+
+  /// Starts the companion walking to [anchorId], or places it there.
+  ///
+  /// The first placement snaps: the companion appears where the simulation says
+  /// it is rather than walking in from the floor every time the room opens. A
+  /// later change of anchor is a real journey and is walked.
+  void _onAnchorChanged(String anchorId) {
+    final craft = ref.read(craftControllerProvider);
+    final anchors = _anchorsFor(craft);
+    final anchor = _anchorFor(anchors, anchorId) ?? floorAnchor;
+    final from = _travelFrom;
+
+    if (from == null) {
+      _locomotion.snapTo(anchor);
+      _travelFrom = anchor;
+      return;
+    }
+
+    if (!_locomotion.startTravel(from: from, to: anchor)) return;
+    _travelFrom = from;
+    _startTravelTicker();
+  }
+
+  void _startTravelTicker() {
+    _travelTicker?.dispose();
+    _travelTicker = createTicker((elapsed) {
+      final arrived = _locomotion.advanceTo(elapsed);
+      if (mounted) setState(() {});
+      if (arrived) {
+        _travelTicker?.dispose();
+        _travelTicker = null;
+      }
+    })
+      ..start();
   }
 
   @override
@@ -377,28 +470,47 @@ class _RoomPageState extends ConsumerState<RoomPage> {
       feetInsetFraction: MochiLayerAssets.feetInsetFraction,
     );
 
-    // Animated so travelling between anchors is visible as movement rather than
-    // as a jump — the brief asks for the companion to *walk* to the desk, not to
-    // teleport.
+    // The companion is drawn between the anchor it set off from and the one it
+    // is heading to, at the progress the locomotion controller reports.
     //
-    // Only an anchor *change* animates. The first time the companion is placed
-    // there is nowhere to travel from, and animating that first step would slide
-    // it across the room whenever the page opened — and would also make the
-    // settled position unreadable until the animation finished.
-    final previousAnchorId = _lastAnchorId;
-    _lastAnchorId = anchor.id;
-    final isTravelling =
-        previousAnchorId != null && previousAnchorId != anchor.id;
+    // This replaces `AnimatedPositioned`, which interpolated the same two
+    // numbers with a tween but could not say *that the character was walking*:
+    // the sprite showed one still image for the whole trip. The interpolation is
+    // the same; what is new is that it is now driven by a controller the
+    // animation layer can read a gait and a facing from.
+    final from = _travelFrom;
+    final progress = _locomotion.progress;
+    final drawn = from == null || progress >= 1.0
+        ? box
+        : _lerpBox(
+            CompanionPlacement.boxFor(
+              anchor: from,
+              canvasWidth: canvasWidth,
+              canvasHeight: canvasHeight,
+              avatarSize: size,
+              feetInsetFraction: MochiLayerAssets.feetInsetFraction,
+            ),
+            box,
+            progress,
+          );
 
-    return AnimatedPositioned(
-      duration:
-          isTravelling ? const Duration(milliseconds: 700) : Duration.zero,
-      curve: Curves.easeInOut,
-      left: box.left,
-      top: box.top,
+    return Positioned(
+      left: drawn.left,
+      top: drawn.top,
       child: IgnorePointer(
         child: CompanionAvatar(
           size: size,
+          // While the companion is travelling, what it *draws* is the walk,
+          // which is the whole point of this phase: the position is no longer a
+          // tween over a still image. The behaviour is untouched — the director
+          // still believes the companion is on its way to the anchor below — so
+          // the badge and the semantics keep telling the truth.
+          //
+          // Until the walk frames ship, `specForAction` finds no `walk` sequence
+          // and the provider falls back to the pose's own drawing: the pipeline
+          // is ready and the art is honestly missing, which the asset gate
+          // reports as `walk 0/6`.
+          animationState: _locomotion.isTravelling ? AnimationState.walk : null,
           // The anchor's role picks the posture the sprite pipeline presents;
           // the simulation chose *which* anchor, so the two cannot disagree.
           roomAnchor: _anchorRoleFor(anchor.itemId),
@@ -408,12 +520,16 @@ class _RoomPageState extends ConsumerState<RoomPage> {
     );
   }
 
-  static Map<String, AnchorPoint> _anchorsFor(CraftState craft) =>
-      FurnitureAnchorRegistry.build(
-        placed: craft.roomItems,
-        owned: craft.inventory,
-        eligibleItemIds: FurnitureCatalog.itemIds,
-        surfaceFractionFor: PetRoomPresenceResolver.seatSurfaceFraction,
+  /// The box between [from] and [to] at [t].
+  ///
+  /// Interpolates the *placement* rather than the anchor, so the seat-surface
+  /// correction is applied at each end and the feet do not dip as the companion
+  /// crosses between a floor anchor and a cushion.
+  static CompanionBox _lerpBox(CompanionBox from, CompanionBox to, double t) =>
+      CompanionBox(
+        left: from.left + (to.left - from.left) * t,
+        top: from.top + (to.top - from.top) * t,
+        size: to.size,
       );
 
   static AnchorPoint? _anchorFor(

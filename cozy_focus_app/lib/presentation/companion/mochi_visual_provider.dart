@@ -80,14 +80,29 @@ class MochiVisualProvider extends CompanionVisualProvider {
     CompanionPresentationIntent intent,
     CompanionVisualOptions options,
   ) {
+    // An animation state the behaviour has no pose for — `walk` while the
+    // companion is travelling — takes precedence, and is *not* subject to the
+    // layered-idle exception below: that exception exists to prefer the rig for
+    // a standing idle, not to keep the rig while the character is walking.
+    final animationSpec = options.animationState == null
+        ? null
+        : CompanionSpriteArt.specForAction(
+            companionKey,
+            options.animationState!.assetActionId,
+          );
+
     // Resolved, not exact: a room anchor reuses the action it stands for
     // (bookshelf reads, desk writes) rather than needing its own sequence.
-    final spec = CompanionSpriteArt.resolveFor(companionKey, intent.pose);
+    final spec = animationSpec ??
+        CompanionSpriteArt.resolveFor(companionKey, intent.pose);
+    final useLayered =
+        animationSpec == null && layeredPoses.contains(intent.pose.id);
+
     return _MochiPoseAvatar(
       intent: intent,
       options: options,
       poseSpec: MochiPoseSpecs.of(intent.pose),
-      spriteSpec: layeredPoses.contains(intent.pose.id) ? null : spec,
+      spriteSpec: useLayered ? null : spec,
     );
   }
 }

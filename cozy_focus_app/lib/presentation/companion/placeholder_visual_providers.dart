@@ -49,7 +49,16 @@ class CatVisualProvider extends CompanionVisualProvider {
     CompanionPresentationIntent intent,
     CompanionVisualOptions options,
   ) {
-    final spec = CompanionSpriteArt.resolveFor(companionKey, intent.pose);
+    // An animation state with no pose behind it — `walk` while travelling —
+    // wins over the pose's own sequence.
+    final animationSpec = options.animationState == null
+        ? null
+        : CompanionSpriteArt.specForAction(
+            companionKey,
+            options.animationState!.assetActionId,
+          );
+    final spec = animationSpec ??
+        CompanionSpriteArt.resolveFor(companionKey, intent.pose);
     return PlaceholderCompanionAvatar(
       silhouette: CompanionSilhouettes.cat,
       intent: intent,
@@ -79,7 +88,14 @@ class RabbitVisualProvider extends CompanionVisualProvider {
     CompanionPresentationIntent intent,
     CompanionVisualOptions options,
   ) {
-    final spec = CompanionSpriteArt.resolveFor(companionKey, intent.pose);
+    final animationSpec = options.animationState == null
+        ? null
+        : CompanionSpriteArt.specForAction(
+            companionKey,
+            options.animationState!.assetActionId,
+          );
+    final spec = animationSpec ??
+        CompanionSpriteArt.resolveFor(companionKey, intent.pose);
     return PlaceholderCompanionAvatar(
       silhouette: CompanionSilhouettes.rabbit,
       intent: intent,

@@ -8,6 +8,7 @@ import 'package:cozy_focus_app/data/local/app_database.dart'
     hide FocusSession, Pet, CraftJob, CraftRecipe, InventoryItem, RoomItem;
 import 'package:cozy_focus_app/domain/models/craft_models.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
+import 'package:cozy_focus_app/presentation/companion/animation/animation_state.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 import 'package:cozy_focus_app/presentation/companion/room/room_simulation.dart';
@@ -403,6 +404,46 @@ void main() {
           0.6 * tester.getSize(canvasFinder).height;
 
       expect(anchorY - feetY, closeTo(1.2, 0.05));
+    });
+
+    testWidgets('travelling asks for the walk animation, arriving does not',
+        (tester) async {
+      await container.read(craftRepositoryProvider).upsertInventoryItem(
+            owned('sofa', quantity: 1),
+          );
+      await container.read(craftRepositoryProvider).placeRoomItem(
+            placed('sofa', x: 0.35, y: 0.6, id: 'room-sofa'),
+          );
+      await container.read(craftControllerProvider.notifier).loadAll();
+
+      await tester.pumpWidget(_app(container, const RoomPage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // The first placement snaps, so the companion is not walking yet.
+      AnimationState? stateNow() => tester
+          .widget<CompanionAvatar>(find.byType(CompanionAvatar))
+          .animationState;
+      expect(stateNow(), isNull);
+
+      // Asking for the sofa moves the companion to a different anchor, which is
+      // a real journey rather than a placement.
+      container.read(roomSimulationProvider.notifier).requestAction(
+            itemId: 'sofa',
+            actionId: 'sit',
+            roomItemId: 'room-sofa',
+          );
+      await tester.pump();
+
+      // Mid-journey the companion must be drawing the walk. This is the whole
+      // claim of the phase: the move is no longer a tween over a still image,
+      // it is a state the sprite pipeline is asked for by name.
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(stateNow(), AnimationState.walk);
+
+      // Once it arrives, the walk stops and the behaviour's own pose resumes.
+      await tester.pump(const Duration(milliseconds: 3000));
+      expect(stateNow(), isNull);
     });
 
     testWidgets('with nothing placed Mochi uses the floor spot',

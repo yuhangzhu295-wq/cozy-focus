@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../animation/animation_state.dart';
 import '../../controllers/pet_motion_controller.dart';
 import 'companion_id.dart';
 import 'companion_pose.dart';
@@ -37,6 +38,17 @@ class CompanionVisualOptions {
   /// Invoked when the companion is long-pressed.
   final VoidCallback? onLongPressReact;
 
+  /// An animation state that overrides what the pose would draw.
+  ///
+  /// Locomotion supplies this: while the companion is travelling, the behaviour
+  /// is unchanged — "Mochi is going to write" — but what should be *drawn* is
+  /// the walk. Null means "draw the pose", which is the case for every caller
+  /// that is not moving.
+  ///
+  /// It is an animation state rather than a pose because `walk` has no pose: it
+  /// is a transition the behaviour layer has no vocabulary for.
+  final AnimationState? animationState;
+
   const CompanionVisualOptions({
     this.displayName = '',
     this.size = 140,
@@ -48,6 +60,7 @@ class CompanionVisualOptions {
     this.focusCategoryId,
     this.onTapReact,
     this.onLongPressReact,
+    this.animationState,
   });
 }
 

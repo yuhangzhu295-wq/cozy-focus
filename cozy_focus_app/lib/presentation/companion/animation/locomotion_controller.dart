@@ -83,6 +83,21 @@ class LocomotionController {
   /// Below this distance two anchors are the same spot, and no trip is needed.
   static const double _sameSpotEpsilon = 0.002;
 
+  /// Places the companion at [anchor] without travelling there.
+  ///
+  /// Used for the first placement of a page's life: the companion appears where
+  /// the simulation says it is rather than walking in from the floor the moment
+  /// the room opens. [progress] reads `1.0` afterwards, so a caller that always
+  /// interpolates gets the anchor itself.
+  void snapTo(AnchorPoint anchor) {
+    _from = anchor;
+    _to = anchor;
+    _duration = Duration.zero;
+    _elapsed = Duration.zero;
+    _travelling = false;
+    _facing = 1.0;
+  }
+
   /// Cancels any trip. Used when the target disappears — the furniture the
   /// companion was walking to was removed mid-stride.
   void cancelTravel() {

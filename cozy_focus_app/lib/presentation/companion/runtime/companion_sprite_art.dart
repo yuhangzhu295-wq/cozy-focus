@@ -54,6 +54,27 @@ abstract final class CompanionSpriteArt {
     return manifest.specForRendering(pose);
   }
 
+  /// The spec for a raw action id, for animations that are not poses.
+  ///
+  /// `walk`, `sit_down` and `stand_up` are animation states with no
+  /// [CompanionPose] behind them, so they cannot be reached through [resolveFor]
+  /// — there is no pose to look up. This is how the locomotion layer asks for
+  /// the walk sequence directly.
+  ///
+  /// Returns `null` when the pack ships no such sequence, which is the honest
+  /// answer while the walk frames are still in production: the caller then draws
+  /// whatever real art it has rather than pretending a transform is a walk.
+  static CompanionActionSpec? specForAction(
+    String companionKey,
+    String actionId,
+  ) {
+    final manifest = CompanionActionManifestData.forCompanion(companionKey);
+    if (manifest == null) return null;
+    final spec = manifest.specFor(actionId);
+    if (spec == null || spec.isEmpty) return null;
+    return spec;
+  }
+
   /// The state word shown in the badge, in the app's own vocabulary.
   static String stateLabel(CompanionBaseContext context) {
     switch (context) {

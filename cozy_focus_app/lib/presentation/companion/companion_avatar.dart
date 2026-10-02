@@ -6,6 +6,7 @@ import '../../domain/models/enums.dart';
 import '../controllers/craft_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/pet_motion_controller.dart';
+import 'animation/animation_state.dart';
 import 'companion_presentation_mapper.dart';
 import 'focus_phase.dart';
 import 'companion_selection.dart';
@@ -73,6 +74,15 @@ class CompanionAvatar extends ConsumerStatefulWidget {
   /// authoritative and is not read or written here.
   final String? roomAnchor;
 
+  /// An animation to draw instead of the behaviour's pose.
+  ///
+  /// Locomotion supplies `walk` here while the companion travels. It is a
+  /// *drawing* override, not a behaviour change: the director still believes the
+  /// companion is on its way to write, and the badge and the semantics keep
+  /// saying so. Null — the case for every caller that is not moving — leaves the
+  /// pose in charge.
+  final AnimationState? animationState;
+
   const CompanionAvatar({
     super.key,
     this.size = 140,
@@ -85,6 +95,7 @@ class CompanionAvatar extends ConsumerStatefulWidget {
     this.focusCategoryId,
     this.companionId,
     this.roomAnchor,
+    this.animationState,
   });
 
   @override
@@ -335,6 +346,7 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
           focusCategoryId: widget.focusCategoryId,
           onTapReact: _triggerTapReact,
           onLongPressReact: _triggerLongPressReact,
+          animationState: widget.animationState,
         ),
       ),
     );
