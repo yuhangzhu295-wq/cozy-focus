@@ -128,6 +128,7 @@ not the rig and not the previous frame.
 |---|---|---|---|---|---|---|
 | dog | `idle` | 001 | `idle_000` | 2 | `idle_001.jpg` | First Start click was ignored; the second submitted. Tile appears as *Character breathing idle pose va…* |
 | dog | `idle` | 002 | `idle_000` | 2 | `idle_002.jpg` | Submitted after a page reload. Tile appears as *Character idle animation frame*. The project grid does not show a new tile until it is reloaded. |
+| dog | `idle` | 003 | `idle_000` | 1 | `idle_003.jpg` | Submitted by the user's own click in the browser; automation could not submit it. Tile appears as *Character performing idle pose*. |
 
 Both frames were measured through `tools/productionise.py`'s own
 `extract_alpha` / `normalise` / `measure` before being accepted into the pack:
@@ -136,6 +137,7 @@ Both frames were measured through `tools/productionise.py`'s own
 |---|---|---|---|---|
 | `idle_001` | (93,124)-(929,919) | 511.0 | 919 | within 2px |
 | `idle_002` | (101,124)-(922,919) | 511.5 | 919 | within 2px |
+| `idle_003` | (102,123)-(921,919) | 511.5 | 919 | within 2px |
 
 `idle_001`'s bounds are identical to the shipped `idle_000`, which is the
 expected result: `normalise` scales the subject to 78% of canvas height and
@@ -146,7 +148,7 @@ They are **not** in the pack yet. `idle`'s loop mode is `loop`, so two or three
 frames would alternate faster than a breath — a flicker, which is worse than the
 current still. The sequence ships when all six exist.
 
-### Blocked: frames 003-005
+### Blocked: frames 004-005
 
 `Start generation` stops accepting input after two generations in a session.
 The prompt and ingredient are set up correctly and the button reports
@@ -154,7 +156,14 @@ The prompt and ingredient are set up correctly and the button reports
 click, a full synthetic sequence (`pointerdown`/`mousedown`/`pointerup`/
 `mouseup`/`click`), Enter in the prompt box, hover-then-click, a neutral click to
 take focus first, and repeated page reloads. Frame 002 needed a reload to
-submit; frames 003-005 did not submit across four reload-and-retry cycles.
+submit; frames 004-005 did not submit across four reload-and-retry
+cycles each.
+
+Frame 003 is the useful data point: the same prompt and ingredient submitted
+first time from the user's own click in the pane. So the request is valid and
+Flow accepts it; what fails is the synthetic gesture. Two of five frames
+submitted from automation, three did not, and the pattern does not track prompt
+content or length.
 
 This matches the soft rate limit already recorded above ("We noticed some
 unusual activity", reached after roughly 14 generations). It may also be that
