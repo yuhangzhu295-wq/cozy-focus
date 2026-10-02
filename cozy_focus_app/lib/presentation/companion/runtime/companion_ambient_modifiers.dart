@@ -1,6 +1,7 @@
 import '../../../../domain/growth/growth_stage.dart';
 import '../time_of_day.dart';
 import 'companion_context.dart';
+import 'presentation_vitals.dart';
 
 /// A contribution to the ambient behaviour pool.
 ///
@@ -106,6 +107,36 @@ abstract final class CompanionAmbientModifiers {
     ),
   };
 
+  /// The contribution of the companion's own condition.
+  ///
+  /// ## Only depletion contributes
+  ///
+  /// A rested, cheerful companion behaves exactly as it did before this input
+  /// existed. Making a healthy companion *livelier* would need a behaviour the
+  /// product has not approved and art that does not exist, so it is not invented
+  /// here — and it keeps [PresentationVitals.neutral] a true no-op, which is what
+  /// lets a page with no vitals to hand pass nothing and change nothing.
+  ///
+  /// A tired companion rests more and changes what it is doing less often; a
+  /// subdued one is quieter. Both are *additive* on the stage and the hour, so a
+  /// condition can never take a behaviour away.
+  static AmbientModifier vitalsModifier(PresentationVitals vitals) {
+    if (vitals.isNeutral) return const AmbientModifier();
+
+    final extra = <CompanionMacroBehavior>{};
+    var dwellScale = 1.0;
+
+    if (vitals.isTired) {
+      extra.add(CompanionMacroBehavior.microRest);
+      dwellScale *= 1.35;
+    }
+    if (vitals.isLowMood) {
+      dwellScale *= 1.2;
+    }
+
+    return AmbientModifier(extraEligible: extra, dwellScale: dwellScale);
+  }
+
   /// The combined modifier for a context.
   ///
   /// Returns the neutral modifier for a task context, so a focus session and a
@@ -114,6 +145,7 @@ abstract final class CompanionAmbientModifiers {
     required CompanionBaseContext baseContext,
     required GrowthStage growthStage,
     required TimeOfDayBand timeOfDayBand,
+    PresentationVitals vitals = PresentationVitals.neutral,
   }) {
     if (!ambientContexts.contains(baseContext)) {
       return const AmbientModifier();
@@ -121,10 +153,15 @@ abstract final class CompanionAmbientModifiers {
 
     final stage = growth[growthStage] ?? const AmbientModifier();
     final band = timeOfDay[timeOfDayBand] ?? const AmbientModifier();
+    final condition = vitalsModifier(vitals);
 
     return AmbientModifier(
-      extraEligible: {...stage.extraEligible, ...band.extraEligible},
-      dwellScale: stage.dwellScale * band.dwellScale,
+      extraEligible: {
+        ...stage.extraEligible,
+        ...band.extraEligible,
+        ...condition.extraEligible,
+      },
+      dwellScale: stage.dwellScale * band.dwellScale * condition.dwellScale,
     );
   }
 }

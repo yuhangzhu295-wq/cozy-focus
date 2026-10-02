@@ -20,6 +20,7 @@
 /// in [copyWithEffect], so no caller has to remember.
 library;
 
+import '../runtime/presentation_vitals.dart';
 import 'furniture_entity.dart';
 
 /// The companion's simulation state, as one immutable value.
@@ -45,6 +46,18 @@ class CompanionVitals {
     this.focusLevel = 60,
     this.relationship = 20,
   });
+
+  /// The read-only projection the behaviour runtime is handed.
+  ///
+  /// The room owns the vitals; the runtime only reads them. Keeping the
+  /// projection here means a page passes the companion's condition through
+  /// without interpreting it, so no page decides what a mood means.
+  PresentationVitals toPresentationVitals() => PresentationVitals(
+        mood: mood,
+        energy: energy,
+        focusLevel: focusLevel,
+        relationship: relationship,
+      );
 
   /// The state a brand-new companion starts in.
   ///

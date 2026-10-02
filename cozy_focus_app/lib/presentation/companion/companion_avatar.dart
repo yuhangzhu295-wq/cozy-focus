@@ -7,6 +7,7 @@ import '../controllers/craft_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/pet_motion_controller.dart';
 import 'animation/animation_state.dart';
+import 'runtime/presentation_vitals.dart';
 import 'companion_presentation_mapper.dart';
 import 'focus_phase.dart';
 import 'companion_selection.dart';
@@ -74,6 +75,13 @@ class CompanionAvatar extends ConsumerStatefulWidget {
   /// authoritative and is not read or written here.
   final String? roomAnchor;
 
+  /// The companion's own condition, when the page has real vitals to hand.
+  ///
+  /// Read-only: the runtime reads it so behaviour can depend on how the
+  /// companion is doing. A page that passes nothing gets neutral vitals, which
+  /// contribute nothing.
+  final PresentationVitals vitals;
+
   /// An animation to draw instead of the behaviour's pose.
   ///
   /// Locomotion supplies `walk` here while the companion travels. It is a
@@ -96,6 +104,7 @@ class CompanionAvatar extends ConsumerStatefulWidget {
     this.companionId,
     this.roomAnchor,
     this.animationState,
+    this.vitals = PresentationVitals.neutral,
   });
 
   @override
@@ -252,6 +261,7 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
       timeOfDay: TimeOfDayResolver.resolve(DateTime.now()),
       reducedMotion: _reducedMotion,
       roomAnchor: widget.roomAnchor,
+      vitals: widget.vitals,
     );
   }
 

@@ -397,6 +397,7 @@ class CompanionBehaviorDirector {
         baseContext: _context.baseContext,
         growthStage: _context.growthStage,
         timeOfDayBand: _context.timeOfDay,
+        vitals: _context.vitals,
       );
 
   /// Applies a dwell multiplier, never returning a non-positive duration.

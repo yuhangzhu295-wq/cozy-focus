@@ -3,6 +3,7 @@ import '../focus_phase.dart';
 import '../time_of_day.dart';
 import 'companion_id.dart';
 import 'companion_pose.dart';
+import 'presentation_vitals.dart';
 
 /// The **Base Context** layer — *where* the companion is.
 ///
@@ -164,6 +165,14 @@ class CompanionContext {
   /// Whether the platform asks for reduced motion.
   final bool reducedMotion;
 
+  /// The companion's own condition, when the caller has real vitals to hand.
+  ///
+  /// A read-only projection — see [PresentationVitals]. A page that knows
+  /// nothing about the companion's condition passes nothing and gets
+  /// [PresentationVitals.neutral], which contributes nothing, so this input is
+  /// additive and cannot change behaviour that already existed.
+  final PresentationVitals vitals;
+
   /// The room anchor the companion is bound to, when in the room context.
   ///
   /// This is a *presentation* anchor id (`seat` / `lie` / `front` / `work`), not
@@ -183,6 +192,7 @@ class CompanionContext {
     this.timeOfDay = TimeOfDayBand.midday,
     this.reducedMotion = false,
     this.roomAnchor,
+    this.vitals = PresentationVitals.neutral,
   });
 
   /// Whether a real craft job is active. Craft behaviour is gated on this.
@@ -204,6 +214,7 @@ class CompanionContext {
     TimeOfDayBand? timeOfDay,
     bool? reducedMotion,
     String? roomAnchor,
+    PresentationVitals? vitals,
     bool clearRoomAnchor = false,
   }) {
     return CompanionContext(
@@ -220,6 +231,7 @@ class CompanionContext {
       timeOfDay: timeOfDay ?? this.timeOfDay,
       reducedMotion: reducedMotion ?? this.reducedMotion,
       roomAnchor: clearRoomAnchor ? null : (roomAnchor ?? this.roomAnchor),
+      vitals: vitals ?? this.vitals,
     );
   }
 

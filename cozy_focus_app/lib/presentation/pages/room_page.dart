@@ -511,6 +511,9 @@ class _RoomPageState extends ConsumerState<RoomPage>
           // is ready and the art is honestly missing, which the asset gate
           // reports as `walk 0/6`.
           animationState: _locomotion.isTravelling ? AnimationState.walk : null,
+          // The room is the one place with real vitals, so it is the one place
+          // that supplies them. Passed through, never interpreted here.
+          vitals: simulation.vitals.toPresentationVitals(),
           // The anchor's role picks the posture the sprite pipeline presents;
           // the simulation chose *which* anchor, so the two cannot disagree.
           roomAnchor: _anchorRoleFor(anchor.itemId),
