@@ -130,7 +130,7 @@ void main() {
         MaterialApp(
           home: CompanionPresentationClock(
             director: director,
-            builder: (_, __) => const SizedBox.shrink(),
+            builder: (_, __, ___) => const SizedBox.shrink(),
           ),
         ),
       );

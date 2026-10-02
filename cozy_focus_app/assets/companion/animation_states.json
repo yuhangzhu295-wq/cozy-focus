@@ -19,6 +19,7 @@
     "focus_read": "seated",
     "focus_think": "seated",
     "craft_work": "seated",
+    "rest": "seated",
     "sleep": "lying"
   },
   "transitionDurationsMs": {
@@ -63,7 +64,7 @@
     "prepare": "idle",
     "glance": "idle",
     "micro_rest": "idle",
-    "pause_rest": "idle",
+    "pause_rest": "rest",
     "room_sit": "idle",
     "room_relax": "idle",
     "focus_write": "focus_write",

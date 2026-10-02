@@ -5,6 +5,7 @@ import '../../domain/growth/mochi_growth_profile.dart';
 import '../../domain/models/enums.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/pet_avatar_widget.dart';
+import 'animation/animation_state.dart';
 import 'focus_phase.dart';
 import 'mochi_pose_spec.dart';
 import 'runtime/companion_action_manifest.dart';
@@ -95,8 +96,9 @@ class MochiVisualProvider extends CompanionVisualProvider {
     // (bookshelf reads, desk writes) rather than needing its own sequence.
     final spec = animationSpec ??
         CompanionSpriteArt.resolveFor(companionKey, intent.pose);
-    final useLayered =
-        animationSpec == null && layeredPoses.contains(intent.pose.id);
+    final useLayered = layeredPoses.contains(intent.pose.id) &&
+        (options.animationState == null ||
+            options.animationState == AnimationState.idle);
 
     return _MochiPoseAvatar(
       intent: intent,

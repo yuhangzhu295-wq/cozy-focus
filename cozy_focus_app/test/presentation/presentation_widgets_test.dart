@@ -15,7 +15,6 @@ import 'package:cozy_focus_app/presentation/pages/focus_save_page.dart';
 import 'package:cozy_focus_app/presentation/pages/focus_reward_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 import 'package:cozy_focus_app/presentation/widgets/pet_avatar_widget.dart';
-import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 import 'package:cozy_focus_app/domain/models/pet_models.dart' as pet_domain;
 import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
@@ -195,9 +194,9 @@ void main() {
       final headlineFinder = find.text('专注当下，\n让更好的自己慢慢长大。');
       expect(headlineFinder, findsOneWidget);
 
-      // The guard that matters is the headline against the pet itself: the
-      // approved hero has no bubble, so the pet is what the copy must clear.
-      final petFinder = find.byType(MochiLayeredRenderer);
+      // Measure the companion's rendered box rather than a specific renderer:
+      // the pose can legitimately use either the layered rig or sprite art.
+      final petFinder = find.byType(PetAvatarWidget);
       expect(petFinder, findsOneWidget);
 
       final headlineRect = tester.getRect(headlineFinder);
@@ -254,7 +253,7 @@ void main() {
       final headlineFinder = find.text('专注当下，\n让更好的自己慢慢长大。');
       expect(headlineFinder, findsOneWidget);
 
-      final petFinder = find.byType(MochiLayeredRenderer);
+      final petFinder = find.byType(PetAvatarWidget);
       expect(petFinder, findsOneWidget);
 
       final headlineRect = tester.getRect(headlineFinder);

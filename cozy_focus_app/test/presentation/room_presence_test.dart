@@ -8,7 +8,6 @@ import 'package:cozy_focus_app/data/local/app_database.dart'
     hide FocusSession, Pet, CraftJob, CraftRecipe, InventoryItem, RoomItem;
 import 'package:cozy_focus_app/domain/models/craft_models.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
-import 'package:cozy_focus_app/presentation/companion/animation/animation_state.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 import 'package:cozy_focus_app/presentation/companion/room/room_simulation.dart';
@@ -406,7 +405,8 @@ void main() {
       expect(anchorY - feetY, closeTo(1.2, 0.05));
     });
 
-    testWidgets('travelling asks for the walk animation, arriving does not',
+    testWidgets(
+        'travelling is reported to the animation layer, arriving is not',
         (tester) async {
       await container.read(craftRepositoryProvider).upsertInventoryItem(
             owned('sofa', quantity: 1),
@@ -420,11 +420,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // The first placement snaps, so the companion is not walking yet.
-      AnimationState? stateNow() => tester
+      // The page reports travel and nothing else: which drawings that becomes
+      // is the animation controller's decision, so no page names a state.
+      bool travellingNow() => tester
           .widget<CompanionAvatar>(find.byType(CompanionAvatar))
-          .animationState;
-      expect(stateNow(), isNull);
+          .travelling;
+
+      // The first placement snaps, so the companion is not walking yet.
+      expect(travellingNow(), isFalse);
 
       // Asking for the sofa moves the companion to a different anchor, which is
       // a real journey rather than a placement.
@@ -435,15 +438,14 @@ void main() {
           );
       await tester.pump();
 
-      // Mid-journey the companion must be drawing the walk. This is the whole
-      // claim of the phase: the move is no longer a tween over a still image,
-      // it is a state the sprite pipeline is asked for by name.
+      // Mid-journey the animation layer is told the companion is travelling, so
+      // the controller turns that into `stand_up -> walk` on its own.
       await tester.pump(const Duration(milliseconds: 150));
-      expect(stateNow(), AnimationState.walk);
+      expect(travellingNow(), isTrue);
 
-      // Once it arrives, the walk stops and the behaviour's own pose resumes.
+      // Once it arrives the flag clears and the behaviour's pose takes over.
       await tester.pump(const Duration(milliseconds: 3000));
-      expect(stateNow(), isNull);
+      expect(travellingNow(), isFalse);
     });
 
     testWidgets('with nothing placed Mochi uses the floor spot',

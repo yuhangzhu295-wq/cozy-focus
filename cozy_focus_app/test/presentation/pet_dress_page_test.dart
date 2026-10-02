@@ -151,6 +151,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('装扮图鉴'), findsOneWidget);
+      // The catalog is a lazily built SliverGrid below the preview. Scroll it
+      // into view before asserting on cards: the first row need not be built at
+      // the initial scroll offset on every screen size.
+      await tester.scrollUntilVisible(find.text('基础红项圈'), 150);
       expect(find.text('基础红项圈'), findsOneWidget);
       expect(find.text('暖冬姜黄围巾'), findsOneWidget);
 

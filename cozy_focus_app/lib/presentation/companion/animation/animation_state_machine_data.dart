@@ -37,6 +37,7 @@ abstract final class AnimationStateMachineData {
       AnimationState.focusRead: AnimationPosture.seated,
       AnimationState.focusThink: AnimationPosture.seated,
       AnimationState.craftWork: AnimationPosture.seated,
+      AnimationState.rest: AnimationPosture.seated,
       AnimationState.sleep: AnimationPosture.lying,
     },
     transitionDurations: {
@@ -81,7 +82,7 @@ abstract final class AnimationStateMachineData {
       'prepare': AnimationState.idle,
       'glance': AnimationState.idle,
       'micro_rest': AnimationState.idle,
-      'pause_rest': AnimationState.idle,
+      'pause_rest': AnimationState.rest,
       'room_sit': AnimationState.idle,
       'room_relax': AnimationState.idle,
       'focus_write': AnimationState.focusWrite,

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
+import 'package:cozy_focus_app/presentation/companion/animation/animation_state.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_prop.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_player.dart';
@@ -284,6 +285,78 @@ void main() {
         anyOf(focusActions),
         reason: 'an unknown companion must fall back to the default companion',
       );
+    });
+  });
+  group('travel plays the shipped transitions', () {
+    // The whole point of the wiring: stand_up and sit_down were generated and
+    // shipped, and before this the only thing that ever drew walk was a page
+    // naming it directly. Now a page reports travel and the animation
+    // controller decides the sequence.
+    testWidgets('leaving a seat stands up before it walks', (tester) async {
+      final c = containerWith(const HomeUIState(hasActiveSession: true));
+
+      // A focus context is a *seated* behaviour, so the companion starts seated.
+      await tester.pumpWidget(appWith(c, const CompanionAvatar(size: 140)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(focusActions, contains(renderedSpriteAction(tester)));
+
+      // Travel begins.
+      await tester.pumpWidget(
+        appWith(c, const CompanionAvatar(size: 140, travelling: true)),
+      );
+      await tester.pump();
+
+      // Getting out of the chair comes first, and it is the machine's posture
+      // hop rather than anything the page named.
+      expect(renderedSpriteAction(tester), 'stand_up');
+
+      // Once the transition is up, the walk is what is drawn.
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 250));
+      }
+      expect(renderedSpriteAction(tester), 'walk');
+    });
+
+    testWidgets('arriving sits back down before it works', (tester) async {
+      final c = containerWith(const HomeUIState(hasActiveSession: true));
+
+      await tester.pumpWidget(
+        appWith(c, const CompanionAvatar(size: 140, travelling: true)),
+      );
+      await tester.pump();
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 250));
+      }
+      expect(renderedSpriteAction(tester), 'walk');
+
+      // The journey ends and the behaviour's own pose takes over - which, being
+      // a seated one, needs a sit-down in front of it.
+      await tester.pumpWidget(appWith(c, const CompanionAvatar(size: 140)));
+      await tester.pump();
+      expect(renderedSpriteAction(tester), 'sit_down');
+
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 250));
+      }
+      expect(focusActions, contains(renderedSpriteAction(tester)));
+    });
+
+    testWidgets('a page that names a state itself still wins', (tester) async {
+      final c = containerWith(const HomeUIState(hasActiveSession: true));
+      await tester.pumpWidget(appWith(
+        c,
+        const CompanionAvatar(
+          size: 140,
+          travelling: true,
+          animationState: AnimationState.idle,
+        ),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // The explicit override is drawn, not the controller's performance.
+      expect(renderedSpriteAction(tester), isNot('stand_up'));
     });
   });
 }

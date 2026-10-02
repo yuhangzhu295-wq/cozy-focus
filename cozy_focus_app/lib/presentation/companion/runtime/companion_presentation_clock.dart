@@ -43,17 +43,35 @@ class CompanionPresentationClock extends StatefulWidget {
   final CompanionBehaviorDirector director;
 
   /// Builds the subtree for the current intent.
+  ///
+  /// [elapsed] is the presentation time the director was just advanced to. It is
+  /// handed over so a downstream animation layer can advance its own transitions
+  /// off the *same* clock, rather than starting a second scheduler to measure the
+  /// same seconds twice.
   final Widget Function(
-      BuildContext context, CompanionPresentationIntent intent) builder;
+    BuildContext context,
+    CompanionPresentationIntent intent,
+    Duration elapsed,
+  ) builder;
 
   /// Invoked when the presented pose changes, for diagnostics and tests.
   final ValueChanged<CompanionPresentationIntent>? onIntentChanged;
+
+  /// Invoked on every tick with the presentation time.
+  ///
+  /// A downstream animation layer needs this: its own transitions do not change
+  /// the director's intent, so a rebuild driven only by intent changes would
+  /// leave a transition frozen on its first frame. The time handed over is the
+  /// same accumulator the director was just advanced to, so the app still runs
+  /// on one clock.
+  final ValueChanged<Duration>? onTick;
 
   const CompanionPresentationClock({
     super.key,
     required this.director,
     required this.builder,
     this.onIntentChanged,
+    this.onTick,
   });
 
   /// How often the director is asked to re-evaluate.
@@ -152,11 +170,14 @@ class _CompanionPresentationClockState extends State<CompanionPresentationClock>
   /// Advances the director to the current presentation time and re-renders.
   void _evaluate() {
     widget.director.advanceTo(_elapsed);
+    // Before the render, so anything that advanced on this tick is already in
+    // place when the subtree is built.
+    widget.onTick?.call(_elapsed);
     _render();
   }
 
   @override
   Widget build(BuildContext context) {
-    return widget.builder(context, widget.director.intent);
+    return widget.builder(context, widget.director.intent, _elapsed);
   }
 }

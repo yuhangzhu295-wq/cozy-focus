@@ -181,7 +181,17 @@ class _RoomPageState extends ConsumerState<RoomPage>
 
     if (!_locomotion.startTravel(from: from, to: anchor)) return;
     _travelFrom = from;
+    // The ticker starts immediately: the pet's position and its animation run
+    // on the same wall clock, so a `stand_up` transition and the first metres
+    // of travel overlap naturally rather than being serialised here.
     _startTravelTicker();
+  }
+
+  /// Receives the animation controller's state changes, for diagnostics and for
+  /// coordinating any future effect that needs to know when a transition ends.
+  void _onCompanionAnimationChanged(AnimationState state) {
+    // Tracked for diagnostics; the movement ticker is already running and the
+    // animation controller handles the visual transitions independently.
   }
 
   void _startTravelTicker() {
@@ -500,17 +510,12 @@ class _RoomPageState extends ConsumerState<RoomPage>
       child: IgnorePointer(
         child: CompanionAvatar(
           size: size,
-          // While the companion is travelling, what it *draws* is the walk,
-          // which is the whole point of this phase: the position is no longer a
-          // tween over a still image. The behaviour is untouched — the director
-          // still believes the companion is on its way to the anchor below — so
-          // the badge and the semantics keep telling the truth.
-          //
-          // Until the walk frames ship, `specForAction` finds no `walk` sequence
-          // and the provider falls back to the pose's own drawing: the pipeline
-          // is ready and the art is honestly missing, which the asset gate
-          // reports as `walk 0/6`.
-          animationState: _locomotion.isTravelling ? AnimationState.walk : null,
+          // The page says *that* it is travelling and nothing more. Which
+          // drawings that becomes — `stand_up → walk` on the way out,
+          // `sit_down → the behaviour's pose` on arrival — is the animation
+          // controller's decision, so no page names an animation state.
+          travelling: _locomotion.isTravelling,
+          onAnimationStateChanged: _onCompanionAnimationChanged,
           // The room is the one place with real vitals, so it is the one place
           // that supplies them. Passed through, never interpreted here.
           vitals: simulation.vitals.toPresentationVitals(),

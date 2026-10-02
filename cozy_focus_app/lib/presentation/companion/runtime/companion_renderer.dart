@@ -72,6 +72,11 @@ class _CompanionRendererState extends State<CompanionRenderer> {
       focusCategoryId: widget.options.focusCategoryId,
       onTapReact: widget.options.onTapReact,
       onLongPressReact: widget.options.onLongPressReact,
+      // Every field is rebuilt one by one here, so a new one has to be listed
+      // or it is silently dropped on the way to the provider. `animationState`
+      // was, which made the whole animation layer invisible in production while
+      // its own tests passed.
+      animationState: widget.options.animationState,
     );
 
     return widget.provider.build(context, widget.intent, options);

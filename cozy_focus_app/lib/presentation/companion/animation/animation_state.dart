@@ -35,6 +35,11 @@ enum AnimationState {
 
   sleep('sleep', 'sleep'),
 
+  /// Settled and resting rather than asleep. Its own art, so it is its own
+  /// state: projecting it onto `idle` drew the idle frames for a pose that ships
+  /// a `pause_rest` sequence, which is the projection losing art it was handed.
+  rest('rest', 'pause_rest'),
+
   /// The sustained state of the `celebrate` behaviour.
   happy('happy', 'celebrate'),
 

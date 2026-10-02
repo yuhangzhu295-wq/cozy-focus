@@ -71,6 +71,9 @@ class CompanionAnimationController {
   /// The posture the character is in once [_queue] has drained.
   AnimationPosture _posture = AnimationPosture.standing;
 
+  /// Whether the companion is travelling between two anchors right now.
+  bool _travelling = false;
+
   /// The behaviour this performance is for. Retained only to detect a change.
   CompanionPresentationIntent? _intent;
 
@@ -82,6 +85,16 @@ class CompanionAnimationController {
     AnimationStateMachine? machine,
   }) : machine = machine ?? AnimationStateMachineData.bundled {
     if (intent != null) setIntent(intent);
+  }
+
+  /// Adopts the opening pose without staging a journey that never happened.
+  /// Subsequent [setIntent] calls still use the machine's posture transitions.
+  void settleAt(CompanionPresentationIntent intent) {
+    _intent = intent;
+    _sustainedTarget = _targetFor(intent);
+    _current = _sustainedTarget;
+    _posture = machine.postureFor(_current);
+    _queue = [_QueuedState(_current, null)];
   }
 
   /// The animation to draw right now.
@@ -105,6 +118,37 @@ class CompanionAnimationController {
   /// Whether the current performance was started by an overlay.
   bool get isOverlay => _intent?.isOverlayActive ?? false;
 
+  /// Whether the companion is travelling between two anchors.
+  bool get isTravelling => _travelling;
+
+  /// Tells the controller the companion is travelling, or has arrived.
+  ///
+  /// ## Why travel is its own input
+  ///
+  /// Travel is an *animation* fact, not a behaviour. The director still believes
+  /// the companion is on its way to write, and there is no pose that means
+  /// "walking" — so it arrives here directly rather than as a pose the behaviour
+  /// layer would have to invent.
+  ///
+  /// Starting a journey makes the sustained state `walk`. If the companion was
+  /// seated, the machine's own posture hop puts `stand_up` in front of it, so the
+  /// sequence is `stand_up → walk` without either state being named here.
+  /// Arriving clears the flag and re-plans against the behaviour's pose, which
+  /// queues `sit_down` when the destination is a seated one.
+  ///
+  /// Returns whether the drawn animation changed.
+  bool setTravelling(bool travelling) {
+    if (travelling == _travelling) return false;
+    // Recorded before the intent check: a page can report travel before the
+    // first behaviour has arrived, and the flag has to survive until it does.
+    _travelling = travelling;
+    final intent = _intent;
+    if (intent == null) return false;
+    _sustainedTarget = _targetFor(intent);
+    _replan(intent);
+    return true;
+  }
+
   /// Pushes a behaviour result in.
   ///
   /// Re-planning happens only when the *target* animation changes. An unrelated
@@ -124,6 +168,7 @@ class CompanionAnimationController {
     if (previous != null && target == _sustainedTarget) return false;
 
     _sustainedTarget = target;
+
     _replan(intent);
     return true;
   }
@@ -197,6 +242,10 @@ class CompanionAnimationController {
   /// adding a pose is a row in `animation_states.json` plus one in the mirror —
   /// not a new `case`. A pose the machine does not list falls back to `idle`,
   /// which is the one state every companion ships.
-  AnimationState _targetFor(CompanionPresentationIntent intent) =>
-      machine.projectionFor(intent.pose.id) ?? AnimationState.idle;
+  AnimationState _targetFor(CompanionPresentationIntent intent) {
+    // A journey outranks the behaviour's pose: the companion is walking now, and
+    // what it is walking *towards* is still whatever the director chose.
+    if (_travelling) return AnimationState.walk;
+    return machine.projectionFor(intent.pose.id) ?? AnimationState.idle;
+  }
 }

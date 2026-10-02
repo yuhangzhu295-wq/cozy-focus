@@ -7,6 +7,7 @@ import '../controllers/craft_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/pet_motion_controller.dart';
 import 'animation/animation_state.dart';
+import 'animation/companion_animation_controller.dart';
 import 'runtime/presentation_vitals.dart';
 import 'runtime/companion_event.dart';
 import 'companion_presentation_mapper.dart';
@@ -92,6 +93,25 @@ class CompanionAvatar extends ConsumerStatefulWidget {
   /// pose in charge.
   final AnimationState? animationState;
 
+  /// Whether the companion is travelling between two anchors.
+  ///
+  /// This is what makes the shipped transitions play. Starting a journey turns
+  /// the performance into `stand_up → walk`, and arriving turns it into
+  /// `sit_down → the behaviour's own pose`, both decided by the animation
+  /// controller's posture hops rather than by a page naming the states.
+  ///
+  /// It is an animation fact rather than a behaviour one: the director is not
+  /// told, because the companion is still on its way to the same place.
+  final bool travelling;
+
+  /// Reports each animation state the controller settles into, so a page can
+  /// coordinate movement with the walk without naming animation states itself.
+  ///
+  /// The room uses this to start the pet's movement only when the walk actually
+  /// begins — after `stand_up` has finished — so the pet does not slide across
+  /// the floor while it is still getting up.
+  final ValueChanged<AnimationState>? onAnimationStateChanged;
+
   const CompanionAvatar({
     super.key,
     this.size = 140,
@@ -106,6 +126,8 @@ class CompanionAvatar extends ConsumerStatefulWidget {
     this.roomAnchor,
     this.animationState,
     this.vitals = PresentationVitals.neutral,
+    this.travelling = false,
+    this.onAnimationStateChanged,
   });
 
   @override
@@ -119,6 +141,17 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
 
   late final CompanionBehaviorDirector _director;
   late final CompanionVisualRegistry _registry;
+
+  /// Turns the director's behaviour into a performance, including the posture
+  /// transitions the behaviour layer has no vocabulary for.
+  ///
+  /// It is advanced off the presentation clock's own elapsed time rather than a
+  /// timer of its own, so the app still has exactly one scheduler.
+  final CompanionAnimationController _animation =
+      CompanionAnimationController();
+
+  /// The animation state already reported to [CompanionAvatar.onAnimationStateChanged].
+  AnimationState? _reportedAnimation;
 
   /// Reduced motion, read from the platform once per dependency change.
   bool _reducedMotion = false;
@@ -139,6 +172,9 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
       catalog: ref.read(companionCatalogProvider),
       context: _readContext(),
     );
+    // The opening pose is already in place; only later changes need a transition.
+    _animation.settleAt(_director.intent);
+    _animation.setTravelling(widget.travelling);
 
     // Business state is pushed into the director from provider listeners, never
     // from build, so a context change can never raise a rebuild-during-build.
@@ -183,6 +219,10 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
         oldWidget.companionId != widget.companionId ||
         oldWidget.roomAnchor != widget.roomAnchor) {
       _sync();
+    }
+    if (oldWidget.travelling != widget.travelling) {
+      _animation.setTravelling(widget.travelling);
+      _reportAnimationState();
     }
   }
 
@@ -266,11 +306,25 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     );
   }
 
+  /// Reports the animation state when it changes, for a page coordinating
+  /// movement with the walk. Called from the tick and from lifecycle changes.
+  void _reportAnimationState() {
+    final state = _animation.currentState;
+    if (_reportedAnimation == state) return;
+    _reportedAnimation = state;
+    widget.onAnimationStateChanged?.call(state);
+  }
+
   /// Pushes current business state into the director and the motion controller.
   void _sync() {
     if (!mounted) return;
 
     _director.updateContext(_readContext());
+    // A provider update can rebuild this avatar before the presentation clock's
+    // next tick. Hand the director's new intent to the animation layer now so
+    // the two cannot present different behaviours during that frame.
+    _animation.setIntent(_director.intent);
+    _reportAnimationState();
 
     // Growth owns the blink / ear-twitch cadence, so the controller has to be
     // told whenever the stage moves. Idempotent when the stage is unchanged.
@@ -350,23 +404,36 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
 
     return CompanionPresentationClock(
       director: _director,
-      builder: (context, intent) => CompanionRenderer(
-        intent: intent,
-        provider: _providerFor(intent.companionId),
-        options: CompanionVisualOptions(
-          displayName: _director.profile.displayName,
-          size: widget.size,
-          message: widget.message,
-          accessory: widget.accessory,
-          showStateBadge: widget.showStateBadge,
-          controller: _controller,
-          focusProgress: widget.focusProgress,
-          focusCategoryId: widget.focusCategoryId,
-          onTapReact: _triggerTapReact,
-          onLongPressReact: _triggerLongPressReact,
-          animationState: widget.animationState,
-        ),
-      ),
+      // The director's intent is the controller's input, so it is pushed in as
+      // the intent changes rather than read during build.
+      onIntentChanged: _animation.setIntent,
+      // The controller's transitions do not change the director's intent, so
+      // they have to be advanced off the tick rather than off a rebuild.
+      onTick: (elapsed) {
+        if (_animation.advanceTo(elapsed) && mounted) setState(() {});
+        _reportAnimationState();
+      },
+      builder: (context, intent, elapsed) {
+        return CompanionRenderer(
+          intent: intent,
+          provider: _providerFor(intent.companionId),
+          options: CompanionVisualOptions(
+            displayName: _director.profile.displayName,
+            size: widget.size,
+            message: widget.message,
+            accessory: widget.accessory,
+            showStateBadge: widget.showStateBadge,
+            controller: _controller,
+            focusProgress: widget.focusProgress,
+            focusCategoryId: widget.focusCategoryId,
+            onTapReact: _triggerTapReact,
+            onLongPressReact: _triggerLongPressReact,
+            // A page that names a state itself wins — the room's walk override is
+            // the one case — and otherwise the controller's performance is drawn.
+            animationState: widget.animationState ?? _animation.currentState,
+          ),
+        );
+      },
     );
   }
 }
