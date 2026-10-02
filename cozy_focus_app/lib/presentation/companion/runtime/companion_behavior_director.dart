@@ -2,6 +2,7 @@ import '../focus_phase.dart';
 import 'behavior_recipe.dart';
 import 'companion_action_availability.dart';
 import 'companion_ambient_modifiers.dart';
+import 'companion_behavior_priority.dart';
 import 'companion_catalog.dart';
 import 'companion_context.dart';
 import 'companion_event.dart';
@@ -115,6 +116,34 @@ class CompanionBehaviorDirector {
   /// completed asset and not a passed visual gate, so a caller that wants to
   /// claim behaviour variety has to consult this first.
   bool get isUsingFallback => _usedFallback;
+
+  /// Which claim on the companion won, right now.
+  ///
+  /// Derived from the state the director already holds — never stored — so it
+  /// cannot drift from what is actually being presented. See
+  /// [CompanionBehaviorPriority] for why the tiers are ordered as they are.
+  CompanionBehaviorPriority get currentPriority {
+    // A completion, whether it arrived as an event or as the completed context.
+    if (isCelebrating ||
+        _context.baseContext == CompanionBaseContext.complete) {
+      return CompanionBehaviorPriority.critical;
+    }
+    // A gesture covering the macro. It outranks the macro without replacing it.
+    if (_overlay.isActive) return CompanionBehaviorPriority.interaction;
+    return switch (_context.baseContext) {
+      CompanionBaseContext.focus ||
+      CompanionBaseContext.craft ||
+      CompanionBaseContext.pause ||
+      CompanionBaseContext.sleep =>
+        CompanionBehaviorPriority.task,
+      CompanionBaseContext.home ||
+      CompanionBaseContext.room =>
+        CompanionBehaviorPriority.idle,
+      // `complete` is handled above; listed so the switch stays exhaustive
+      // rather than silently falling through if a context is added.
+      CompanionBaseContext.complete => CompanionBehaviorPriority.critical,
+    };
+  }
 
   /// Whether a forced celebration is running.
   bool get isCelebrating =>
