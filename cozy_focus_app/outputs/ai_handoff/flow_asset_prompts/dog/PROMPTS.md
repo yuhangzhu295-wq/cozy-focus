@@ -168,3 +168,44 @@ content or length.
 This matches the soft rate limit already recorded above ("We noticed some
 unusual activity", reached after roughly 14 generations). It may also be that
 the button requires a trusted gesture the automation cannot produce.
+
+## Batch 2 — walk: blocked, the character will not stand up
+
+Three attempts at `walk_000`, all with `idle_000` as the ingredient.
+
+| attempt | prompt | result |
+|---|---|---|
+| 1 | the shared pose-variation skeleton | silhouette IoU 0.850 against the seated reference |
+| 2 | same, plus "CRITICAL: must be STANDING, not sitting... a seated pose is wrong" | IoU 0.846 |
+| 3 | reordered — leads on the posture change, uses the reference for identity only | submitted; not returned |
+
+### The check that caught it
+
+Anchors, alpha and byte-identity all pass on these frames: they are correctly
+sized, correctly placed and genuinely different from one another. None of that
+notices that the character is still sitting down.
+
+Silhouette IoU against the reference does. Both attempts land at ~0.85, and a
+genuinely different posture should be well below 0.60. The two frames are the
+same seated shape with the outline nudged, not a standing walk.
+
+This is worth keeping as a gate: it is the only mechanical check here that can
+tell "a different pose" from "the same pose, moved". It cannot judge whether a
+pose is *good*, which remains P4B's job.
+
+### Why this blocks more than walk
+
+The pack's only identity reference is a seated master, and `walk`, `stand_up`
+and `sit_down` all require the character to be standing. Batches 2, 3 and 4
+therefore share one blocker, and the cause is not the prompts: the shared base
+template opens with "preserve its identity, proportions ... create only a pose
+variation", which anchors the posture as hard as it anchors the identity.
+
+Two routes out, and the choice is a product call:
+
+1. **Produce a standing master first** — one image of the character upright, then
+   use it as the ingredient for walk, stand_up and sit_down. This keeps the
+   identity mechanism intact and is what the pipeline is shaped for.
+2. **Drop the ingredient for these actions** and prompt the character from text.
+   Cheaper, but identity fidelity is exactly what the ingredient exists to
+   guarantee, so it trades the thing the pipeline was built to protect.
