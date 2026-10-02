@@ -6,12 +6,18 @@ APP = r"C:\Users\zyu33\Documents\Codex\2026-09-07\new-chat\cozy_focus_app"
 
 # Per-action playback contract (spec §22 frame targets, §41 manifest fields).
 ACTION_SPEC = {
-    # `idle` is rendered by the approved layered rig, whose whole content is
-    # micro-motion (breathe, blink, ear twitch, sprout sway) and whose cadence
-    # comes from the real growth stage. The pack carries one canonical idle
-    # drawing for archival and fallback use, so its target is 1, not 3: the
-    # animation for this action lives in the renderer, not in a frame sequence.
-    "idle":        {"fps": 5, "loop": "loop",      "frames": 1},
+    # `idle` used to be authored with a target of 1, on the grounds that its
+    # animation lived in the layered rig and the pack carried one canonical
+    # drawing for archival. V4.3 Phase 3 supersedes that: a one-frame sequence
+    # is a still image, and the brief forbids single-PNG loops. `idle` is now a
+    # real six-frame breath, authored here so this generator stops overwriting
+    # the target with the frame count on every run.
+    "idle":        {"fps": 5, "loop": "loop",      "frames": 6},
+    # Batch 1's transitions. Contracted before their frames exist, so the gate
+    # can name them as pending rather than as absent.
+    "walk":        {"fps": 8, "loop": "loop",      "frames": 6},
+    "sit_down":    {"fps": 8, "loop": "once",      "frames": 4},
+    "stand_up":    {"fps": 8, "loop": "once",      "frames": 4},
     "focus_read":  {"fps": 5, "loop": "pingpong",  "frames": 3},
     "focus_write": {"fps": 5, "loop": "loop",      "frames": 4},
     "focus_think": {"fps": 4, "loop": "pingpong",  "frames": 3},
@@ -88,7 +94,10 @@ def build(companion):
             "fps": spec["fps"],
             "loopMode": spec["loop"],
             "targetFrameCount": spec["frames"],
-            "interruptible": action not in ("celebrate",),
+            # A one-shot celebration and a posture transition must not be cut
+            # mid-play: a companion stopped half-way through standing up has no
+            # pose at all.
+            "interruptible": action not in ("celebrate", "sit_down", "stand_up"),
             "overlayBehavior": "pause",
             "returnBehavior": "resume",
             "reducedMotionFrames": [0],

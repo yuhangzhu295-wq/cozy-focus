@@ -94,7 +94,12 @@
     },
     "idle": {
       "frames": [
-        "idle_000.png"
+        "idle_000.png",
+        "idle_001.png",
+        "idle_002.png",
+        "idle_003.png",
+        "idle_004.png",
+        "idle_005.png"
       ],
       "fps": 5,
       "loopMode": "loop",

@@ -104,6 +104,11 @@ abstract final class CompanionActionManifestData {
           actionId: 'idle',
           frames: [
             'assets/companions/dog/idle_000.png',
+            'assets/companions/dog/idle_001.png',
+            'assets/companions/dog/idle_002.png',
+            'assets/companions/dog/idle_003.png',
+            'assets/companions/dog/idle_004.png',
+            'assets/companions/dog/idle_005.png',
           ],
           fps: 5,
           loopMode: SpriteLoopMode.loop,
