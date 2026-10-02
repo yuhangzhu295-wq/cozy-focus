@@ -145,3 +145,87 @@ verification scratch outside that tree, or delete it before running the import.
 cat: **6 actions / 21 frames**. `idle` is complete (6/6). Still missing:
 `walk` (0/6), `sit_down` (0/4), `stand_up` (0/4), `craft_work` (0/4),
 `focus_write` (2/4), `pet_react` (0/3), `tap_react` (0/3), `sleep` (0/2).
+
+---
+
+# Session 3 — walk completed
+
+## Why walk was the priority
+
+`walk` is the room's core presentation: the companion walks between anchors when
+the player places furniture or the simulation picks a new seat. Without it the
+cat has no locomotion frames, so it presents as idle while it moves — the
+"sliding still image" failure the sprite pipeline exists to remove. It outranks
+the remaining actions on player-visible impact.
+
+## A standing master had to come first
+
+The cat's approved master is **seated**, and walk is a standing action. The
+archive's own law — a prop- or posture-carrying action must use a master in that
+posture, or the model drifts — applies here, so a standing master was generated
+first from `cat_master.jpg`:
+
+| Frame | Reference | Attempts | Notes |
+|---|---|---|---|
+| standing master | `cat_master.jpg` | 1 | "Cat standing in master pose". Identity, palette, camera and scale preserved; the tail's S-curl and the sprout carried over exactly. |
+
+The standing master is now in the kitten project, so subsequent standing actions
+should attach **that** tile rather than `cat_master.jpg`. A local copy is kept at
+`.asset_staging/refs/cat_standing_master.jpg` for reference.
+
+## Accepted this session
+
+All six walk frames were generated with the **standing master** attached, at
+1:1 / x1:
+
+| Frame | Tile name | Attempts |
+|---|---|---|
+| `walk_000` | Cat walking pose variation | 2 |
+| `walk_001` | Cat walking frame two | 1 |
+| `walk_002` | Cat walking action pose | 1 |
+| `walk_003` | Cat walking walking pose | 1 |
+| `walk_004` | Cat walking frame five | 1 |
+| `walk_005` | Cat walking pose variation | 1 |
+
+The cycle is contact → passing → opposite contact → passing → return → close,
+with the tail trailing and the sprout leaning back.
+
+## The shadow defect, and a process lesson
+
+The first `walk_000` came back with a **grey drop shadow** under the paws. The
+contract requires a clean isolated character on pure white, and
+`tools/productionise.py` would have carried that shadow into the game as a grey
+blob. It was caught by building a contact sheet of the whole cycle and looking at
+it, and regenerated with an explicit no-shadow clause:
+
+```
+CRITICAL: absolutely no shadow of any kind. No drop shadow, no ground shadow,
+no contact shadow, no grey ellipse under the paws, no grey smudge on the ground
+line. The background must be pure flat white with nothing but the character on it.
+```
+
+That clause is worth carrying on every future prompt.
+
+**The lesson:** the first contact sheet included the standing master as its first
+cell, which shifted every later index by one, and the shadow was attributed to
+`walk_001` instead of `walk_000`. `walk_001` was regenerated needlessly. **Index
+the sheet to match the frame filenames exactly, or the frame you fix is not the
+frame that is broken.**
+
+A numeric shadow probe (darkest pixel in the lower band) did **not** discriminate:
+the character's own dark outline sits in that band on every frame, so the test
+always reported a dark pixel. Looking at the sheet is what worked.
+
+## Pipeline note
+
+`_standing_master.jpg` was initially left inside
+`.asset_staging/flow/cat/walk/`, where `productionise.py` would have imported it
+as a seventh walk frame. Keep reference images out of the per-action staging
+directory — `.asset_staging/refs/` is the place for them.
+
+## State after this session
+
+cat: **7 actions / 27 frames**. Complete: `idle` (6/6), `walk` (6/6),
+`celebrate` (5/5), `focus_read` (3/3), `focus_think` (3/3), `pause_rest` (2/2).
+Partial: `focus_write` (2/4). Missing: `sit_down` (0/4), `stand_up` (0/4),
+`craft_work` (0/4), `pet_react` (0/3), `tap_react` (0/3), `sleep` (0/2).

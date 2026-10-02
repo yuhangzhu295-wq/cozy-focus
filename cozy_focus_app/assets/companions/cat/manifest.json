@@ -106,6 +106,25 @@
       "reducedMotionFrames": [
         0
       ]
+    },
+    "walk": {
+      "frames": [
+        "walk_000.png",
+        "walk_001.png",
+        "walk_002.png",
+        "walk_003.png",
+        "walk_004.png",
+        "walk_005.png"
+      ],
+      "fps": 8,
+      "loopMode": "loop",
+      "targetFrameCount": 6,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
     }
   },
   "semanticFallback": {
