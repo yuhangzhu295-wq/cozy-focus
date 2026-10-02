@@ -244,3 +244,58 @@ difference, because none of those checks can see posture.
 A text-only attempt (no ingredient, the character described in words) is staged
 in the prompt box as the last untried route. It trades the identity guarantee
 the ingredient exists to provide, which is why it was route 2 and not route 1.
+
+### Standing master — route 1 works, and how it was missed
+
+The x4 batch of strategy C **did contain a standing pose**. It was missed because
+only the first candidate was measured and the other three could not be opened:
+clicking a tile from the grid does not reliably switch the editor, and two tiles
+share the label "Puppy standing up", so the fetch returned the previously opened
+image — two files came back byte-identical before that was noticed.
+
+Measured across all four:
+
+| candidate | IoU vs seated ref | aspect | verdict |
+|---|---|---|---|
+| cand_a (grid idx 0) | 0.892 | 1.024 | seated |
+| s1 (grid idx 1) | **0.632** | **0.785** | **standing** |
+| s2 (grid idx 2) | 0.724 | 0.852 | changed |
+| s3 (grid idx 3) | 0.890 | 1.024 | seated |
+
+The seated reference is 1.049 wide-to-tall; s1 is 0.785, a 25% narrower
+silhouette, which is what a standing quadruped looks like next to a seated one.
+`s1` is kept as `standing_master.jpg` and is the identity reference for the
+standing actions.
+
+**Measure every candidate before concluding.** The first attempt concluded "the
+character will not stand up" from one of four samples.
+
+### walk with the standing master
+
+`walk_000` used it and came out standing, contract-compliant:
+
+| comparison | IoU |
+|---|---|
+| walk_000 vs seated reference | 0.638 |
+| walk_000 vs standing master | 0.857 |
+
+aspect 0.776, bottom 919, centre delta 0.5.
+
+### The picker cannot be selected by position
+
+`walk_001` and `walk_002` drifted back to the seated shape (aspect 0.996 and
+0.982). The cause was the ingredient picker: it was being selected by a
+hard-coded y coordinate, and the picker list grows as tiles are added, so the
+same y pointed at a different image in each call. Two tiles also share the label
+"Puppy standing up", so the label alone is ambiguous.
+
+Selection must be by a **unique label**. `walk_000`'s own label ("Character
+walking contact pose...") is unique and it is a standing walk pose, so the
+remaining walk frames use it as the ingredient rather than the standing master.
+
+### Submission is rate-limited
+
+`Start generation` accepts roughly two submissions and then stops responding.
+A ~100 second quiet period followed by a single click usually works; a second
+immediate click does not, and rapid retries make it worse. Roughly a quarter of
+the attempts in this batch needed a second quiet period.
