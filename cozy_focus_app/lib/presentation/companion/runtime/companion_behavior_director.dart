@@ -120,7 +120,7 @@ class CompanionBehaviorDirector {
   /// Which claim on the companion won, right now.
   ///
   /// Derived from the state the director already holds — never stored — so it
-  /// cannot drift from what is actually being presented. See
+  /// cannot fall out of step with what is actually presented. See
   /// [CompanionBehaviorPriority] for why the tiers are ordered as they are.
   CompanionBehaviorPriority get currentPriority {
     // A completion, whether it arrived as an event or as the completed context.

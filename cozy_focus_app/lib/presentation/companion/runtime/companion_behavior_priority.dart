@@ -7,7 +7,7 @@
 /// them. This names it, so a test can assert it and a diagnostic can report it.
 ///
 /// It is **derived**, never stored: `currentPriority` is computed from the state
-/// the director already holds, so it cannot drift out of step with what is
+/// the director already holds, so it cannot fall out of step with what is
 /// actually being presented. A stored tier would be a second source of truth.
 ///
 /// ## Why it is not the four tiers in the brief
