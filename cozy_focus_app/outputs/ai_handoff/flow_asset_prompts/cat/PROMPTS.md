@@ -361,3 +361,59 @@ cat: **10 actions / 39 frames**. Complete: `idle` (6/6), `walk` (6/6),
 `sit_down` (4/4), `stand_up` (4/4), `craft_work` (4/4), `celebrate` (5/5),
 `focus_read` (3/3), `focus_think` (3/3), `pause_rest` (2/2). Partial:
 `focus_write` (2/4). Missing: `sleep` (0/2), `tap_react` (0/3), `pet_react` (0/3).
+
+---
+
+# Session 6 — the reaction and sleep actions
+
+## Why these three
+
+`tap_react` and `pet_react` are the immediate feedback for every touch. Both
+were falling back to `idle`, so tapping or stroking the cat produced no reaction
+at all — the highest-frequency interaction in the app with no response. `sleep`
+was the last pose the night presentation needed, and it is the one the
+`pause_rest` fallback was standing in for.
+
+## The reaction vocabulary, read off the dog
+
+The dog's frames define the beats, and the cat follows them:
+
+- **tap_react** — alert → recognise → pleased. The cat has **open eyes**, so this
+  is expressible as a real expression change: wide round eyes and perked ears,
+  then softer eyes and a small head tilt, then closed happy arcs.
+- **pet_react** — lean in → melt → blissful. Progressively tilted head, eyes
+  closing, cheeks getting pinker across the three frames.
+- **sleep** — a curled lying pose with closed sleeping eyes, the head resting on
+  the tucked front paws and the tail wrapped around the front.
+
+## Accepted this session
+
+| Action | Frames | Reference | Attempts |
+|---|---|---|---|
+| `tap_react` | 000–002 | `cat_master.jpg` (seated) | 1 each |
+| `pet_react` | 000–002 | `cat_master.jpg` (seated) | 1 each |
+| `sleep` | 000 | `cat_master.jpg` (seated) | 1 |
+| `sleep` | 001 | `sleep_000` (edit base) | 1 |
+
+All ten frames landed on the first attempt. For the reactions the seated master
+was used for every frame rather than chaining, because the change is in the
+face — chaining a face would compound drift — and the cat's identity held across
+all six.
+
+`sleep_001` is the only frame here generated from a sibling, and deliberately:
+a two-frame sleeping loop should differ *only* by the breath, so the edit base
+is the approved first frame and the prompt asks for nothing but a chest rise and
+a slight sprout lean. The two frames are near-identical, which is correct.
+
+## Milestone
+
+The cat now ships **all thirteen actions** — the same vocabulary as the dog —
+at **47 frames**. Only `focus_write` is short of its frame count (2 of 4), which
+is a frame-count matter rather than a pose gap.
+
+## State after this session
+
+cat: **13 actions / 47 frames**. Complete: `idle` (6/6), `walk` (6/6),
+`sit_down` (4/4), `stand_up` (4/4), `craft_work` (4/4), `celebrate` (5/5),
+`focus_read` (3/3), `focus_think` (3/3), `pause_rest` (2/2), `tap_react` (3/3),
+`pet_react` (3/3), `sleep` (2/2). Partial: `focus_write` (2/4).

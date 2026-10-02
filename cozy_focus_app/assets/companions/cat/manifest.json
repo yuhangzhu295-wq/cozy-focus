@@ -124,6 +124,22 @@
         0
       ]
     },
+    "pet_react": {
+      "frames": [
+        "pet_react_000.png",
+        "pet_react_001.png",
+        "pet_react_002.png"
+      ],
+      "fps": 6,
+      "loopMode": "once",
+      "targetFrameCount": 3,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "sit_down": {
       "frames": [
         "sit_down_000.png",
@@ -141,6 +157,21 @@
         0
       ]
     },
+    "sleep": {
+      "frames": [
+        "sleep_000.png",
+        "sleep_001.png"
+      ],
+      "fps": 3,
+      "loopMode": "loop",
+      "targetFrameCount": 2,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "stand_up": {
       "frames": [
         "stand_up_000.png",
@@ -152,6 +183,22 @@
       "loopMode": "once",
       "targetFrameCount": 4,
       "interruptible": false,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "tap_react": {
+      "frames": [
+        "tap_react_000.png",
+        "tap_react_001.png",
+        "tap_react_002.png"
+      ],
+      "fps": 8,
+      "loopMode": "once",
+      "targetFrameCount": 3,
+      "interruptible": true,
       "overlayBehavior": "pause",
       "returnBehavior": "resume",
       "reducedMotionFrames": [

@@ -344,6 +344,19 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 2,
         ),
+        'pet_react': CompanionActionSpec(
+          actionId: 'pet_react',
+          frames: [
+            'assets/companions/cat/pet_react_000.png',
+            'assets/companions/cat/pet_react_001.png',
+            'assets/companions/cat/pet_react_002.png',
+          ],
+          fps: 6,
+          loopMode: SpriteLoopMode.once,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 3,
+        ),
         'sit_down': CompanionActionSpec(
           actionId: 'sit_down',
           frames: [
@@ -358,6 +371,18 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 4,
         ),
+        'sleep': CompanionActionSpec(
+          actionId: 'sleep',
+          frames: [
+            'assets/companions/cat/sleep_000.png',
+            'assets/companions/cat/sleep_001.png',
+          ],
+          fps: 3,
+          loopMode: SpriteLoopMode.loop,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 2,
+        ),
         'stand_up': CompanionActionSpec(
           actionId: 'stand_up',
           frames: [
@@ -371,6 +396,19 @@ abstract final class CompanionActionManifestData {
           interruptible: false,
           reducedMotionFrames: [0],
           targetFrameCount: 4,
+        ),
+        'tap_react': CompanionActionSpec(
+          actionId: 'tap_react',
+          frames: [
+            'assets/companions/cat/tap_react_000.png',
+            'assets/companions/cat/tap_react_001.png',
+            'assets/companions/cat/tap_react_002.png',
+          ],
+          fps: 8,
+          loopMode: SpriteLoopMode.once,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 3,
         ),
         'walk': CompanionActionSpec(
           actionId: 'walk',

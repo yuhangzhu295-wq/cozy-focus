@@ -168,10 +168,11 @@ void main() {
         CompanionPose.sleep,
       };
 
-      // The cat pack is in production. `idle`, `walk`, `sit_down`, `stand_up`
-      // and `craft_work` are complete; `focus_write` has two staged frames
-      // imported alongside them. Every other pose still reports ASSET_GAP
-      // rather than borrowing a neighbour's art.
+      // The cat pack now covers the same pose vocabulary as the dog: all
+      // thirteen actions ship, and only `focus_write` is still short of its
+      // frame count (two of four), which is a frame-count matter and not a
+      // pose gap. `walk`, `sit_down` and `stand_up` are locomotion and posture
+      // states rather than behaviour poses, so they do not appear here.
       const catPosesWithArt = {
         CompanionPose.idle,
         CompanionPose.focusRead,
@@ -180,6 +181,9 @@ void main() {
         CompanionPose.craftWork,
         CompanionPose.rest,
         CompanionPose.celebrate,
+        CompanionPose.tapReact,
+        CompanionPose.petReact,
+        CompanionPose.sleep,
       };
 
       for (final id in CompanionManifestData.profiles.keys) {
