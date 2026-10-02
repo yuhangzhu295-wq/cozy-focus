@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import '../../../domain/growth/growth_level_curve.dart';
 import '../../../domain/models/sync_models.dart' show RewardLedger;
 import '../../../domain/models/enums.dart';
+import '../../../domain/services/companion_memory.dart';
 import '../../../domain/repositories/i_atomic_settlement.dart';
 import '../tables/sync_tables.dart';
 import '../tables/pet_tables.dart';
@@ -23,6 +24,7 @@ part 'settlement_dao.g.dart';
   RewardLedgerTable,
   Pets,
   PetProgressTable,
+  PetMemories,
   CraftRecipes,
   CraftJobs,
   InventoryItems,
@@ -96,6 +98,18 @@ class SettlementDao extends DatabaseAccessor<AppDatabase>
             happinessScore: Value((progress.happinessScore + 5).clamp(0, 100)),
             updatedAt: Value(now),
           ));
+
+          // 2b. Memories. Recorded here, inside the same transaction that
+          // settled the fact, so a memory can never describe something that was
+          // rolled back — and so it inherits this method's exactly-once gate
+          // above: a duplicate settlement returns before reaching this line.
+          await _recordMemories(
+            userId: entry.userId,
+            petId: petRow.id,
+            previousXp: progress.experiencePoints,
+            newXp: newXp,
+            now: now,
+          );
         }
       }
 
@@ -138,6 +152,62 @@ class SettlementDao extends DatabaseAccessor<AppDatabase>
 
       return true;
     });
+  }
+
+  /// Appends the memories this settlement earned, inside the enclosing
+  /// transaction.
+  ///
+  /// The decision of *what* is memorable lives in [CompanionMemory] so this
+  /// path and the sequential one in `RewardService` cannot drift apart; this
+  /// method only supplies the two facts the decision needs and inserts what it
+  /// returns.
+  ///
+  /// Both facts are already established here: the ledger row for this session
+  /// was inserted one step above and passed the `changes() == 1` gate, so the
+  /// count now tells us whether this was the first; and the previous XP was
+  /// read before the award, so the level comparison needs no extra query.
+  ///
+  /// ## What it may not do
+  ///
+  /// It writes `pet_memories` rows and nothing else. It awards no XP, coins or
+  /// items, and cannot reach any of them: the only write below is an insert
+  /// into [petMemories]. Recording that something happened therefore cannot
+  /// change what happened.
+  Future<void> _recordMemories({
+    required String userId,
+    required String petId,
+    required int previousXp,
+    required int newXp,
+    required DateTime now,
+  }) async {
+    final settledCount = await (selectOnly(rewardLedgerTable)
+          ..addColumns([rewardLedgerTable.sessionId.count()])
+          ..where(rewardLedgerTable.userId.equals(userId)))
+        .map((row) => row.read(rewardLedgerTable.sessionId.count()) ?? 0)
+        .getSingle();
+
+    final memories = CompanionMemory.earnedBy(
+      petId: petId,
+      settledCount: settledCount,
+      previousXp: previousXp,
+      newXp: newXp,
+      at: now,
+    );
+
+    for (final memory in memories) {
+      await into(petMemories).insert(
+        PetMemoriesCompanion.insert(
+          id: memory.id,
+          petId: memory.petId,
+          memoryType: memory.memoryType,
+          content: memory.content,
+          happenedAt: memory.happenedAt,
+        ),
+        // The id is derived, so a repeat at the same microsecond is the same
+        // memory rather than a second one.
+        mode: InsertMode.insertOrIgnore,
+      );
+    }
   }
 
   /// Increment (or create) an inventory slot within the enclosing transaction.

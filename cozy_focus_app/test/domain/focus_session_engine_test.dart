@@ -79,6 +79,10 @@ class StubRecordRepo implements IFocusRecordRepository {
 
 class StubLedgerRepo implements IRewardLedgerRepository {
   final Map<String, RewardLedger> _store = {};
+
+  @override
+  Future<int> countForUser(String userId) async =>
+      _store.values.where((e) => e.userId == userId).length;
   @override
   Future<bool> settleReward(RewardLedger entry) async {
     if (_store.containsKey(entry.sessionId)) return false;

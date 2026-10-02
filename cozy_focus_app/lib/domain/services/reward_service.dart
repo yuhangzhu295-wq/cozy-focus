@@ -6,6 +6,7 @@ import '../repositories/i_reward_ledger_repository.dart';
 import '../repositories/i_pet_repository.dart';
 import '../repositories/i_atomic_settlement.dart';
 import 'focus_clock.dart';
+import 'companion_memory.dart';
 import 'craft_engine.dart';
 
 /// RewardService — idempotent, atomic reward settlement keyed by session_id.
@@ -90,6 +91,22 @@ class RewardService {
           updatedAt: now,
         );
         await _petRepo.savePetProgress(updated);
+
+        // Memories, decided by the same pure rule the atomic path uses, so the
+        // two settlement paths cannot disagree about what is remembered.
+        // `countForUser` is read after the ledger write above, so it includes
+        // this session: 1 means this was the first.
+        final settledCount = await _ledgerRepo.countForUser(session.userId);
+        final memories = CompanionMemory.earnedBy(
+          petId: pet.id,
+          settledCount: settledCount,
+          previousXp: progress.experiencePoints,
+          newXp: newXp,
+          at: now,
+        );
+        for (final memory in memories) {
+          await _petRepo.addMemory(memory);
+        }
       }
     }
 

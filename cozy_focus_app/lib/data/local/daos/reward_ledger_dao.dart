@@ -38,6 +38,19 @@ class RewardLedgerDao extends DatabaseAccessor<AppDatabase>
     return row == null ? null : _map(row);
   }
 
+  /// How many sessions this user has ever had settled.
+  ///
+  /// Exists so the non-atomic settlement path can tell whether the session it is
+  /// settling is the first, which is the only thing `first_focus` means. The
+  /// atomic path counts the same rows inside its own transaction.
+  Future<int> countForUser(String userId) async {
+    final row = await (selectOnly(rewardLedgerTable)
+          ..addColumns([rewardLedgerTable.sessionId.count()])
+          ..where(rewardLedgerTable.userId.equals(userId)))
+        .getSingle();
+    return row.read(rewardLedgerTable.sessionId.count()) ?? 0;
+  }
+
   RewardLedger _map(RewardLedgerTableData row) {
     return RewardLedger(
       sessionId: row.sessionId,

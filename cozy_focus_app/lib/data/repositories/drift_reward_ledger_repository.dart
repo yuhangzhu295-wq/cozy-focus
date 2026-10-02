@@ -12,4 +12,7 @@ class DriftRewardLedgerRepository implements IRewardLedgerRepository {
   @override
   Future<RewardLedger?> findBySessionId(String sessionId) =>
       _dao.findBySessionId(sessionId);
+
+  @override
+  Future<int> countForUser(String userId) => _dao.countForUser(userId);
 }

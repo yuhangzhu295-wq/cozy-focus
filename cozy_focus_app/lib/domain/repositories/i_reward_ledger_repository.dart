@@ -6,4 +6,11 @@ abstract interface class IRewardLedgerRepository {
 
   /// Returns existing entry if already settled, otherwise null.
   Future<RewardLedger?> findBySessionId(String sessionId);
+
+  /// How many sessions this user has ever had settled.
+  ///
+  /// The only thing `first_focus` means is "this was the first", and both
+  /// settlement paths need to answer it: the atomic path counts the rows inside
+  /// its transaction, the sequential path asks here.
+  Future<int> countForUser(String userId);
 }

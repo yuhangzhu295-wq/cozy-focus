@@ -9,6 +9,7 @@ mixin _$SettlementDaoMixin on DatabaseAccessor<AppDatabase> {
   $PetsTable get pets => attachedDatabase.pets;
   $PetProgressTableTable get petProgressTable =>
       attachedDatabase.petProgressTable;
+  $PetMemoriesTable get petMemories => attachedDatabase.petMemories;
   $CraftRecipesTable get craftRecipes => attachedDatabase.craftRecipes;
   $CraftJobsTable get craftJobs => attachedDatabase.craftJobs;
   $InventoryItemsTable get inventoryItems => attachedDatabase.inventoryItems;
