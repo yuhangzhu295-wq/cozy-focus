@@ -7,6 +7,7 @@ import '../runtime/companion_id.dart';
 import '../time_of_day.dart';
 import '../../controllers/craft_controller.dart';
 import '../../controllers/home_controller.dart';
+import '../../controllers/providers.dart';
 import 'anchor_point.dart';
 import 'companion_vitals.dart';
 import 'furniture_action_resolver.dart';
@@ -171,7 +172,15 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
       RoomDecisionInput(
         anchors: anchors,
         vitals: state.vitals,
-        timeOfDay: TimeOfDayResolver.resolve(DateTime.now()),
+        // Read through the injected clock rather than `DateTime.now()`.
+        //
+        // The night rule keys off this band, so a raw clock reading made the
+        // room's behaviour — and every test that renders it — depend on the
+        // wall clock: the same room put the companion on the sofa at 10:00 and
+        // sent it to bed at 02:00. A test that injects a daytime clock now
+        // genuinely controls what the room decides.
+        timeOfDay:
+            TimeOfDayResolver.resolve(_ref.read(focusClockProvider).now()),
         focusRunning: home.hasActiveSession && !state.focusPaused,
         focusPaused: state.focusPaused,
         unlockedItemIds: _unlockedItemIds(craft),

@@ -10,6 +10,7 @@ import 'package:cozy_focus_app/domain/models/craft_models.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
+import 'package:cozy_focus_app/presentation/companion/room/room_simulation.dart';
 import 'package:cozy_focus_app/presentation/companion/room_presence.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
@@ -365,6 +366,27 @@ void main() {
       await tester.pumpWidget(_app(container, const RoomPage()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
+
+      // Put the companion on the sofa explicitly instead of relying on the
+      // simulation to choose it.
+      //
+      // The sofa's actions are triggered by a tap or by low energy, which is the
+      // brief's own spec ("energy < 40 or player taps sofa") - so an idle
+      // companion at midday has no sofa action to take and correctly rests on
+      // the floor. This test is about the cushion geometry, not about the
+      // choice, and it used to pass only because it happened to run late at
+      // night, when the rest path picks the seat. Asking for `sit` is the same
+      // path the furniture panel uses and is independent of the clock.
+      container.read(roomSimulationProvider.notifier).requestAction(
+            itemId: 'sofa',
+            actionId: 'sit',
+            roomItemId: 'room-sofa',
+          );
+      await tester.pump();
+      // The companion travels to the new anchor, so the assertion has to run
+      // after the move has finished: measuring mid-flight reads a position
+      // between the floor and the cushion.
+      await tester.pump(const Duration(milliseconds: 900));
 
       // Measured in pixels, not normalised: the seat-surface correction is
       // `(0.5 - 0.48) * 60 = 1.2 pt` on a scale-1 sofa, which a 0.01
