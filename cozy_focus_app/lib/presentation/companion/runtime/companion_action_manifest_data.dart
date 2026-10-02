@@ -290,10 +290,27 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 3,
         ),
+        'focus_write': CompanionActionSpec(
+          actionId: 'focus_write',
+          frames: [
+            'assets/companions/cat/focus_write_000.png',
+            'assets/companions/cat/focus_write_001.png',
+          ],
+          fps: 5,
+          loopMode: SpriteLoopMode.loop,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 4,
+        ),
         'idle': CompanionActionSpec(
           actionId: 'idle',
           frames: [
             'assets/companions/cat/idle_000.png',
+            'assets/companions/cat/idle_001.png',
+            'assets/companions/cat/idle_002.png',
+            'assets/companions/cat/idle_003.png',
+            'assets/companions/cat/idle_004.png',
+            'assets/companions/cat/idle_005.png',
           ],
           fps: 5,
           loopMode: SpriteLoopMode.loop,

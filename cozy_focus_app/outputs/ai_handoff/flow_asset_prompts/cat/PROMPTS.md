@@ -72,3 +72,76 @@ the rest of the pack.
 5. Run `python tools/productionise.py cat`, then `tools/manifest.py cat` and
    `tools/gen_manifest_dart.py`.
 
+---
+
+# Session 2 — idle completed
+
+## The finding that unblocked this: the cat has its own project
+
+The cat's assets are **not** in `Cozy Focus Companion Production`
+(`2f518015-e4b1-495a-9200-dc8ecbd66304`). They are in the project titled
+`Oct 01 - 01:20` (`49593efa-15ca-47a4-9967-79892b5f4260`), where every cat asset
+is named **"Kitten …"** (`Kitten sitting idle`, `Kitten reading a book`,
+`cat_master.jpg`, …).
+
+This is why searching the dog's project for `cat`, `kitten`, `feline`,
+`whiskers`, `tabby` or `pink nose` returned **"No assets found"** — the search is
+scoped to the open project, and the cat simply is not in that one. Generate cat
+frames in the kitten project.
+
+## A wrong reference was caught before it did damage
+
+In the dog's project the tile named *"Character seated in neutral idle"* was
+attached as the identity reference. Fetching the attached image's URL and
+looking at it showed the **floppy-eared dog/rabbit**, not the cat. The asset
+names there are generated descriptions, so the name gives no reliable signal.
+
+**Verify the reference image itself before generating.** The cheap method used
+here, which does not depend on the screenshot surface (it times out on this
+page):
+
+1. Attach the candidate as an ingredient.
+2. Read the ingredient image's `src` from the DOM.
+3. `curl` that URL locally and look at it.
+
+In the kitten project the same method confirmed `cat_master.jpg` is the cat, and
+its silhouette matched the local `.asset_staging/refs/cat_master.jpg` exactly.
+
+## Accepted this session
+
+| Action | Frame | Reference | Attempts | Notes |
+|---|---|---|---|---|
+| `idle` | 001 | `cat_master.jpg` | 1 | "Cat starting breath idle pose". Accepted. |
+| `idle` | 002 | `cat_master.jpg` | 1 | "Cat breathing pose variation". Accepted. |
+| `idle` | 003 | `cat_master.jpg` | 2 | Attempt 1 produced **no tile at all** — the 99% progress bar finished and the tile count went 24 → 23. Attempt 2 ("Cat exhaling animation frame") accepted. |
+| `idle` | 004 | `cat_master.jpg` | 1 | "Cat sitting idle exhale pose". Accepted. |
+| `idle` | 005 | `cat_master.jpg` | 1 | "Cat returning to resting pose". Accepted; loops back onto frame 000. |
+
+A six-frame contact sheet (000–005) was checked before import: identity, palette,
+camera and placement hold across the cycle, and 005 is a near-neighbour of 000
+so the loop closes without a jump.
+
+The cat has **open eyes**, unlike the dog's closed happy arcs, so a blink
+channel is expressible for this pack. The idle loop deliberately does not carry
+one — a 6-frame loop at 5 fps is 1.2 s, which would read as a twitch.
+
+## Also imported
+
+`focus_write` 000–001 were already staged from the earlier session and were
+imported alongside the idle frames. The action is 2 of its 4 target frames, so it
+still does not satisfy the contract; it is imported because the frames exist and
+the manifest reports the true count.
+
+## Pipeline note
+
+`tools/productionise.py` treats **every** directory under
+`.asset_staging/flow/<companion>/` as an action. The `_verify/` scratch directory
+used for reference checking was therefore imported as three bogus assets
+(`_verify_flow.png`, `_verify_sheet.png`, `_verify_ingredient.png`). Keep
+verification scratch outside that tree, or delete it before running the import.
+
+## State after this session
+
+cat: **6 actions / 21 frames**. `idle` is complete (6/6). Still missing:
+`walk` (0/6), `sit_down` (0/4), `stand_up` (0/4), `craft_work` (0/4),
+`focus_write` (2/4), `pet_react` (0/3), `tap_react` (0/3), `sleep` (0/2).

@@ -58,9 +58,29 @@
         0
       ]
     },
+    "focus_write": {
+      "frames": [
+        "focus_write_000.png",
+        "focus_write_001.png"
+      ],
+      "fps": 5,
+      "loopMode": "loop",
+      "targetFrameCount": 4,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "idle": {
       "frames": [
-        "idle_000.png"
+        "idle_000.png",
+        "idle_001.png",
+        "idle_002.png",
+        "idle_003.png",
+        "idle_004.png",
+        "idle_005.png"
       ],
       "fps": 5,
       "loopMode": "loop",

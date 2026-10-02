@@ -168,11 +168,14 @@ void main() {
         CompanionPose.sleep,
       };
 
-      // The cat pack is being produced; it currently covers only these two.
+      // The cat pack is in production. `idle` is complete at six frames, and
+      // `focus_write` has two staged frames imported alongside it. Every other
+      // pose still reports ASSET_GAP rather than borrowing a neighbour's art.
       const catPosesWithArt = {
         CompanionPose.idle,
         CompanionPose.focusRead,
         CompanionPose.focusThink,
+        CompanionPose.focusWrite,
         CompanionPose.rest,
         CompanionPose.celebrate,
       };
