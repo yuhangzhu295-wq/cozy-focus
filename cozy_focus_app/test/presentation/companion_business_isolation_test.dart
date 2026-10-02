@@ -37,6 +37,16 @@ import 'package:cozy_focus_app/presentation/animations/pet_idle_fallback_view.da
 import 'package:cozy_focus_app/presentation/animations/pet_interaction_spec.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/time_of_day.dart';
+import 'package:cozy_focus_app/presentation/companion/focus_phase.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_availability.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_manifest_data.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_behavior_director.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_context.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_event.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/random_source.dart';
+
+import 'companion/runtime/catalog_test_support.dart';
 import 'package:cozy_focus_app/presentation/controllers/pet_motion_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
@@ -307,6 +317,65 @@ void main() {
       for (var hour = 0; hour < 24; hour++) {
         final band = TimeOfDayResolver.resolve(DateTime(2026, 9, 22, hour));
         expect(TimeOfDayBand.values, contains(band));
+      }
+
+      expect(await _snapshot(db), before);
+    });
+  });
+
+  // ==========================================================================
+  // 5. Runtime - the life loop's events cannot write
+  // ==========================================================================
+  group('the companion life loop cannot write', () {
+    test(
+        'every event, in every base context, and every capability set, leave '
+        'the database untouched', () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      await _seed(db);
+
+      final before = await _snapshot(db);
+      expect(before.values.any((v) => v.isNotEmpty), isTrue,
+          reason: 'the seed did not land, so this comparison proves nothing');
+
+      final catalog = loadShippedCatalog();
+
+      // Capability resolution for every shipped companion, including the ones
+      // that ship less art than the recipes assume.
+      for (final id in CompanionActionManifestData.manifests.keys) {
+        CompanionActionAvailabilityResolver.resolve(id);
+      }
+
+      // The whole event repertoire, dispatched against a director in each base
+      // context, with behaviour switching in between.
+      for (final base in CompanionBaseContext.values) {
+        final director = CompanionBehaviorDirector(
+          catalog: catalog,
+          context: CompanionContext(
+            companionId: CompanionId.dog,
+            baseContext: base,
+            hasActiveSession: base == CompanionBaseContext.focus,
+            focusPhase:
+                base == CompanionBaseContext.focus ? FocusPhase.working : null,
+            craftProgress: base == CompanionBaseContext.craft ? 0.5 : null,
+          ),
+          random: SeededRandomSource(11),
+        );
+
+        for (final event in CompanionEvent.values) {
+          director.dispatch(event);
+          director.advanceTo(director.now + const Duration(seconds: 2));
+        }
+
+        // Behaviour switching: push another context in and keep driving, so a
+        // mid-life change is covered too.
+        director.updateContext(const CompanionContext(
+          companionId: CompanionId.dog,
+          baseContext: CompanionBaseContext.home,
+        ));
+        for (var i = 0; i < 60; i++) {
+          director.advanceTo(director.now + const Duration(seconds: 1));
+        }
       }
 
       expect(await _snapshot(db), before);

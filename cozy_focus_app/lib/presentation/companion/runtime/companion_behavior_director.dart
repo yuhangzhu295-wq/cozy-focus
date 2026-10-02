@@ -1,8 +1,10 @@
 import '../focus_phase.dart';
 import 'behavior_recipe.dart';
+import 'companion_action_availability.dart';
 import 'companion_ambient_modifiers.dart';
 import 'companion_catalog.dart';
 import 'companion_context.dart';
+import 'companion_event.dart';
 import 'companion_pose.dart';
 import 'companion_presentation_intent.dart';
 import 'companion_profile.dart';
@@ -56,15 +58,67 @@ class CompanionBehaviorDirector {
 
   Duration _now = Duration.zero;
 
+  /// Availability per companion, resolved on demand and cached.
+  ///
+  /// The recipes are shared data, so the gate is what stops a companion being
+  /// asked for an action it has no drawing for. Cached because it is a pure
+  /// function of shipped data and re-resolving it on every pick would be work
+  /// for an answer that cannot change while the app runs.
+  final Map<String, CompanionActionAvailability> _availabilityCache = {};
+
+  /// How availability is looked up. Injectable so a test can hand the director a
+  /// companion with a deliberately reduced repertoire.
+  final CompanionActionAvailability Function(String companionId)
+      _availabilityOf;
+
+  /// When the next overlay may start, or `null` when one may start now.
+  ///
+  /// Set when an overlay ends, so a rapid series of taps cannot chain reactions
+  /// back to back. Stacking is already refused while one runs; this is the gap
+  /// *after* it, which is what makes a second tap read as a second reaction
+  /// rather than as one continuous one.
+  Duration? _overlayReadyAt;
+
+  /// The cooldown between the end of one overlay and the start of the next.
+  static const Duration overlayCooldown = Duration(milliseconds: 400);
+
+  /// When a forced celebration ends, or `null` when none is running.
+  Duration? _celebrationUntil;
+
+  /// Whether the last macro pick had to fall back because nothing in the recipe
+  /// was available for this companion.
+  bool _usedFallback = false;
+
   CompanionBehaviorDirector({
     required this.catalog,
     required CompanionContext context,
     RandomSource? random,
+    CompanionActionAvailability Function(String companionId)? availabilityOf,
   })  : _context = context,
-        random = random ?? SystemRandomSource() {
+        random = random ?? SystemRandomSource(),
+        _availabilityOf =
+            availabilityOf ?? CompanionActionAvailabilityResolver.resolve {
     _macroSlot = _slotFor(_context);
     _pickMacro();
   }
+
+  /// What this companion can actually be asked to play.
+  CompanionActionAvailability get availability {
+    final id = _context.companionId.value;
+    return _availabilityCache.putIfAbsent(id, () => _availabilityOf(id));
+  }
+
+  /// Whether the current macro is a graceful degradation rather than a real
+  /// pick — nothing in the recipe was available for this companion.
+  ///
+  /// Reported rather than hidden: a fallback is not a distinct behaviour, not a
+  /// completed asset and not a passed visual gate, so a caller that wants to
+  /// claim behaviour variety has to consult this first.
+  bool get isUsingFallback => _usedFallback;
+
+  /// Whether a forced celebration is running.
+  bool get isCelebrating =>
+      _celebrationUntil != null && _now < _celebrationUntil!;
 
   /// The current business snapshot.
   CompanionContext get context => _context;
@@ -141,6 +195,15 @@ class CompanionBehaviorDirector {
     if (_overlay.isActive && _overlayEndsAt != null && now >= _overlayEndsAt!) {
       _overlay = CompanionOverlay.none;
       _overlayEndsAt = null;
+      // The gap before the next overlay may start.
+      _overlayReadyAt = now + overlayCooldown;
+    }
+
+    if (_celebrationUntil != null && now >= _celebrationUntil!) {
+      _celebrationUntil = null;
+      // Re-pick at once so the celebration hands over to the context's own
+      // behaviour rather than holding the last frame until the dwell expires.
+      _pickMacro();
     }
 
     if (_macroEndsAt != null && now >= _macroEndsAt!) {
@@ -159,6 +222,12 @@ class CompanionBehaviorDirector {
   bool triggerOverlay(CompanionOverlay overlay) {
     if (!overlay.isActive) return false;
     if (_overlay.isActive) return false;
+    // The cooldown after the previous overlay, so rapid taps do not chain.
+    if (_overlayReadyAt != null && _now < _overlayReadyAt!) return false;
+    // An overlay is an action too, so it is gated like any other: a companion
+    // with no drawing for the reaction is not asked for one.
+    final pose = overlay.pose;
+    if (pose == null || !availability.canSchedule(pose)) return false;
 
     final overlayRecipe = catalog.overlayRecipeFor(overlay);
     if (overlayRecipe == null) return false;
@@ -190,8 +259,87 @@ class CompanionBehaviorDirector {
     _overlayEndsAt = null;
   }
 
+  /// Feeds one presentation event in.
+  ///
+  /// Returns whether the presented pose changed, so a caller can avoid a
+  /// redundant rebuild without diffing the intent.
+  ///
+  /// ## Two kinds of event, one authority
+  ///
+  /// A **gesture** becomes an overlay and leaves the macro untouched. A
+  /// **transition** forces an immediate re-pick, so a completion or a pause is
+  /// visible the moment it happens rather than up to a dwell later.
+  ///
+  /// Neither path is a second scheduler: both end in the same `_pickMacro` and
+  /// the same `intent` getter as every other input. Events are an *input* to the
+  /// one behaviour authority, not a parallel one.
+  bool dispatch(CompanionEvent event) {
+    final previous = intent;
+    switch (event) {
+      case CompanionEvent.tap:
+        triggerOverlay(profile.tapOverlay);
+      case CompanionEvent.longPress:
+        triggerOverlay(profile.longPressOverlay);
+      case CompanionEvent.focusCompleted:
+        _forceCelebration();
+      case CompanionEvent.focusStarted:
+      case CompanionEvent.pauseStarted:
+      case CompanionEvent.resumed:
+      case CompanionEvent.roomActionChanged:
+        // The context carrying the new state is pushed separately; the event
+        // exists so the change lands now instead of at the next dwell. It also
+        // releases a running celebration, because the world moved on.
+        _celebrationUntil = null;
+        _pickMacro();
+    }
+    return intent != previous;
+  }
+
+  /// Pins the macro to a celebration for one dwell.
+  ///
+  /// ## The hard rule
+  ///
+  /// A completed session always celebrates — whatever the hour, the growth
+  /// stage, or any ambient weighting. The recipe layer already guarantees most
+  /// of this: `complete` is excluded from `CompanionAmbientModifiers`, so no
+  /// time-of-day or growth contribution can reach its pool, and its recipe lists
+  /// only `celebrate`. This latch makes the guarantee independent of *when* the
+  /// page gets round to pushing the completed context — the event alone is
+  /// enough.
+  ///
+  /// It still respects availability: a companion with no celebration drawing
+  /// degrades like anything else rather than being asked for art it lacks.
+  void _forceCelebration() {
+    const celebrate = CompanionMacroBehavior.celebrate;
+    if (!availability.canSchedule(celebrate.pose)) {
+      _usedFallback = true;
+      _pickMacro();
+      return;
+    }
+    final completeRecipe = catalog.recipeFor(CompanionBaseContext.complete);
+    final dwell = completeRecipe == null
+        ? const Duration(seconds: 8)
+        : random.durationBetween(
+            completeRecipe.minDuration,
+            completeRecipe.maxDuration,
+          );
+    _celebrationUntil = _now + dwell;
+    _macro = celebrate;
+    _macroEndsAt = _celebrationUntil;
+    _usedFallback = !availability.hasOwnDrawing(celebrate.pose);
+  }
+
   /// Picks the next macro behaviour from the active recipe.
   void _pickMacro() {
+    // A forced celebration outranks everything: it is a *moment*, not a state,
+    // and it is the one behaviour the brief requires to be unconditional.
+    if (isCelebrating) {
+      _macro = CompanionMacroBehavior.celebrate;
+      _macroEndsAt = _celebrationUntil;
+      _usedFallback = !availability.hasOwnDrawing(CompanionPose.celebrate);
+      return;
+    }
+
     // Business-truth gate. A base context is a *claim* that the app is in that
     // state; the companion must not animate a state the business layer is not
     // actually in. `docs/03_互动业务流与状态闭环.md` requires craft behaviour to
@@ -200,6 +348,7 @@ class CompanionBehaviorDirector {
     if (!_contextIsGrounded) {
       _macro = CompanionMacroBehavior.idle;
       _macroEndsAt = _now + _ungroundedDwell;
+      _usedFallback = !availability.hasOwnDrawing(CompanionPose.idle);
       return;
     }
 
@@ -207,11 +356,29 @@ class CompanionBehaviorDirector {
     if (activeRecipe == null || activeRecipe.isEmpty) {
       _macro = null;
       _macroEndsAt = null;
+      _usedFallback = false;
       return;
     }
 
     final modifier = ambientModifier;
-    _macro = _choose(activeRecipe, modifier);
+    final choice = _choose(activeRecipe, modifier);
+
+    if (choice == null) {
+      // Nothing this recipe offers has a drawing for this companion. Degrade to
+      // idle and *say so*: a fallback is not a distinct behaviour, so a caller
+      // that wants to claim variety has to consult `isUsingFallback` first.
+      _usedFallback = true;
+      _macro = availability.canSchedule(CompanionPose.idle)
+          ? CompanionMacroBehavior.idle
+          : null;
+      _macroEndsAt = _now + _ungroundedDwell;
+      return;
+    }
+
+    // A behaviour whose drawing is a fallback is not a distinct behaviour, so
+    // it is reported rather than counted as variety.
+    _usedFallback = !availability.hasOwnDrawing(choice.pose);
+    _macro = choice;
 
     final dwell = random.durationBetween(
       activeRecipe.minDuration,
@@ -259,7 +426,11 @@ class CompanionBehaviorDirector {
 
   /// Chooses one eligible behaviour, honouring weights, glance probability and
   /// the no-immediate-repeat rule.
-  CompanionMacroBehavior _choose(
+  ///
+  /// Returns `null` when nothing in the pool is available for this companion,
+  /// which is the caller's cue to degrade and report rather than to present an
+  /// action the companion has no drawing for.
+  CompanionMacroBehavior? _choose(
       BehaviorRecipe recipe, AmbientModifier modifier) {
     // The ambient pool is the recipe's own list plus whatever growth and the
     // hour contribute. Additive, so a stage can never take a behaviour away.
@@ -267,6 +438,15 @@ class CompanionBehaviorDirector {
       ...recipe.eligible,
       ...modifier.extraEligible.where((b) => !recipe.eligible.contains(b)),
     ];
+
+    // Capability gate. The recipes are shared data across companions, so this is
+    // where a companion that ships no `focus_write` sequence stops being asked
+    // for one. A behaviour whose only possible drawing is a last-resort fallback
+    // is not a behaviour this companion has.
+    pool = pool
+        .where((behavior) => availability.canSchedule(behavior.pose))
+        .toList(growable: false);
+    if (pool.isEmpty) return null;
 
     // No immediate repeat. Skipped when the pool would become empty, otherwise a
     // single-behaviour recipe (craft, celebrate, sleep) could never pick again
@@ -279,9 +459,12 @@ class CompanionBehaviorDirector {
 
     // Glance is a modifier rather than a pool member in deep focus, so it is
     // rolled before the weighted pick. It is never allowed to repeat back to
-    // back, which would read as a twitch rather than as a glance.
+    // back, which would read as a twitch rather than as a glance — and it is
+    // gated like any other behaviour, so a companion with no glance drawing is
+    // never rolled into one.
     if (recipe.glanceProbability > 0 &&
         _macro != CompanionMacroBehavior.glance &&
+        availability.canSchedule(CompanionMacroBehavior.glance.pose) &&
         random.nextDouble() < recipe.glanceProbability) {
       return CompanionMacroBehavior.glance;
     }

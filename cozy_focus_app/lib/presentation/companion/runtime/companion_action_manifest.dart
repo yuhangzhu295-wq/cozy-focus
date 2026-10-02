@@ -213,6 +213,19 @@ class CompanionActionManifest {
   /// The spec for [actionId], or `null` when it is not shipped.
   CompanionActionSpec? specFor(String actionId) => actions[actionId];
 
+  /// Whether this pack names [actionId] at all — as an action, a semantic
+  /// fallback or a draw alias.
+  ///
+  /// Naming is the test for whether a *behaviour* exists. The last-resort idle
+  /// chain in [resolve] exists so drawing never returns nothing; it is not
+  /// evidence that the pack has a behaviour for a pose it never mentions. That
+  /// distinction is what stops `stretch` being schedulable on a pack with no
+  /// stretch art.
+  bool namesAction(String actionId) =>
+      actions.containsKey(actionId) ||
+      semanticFallback.containsKey(actionId) ||
+      drawAliases.containsKey(actionId);
+
   /// Resolves [pose] to an action this companion really has.
   ///
   /// Returns `null` only when even `idle` is missing — the one case the caller
