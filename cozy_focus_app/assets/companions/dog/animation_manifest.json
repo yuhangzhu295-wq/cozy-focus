@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "note": "The Mochi (dog) animation contract: what must be produced, including animations that do not exist yet. companion_action_manifest_data.dart remains what actually ships (frame paths). sprite_animation_manifest_parity_test.dart fails if the two disagree on a produced action, and the integrity suite measures the shipped frames against the canvas and anchor declared here.",
+  "companionId": "dog",
+  "posePack": "mochi",
+  "canvas": {
+    "width": 1024,
+    "height": 1024
+  },
+  "groundBaseline": 919,
+  "centerAnchor": 511,
+  "anchorTolerancePx": 2,
+  "firstBatch": [
+    "idle",
+    "walk",
+    "sit_down",
+    "stand_up"
+  ],
+  "assets": {
+    "idle": {
+      "targetFrameCount": 6,
+      "fps": 5,
+      "loopMode": "loop",
+      "role": "ambient"
+    },
+    "walk": {
+      "targetFrameCount": 6,
+      "fps": 8,
+      "loopMode": "loop",
+      "role": "ambient"
+    },
+    "sit_down": {
+      "targetFrameCount": 4,
+      "fps": 8,
+      "loopMode": "once",
+      "role": "transition"
+    },
+    "stand_up": {
+      "targetFrameCount": 4,
+      "fps": 8,
+      "loopMode": "once",
+      "role": "transition"
+    },
+    "focus_write": {
+      "targetFrameCount": 4,
+      "fps": 5,
+      "loopMode": "loop",
+      "role": "task"
+    },
+    "focus_read": {
+      "targetFrameCount": 3,
+      "fps": 5,
+      "loopMode": "pingpong",
+      "role": "task"
+    },
+    "focus_think": {
+      "targetFrameCount": 3,
+      "fps": 4,
+      "loopMode": "pingpong",
+      "role": "task"
+    },
+    "craft_work": {
+      "targetFrameCount": 4,
+      "fps": 5,
+      "loopMode": "loop",
+      "role": "task"
+    },
+    "pause_rest": {
+      "targetFrameCount": 2,
+      "fps": 3,
+      "loopMode": "pingpong",
+      "role": "rest"
+    },
+    "sleep": {
+      "targetFrameCount": 2,
+      "fps": 3,
+      "loopMode": "loop",
+      "role": "rest"
+    },
+    "celebrate": {
+      "targetFrameCount": 5,
+      "fps": 8,
+      "loopMode": "once",
+      "role": "celebration"
+    },
+    "tap_react": {
+      "targetFrameCount": 3,
+      "fps": 8,
+      "loopMode": "once",
+      "role": "interaction"
+    },
+    "pet_react": {
+      "targetFrameCount": 3,
+      "fps": 6,
+      "loopMode": "once",
+      "role": "interaction"
+    }
+  }
+}
