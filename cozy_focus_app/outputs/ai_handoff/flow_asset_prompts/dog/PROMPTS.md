@@ -393,3 +393,37 @@ method.
 
 Seventeen of twenty frames are in the pack. `MOCHI_FIRST_BATCH_PENDING` reports
 `sit_down 0/4`.
+
+## Batch 4 — sit_down: generated, but the transition does not transition
+
+All four frames are generated and staged, and all four pass the anchor, alpha and
+distinctness checks. The measurement shows the sequence is still wrong:
+
+| frame | vs seated | vs standing | aspect |
+|---|---|---|---|
+| sit_down_000 | 0.640 | 0.978 | 0.775 |
+| sit_down_001 | 0.984 | 0.633 | 1.050 |
+| sit_down_002 | 0.973 | 0.642 | 1.048 |
+| sit_down_003 | 0.984 | 0.639 | 1.044 |
+
+Frame 000 is the standing shape and 001-003 are all the seated shape. The
+sequence is a one-frame cut from standing to sitting, not a descent: frames 001
+and 002 are indistinguishable from 003 in aspect and in IoU.
+
+The cause is the same one that made walk drift, and it is worth stating plainly
+because it is the single most useful thing this batch taught:
+
+**The ingredient reference dominates the prompt.** Frames 001-003 used the seated
+master as their ingredient, so the model returned seated poses no matter how the
+prompt described the movement. Compare stand_up, where frames 001-003 used the
+standing reference and frame 001 landed at aspect 0.834 - a genuine midpoint.
+
+The fix is to mirror stand_up: anchor the *early* frames of sit_down to the
+standing reference and only the final frame to the seated one, so the model is
+not pre-committed to the destination.
+
+`sit_down_001` was regenerated with the standing reference and the submission was
+refused across two quiet periods, so the batch is not yet correct in the pack.
+**It is deliberately not shipped.** A four-frame "sit down" that cuts straight to
+seated is the same class of defect as a single-frame idle: it passes every
+mechanical gate and still looks wrong.
