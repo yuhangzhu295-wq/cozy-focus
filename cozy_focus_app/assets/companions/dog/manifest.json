@@ -157,6 +157,23 @@
         0
       ]
     },
+    "stand_up": {
+      "frames": [
+        "stand_up_000.png",
+        "stand_up_001.png",
+        "stand_up_002.png",
+        "stand_up_003.png"
+      ],
+      "fps": 8,
+      "loopMode": "once",
+      "targetFrameCount": 4,
+      "interruptible": false,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "tap_react": {
       "frames": [
         "tap_react_000.png",

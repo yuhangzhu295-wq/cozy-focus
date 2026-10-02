@@ -153,6 +153,20 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 2,
         ),
+        'stand_up': CompanionActionSpec(
+          actionId: 'stand_up',
+          frames: [
+            'assets/companions/dog/stand_up_000.png',
+            'assets/companions/dog/stand_up_001.png',
+            'assets/companions/dog/stand_up_002.png',
+            'assets/companions/dog/stand_up_003.png',
+          ],
+          fps: 8,
+          loopMode: SpriteLoopMode.once,
+          interruptible: false,
+          reducedMotionFrames: [0],
+          targetFrameCount: 4,
+        ),
         'tap_react': CompanionActionSpec(
           actionId: 'tap_react',
           frames: [
