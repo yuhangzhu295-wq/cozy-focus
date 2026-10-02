@@ -116,9 +116,10 @@ void main() {
       expect(find.text('特别'), findsOneWidget);
       expect(find.text('温馨布艺沙发'), findsOneWidget);
       expect(find.text('暂无宠物陪伴，前往成长页领养宠物伙伴吧！'), findsOneWidget);
-      // The summary card reports the owned/total fraction against the whole
-      // catalogue (10 items), matching reference 10B.
-      expect(find.text('0 / 10'), findsOneWidget);
+      // The summary card reports the owned/total fraction against the
+      // *obtainable* catalogue (8 of the 10 entries; two are preview-only and
+      // can never be earned, so counting them made the bar unsatisfiable).
+      expect(find.text('0 / 8'), findsOneWidget);
       expect(find.text('已收集 0%'), findsOneWidget);
       expect(find.byKey(const Key('cozy-furniture-sofa')), findsOneWidget);
     });
@@ -131,8 +132,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('0 / 10'), findsOneWidget);
+      expect(find.text('0 / 8'), findsOneWidget);
       expect(find.text('未收集'), findsWidgets);
+      // The two preview entries say 未开放, not 未收集: "not collected" would
+      // imply the player could collect them.
+      expect(find.text('未开放'), findsNWidgets(2));
       expect(find.byIcon(Icons.lock_rounded), findsWidgets);
       expect(find.byType(CozyFurnitureArtwork), findsWidgets);
     });
@@ -165,7 +169,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('可可 的收藏屋'), findsOneWidget);
-      expect(find.text('1 / 10'), findsOneWidget);
+      expect(find.text('1 / 8'), findsOneWidget);
       expect(find.text('已拥有 x2'), findsOneWidget);
     });
 

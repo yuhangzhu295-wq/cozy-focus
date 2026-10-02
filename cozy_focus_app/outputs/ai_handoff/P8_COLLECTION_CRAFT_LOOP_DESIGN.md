@@ -3,11 +3,12 @@
 Baseline: branch `recovery/v4.2.1-rebuild`, HEAD `6ef0c8b`, worktree clean,
 `dart format` clean, `flutter analyze --fatal-infos` clean.
 
-**Status: DESIGN ONLY. No product behaviour is changed by this phase yet.**
+**Status: the truthfulness half of G1 and G3 is CLOSED; the mechanics behind
+them are OPEN.** No economy was invented and no balance number was chosen. See
+§6 for exactly what changed and §3 for the decisions still owed.
+
 Three candidate scopes are laid out in §3; each one carries a product decision
-that belongs to the owner, so none is implemented on a default. §5 records the
-characterisation tests that keep the gaps from drifting while the decision is
-open.
+that belongs to the owner, so none is implemented on a default.
 
 ---
 
@@ -184,22 +185,18 @@ No new economy.
 
 ---
 
-## 5. WHAT THIS PHASE ACTUALLY SHIPPED
+## 5. WHAT THIS PHASE SHIPPED
 
-Design only, plus one characterisation test that makes the three gaps
-*enumerable and drift-proof* while the decision is open:
-
-`test/presentation/collection_craft_loop_gap_test.dart`
+`test/presentation/collection_craft_loop_gap_test.dart` — 7 characterisation
+tests that make the gaps *enumerable and drift-proof*:
 
 - G3: the set of catalog ids with no recipe is asserted to be exactly
-  `{plant_succulent, special_trophy}`. Adding a third unobtainable entry, or
-  giving one of these two a path, fails the test and forces this document to be
-  revisited.
-- G1: every seeded recipe's `ingredientCosts` is asserted empty. Authoring a
-  real cost fails the test for the same reason.
-- G4: every catalog id that has a recipe is asserted to *have* one, so the two
-  lists cannot silently diverge on identity (only on display name, which §3
-  Option C owns).
+  `{plant_succulent, special_trophy}`, and the catalog's `obtainable` flag is
+  cross-checked against that truth **in both directions**.
+- G1: every seeded recipe's `ingredientCosts` is asserted empty, and the craft
+  page is asserted not to contain the old promise.
+- G4: every catalog id is either craftable or explicitly declared preview-only,
+  so a typo or a new pathless entry fails.
 
 This follows the project's own precedent for an open owner decision —
 `mochi_copy_coverage_test.dart` "locks the current coverage so a cadence edit
@@ -207,3 +204,49 @@ fails loudly and forces the review doc to be re-issued".
 
 The tests pin *current truth*. They do not assert the gaps are desirable, and
 they are expected to be rewritten by whichever option is chosen.
+
+---
+
+## 6. DELIVERY RECORD
+
+Guided by the standing project value that a thing which does not exist must not
+be claimed — the same reasoning that makes `RELEASE_SIGNING = NOT_RECOVERED` a
+valid answer instead of a fake keystore — this phase fixed the two places where
+the app **claimed** something false, and left the two places that would require
+**inventing** something for the owner.
+
+| Gap | Claim half | Mechanic half |
+|---|---|---|
+| G1 materials | **FIXED** — the craft page no longer says materials will be prepared during focus; it now says the recipe needs none, which is true | **OPEN** — materials are still not produced or charged (Option A) |
+| G2 coins | not touched | **OPEN** — still no spend path (Option B) |
+| G3 collection | **FIXED** — `obtainable` marks the two preview entries; the progress total counts only obtainable entries, so 8/8 is reachable instead of a permanent 8/10 | **OPEN** — the two entries still have no acquisition path |
+| G4 names | not touched | **OPEN** — two hand-kept name lists (Option C) |
+
+Files changed:
+
+- `lib/presentation/pages/craft_detail_page.dart` — the materials empty state.
+- `lib/presentation/pages/pet_collection_page.dart` — `CollectionCatalogItem.obtainable`,
+  the two preview entries flagged, the summary denominator, and the card label
+  (未开放 rather than 未收集).
+- `test/presentation/pet_collection_page_test.dart` — the three assertions that
+  pinned `0 / 10` and `1 / 10` updated to `0 / 8` and `1 / 8`, plus a
+  `未开放` assertion. **These are the tests that caught the change**, which is
+  why they existed.
+
+### Re-verification needed
+
+The collection total is user-visible and was previously recorded as `/ 10`. The
+device-verified record (`CURRENT_STAGE.json`, the 7 → 8 of 10 celebration) is
+about the *owned count*, not the denominator, so it is probably unaffected — but
+the collection page has not been re-checked on a device since this change, and
+should be before it is treated as verified.
+
+### Deliberately not done
+
+- No material source, no material cost, no coin sink, no balance number.
+- No change to `CraftEngine`, the settlement transaction, the Drift schema, or
+  any recipe seed.
+- G4's name drift is left alone: choosing which of the two names wins is a copy
+  decision, and `PHASE_5_COLLECTION_PLAN.md` explicitly permits the catalog to
+  own names.
+

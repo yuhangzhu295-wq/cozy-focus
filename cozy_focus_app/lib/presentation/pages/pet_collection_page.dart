@@ -23,12 +23,31 @@ class CollectionCatalogItem {
   final IconData icon;
   final String description;
 
+  /// Whether the loop can actually deliver this item.
+  ///
+  /// `false` marks a preview entry: it has no craft recipe and no other grant,
+  /// so it can never enter the inventory. Two things follow, and both are the
+  /// point of the flag rather than incidental:
+  ///
+  /// 1. It is excluded from the progress total. Counting it made the bar
+  ///    unsatisfiable — with two preview entries the collection could never
+  ///    pass 8/10, so a player who had collected everything still saw a bar
+  ///    that refused to fill.
+  /// 2. Its card reads 未开放 rather than 未收集. "Not collected" implies the
+  ///    player could collect it; "not yet open" is what is true.
+  ///
+  /// The flag is checked against the recipe truth by
+  /// `test/presentation/collection_craft_loop_gap_test.dart`, in both
+  /// directions, so it cannot quietly disagree with reality.
+  final bool obtainable;
+
   const CollectionCatalogItem({
     required this.id,
     required this.name,
     required this.category,
     required this.icon,
     required this.description,
+    this.obtainable = true,
   });
 }
 
@@ -98,6 +117,8 @@ const List<CollectionCatalogItem> kCollectionCatalog = [
     category: '植物',
     icon: Icons.yard_rounded,
     description: '生机勃勃的治愈多肉，增添清新绿意。',
+    // Preview entry: no recipe, no grant. See [CollectionCatalogItem.obtainable].
+    obtainable: false,
   ),
   CollectionCatalogItem(
     id: 'special_trophy',
@@ -105,6 +126,8 @@ const List<CollectionCatalogItem> kCollectionCatalog = [
     category: '特别',
     icon: Icons.military_tech_rounded,
     description: '记录漫长专注旅途的特别荣誉勋章。',
+    // Preview entry: no recipe, no grant. See [CollectionCatalogItem.obtainable].
+    obtainable: false,
   ),
 ];
 
@@ -221,8 +244,14 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
           (inventoryQuantities[inv.itemId] ?? 0) + inv.quantity;
     }
 
+    // Only entries the loop can actually deliver count toward completion.
+    // Preview entries are still shown, but including them made the bar
+    // unsatisfiable — see [CollectionCatalogItem.obtainable].
     int ownedCount = 0;
+    var obtainableTotal = 0;
     for (final item in kCollectionCatalog) {
+      if (!item.obtainable) continue;
+      obtainableTotal++;
       final qty = inventoryQuantities[item.id] ?? 0;
       if (qty > 0) {
         ownedCount++;
@@ -262,7 +291,7 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
             const SizedBox(height: 16),
             _buildPetContextHeader(growthState),
             const SizedBox(height: 16),
-            _buildSummaryCard(ownedCount, kCollectionCatalog.length),
+            _buildSummaryCard(ownedCount, obtainableTotal),
             const SizedBox(height: 16),
             _buildCategoryFilter(categories),
             const SizedBox(height: 16),
@@ -574,7 +603,11 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
               ),
               const SizedBox(height: 2),
               Text(
-                isOwned ? '已拥有 x$quantity' : '未收集',
+                isOwned
+                    ? '已拥有 x$quantity'
+                    : item.obtainable
+                        ? '未收集'
+                        : '未开放',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 9,

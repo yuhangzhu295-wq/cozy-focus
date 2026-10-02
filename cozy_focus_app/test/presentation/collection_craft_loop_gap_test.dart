@@ -2,12 +2,19 @@
 //
 // These do **not** assert that the gaps are desirable. They pin the current
 // truth so the gaps cannot change silently, and so that whoever implements one
-// of P8's three options is forced back to
+// of P8's remaining options is forced back to
 // `outputs/ai_handoff/P8_COLLECTION_CRAFT_LOOP_DESIGN.md` to rewrite them.
 //
 // This is the project's own precedent for an open owner decision: see
 // `mochi_copy_coverage_test.dart`, which "locks the current coverage so a
 // cadence edit fails loudly and forces the review doc to be re-issued".
+//
+// Two of the four gaps have had their *truthfulness* half closed and the
+// *mechanic* half deliberately left open:
+//   G1 — the craft page no longer promises materials that do not exist, but
+//        materials are still not implemented.
+//   G3 — the collection total is now satisfiable, but the two preview entries
+//        still have no acquisition path.
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -20,8 +27,9 @@ import 'package:cozy_focus_app/presentation/pages/pet_collection_page.dart';
 
 /// The collection entries that have no craft recipe and no acquisition path.
 ///
-/// G3 in the design doc. They render as 未收集 forever, and the page's progress
-/// bar counts them, so the bar is capped at 8/10.
+/// G3 in the design doc. They are declared `obtainable: false` in the catalog,
+/// so they no longer count toward completion — but they still cannot be earned,
+/// which is the half that needs an owner decision.
 const Set<String> kKnownUnobtainableCollectionIds = {
   'plant_succulent',
   'special_trophy',
@@ -54,20 +62,40 @@ void main() {
         kKnownUnobtainableCollectionIds,
         reason: 'A catalog entry gained or lost a craft path. Re-read '
             'P8_COLLECTION_CRAFT_LOOP_DESIGN.md §2 G3 and §3 before changing '
-            'this expectation: the collection total, and therefore the '
-            'progress bar the player sees, is derived from this set.',
+            'this expectation: the collection total is derived from this set.',
       );
     });
 
-    test('the progress denominator counts them, so it can never complete',
+    test('the obtainable flag agrees with the recipe truth, both ways',
         () async {
-      final obtainable = catalogIds().intersection(await craftableIds());
+      final craftable = await craftableIds();
+      final flaggedUnobtainable = {
+        for (final item in kCollectionCatalog)
+          if (!item.obtainable) item.id,
+      };
+      final actuallyUnobtainable = catalogIds().difference(craftable);
 
-      // 8 obtainable of 10 shown. If this ever becomes equal, the bar can
-      // finally reach 100% and G3 is closed.
-      expect(obtainable.length, 8);
-      expect(kCollectionCatalog.length, 10);
-      expect(obtainable.length, lessThan(kCollectionCatalog.length));
+      expect(
+        flaggedUnobtainable,
+        actuallyUnobtainable,
+        reason: 'The `obtainable` flag and the recipe truth disagree. The flag '
+            'drives the progress total the player sees, so a flag that is '
+            'wrong in either direction makes that number a lie: too many '
+            'flagged obtainable and the bar can never fill; too few and a '
+            'reachable item is excluded from completion.',
+      );
+    });
+
+    test('the progress total counts only obtainable entries', () async {
+      final craftable = await craftableIds();
+      final obtainable =
+          kCollectionCatalog.where((item) => item.obtainable).toList();
+
+      // Collecting everything reachable now reaches 100%, which it could not
+      // while the two preview entries were counted.
+      expect(obtainable, hasLength(8));
+      expect(obtainable.length, craftable.length);
+      expect(kCollectionCatalog.length - obtainable.length, 2);
     });
   });
 
@@ -89,21 +117,28 @@ void main() {
       }
     });
 
-    test('the craft page still promises materials the engine does not charge',
+    test('the craft page no longer promises materials that do not exist',
         () async {
-      // The sentence is user-visible and currently false. Asserting the source
-      // text rather than re-checking the cost map means both honest fixes are
-      // caught: implementing the mechanic, or deleting the promise.
+      // Asserted against the source text rather than the cost map, so that both
+      // honest fixes are caught: implementing the mechanic, or changing the
+      // copy. A false promise must not return without someone noticing.
       final source = File('lib/presentation/pages/craft_detail_page.dart')
           .readAsStringSync();
 
       expect(
         source,
-        contains('材料会在专注中慢慢准备好'),
-        reason: 'The craft page no longer promises materials. If that is '
-            'because Option A was implemented, this whole group is obsolete and '
-            'should be deleted along with the doc note; if the copy was simply '
-            'removed, update P8_COLLECTION_CRAFT_LOOP_DESIGN.md §2 G1 to say so.',
+        isNot(contains('材料会在专注中慢慢准备好')),
+        reason: 'The promise that materials will be prepared during focus came '
+            'back, but nothing produces a material. Either implement Option A '
+            'or restore the honest empty state.',
+      );
+      expect(
+        source,
+        contains('这个配方不需要额外材料'),
+        reason:
+            'The honest empty state was removed. If materials are now real, '
+            'delete this whole group and update the design doc; otherwise '
+            'restore it.',
       );
     });
   });

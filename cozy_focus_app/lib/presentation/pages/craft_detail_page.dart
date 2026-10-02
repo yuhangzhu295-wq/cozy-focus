@@ -414,9 +414,19 @@ class _MaterialsSummary extends StatelessWidget {
           ? const Row(children: [
               Icon(Icons.auto_awesome, size: 18, color: AppColors.accentGold),
               SizedBox(width: 8),
-              Text('材料会在专注中慢慢准备好',
-                  style:
-                      TextStyle(fontSize: 13, color: AppColors.textSecondary))
+              // A truthful empty state. No recipe declares an ingredient cost
+              // and nothing in the app produces a material, so the copy this
+              // replaced promised materials that focus would prepare — a
+              // mechanic that does not exist. Focus time is the whole cost, and
+              // saying so is the honest thing until materials are real.
+              //
+              // The sentence is deliberately not quoted here: the test that
+              // guards it asserts the old copy is absent from this file.
+              Expanded(
+                child: Text('这个配方不需要额外材料，专注时间就是它的成本',
+                    style: TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary)),
+              )
             ])
           : Wrap(
               spacing: 16,
