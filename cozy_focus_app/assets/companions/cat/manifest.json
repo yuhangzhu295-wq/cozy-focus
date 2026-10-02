@@ -107,6 +107,40 @@
         0
       ]
     },
+    "sit_down": {
+      "frames": [
+        "sit_down_000.png",
+        "sit_down_001.png",
+        "sit_down_002.png",
+        "sit_down_003.png"
+      ],
+      "fps": 8,
+      "loopMode": "once",
+      "targetFrameCount": 4,
+      "interruptible": false,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "stand_up": {
+      "frames": [
+        "stand_up_000.png",
+        "stand_up_001.png",
+        "stand_up_002.png",
+        "stand_up_003.png"
+      ],
+      "fps": 8,
+      "loopMode": "once",
+      "targetFrameCount": 4,
+      "interruptible": false,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "walk": {
       "frames": [
         "walk_000.png",

@@ -229,3 +229,80 @@ cat: **7 actions / 27 frames**. Complete: `idle` (6/6), `walk` (6/6),
 `celebrate` (5/5), `focus_read` (3/3), `focus_think` (3/3), `pause_rest` (2/2).
 Partial: `focus_write` (2/4). Missing: `sit_down` (0/4), `stand_up` (0/4),
 `craft_work` (0/4), `pet_react` (0/3), `tap_react` (0/3), `sleep` (0/2).
+
+---
+
+# Session 4 — sit_down and stand_up
+
+## Why these two
+
+The animation state machine's posture hops depend on them. Without
+`sit_down`/`stand_up` the cat hard-cuts between standing and seated: a walk that
+ends on a seat snaps, and a seat that becomes a walk pops. They are the pair
+that makes `walk` usable rather than merely present.
+
+## Accepted this session
+
+**sit_down** — frames 1–3 generated from the **standing master**, frame 4 from
+the **seated master**:
+
+| Frame | Reference | Attempts |
+|---|---|---|
+| `sit_down_000` | standing master | 1 |
+| `sit_down_001` | standing master | 1 |
+| `sit_down_002` | standing master | 1 |
+| `sit_down_003` | `cat_master.jpg` (seated) | 1 |
+
+Frame 4 deliberately uses the seated master, not frame 3, because the animation
+hands over from `sit_down` to `idle` — the last transition frame has to match the
+pose it hands over to, not the frame before it.
+
+**stand_up** — frames 1–3 from the **seated master**, frame 4 from the
+**standing master**:
+
+| Frame | Reference | Attempts |
+|---|---|---|
+| `stand_up_000` | `cat_master.jpg` (seated) | 2 |
+| `stand_up_001` | `cat_master.jpg` (seated) | 1 |
+| `stand_up_002` | `cat_master.jpg` (seated) | 1 |
+| `stand_up_003` | standing master | 2 |
+
+Symmetric rule: the first frame matches the pose it comes from, the last frame
+matches the pose it hands over to.
+
+## Two failures worth recording
+
+**Silent no-tile failures.** `stand_up` frame 1 attempt 1 finished its progress
+bar and produced **no tile at all** — the same failure mode as `idle` frame 3
+attempt 1. A retry succeeded. The check that catches this is comparing the newest
+tile's image id against the previous one; the progress bar disappearing is not
+evidence of success.
+
+**A search that returned my own output.** The search box matches generated tile
+names. After the first `stand_up` frames existed, searching **"standing"**
+returned *my own* `stand_up` frame rather than the standing master, and the
+wrong reference was attached. The resulting frame 4 came back with the tail
+raised and straight instead of the master's curled S — a continuity break
+against `walk` and `idle`-standing.
+
+The fix has two parts, and both are worth keeping:
+
+1. Search by a term only the master carries. **"master pose"** finds
+   *Cat standing in master pose*; "standing" no longer does.
+2. Verify the attached image id against the master's known id before generating.
+   The ingredient `src` carries a stable UUID — `bc6ad0f6…` for the standing
+   master — so the check is exact, not a judgement call.
+
+Frame 4 was regenerated with an explicit tail clause:
+
+```
+CRITICAL: the tail must keep the exact curled S shape it has in the attached
+reference. Do not lift it, straighten it or raise it behind the body.
+```
+
+## State after this session
+
+cat: **9 actions / 35 frames**. Complete: `idle` (6/6), `walk` (6/6),
+`sit_down` (4/4), `stand_up` (4/4), `celebrate` (5/5), `focus_read` (3/3),
+`focus_think` (3/3), `pause_rest` (2/2). Partial: `focus_write` (2/4).
+Missing: `craft_work` (0/4), `pet_react` (0/3), `tap_react` (0/3), `sleep` (0/2).
