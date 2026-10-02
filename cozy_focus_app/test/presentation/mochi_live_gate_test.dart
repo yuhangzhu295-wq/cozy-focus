@@ -5,6 +5,8 @@ import 'package:cozy_focus_app/domain/models/craft_models.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_idle_fallback_view.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_random_source_provider.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/random_source.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_player.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_motion_spec.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
@@ -143,6 +145,12 @@ ProviderContainer _container({
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
       focusClockProvider.overrideWithValue(_FixedClock()),
+      // Pin behaviour selection. The avatar builds its own director, so without
+      // this the pool pick comes from the system RNG and "which beat is Mochi
+      // in" varies run to run. The clock override above is not enough on its
+      // own: it fixes the time-of-day *band*, not the draw within the pool.
+      companionRandomSourceProvider
+          .overrideWithValue(const FixedRandomSource()),
       homeControllerProvider.overrideWith(
         (ref) => _PresetHomeController(
           ref,
@@ -651,10 +659,15 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       // The invariant is that nothing running means no *work* presentation.
-      // It is not literally `idle`: late at night the ambient modifier
-      // legitimately adds a sleeping beat to the home pool, so a strict
-      // `idle` assertion makes this test depend on the wall clock and fail
-      // whenever the suite happens to run after 23:00.
+      //
+      // The `sleep` alternative used to be here because the ambient modifier
+      // read the wall clock, so a late-night run added a sleeping beat and a
+      // strict `idle` assertion failed after 23:00. The avatar now reads the
+      // injected clock (this file fixes it at 09:00) and the random source is
+      // pinned, so the band and the draw are both deterministic and the
+      // tolerance is no longer load-bearing. It is kept because the invariant
+      // this test exists to protect is "not focus, not craft" — not "exactly
+      // idle" — and a future ambient rule may legitimately rest the companion.
       expect(
         _renderedState(tester),
         anyOf(PetVisualState.idle, PetVisualState.sleep),

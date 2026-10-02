@@ -6,6 +6,7 @@ import '../../domain/models/enums.dart';
 import '../controllers/craft_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/pet_motion_controller.dart';
+import '../controllers/providers.dart';
 import 'animation/animation_state.dart';
 import 'animation/companion_animation_controller.dart';
 import 'runtime/presentation_vitals.dart';
@@ -18,6 +19,7 @@ import 'runtime/companion_behavior_director.dart';
 import 'runtime/companion_context.dart';
 import 'runtime/companion_id.dart';
 import 'runtime/companion_presentation_clock.dart';
+import 'runtime/companion_random_source_provider.dart';
 import 'runtime/companion_renderer.dart';
 import 'runtime/companion_visual_provider.dart';
 import 'time_of_day.dart';
@@ -171,6 +173,10 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
     _director = CompanionBehaviorDirector(
       catalog: ref.read(companionCatalogProvider),
       context: _readContext(),
+      // Read from the provider rather than constructed inline, so a widget test
+      // can make behaviour selection deterministic. See
+      // [companionRandomSourceProvider].
+      random: ref.read(companionRandomSourceProvider),
     );
     // The opening pose is already in place; only later changes need a transition.
     _animation.settleAt(_director.intent);
@@ -299,7 +305,14 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
       focusProgress: widget.focusProgress,
       craftProgress: _craftProgress(craft),
       growthStage: MochiGrowthProfile.fromProgress(home.petProgress).stage,
-      timeOfDay: TimeOfDayResolver.resolve(DateTime.now()),
+      // Read through the injected clock, not `DateTime.now()`. The time-of-day
+      // band selects the ambient behaviour pool — a late-night companion is
+      // offered sleep, a daytime one is not — so a raw reading made the
+      // companion's presentation depend on when the app happened to run. In
+      // production `focusClockProvider` *is* the system clock, so nothing
+      // changes there; in a test it is the one seam that makes the band
+      // controllable. This is the same fix the room simulation already carries.
+      timeOfDay: TimeOfDayResolver.resolve(ref.read(focusClockProvider).now()),
       reducedMotion: _reducedMotion,
       roomAnchor: widget.roomAnchor,
       vitals: widget.vitals,

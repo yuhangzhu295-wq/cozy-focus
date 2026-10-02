@@ -4,6 +4,8 @@ import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_idle_fallback_view.dart';
 import 'package:cozy_focus_app/presentation/animations/pet_interaction_spec.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_random_source_provider.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/random_source.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_player.dart';
 import 'package:cozy_focus_app/presentation/controllers/focus_session_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/home_controller.dart';
@@ -43,6 +45,12 @@ void main() {
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         focusClockProvider.overrideWithValue(_ReachabilityTestClock()),
+        // Pin behaviour selection. Without this the director draws from the
+        // system RNG, so which pose Mochi presents varies run to run — and a
+        // pose with its own sprite drawing routes the avatar through the sprite
+        // player rather than the layered rig this test reads.
+        companionRandomSourceProvider
+            .overrideWithValue(const FixedRandomSource()),
       ],
     );
   });
