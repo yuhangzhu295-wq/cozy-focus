@@ -354,3 +354,42 @@ worse than none, for the same reason a partial idle was.
 
 `stand_up` and `sit_down` are not started. Both need the standing reference, and
 both are contracted in `tools/manifest.py`.
+
+## Batch 3 — stand_up: complete
+
+Four frames, shipped. Frame 000 uses the seated master as its ingredient and
+001-003 use `walk_000`, which is both a standing pose and the pose stand_up
+hands over to, so the transition ends where the walk cycle begins.
+
+| frame | vs seated | vs standing | aspect |
+|---|---|---|---|
+| stand_up_000 | 0.975 | 0.633 | 1.055 |
+| stand_up_001 | 0.755 | 0.795 | 0.834 |
+| stand_up_002 | 0.638 | 0.965 | 0.771 |
+| stand_up_003 | 0.638 | 0.953 | 0.773 |
+
+The seated reference measures 1.049 wide-to-tall and the standing one 0.776. The
+aspect walks 1.055 -> 0.834 -> 0.771 -> 0.773 across the four frames, so the
+transition genuinely happens rather than being four variations of one pose.
+That is the check the anchor, alpha and byte-difference gates cannot make.
+
+## Batch 4 — sit_down: 1 of 4
+
+`sit_down_000` generated ("Character starting sitting down"), staged and
+measured at aspect 1.055 with the seated reference as its ingredient.
+
+`sit_down_001`'s prompt is staged and its submission was refused across three
+quiet periods, so the rate limit is again the binding constraint rather than the
+method.
+
+## Where the batch set stands
+
+| batch | frames | state |
+|---|---|---|
+| idle | 6 | shipped, in the APK |
+| walk | 6 | shipped, in the APK |
+| stand_up | 4 | shipped, in the APK |
+| sit_down | 4 | 1 staged, 3 not generated |
+
+Seventeen of twenty frames are in the pack. `MOCHI_FIRST_BATCH_PENDING` reports
+`sit_down 0/4`.
