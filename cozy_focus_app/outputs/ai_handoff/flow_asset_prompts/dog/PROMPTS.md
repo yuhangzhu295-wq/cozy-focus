@@ -338,11 +338,11 @@ standing reference, far from the seated one, and inside the 2px contract.
 | walk_000 | 0.638 | 0.857 | 0.776 | 919 | standing |
 | walk_001 | 0.613 | 0.860 | 0.772 | 919 | standing |
 | walk_002 | 0.662 | 0.822 | 0.785 | 919 | standing |
-| walk_003 | — | — | — | — | prompt staged; submission refused across two quiet periods |
-| walk_004 | — | — | — | — | not started |
+| walk_003 | 0.632 | 0.822 | 0.767 | 919 | standing |
+| walk_004 | — | — | — | — | prompt staged; submission refused across three quiet periods |
 | walk_005 | — | — | — | — | not started |
 
-Three of six, all verified. The seated reference measures 1.049 wide-to-tall and
+Four of six, all verified. The seated reference measures 1.049 wide-to-tall and
 the standing frames measure 0.77-0.79, so they are unambiguously a different
 posture rather than the seated shape moved.
 
