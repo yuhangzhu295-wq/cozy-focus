@@ -8,6 +8,7 @@ import '../controllers/home_controller.dart';
 import '../controllers/pet_motion_controller.dart';
 import 'animation/animation_state.dart';
 import 'runtime/presentation_vitals.dart';
+import 'runtime/companion_event.dart';
 import 'companion_presentation_mapper.dart';
 import 'focus_phase.dart';
 import 'companion_selection.dart';
@@ -322,12 +323,19 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
         )!;
   }
 
+  /// A gesture reaches the director through its event entry, not by calling
+  /// `triggerOverlay` directly.
+  ///
+  /// Both routes end in the same place, so this is not a behaviour change — it
+  /// is what makes the gesture half of the event model reachable in production
+  /// instead of only from tests, and it leaves one way for a gesture to arrive
+  /// rather than two.
   void _triggerTapReact() {
-    _director.triggerOverlay(_director.profile.tapOverlay);
+    _director.dispatch(CompanionEvent.tap);
   }
 
   void _triggerLongPressReact() {
-    _director.triggerOverlay(_director.profile.longPressOverlay);
+    _director.dispatch(CompanionEvent.longPress);
   }
 
   @override
