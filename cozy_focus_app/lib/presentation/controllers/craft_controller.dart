@@ -177,6 +177,108 @@ class CraftController extends StateNotifier<CraftState> {
     }
   }
 
+  // ── Placement control ─────────────────────────────────────
+  //
+  // The three attributes below are already persisted by
+  // [ICraftRepository.updateRoomItem] and already consumed by the anchor registry
+  // and the companion's feet maths. These methods are the missing write path:
+  // without them the fields exist but the player can never change them.
+  //
+  // They write placement rows and nothing else. No session, reward, ledger or
+  // inventory quantity is reachable from here, so the business-isolation rule
+  // holds structurally rather than by convention.
+
+  /// The smallest render scale a placed item may be set to.
+  static const double minRoomItemScale = 0.6;
+
+  /// The largest render scale a placed item may be set to.
+  static const double maxRoomItemScale = 1.8;
+
+  /// Resize a placed item.
+  ///
+  /// [scale] is clamped rather than rejected: a value that is merely out of
+  /// range is a UI slip, not a reason to refuse the change, and clamping keeps
+  /// the item visible instead of producing a zero- or giant-sized sprite.
+  Future<void> setRoomItemScale(String id, double scale) async {
+    final clamped = scale.clamp(minRoomItemScale, maxRoomItemScale);
+    await _replaceRoomItem(id, (item) => item.copyWith(scale: clamped));
+  }
+
+  /// Show or hide a placed item without removing it.
+  ///
+  /// A hidden item keeps its row, its position and its z-order, but
+  /// [FurnitureAnchorRegistry] stops deriving an anchor for it — so the
+  /// companion no longer walks to furniture the player has stowed away.
+  Future<void> setRoomItemVisible(String id, bool visible) async {
+    await _replaceRoomItem(id, (item) => item.copyWith(isVisible: visible));
+  }
+
+  /// Raise a placed item above every other item.
+  Future<void> bringRoomItemToFront(String id) =>
+      _restackRoomItem(id, toFront: true);
+
+  /// Send a placed item behind every other item.
+  Future<void> sendRoomItemToBack(String id) =>
+      _restackRoomItem(id, toFront: false);
+
+  /// Replaces one row in place, preserving list order.
+  ///
+  /// Used by the attribute changes, which cannot affect draw order. The row is
+  /// persisted first and only then mirrored into state, so a failed write leaves
+  /// the UI showing what the database still holds.
+  Future<void> _replaceRoomItem(
+    String id,
+    RoomItem Function(RoomItem) transform,
+  ) async {
+    try {
+      final idx = state.roomItems.indexWhere((r) => r.id == id);
+      if (idx < 0) return;
+      final updated = transform(state.roomItems[idx]);
+      await _repo.updateRoomItem(updated);
+      final list = [...state.roomItems];
+      list[idx] = updated;
+      state = state.copyWith(roomItems: list);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  /// Moves [id] to the front or back of the draw order.
+  ///
+  /// `findRoomItems` returns rows `ORDER BY z_index ASC` and the canvas draws
+  /// the list in order, so list position *is* z-order. The list is re-sorted by
+  /// the current values (stable, so equal z values keep their relative order),
+  /// the target is moved to one end, and `zIndex` is reassigned as a dense
+  /// `0..n-1`. Only rows whose value actually changed are written, and the list
+  /// is re-read afterwards so state comes from the database rather than from the
+  /// arithmetic here.
+  Future<void> _restackRoomItem(String id, {required bool toFront}) async {
+    try {
+      final ordered = [...state.roomItems]
+        ..sort((a, b) => a.zIndex.compareTo(b.zIndex));
+      final idx = ordered.indexWhere((r) => r.id == id);
+      if (idx < 0) return;
+
+      final target = ordered.removeAt(idx);
+      if (toFront) {
+        ordered.add(target);
+      } else {
+        ordered.insert(0, target);
+      }
+
+      for (var i = 0; i < ordered.length; i++) {
+        if (ordered[i].zIndex == i) continue;
+        ordered[i] = ordered[i].copyWith(zIndex: i);
+        await _repo.updateRoomItem(ordered[i]);
+      }
+
+      final fresh = await _repo.findRoomItems(_userId);
+      state = state.copyWith(roomItems: fresh, clearError: true);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
   /// Reload inventory + room after external changes (e.g. after focus reward).
   Future<void> refreshInventoryAndRoom() async {
     try {
