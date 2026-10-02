@@ -209,3 +209,38 @@ Two routes out, and the choice is a product call:
 2. **Drop the ingredient for these actions** and prompt the character from text.
    Cheaper, but identity fidelity is exactly what the ingredient exists to
    guarantee, so it trades the thing the pipeline was built to protect.
+
+### Standing master — four strategies, none of them stood the character up
+
+Route 1 from the section above, attempted. Every attempt used `idle_000` as the
+ingredient and asked, in a different way, for the character upright.
+
+| attempt | prompt | IoU vs the seated reference |
+|---|---|---|
+| A | the shared pose-variation skeleton | 0.850 |
+| B | A plus "CRITICAL: must be STANDING, not sitting... a seated pose is wrong" | 0.846 |
+| C | posture-first: "ignore its posture completely... fully upright on its legs" | — |
+| D | x4 batch of C, first candidate measured | 0.892 |
+
+All four land at 0.85-0.89. A genuinely standing pose would be well below 0.60.
+The reference image dominates the posture so completely that an explicit
+"ignore its posture" clause changes nothing, and one attempt scored *higher*
+than the plain pose-variation prompt.
+
+Six tiles in the project carry standing-ish labels ("Puppy standing up",
+"Puppy walking standing up", and so on). The one that could be measured is the
+same seated shape; the rest could not be opened reliably enough to measure,
+because clicking a tile from the grid does not consistently switch the editor to
+that tile and two of them share a label, so the fetch returned the previously
+opened image.
+
+### What this means
+
+`walk`, `stand_up` and `sit_down` all need a standing pose, and the pack has
+none. The blocker is the reference art, not the prompts and not the pipeline:
+the gate passed every one of these frames on canvas, anchor and frame-to-frame
+difference, because none of those checks can see posture.
+
+A text-only attempt (no ingredient, the character described in words) is staged
+in the prompt box as the last untried route. It trades the identity guarantee
+the ingredient exists to provide, which is why it was route 2 and not route 1.
