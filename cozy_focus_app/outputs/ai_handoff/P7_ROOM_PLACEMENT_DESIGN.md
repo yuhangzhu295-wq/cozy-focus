@@ -206,3 +206,43 @@ keeps its single timer and gains at most a "do not start a new decision" guard.
 | z re-densification rewrites many rows | Only rows whose `zIndex` actually changed are persisted |
 | A future direct-write path fakes an anchor | Unchanged: `FurnitureAnchorRegistry` still requires `owned(quantity>0)` |
 | Scope creep into rotation / a layout manager | §3.5 forbids it; the contract in §3.1 names the untouched files |
+
+---
+
+## 6. DELIVERY RECORD
+
+All three slices are implemented. No `RoomLayoutManager`, no `FurnitureInstance`,
+no second table or column, no rotation.
+
+| Slice | Commit | Files | Tests |
+|---|---|---|---|
+| Design | `3490d6a` | `outputs/ai_handoff/P7_ROOM_PLACEMENT_DESIGN.md` | — |
+| 1 — capability | `8411598` | `lib/presentation/controllers/craft_controller.dart`, `test/presentation/room_placement_control_test.dart` | 12 new |
+| 2 — toolbar | `f5037c3` | `lib/presentation/pages/room_page.dart`, `test/presentation/room_placement_toolbar_test.dart` | 7 new |
+| 3 — edit/life mode | *(this commit)* | `lib/presentation/companion/room/room_simulation.dart`, `lib/presentation/pages/room_page.dart`, `test/presentation/room_edit_mode_test.dart` | 6 new |
+
+Suite: **1064 passing** (baseline 1039 + 25 new). `dart format` clean,
+`flutter analyze --fatal-infos` clean.
+
+### Two findings worth recording
+
+1. **`phase6d_interact_reachability_test.dart` is flaky, independent of P7.**
+   It failed intermittently during this work. Verified by running it six times
+   on a stashed (clean) tree: five passes, one failure. It is a pre-existing
+   timing flake in the same family as `mochi_live_gate_test`, not a regression.
+
+2. **The pause had to be kept out of `RoomSimulationState`.** The first attempt
+   stored `arranging` in the state and cleared it from `RoomPage.dispose`. That
+   writes provider state during teardown, which Riverpod rejects with
+   `'_lifecycleState != _ElementLifecycle.defunct'`. The flag now lives on the
+   controller, so clearing it notifies nobody.
+
+### Not covered by a test, deliberately
+
+`mayChoose` is asserted directly, and the page's raising/clearing of the pause
+is asserted through a real gesture. The *suppression* is not covered by a
+timing test, because `RoomSimulationController._tick` reads `DateTime.now()`
+rather than the injected `FocusClock`, so a test cannot advance the dwell
+deadline. Making the tick clock-injectable is a separate change with its own
+risk to the existing room tests, and was not folded into P7.
+

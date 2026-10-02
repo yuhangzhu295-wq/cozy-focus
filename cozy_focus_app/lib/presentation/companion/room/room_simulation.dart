@@ -74,6 +74,17 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
   /// make this safe to read from a lifecycle callback that may run twice.
   bool get isRunning => _running;
 
+  /// Whether the player is rearranging the room right now.
+  ///
+  /// While this holds, the loop keeps the companion's vitals ticking but does
+  /// not *choose* a new activity: the layout is mid-change, and a decision made
+  /// now would be made against furniture that is about to move. Choosing is what
+  /// pauses, not time.
+  bool _arranging = false;
+
+  /// Whether the player is arranging. Read by tests and by the page's hint.
+  bool get isArranging => _arranging;
+
   RoomSimulationController(this._ref) : super(RoomSimulationState.initial);
 
   /// Starts the interval loop. Does nothing when it is already running.
@@ -89,6 +100,24 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
     _running = false;
     _timer?.cancel();
     _timer = null;
+  }
+
+  /// Tells the loop whether the player is rearranging the room.
+  ///
+  /// Deliberately **not** part of [RoomSimulationState]: a page clears this from
+  /// `dispose`, and writing provider state during teardown is what Riverpod
+  /// forbids — a listener rebuilding against a defunct element is an assertion,
+  /// not a warning. Keeping the flag on the controller means clearing it is a
+  /// field assignment that notifies nobody.
+  ///
+  /// Leaving arranging re-decides immediately, against the layout as it now is.
+  /// That re-decision is skipped when the loop is stopped, which is exactly the
+  /// case during teardown, so a page being disposed cannot start a decision it
+  /// would immediately have to abandon.
+  void setArranging(bool arranging) {
+    if (_arranging == arranging) return;
+    _arranging = arranging;
+    if (!arranging && _running && mounted) _evaluate(force: true);
   }
 
   @override
@@ -150,8 +179,22 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
     _evaluate();
   }
 
+  /// Whether the loop may choose a new activity.
+  ///
+  /// A player request or an explicit [evaluateNow] is *forced* and always runs;
+  /// what pausing suppresses is the interval loop's own choosing. This is a pure
+  /// predicate rather than an inline condition so the policy can be asserted
+  /// directly, instead of being inferred from a timer that reads the wall clock.
+  static bool mayChoose({required bool arranging, required bool forced}) =>
+      forced || !arranging;
+
   /// The heart of the loop.
   void _evaluate({bool force = false}) {
+    // Rearranging suppresses *choosing*, not time: the vitals tick and the
+    // companion stays where it is, but it does not commit to an anchor that the
+    // player is in the middle of moving.
+    if (!mayChoose(arranging: _arranging, forced: force)) return;
+
     final committed = state.activity;
     if (!force && committed.endsAt > state.elapsedSinceStart) return;
 

@@ -154,6 +154,11 @@ class _RoomPageState extends ConsumerState<RoomPage>
     // Stopping here is what makes teardown clean: a periodic timer that outlives
     // the widget tree fails the test framework's own invariant.
     _simulator?.stop();
+    // Then clear any pause a drag left behind. The simulation is app-scoped, so
+    // a page disposed mid-drag would otherwise leave the companion unable to
+    // choose anything ever again. The loop is already stopped, so this cannot
+    // start a decision the teardown would have to abandon.
+    _simulator?.setArranging(false);
     _simulationSubscription?.close();
     _travelTicker?.dispose();
     super.dispose();
@@ -332,11 +337,14 @@ class _RoomPageState extends ConsumerState<RoomPage>
                                 await ref
                                     .read(craftControllerProvider.notifier)
                                     .moveRoomItem(item.id, nx, ny);
-                                // The anchors move with their furniture, so the
-                                // companion re-decides against the new layout
-                                // rather than standing where the item used to be.
-                                if (mounted) _sim?.evaluateNow();
+                                if (!mounted) return;
+                                // Leaving arranging re-decides against the new
+                                // layout, so the companion heads for where the
+                                // furniture now is rather than where it was.
+                                _sim?.setArranging(false);
                               },
+                              onDragStart: () => _sim?.setArranging(true),
+                              onDragCancel: () => _sim?.setArranging(false),
                             );
                           }),
                           if (_dataReady)
@@ -700,6 +708,12 @@ class _PlacedItemWidget extends StatefulWidget {
   final VoidCallback onSelect;
   final void Function(double nx, double ny) onMoveEnd;
 
+  /// A drag began, so the room can pause the companion's decisions.
+  final VoidCallback onDragStart;
+
+  /// A drag ended without a position being committed, so the pause can lift.
+  final VoidCallback onDragCancel;
+
   const _PlacedItemWidget({
     required super.key,
     required this.roomItem,
@@ -709,6 +723,8 @@ class _PlacedItemWidget extends StatefulWidget {
     required this.canvasHeight,
     required this.onSelect,
     required this.onMoveEnd,
+    required this.onDragStart,
+    required this.onDragCancel,
   });
 
   @override
@@ -754,6 +770,11 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
       top: top,
       child: GestureDetector(
         onTap: widget.onSelect,
+        // The pause starts on the gesture rather than on the first movement, so
+        // there is no window in which the companion can commit to the item the
+        // player has already grabbed.
+        onPanStart: (_) => widget.onDragStart(),
+        onPanCancel: widget.onDragCancel,
         onPanUpdate: (d) {
           // Update local UI only — no DB write here.
           setState(() {
