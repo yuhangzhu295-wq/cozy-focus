@@ -2,6 +2,7 @@ import '../../../../domain/growth/growth_stage.dart';
 import '../time_of_day.dart';
 import 'companion_context.dart';
 import 'presentation_vitals.dart';
+import '../animation/companion_emotion.dart';
 
 /// A contribution to the ambient behaviour pool.
 ///
@@ -15,14 +16,19 @@ class AmbientModifier {
   /// Multiplier on the chosen dwell. `< 1` changes behaviour more often.
   final double dwellScale;
 
+  /// Multiplier on how long a reaction overlay holds. `< 1` means briefer.
+  final double overlayDurationScale;
+
   const AmbientModifier({
     this.extraEligible = const {},
     this.dwellScale = 1.0,
+    this.overlayDurationScale = 1.0,
   });
 
   @override
   String toString() =>
-      'AmbientModifier(+${extraEligible.map((b) => b.id).join('|')} x$dwellScale)';
+      'AmbientModifier(+${extraEligible.map((b) => b.id).join('|')} '
+      'x$dwellScale overlay x$overlayDurationScale)';
 }
 
 /// Growth and time-of-day variation for the ambient behaviour pool.
@@ -70,13 +76,18 @@ abstract final class CompanionAmbientModifiers {
   /// Per-stage contribution. Growth is **additive**: a later stage keeps
   /// everything an earlier one had.
   static const Map<GrowthStage, AmbientModifier> growth = {
-    GrowthStage.sprout: AmbientModifier(dwellScale: 1.35),
+    GrowthStage.sprout: AmbientModifier(
+      dwellScale: 1.35,
+      overlayDurationScale: 0.85,
+    ),
     GrowthStage.seedling: AmbientModifier(
       dwellScale: 1.15,
+      overlayDurationScale: 0.95,
       extraEligible: {CompanionMacroBehavior.glance},
     ),
     GrowthStage.growing: AmbientModifier(
       dwellScale: 1.0,
+      overlayDurationScale: 1.05,
       extraEligible: {
         CompanionMacroBehavior.glance,
         CompanionMacroBehavior.microRest,
@@ -84,6 +95,7 @@ abstract final class CompanionAmbientModifiers {
     ),
     GrowthStage.blooming: AmbientModifier(
       dwellScale: 0.9,
+      overlayDurationScale: 1.15,
       extraEligible: {
         CompanionMacroBehavior.glance,
         CompanionMacroBehavior.microRest,
@@ -137,6 +149,32 @@ abstract final class CompanionAmbientModifiers {
     return AmbientModifier(extraEligible: extra, dwellScale: dwellScale);
   }
 
+  /// The contribution of the companion's emotional presentation state.
+  ///
+  /// ## Only happy and curious contribute
+  ///
+  /// A calm companion adds nothing (the existing pool is already calm). Tired
+  /// and low-mood are handled by [vitalsModifier] from the raw vitals — adding
+  /// them here too would double-count.
+  ///
+  /// Happy and curious are the *semantic enrichment* that raw vitals cannot
+  /// express: they require context (a recent completion or interaction) that
+  /// vitals alone cannot provide. Both make the companion more expressive by
+  /// adding `glance` to the ambient pool.
+  static AmbientModifier emotionModifier(CompanionEmotion emotion) {
+    switch (emotion) {
+      case CompanionEmotion.happy:
+      case CompanionEmotion.curious:
+        return const AmbientModifier(
+          extraEligible: {CompanionMacroBehavior.glance},
+        );
+      case CompanionEmotion.calm:
+      case CompanionEmotion.tired:
+      case CompanionEmotion.lowMood:
+        return const AmbientModifier();
+    }
+  }
+
   /// The combined modifier for a context.
   ///
   /// Returns the neutral modifier for a task context, so a focus session and a
@@ -146,6 +184,7 @@ abstract final class CompanionAmbientModifiers {
     required GrowthStage growthStage,
     required TimeOfDayBand timeOfDayBand,
     PresentationVitals vitals = PresentationVitals.neutral,
+    CompanionEmotion emotion = CompanionEmotion.calm,
   }) {
     if (!ambientContexts.contains(baseContext)) {
       return const AmbientModifier();
@@ -154,14 +193,19 @@ abstract final class CompanionAmbientModifiers {
     final stage = growth[growthStage] ?? const AmbientModifier();
     final band = timeOfDay[timeOfDayBand] ?? const AmbientModifier();
     final condition = vitalsModifier(vitals);
+    final mood = emotionModifier(emotion);
 
     return AmbientModifier(
       extraEligible: {
         ...stage.extraEligible,
         ...band.extraEligible,
         ...condition.extraEligible,
+        ...mood.extraEligible,
       },
       dwellScale: stage.dwellScale * band.dwellScale * condition.dwellScale,
+      overlayDurationScale: stage.overlayDurationScale *
+          band.overlayDurationScale *
+          condition.overlayDurationScale,
     );
   }
 }

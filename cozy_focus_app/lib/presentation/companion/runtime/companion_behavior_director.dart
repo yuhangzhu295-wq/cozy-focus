@@ -3,6 +3,8 @@ import 'behavior_recipe.dart';
 import 'companion_action_availability.dart';
 import 'companion_ambient_modifiers.dart';
 import 'companion_behavior_priority.dart';
+import '../animation/companion_emotion.dart';
+import '../animation/companion_emotion_resolver.dart';
 import 'companion_catalog.dart';
 import 'companion_context.dart';
 import 'companion_event.dart';
@@ -265,15 +267,25 @@ class CompanionBehaviorDirector {
       overlayRecipe.minDuration,
       overlayRecipe.maxDuration,
     );
+    // Growth scales how long a reaction holds: a blooming companion is more
+    // expressive and holds it a little longer; a sprout is briefer. The
+    // recipe's min/max bounds are not exceeded because the scale multiplies the
+    // already-drawn duration, and both endpoints are within a factor of 2.
+    final scaled = Duration(
+      milliseconds:
+          (duration.inMilliseconds * ambientModifier.overlayDurationScale)
+              .round()
+              .clamp(200, 5000),
+    );
 
     _overlay = overlay;
-    _overlayEndsAt = _now + duration;
+    _overlayEndsAt = _now + scaled;
 
     // Freeze the macro for the overlay's duration so the behaviour resumes where
     // it left off rather than expiring underneath the overlay. Only meaningful
     // when a restore was requested — the manifest controls that.
     if (overlayRecipe.restorePrevious && _macroEndsAt != null) {
-      _macroEndsAt = _macroEndsAt! + duration;
+      _macroEndsAt = _macroEndsAt! + scaled;
     }
 
     return true;
@@ -422,11 +434,35 @@ class CompanionBehaviorDirector {
   /// stage and the wall clock — and neither can reach the reward economy. Task
   /// contexts get the neutral modifier, so a focus session and a craft job
   /// present identically at every stage and every hour.
-  AmbientModifier get ambientModifier => CompanionAmbientModifiers.resolve(
-        baseContext: _context.baseContext,
-        growthStage: _context.growthStage,
-        timeOfDayBand: _context.timeOfDay,
+  AmbientModifier get ambientModifier {
+    // The emotion is derived from the director's own state, not from a second
+    // authority: recent completion from the celebration latch, recent
+    // interaction from the overlay lifecycle.
+    final emotion = CompanionEmotionResolver.resolve(
+      vitals: _context.vitals,
+      recentCompletion: isCelebrating ||
+          _context.baseContext == CompanionBaseContext.complete,
+      recentlyInteracted: _overlay.isActive ||
+          (_overlayReadyAt != null && _now < _overlayReadyAt!),
+    );
+    return CompanionAmbientModifiers.resolve(
+      baseContext: _context.baseContext,
+      growthStage: _context.growthStage,
+      timeOfDayBand: _context.timeOfDay,
+      vitals: _context.vitals,
+      emotion: emotion,
+    );
+  }
+
+  /// The companion's current emotional presentation state.
+  ///
+  /// Derived from the director's own state and the vitals, never stored.
+  CompanionEmotion get currentEmotion => CompanionEmotionResolver.resolve(
         vitals: _context.vitals,
+        recentCompletion: isCelebrating ||
+            _context.baseContext == CompanionBaseContext.complete,
+        recentlyInteracted: _overlay.isActive ||
+            (_overlayReadyAt != null && _now < _overlayReadyAt!),
       );
 
   /// Applies a dwell multiplier, never returning a non-positive duration.
