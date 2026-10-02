@@ -264,6 +264,20 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 5,
         ),
+        'craft_work': CompanionActionSpec(
+          actionId: 'craft_work',
+          frames: [
+            'assets/companions/cat/craft_work_000.png',
+            'assets/companions/cat/craft_work_001.png',
+            'assets/companions/cat/craft_work_002.png',
+            'assets/companions/cat/craft_work_003.png',
+          ],
+          fps: 5,
+          loopMode: SpriteLoopMode.loop,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 4,
+        ),
         'focus_read': CompanionActionSpec(
           actionId: 'focus_read',
           frames: [

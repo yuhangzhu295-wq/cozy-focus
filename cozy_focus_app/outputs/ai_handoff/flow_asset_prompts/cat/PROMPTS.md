@@ -306,3 +306,58 @@ cat: **9 actions / 35 frames**. Complete: `idle` (6/6), `walk` (6/6),
 `sit_down` (4/4), `stand_up` (4/4), `celebrate` (5/5), `focus_read` (3/3),
 `focus_think` (3/3), `pause_rest` (2/2). Partial: `focus_write` (2/4).
 Missing: `craft_work` (0/4), `pet_react` (0/3), `tap_react` (0/3), `sleep` (0/2).
+
+---
+
+# Session 5 — craft_work
+
+## Why craft_work came before sleep and the reactions
+
+It is a step of the product loop. The cat was falling back to `idle` in the craft
+state, so while the player was crafting the companion simply sat there — a fake
+animation in the exact place the loop is supposed to feel alive. Sleep and the
+tap reactions are visible too, but neither breaks a loop step.
+
+## The prop had to be introduced, not varied
+
+The cat's `focus_write` is a **notebook and pencil** pose. The dog's `craft_work`
+is a different action entirely: a **wooden mallet and a wooden block**, in a
+raise / strike / rest / inspect cycle. The cat had no mallet tile, so frame 1
+could not use the prop-edit technique — it had to introduce the props from the
+seated master, describing them fully:
+
+> The mallet is a simple rounded wooden mallet with a light brown head and a pale
+> wooden handle, in the same soft rounded line style as the character. The block
+> is a small pale wooden cube with one simple line of grain detail.
+
+Frames 2–4 then used the approved **first** frame as the edit base, per the prop
+law, with an explicit do-not-change list naming the face, ears, whiskers, eyes,
+nose, sprout, tail, the block, the palette and the line style.
+
+## Accepted this session
+
+| Frame | Reference | Attempts | Beat |
+|---|---|---|---|
+| `craft_work_000` | `cat_master.jpg` (seated) | 1 | mallet raised overhead, block in front |
+| `craft_work_001` | `craft_work_000` (edit base) | 1 | mallet down on the block |
+| `craft_work_002` | `craft_work_000` (edit base) | 1 | mallet resting on the block |
+| `craft_work_003` | `craft_work_000` (edit base) | 1 | mallet lowered to the ground, inspecting the block |
+
+The generated frame 1 tile is named **"Cat raising wooden mallet"** — the search
+term that finds it, and the term that distinguishes it from the dog's tiles,
+which are all named "Character crafting…".
+
+## A note on prop stability
+
+The wooden block shifts position slightly between the four frames despite the
+do-not-change clause. The dog's shipped `craft_work` frames have the same
+characteristic — the block moves between its four frames too — so this matches
+the accepted standard for the pack rather than being a new defect. It is recorded
+here so a future re-author knows it was seen and judged, not missed.
+
+## State after this session
+
+cat: **10 actions / 39 frames**. Complete: `idle` (6/6), `walk` (6/6),
+`sit_down` (4/4), `stand_up` (4/4), `craft_work` (4/4), `celebrate` (5/5),
+`focus_read` (3/3), `focus_think` (3/3), `pause_rest` (2/2). Partial:
+`focus_write` (2/4). Missing: `sleep` (0/2), `tap_react` (0/3), `pet_react` (0/3).
