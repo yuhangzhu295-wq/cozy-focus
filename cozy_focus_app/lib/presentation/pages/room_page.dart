@@ -29,6 +29,12 @@ import '../widgets/growth_sub_nav.dart';
 /// one place, so the two cannot drift apart.
 const double _kFurnitureItemSize = 60.0;
 
+/// How much one tap of 放大 / 缩小 changes a placed item's scale.
+///
+/// The controller clamps the result, so this step never needs to know the
+/// bounds — it can stay a plain nudge.
+const double _kScaleStep = 0.2;
+
 /// Screen 09: Room Decoration Page (房间装饰).
 ///
 /// Furniture positions are stored as normalised coordinates [0.0, 1.0]
@@ -207,6 +213,20 @@ class _RoomPageState extends ConsumerState<RoomPage>
       ..start();
   }
 
+  /// Applies a placement change and then lets the companion re-decide.
+  ///
+  /// Re-deciding is what makes the change visible in behaviour rather than only
+  /// in the layout: a resize moves the seat's surface line, and hiding an item
+  /// removes its anchor entirely, so the companion must not stay committed to a
+  /// spot that no longer exists. This mirrors what a move already does.
+  Future<void> _applyPlacement(
+    Future<void> Function(CraftController) change,
+  ) async {
+    await change(ref.read(craftControllerProvider.notifier));
+    if (!mounted) return;
+    _sim?.evaluateNow();
+  }
+
   @override
   Widget build(BuildContext context) {
     final companionName = ref.watch(companionDisplayNameProvider);
@@ -214,6 +234,24 @@ class _RoomPageState extends ConsumerState<RoomPage>
     final simulation = ref.watch(roomSimulationProvider);
     final session = ref.watch(focusSessionControllerProvider);
     final isPaused = session.session?.status == FocusSessionStatus.paused;
+
+    // The selected row, so the toolbar can act on *this* item rather than on
+    // "the selection" as an id the callbacks would have to look up again.
+    final selectedRoomItem =
+        craft.roomItems.where((r) => r.id == _selectedRoomItemId).firstOrNull;
+
+    // A failed placement (no stock left, say) used to be stored in the state and
+    // never shown, which read as a dead button. Surfacing it here is the whole
+    // fix: the controller keeps owning *why* it failed, the page only reports it.
+    ref.listen<String?>(
+      craftControllerProvider.select((s) => s.error),
+      (previous, next) {
+        if (next == null || next == previous) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(next)));
+      },
+    );
 
     // A paused session is the brief's *break*: the companion heads for the sofa
     // instead of continuing to work. The room reads the same session truth the
@@ -332,15 +370,37 @@ class _RoomPageState extends ConsumerState<RoomPage>
                                 },
                               ),
                             ),
-                          if (_selectedRoomItemId != null && _useTarget == null)
+                          if (selectedRoomItem != null && _useTarget == null)
                             Positioned(
                               top: 12,
                               right: 12,
                               child: _SelectionToolbar(
+                                item: selectedRoomItem,
+                                onScaleDown: () => _applyPlacement(
+                                  (n) => n.setRoomItemScale(selectedRoomItem.id,
+                                      selectedRoomItem.scale - _kScaleStep),
+                                ),
+                                onScaleUp: () => _applyPlacement(
+                                  (n) => n.setRoomItemScale(selectedRoomItem.id,
+                                      selectedRoomItem.scale + _kScaleStep),
+                                ),
+                                onBringToFront: () => _applyPlacement(
+                                  (n) => n.bringRoomItemToFront(
+                                      selectedRoomItem.id),
+                                ),
+                                onSendToBack: () => _applyPlacement(
+                                  (n) =>
+                                      n.sendRoomItemToBack(selectedRoomItem.id),
+                                ),
+                                onToggleVisibility: () => _applyPlacement(
+                                  (n) => n.setRoomItemVisible(
+                                      selectedRoomItem.id,
+                                      !selectedRoomItem.isVisible),
+                                ),
                                 onDelete: () async {
                                   await ref
                                       .read(craftControllerProvider.notifier)
-                                      .removeRoomItem(_selectedRoomItemId!);
+                                      .removeRoomItem(selectedRoomItem.id);
                                   if (mounted) _sim?.evaluateNow();
                                   setState(() => _selectedRoomItemId = null);
                                 },
@@ -733,11 +793,18 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
                 : null,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Center(
-            child: Tooltip(
-              message: widget.recipe?.name ?? widget.roomItem.itemId,
-              child: _RoomArtwork(
-                  recipe: widget.recipe, size: widget.roomItem.scale * 54),
+          child: Opacity(
+            // A hidden item is still *here*: it keeps its row, its position and
+            // its z-order, and only the companion ignores it. Drawing it as a
+            // faint ghost is what keeps it reachable — an item the player could
+            // not see would be an item they could never un-hide.
+            opacity: widget.roomItem.isVisible ? 1.0 : 0.3,
+            child: Center(
+              child: Tooltip(
+                message: widget.recipe?.name ?? widget.roomItem.itemId,
+                child: _RoomArtwork(
+                    recipe: widget.recipe, size: widget.roomItem.scale * 54),
+              ),
             ),
           ),
         ),
@@ -746,13 +813,33 @@ class _PlacedItemWidgetState extends State<_PlacedItemWidget> {
   }
 }
 
+/// The controls for the selected furniture.
+///
+/// Two rows because the placement controls (resize, layer, hide) joined the
+/// original remove/deselect pair; a single row would have run off the canvas on
+/// a narrow phone. Every button is a plain callback — the toolbar knows nothing
+/// about the database, and the page it is embedded in owns the writes.
 class _SelectionToolbar extends StatelessWidget {
+  /// The selected row, so the buttons can reflect its current state.
+  final RoomItem item;
+
   final VoidCallback onDelete;
   final VoidCallback onDeselect;
+  final VoidCallback onScaleDown;
+  final VoidCallback onScaleUp;
+  final VoidCallback onBringToFront;
+  final VoidCallback onSendToBack;
+  final VoidCallback onToggleVisibility;
 
   const _SelectionToolbar({
+    required this.item,
     required this.onDelete,
     required this.onDeselect,
+    required this.onScaleDown,
+    required this.onScaleUp,
+    required this.onBringToFront,
+    required this.onSendToBack,
+    required this.onToggleVisibility,
   });
 
   @override
@@ -769,25 +856,77 @@ class _SelectionToolbar extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline_rounded,
-                color: AppColors.accentPeach),
-            tooltip: '移除',
-            onPressed: onDelete,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _button(
+                icon: Icons.zoom_out_rounded,
+                tooltip: '缩小',
+                onPressed: onScaleDown,
+              ),
+              _button(
+                icon: Icons.zoom_in_rounded,
+                tooltip: '放大',
+                onPressed: onScaleUp,
+              ),
+              _button(
+                icon: Icons.flip_to_back_rounded,
+                tooltip: '置底',
+                onPressed: onSendToBack,
+              ),
+              _button(
+                icon: Icons.flip_to_front_rounded,
+                tooltip: '置顶',
+                onPressed: onBringToFront,
+              ),
+            ],
           ),
-          IconButton(
-            icon:
-                const Icon(Icons.close_rounded, color: AppColors.textSecondary),
-            tooltip: '取消选择',
-            onPressed: onDeselect,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // The icon shows the action, not the state: a visible item offers
+              // "hide". The tooltip carries the same word so the two cannot
+              // disagree.
+              _button(
+                icon: item.isVisible
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                tooltip: item.isVisible ? '隐藏' : '显示',
+                onPressed: onToggleVisibility,
+              ),
+              _button(
+                icon: Icons.delete_outline_rounded,
+                color: AppColors.accentPeach,
+                tooltip: '移除',
+                onPressed: onDelete,
+              ),
+              _button(
+                icon: Icons.close_rounded,
+                color: AppColors.textSecondary,
+                tooltip: '取消选择',
+                onPressed: onDeselect,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+
+  static Widget _button({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+    Color? color,
+  }) =>
+      IconButton(
+        icon: Icon(icon, color: color),
+        tooltip: tooltip,
+        onPressed: onPressed,
+      );
 }
 
 class _InventoryPanel extends StatelessWidget {
