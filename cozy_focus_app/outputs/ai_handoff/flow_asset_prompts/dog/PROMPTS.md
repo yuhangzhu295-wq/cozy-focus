@@ -299,3 +299,58 @@ remaining walk frames use it as the ingredient rather than the standing master.
 A ~100 second quiet period followed by a single click usually works; a second
 immediate click does not, and rapid retries make it worse. Roughly a quarter of
 the attempts in this batch needed a second quiet period.
+
+## Working recipe (verified end to end)
+
+Everything below was established by doing it, not by reading. Follow it exactly;
+each step exists because skipping it failed.
+
+**1. Ingredient: select by unique label, never by position.**
+The picker list grows as tiles are added, so a hard-coded y coordinate points at
+a different image on the next call — that is what made walk_001 and walk_002
+drift back to the seated shape. Two tiles also share the label "Puppy standing
+up", so that label is ambiguous too. Use `walk_000`'s label
+("Character walking contact pose"), which is unique and is itself a standing
+walk pose. For the standing master the reliable handle is `s1`'s grid position,
+measured before use.
+
+**2. Submit: one quiet period, then one click.**
+`Start generation` accepts about two submissions and then stops responding. Wait
+90-100 seconds with no clicks at all, then click once. Rapid retries make it
+worse, not better. Roughly a quarter of attempts need a second quiet period.
+
+**3. Open a tile with a dispatched click.**
+Neither a coordinate click nor a double-click reliably switches the editor.
+Dispatch `pointerdown`/`mousedown`/`pointerup`/`mouseup`/`click` on the tile's
+`img`, then `click()` the card. Verify the URL now contains `/edit/` **before**
+fetching; without that check the fetch returns the previously opened image, and
+two files came back byte-identical before this was caught.
+
+**4. Verify every frame, every time.**
+Fetch the 1024 image and measure silhouette IoU against both references plus the
+aspect ratio and the anchor. A frame is accepted only when it is close to the
+standing reference, far from the seated one, and inside the 2px contract.
+
+## Batch 2 status
+
+| frame | vs seated | vs standing | aspect | anchor | verdict |
+|---|---|---|---|---|---|
+| walk_000 | 0.638 | 0.857 | 0.776 | 919 | standing |
+| walk_001 | 0.613 | 0.860 | 0.772 | 919 | standing |
+| walk_002 | 0.662 | 0.822 | 0.785 | 919 | standing |
+| walk_003 | — | — | — | — | prompt staged; submission refused across two quiet periods |
+| walk_004 | — | — | — | — | not started |
+| walk_005 | — | — | — | — | not started |
+
+Three of six, all verified. The seated reference measures 1.049 wide-to-tall and
+the standing frames measure 0.77-0.79, so they are unambiguously a different
+posture rather than the seated shape moved.
+
+## What is shipped
+
+`idle` is complete: six frames, in the pack, in the APK, 1018/1018 tests. The
+walk frames are staged and **not** in the pack — a partial walk cycle would be
+worse than none, for the same reason a partial idle was.
+
+`stand_up` and `sit_down` are not started. Both need the standing reference, and
+both are contracted in `tools/manifest.py`.
