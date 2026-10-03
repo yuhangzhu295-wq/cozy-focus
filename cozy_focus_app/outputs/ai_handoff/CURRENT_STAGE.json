@@ -275,7 +275,7 @@
       "P8_collection_craft_loop": "PARTIAL: audit + the two truthfulness fixes shipped; three scope options open (materials, coin sink, name drift)",
       "P9_companion_memory": "DONE: producers for first_focus and level_up inside the settlement transaction; long_session left open (needs a threshold)",
       "P10_cat": "DONE: 13 actions / 49 frames, matching the dog exactly",
-      "P10_rabbit": "PARTIAL: 12 actions / 46 frames, all complete and wired in - idle 6/6, walk 6/6, sit_down 4/4, stand_up 4/4, craft_work 4/4, focus_read 3/3, focus_think 3/3, focus_write 4/4, celebrate 5/5, sleep 2/2, pause_rest 2/2, tap_react 3/3. Every declared action is finished and every unshipped pose falls back to the procedural silhouette rather than borrowing another companion's art. Remaining: pet_react (3) = 3 frames, target 13 actions / 49 frames, matching the dog and the cat exactly. Not blocked. Working recipe: lead the prompt with 'keep the framing... at the SAME SIZE and in the SAME POSITION as the attached image' (never say 'small'), then the pose; poll at least 120s; identify a base frame by measuring its ink box, because library labels are auto-generated and overlap. Details in flow_asset_prompts/rabbit/PROMPTS.md sections 15-22.",
+      "P10_rabbit": "DONE: 13 actions / 49 frames, exactly matching the dog and the cat - idle 6/6, walk 6/6, sit_down 4/4, stand_up 4/4, craft_work 4/4, focus_read 3/3, focus_think 3/3, focus_write 4/4, celebrate 5/5, tap_react 3/3, pet_react 3/3, sleep 2/2, pause_rest 2/2. Every action is complete and reachable at runtime; every pose the pack does not cover falls back to the procedural silhouette rather than borrowing another companion's art. A new test asserts all three companions ship the same action set and frame count, so a pack cannot quietly fall behind and still look done. The build recipe and the traps are in flow_asset_prompts/rabbit/PROMPTS.md sections 15-23.",
       "P11_daily_life": "DONE: authored routine (assets/companion/daily_routine.json + daily_routine.dart mirror + parity test), FurnitureTrigger.routine as the opt-in, RoomDecisionCause.routine inserted second-to-last so the routine outranks only idling, and the resolver branch. Before this, 05:00-22:59 - four of five bands - fell through to the idle walk, so the companion had a bedtime and no day. lateNight stays with the night rule. 23 new tests; device-verified, with the vitals proving which action ran (see P11_DAILY_LIFE_DEVICE_VERIFICATION.md).",
       "P12_ai_personality": "NOT STARTED (optional by the roadmap)",
       "P13_hardening": "PARTIAL: router leak fixed, release build closed, sprite canvas halved; signing and launcher icon need the owner"
@@ -283,7 +283,7 @@
     "local_gate": {
       "format": "PASS: 258 files, 0 changed",
       "analyze": "PASS: 0 issues (flutter analyze --fatal-infos)",
-      "tests": "PASS: 1116/1116",
+      "tests": "PASS: 1117/1117",
       "diff_check": "PASS",
       "worktree": "clean; local HEAD == remote HEAD"
     },

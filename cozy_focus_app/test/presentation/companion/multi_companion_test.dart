@@ -186,12 +186,12 @@ void main() {
         CompanionPose.sleep,
       };
 
-      // The rabbit pack is in production. `idle`, `craft_work`, `focus_read`,
-      // `focus_think`, `focus_write`, `celebrate`, `sleep`, `rest` and
-      // `tap_react` ship; `walk`, `sit_down` and `stand_up` are locomotion and
-      // posture states rather than behaviour poses, so they do not appear here.
-      // Every pose not listed must still report ASSET_GAP rather than borrowing
-      // a neighbour's art, which is what the loop below asserts.
+      // The rabbit pack is complete: all thirteen actions ship, so the pose
+      // vocabulary below now matches the cat's exactly. `walk`, `sit_down` and
+      // `stand_up` are locomotion and posture states rather than behaviour
+      // poses, so they do not appear here. Every pose not listed must still
+      // report ASSET_GAP rather than borrowing a neighbour's art, which is what
+      // the loop below asserts.
       const rabbitPosesWithArt = {
         CompanionPose.idle,
         CompanionPose.craftWork,
@@ -202,6 +202,7 @@ void main() {
         CompanionPose.sleep,
         CompanionPose.rest,
         CompanionPose.tapReact,
+        CompanionPose.petReact,
       };
 
       for (final id in CompanionManifestData.profiles.keys) {

@@ -148,10 +148,12 @@ void main() {
       expect(CompanionActionManifestData.forCompanion('rabbit'), isNotNull);
     });
 
-    test('the rabbit pack is present and partial, and says so', () {
-      // It grows action by action, so the invariant is that whatever it declares
-      // is complete and honest - not a fixed count, which changes every session
-      // and would make this test churn rather than guard anything.
+    test('the rabbit pack is present, and everything it declares is complete',
+        () {
+      // The rabbit grew action by action across many sessions and is now
+      // finished. The invariant was never a fixed count — that would have made
+      // this test churn every batch — it is that whatever the pack declares is
+      // complete and honest. It held at seven actions and it holds at thirteen.
       final rabbit = CompanionActionManifestData.forCompanion('rabbit')!;
       expect(rabbit.actionIds, contains('idle'));
       for (final entry in rabbit.actions.entries) {
@@ -220,6 +222,23 @@ void main() {
           'sleep',
         ]),
       );
+    });
+
+    test('all three companions ship the same thirteen actions', () {
+      // The rabbit was built action by action over several sessions and
+      // finished last. This is the assertion that says so: not "the rabbit has
+      // made progress" but "the three packs are now the same shape", so a
+      // companion cannot quietly fall behind and still look done.
+      final dog = CompanionActionManifestData.forCompanion('dog')!;
+      int framesOf(CompanionActionManifest m) =>
+          m.actions.values.fold(0, (sum, spec) => sum + spec.frames.length);
+      for (final id in const ['cat', 'rabbit']) {
+        final other = CompanionActionManifestData.forCompanion(id)!;
+        expect(other.actionIds, dog.actionIds, reason: '$id action set');
+        expect(framesOf(other), framesOf(dog), reason: '$id frame count');
+        expect(other.incompleteActions, isEmpty,
+            reason: '$id must declare nothing incomplete');
+      }
     });
   });
 }

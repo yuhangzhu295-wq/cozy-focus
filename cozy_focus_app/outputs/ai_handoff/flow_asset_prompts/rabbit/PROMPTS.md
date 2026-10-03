@@ -1193,3 +1193,63 @@ the behaviour pack, so it should stay unshipped once the pack is complete.
 
 `pet_react` (3) — **3 frames**. Target: **13 actions / 49 frames**, matching the
 dog and the cat exactly.
+
+---
+
+# §23 — pet_react landed: the rabbit pack is COMPLETE
+
+## Outcome
+
+`pet_react` is complete at **3/3**, `once`, 6 fps.
+
+**The rabbit now ships 13 actions / 49 frames — exactly matching the dog and the
+cat.** The three frames read as: blissful (eyes closed, ears drooped) → melting
+(a wider smile, head tilted, body settled lower) → settled and grateful (eyes
+open, ears upright, warm smile).
+
+## The pack, end to end
+
+| Action | Frames | Mode |
+|---|---|---|
+| `idle` | 6/6 | loop |
+| `walk` | 6/6 | loop |
+| `sit_down` | 4/4 | once |
+| `stand_up` | 4/4 | once |
+| `craft_work` | 4/4 | loop |
+| `focus_read` | 3/3 | pingpong |
+| `focus_think` | 3/3 | pingpong |
+| `focus_write` | 4/4 | loop |
+| `celebrate` | 5/5 | once |
+| `tap_react` | 3/3 | once |
+| `pet_react` | 3/3 | once |
+| `sleep` | 2/2 | loop |
+| `pause_rest` | 2/2 | pingpong |
+
+## A new test that says the packs are the same shape
+
+A test was added asserting all three companions ship the **same action set and
+the same frame count**, and that none declares anything incomplete. That is
+deliberately stronger than "the rabbit has made progress": it means a companion
+cannot quietly fall behind and still look finished.
+
+The old test's name — *"the rabbit pack is present and partial, and says so"* —
+was also corrected. Its invariant was never a fixed count, and it held at seven
+actions and holds at thirteen; but the word "partial" had stopped being true.
+
+## Attaching a frame by id
+
+Frame 2 needed frame 1 as its base, and the option could not be found by clicking
+a guessed position — an earlier attempt landed on the wrong row and attached
+nothing. It was attached by searching the frame's own auto-generated label
+(`Rabbit being petted`), which returns exactly one option.
+
+The label is discoverable: search `Rabbit` and read the list. Every generated
+frame's label is derived from its prompt, and they are distinctive enough to
+search once you know them.
+
+## What is left
+
+Nothing in the rabbit pack. `P10` is done for all three companions.
+
+P12 (AI personality) remains optional and unstarted, and the two owner-blocked
+items — the release keystore and the launcher icon — are unchanged.

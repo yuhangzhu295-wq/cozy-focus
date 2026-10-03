@@ -126,6 +126,22 @@
         0
       ]
     },
+    "pet_react": {
+      "frames": [
+        "pet_react_000.png",
+        "pet_react_001.png",
+        "pet_react_002.png"
+      ],
+      "fps": 6,
+      "loopMode": "once",
+      "targetFrameCount": 3,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "sit_down": {
       "frames": [
         "sit_down_000.png",
