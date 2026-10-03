@@ -1,0 +1,71 @@
+{
+  "label": "idle",
+  "frames": 12,
+  "interval_s": 0.6,
+  "subject_box": [
+    280,
+    480,
+    800,
+    800
+  ],
+  "control_box": [
+    100,
+    850,
+    980,
+    1150
+  ],
+  "subject_steps": [
+    12.512,
+    19.187,
+    15.399,
+    19.293,
+    21.241,
+    10.992,
+    21.675,
+    3.619,
+    21.542,
+    6.041,
+    18.699
+  ],
+  "control_steps": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "distance_from_first": [
+    0.0,
+    12.512,
+    22.182,
+    16.92,
+    7.989,
+    20.597,
+    22.486,
+    5.851,
+    4.935,
+    21.765,
+    22.848,
+    14.731
+  ],
+  "thresholds": {
+    "min_subject_motion": 1.0,
+    "max_control_motion": 0.5,
+    "cycle_return_fraction": 0.5
+  },
+  "checks": {
+    "subject_animates": true,
+    "control_is_static": true,
+    "cycles_rather_than_drifts": true
+  },
+  "technical_visual_gate": "PASS",
+  "blocking": [],
+  "owner_visual_gate": "REQUIRED",
+  "note": "owner_visual_gate is REQUIRED and is never decided here: whether the art reads well is not a measurement."
+}
