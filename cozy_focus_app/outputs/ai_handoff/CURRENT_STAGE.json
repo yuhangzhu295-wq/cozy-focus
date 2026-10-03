@@ -267,7 +267,7 @@
   "recovery_v4_2_1_rebuild": {
     "note": "Separate track from PHASE-1..8, from the android-v1 release line and from the mochi-growth track. See FINAL_GATE.md for the measured evidence.",
     "branch": "recovery/v4.2.1-rebuild",
-    "head_sha": "47af403edde0e7a8e4039fef4ac3f80a31bd083b",
+    "head_sha": "8fe6b84",
     "pushed": true,
     "commits": 17,
     "phases": {
@@ -278,12 +278,13 @@
       "P10_rabbit": "DONE: 13 actions / 49 frames, exactly matching the dog and the cat - idle 6/6, walk 6/6, sit_down 4/4, stand_up 4/4, craft_work 4/4, focus_read 3/3, focus_think 3/3, focus_write 4/4, celebrate 5/5, tap_react 3/3, pet_react 3/3, sleep 2/2, pause_rest 2/2. Every action is complete and reachable at runtime; every pose the pack does not cover falls back to the procedural silhouette rather than borrowing another companion's art. A new test asserts all three companions ship the same action set and frame count, so a pack cannot quietly fall behind and still look done. The build recipe and the traps are in flow_asset_prompts/rabbit/PROMPTS.md sections 15-23.",
       "P11_daily_life": "DONE: authored routine (assets/companion/daily_routine.json + daily_routine.dart mirror + parity test), FurnitureTrigger.routine as the opt-in, RoomDecisionCause.routine inserted second-to-last so the routine outranks only idling, and the resolver branch. Before this, 05:00-22:59 - four of five bands - fell through to the idle walk, so the companion had a bedtime and no day. lateNight stays with the night rule. 23 new tests; device-verified, with the vitals proving which action ran (see P11_DAILY_LIFE_DEVICE_VERIFICATION.md).",
       "P12_ai_personality": "NOT STARTED (optional by the roadmap)",
-      "P13_hardening": "PARTIAL: router leak fixed, release build closed, sprite canvas halved, and the remaining sprites re-encoded as 255-colour indexed PNG (sprite dir 19.2 MB -> 3.1 MB; APK 40.4 -> 29.5 MB). Signing and launcher icon still need the owner."
+      "P13_hardening": "PARTIAL: router leak fixed, release build closed, sprite canvas halved, and the remaining sprites re-encoded as 255-colour indexed PNG (sprite dir 19.2 MB -> 3.1 MB; APK 40.4 -> 29.5 MB). Signing and launcher icon still need the owner.",
+      "P14_focus_save_on_nav": "DONE: found by running a real focus session on the release build. Ending a session and leaving the completion page by the bottom tab bar skipped the save, so the user was shown 恭喜获得奖励 +20 XP and then 0 分钟 / 0 次 on the records page until the home page's recovery hook or the next launch settled it. No data was lost - a restart proved that - but the stale zero reads as broken. Fixed in AppBottomNav, which now calls saveSession (NOT recoverAbandonedSessions, which deliberately skips the in-memory session and is a no-op here) before navigating, gated on isCompleted so an ordinary tab tap does no DB work. 3 new tests; device-verified before and after. See P14_FOCUS_SAVE_ON_NAV.md."
     },
     "local_gate": {
       "format": "PASS: 258 files, 0 changed",
       "analyze": "PASS: 0 issues (flutter analyze --fatal-infos)",
-      "tests": "PASS: 1117/1117",
+      "tests": "PASS: 1120/1120",
       "diff_check": "PASS",
       "worktree": "clean; local HEAD == remote HEAD",
       "apk": "PASS: 29.5 MB, debug-signed (RELEASE_SIGNING = NOT_RECOVERED)"
@@ -295,7 +296,7 @@
       "signing": "NOT_RECOVERED: apksigner reports CN=Android Debug; no keystore exists and none was invented",
       "launcher_icon": "P1: still the stock Flutter logo; no approved artwork exists"
     },
-    "device_verified": "emulator-5554: collection 2/8 and 未开放, craft copy, P7 toolbar end to end, post-canvas-change room alignment, the rabbit pack wired in (selected companion drives the art), the P11 daily routine firing in the room (seated on the sofa at 09:58 with the sofa/sit effect visible in the vitals), and the release APK rendering indexed sprites with correct transparency and no decode errors.",
+    "device_verified": "emulator-5554: collection 2/8 and 未开放, craft copy, P7 toolbar end to end, post-canvas-change room alignment, the rabbit pack wired in (selected companion drives the art), the P11 daily routine firing in the room (seated on the sofa at 09:58 with the sofa/sit effect visible in the vitals), and the release APK rendering indexed sprites with correct transparency and no decode errors. Also verified end to end on the release build: a real focus session settles (04:12 -> +8 coins / +20 XP), and after the P14 fix leaving the completion page by the 记录 tab records the session immediately (1 次 / 1 天 / 共 1 次) where it previously showed zeros until a restart.",
     "not_device_verified": "P4B visual gate: needs human judgement of whether the sprite art reads well. P11 band changes: the emulator refuses adb root, so the clock could not be moved to another band - band-dependence is covered by tests. Rabbit per-action playback: tapping the rabbit in the room does not fire tap_react, so per-action wiring is covered by companion_pack_completeness_test.dart rather than on device.",
     "open_p0": 0,
     "open_p1": 1,
