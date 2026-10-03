@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "note": "The companion's daily routine for the Companion Runtime. Authoring source for lib/presentation/companion/runtime/daily_routine.dart; daily_routine_parity_test.dart asserts the two agree field for field. A step names an interaction-point role and a specific furniture action id, and that action must also carry the 'routine' trigger in furniture_catalog.dart - so this table and the catalog have to agree. The routine does not invent behaviour: it selects among behaviours the catalog already declares. It is presentation-only and can never reach XP, coins or a settlement. lateNight is deliberately absent: the night rule in furniture_action_resolver.dart already owns bedtime, and a second answer to 'when does it sleep' would be two sources of truth.",
+  "bands": {
+    "morning": {
+      "steps": [
+        {
+          "role": "front",
+          "action": "read",
+          "label": "翻翻书"
+        },
+        {
+          "role": "seat",
+          "action": "sit",
+          "label": "晒晒太阳"
+        }
+      ]
+    },
+    "midday": {
+      "steps": [
+        {
+          "role": "work",
+          "action": "craft",
+          "label": "做点小东西"
+        },
+        {
+          "role": "front",
+          "action": "search",
+          "label": "找本书"
+        }
+      ]
+    },
+    "afternoon": {
+      "steps": [
+        {
+          "role": "front",
+          "action": "search",
+          "label": "找本书"
+        },
+        {
+          "role": "work",
+          "action": "craft",
+          "label": "做点小东西"
+        }
+      ]
+    },
+    "evening": {
+      "steps": [
+        {
+          "role": "seat",
+          "action": "sit",
+          "label": "窝一会儿"
+        },
+        {
+          "role": "seat",
+          "action": "rest",
+          "label": "歇一歇"
+        }
+      ]
+    }
+  }
+}
