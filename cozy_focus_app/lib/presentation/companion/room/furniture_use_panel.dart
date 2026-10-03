@@ -177,7 +177,19 @@ class FurnitureUsePanel extends ConsumerWidget {
 class CompanionVitalsBar extends StatelessWidget {
   final RoomSimulationState simulation;
 
-  const CompanionVitalsBar({super.key, required this.simulation});
+  /// The selected companion's display name.
+  ///
+  /// Passed in rather than read here, because this widget is stateless and the
+  /// name is the one piece of identity it needs. Before this it hardcoded
+  /// "Mochi", so a player who had chosen the cat or the rabbit was told that
+  /// Mochi was wandering around their room.
+  final String companionName;
+
+  const CompanionVitalsBar({
+    super.key,
+    required this.simulation,
+    required this.companionName,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +206,7 @@ class CompanionVitalsBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(_activityLabel(simulation),
+          Text(_activityLabel(simulation, companionName),
               style:
                   const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
@@ -209,20 +221,24 @@ class CompanionVitalsBar extends StatelessWidget {
   }
 
   /// What the companion is doing, in the player's words.
-  static String _activityLabel(RoomSimulationState simulation) {
+  ///
+  /// [companionName] is the selected companion's name, so the sentence follows
+  /// the player's choice instead of always naming Mochi.
+  static String _activityLabel(
+      RoomSimulationState simulation, String companionName) {
     final actionId = simulation.activity.actionId;
     if (actionId != null) {
       final entity = FurnitureCatalog.forId(
           _itemIdFromAnchor(simulation.activity.anchorId));
       final action = entity?.actionById(actionId);
-      if (action != null) return 'Mochi 正在${action.label}';
+      if (action != null) return '$companionName 正在${action.label}';
     }
     return switch (simulation.cause) {
-      RoomDecisionCause.focus => 'Mochi 在陪你专注',
-      RoomDecisionCause.night => '夜深了，Mochi 有点困',
-      RoomDecisionCause.tired => 'Mochi 有点累了',
-      RoomDecisionCause.playerRequest => 'Mochi 听你的',
-      RoomDecisionCause.idle => 'Mochi 在房间里晃悠',
+      RoomDecisionCause.focus => '$companionName 在陪你专注',
+      RoomDecisionCause.night => '夜深了，$companionName 有点困',
+      RoomDecisionCause.tired => '$companionName 有点累了',
+      RoomDecisionCause.playerRequest => '$companionName 听你的',
+      RoomDecisionCause.idle => '$companionName 在房间里晃悠',
     };
   }
 

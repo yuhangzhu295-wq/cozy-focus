@@ -303,7 +303,10 @@ class _RoomPageState extends ConsumerState<RoomPage>
           : Column(
               children: [
                 const GrowthSubNav(active: GrowthSection.room),
-                CompanionVitalsBar(simulation: simulation),
+                CompanionVitalsBar(
+                  simulation: simulation,
+                  companionName: companionName,
+                ),
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {

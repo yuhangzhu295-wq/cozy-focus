@@ -1,5 +1,7 @@
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_manifest.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_manifest_data.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_pose.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_art.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Honest reporting for a pack that is mid-production.
@@ -159,6 +161,24 @@ void main() {
             reason:
                 'rabbit/${entry.key} is declared but short of its frame count');
       }
+    });
+
+    test('a shipped pose resolves to sprites and a missing one does not', () {
+      // This is the wiring, asserted where it is decided: the provider asks
+      // CompanionSpriteArt for a spec and draws sprites when it gets one, the
+      // procedural silhouette when it does not. So the pack being reachable is
+      // exactly "the shipped pose resolves and an unshipped one returns null".
+      final idle = CompanionSpriteArt.resolveFor('rabbit', CompanionPose.idle);
+      expect(idle, isNotNull, reason: 'rabbit/idle ships and must resolve');
+      expect(idle!.frames, hasLength(6));
+
+      // `sleep` is not produced for the rabbit yet, so it must fall back to the
+      // procedural silhouette rather than borrowing another companion's frames.
+      expect(
+          CompanionSpriteArt.resolveFor('rabbit', CompanionPose.sleep), isNull);
+      expect(
+          CompanionSpriteArt.resolveFor('dog', CompanionPose.sleep), isNotNull,
+          reason: 'the dog does ship sleep, so the null above is the rabbit');
     });
 
     test('the dog pack ships every requested action', () {
