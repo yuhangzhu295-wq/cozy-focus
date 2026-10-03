@@ -8,6 +8,39 @@
   "groundBaseline": 459,
   "centerAnchor": 255,
   "actions": {
+    "craft_work": {
+      "frames": [
+        "craft_work_000.png",
+        "craft_work_001.png",
+        "craft_work_002.png",
+        "craft_work_003.png"
+      ],
+      "fps": 5,
+      "loopMode": "loop",
+      "targetFrameCount": 4,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "focus_read": {
+      "frames": [
+        "focus_read_000.png",
+        "focus_read_001.png",
+        "focus_read_002.png"
+      ],
+      "fps": 5,
+      "loopMode": "pingpong",
+      "targetFrameCount": 3,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "idle": {
       "frames": [
         "idle_000.png",

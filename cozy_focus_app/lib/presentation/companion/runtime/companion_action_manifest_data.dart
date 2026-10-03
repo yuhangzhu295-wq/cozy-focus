@@ -467,6 +467,33 @@ abstract final class CompanionActionManifestData {
       groundBaseline: 459,
       centerAnchor: 255,
       actions: {
+        'craft_work': CompanionActionSpec(
+          actionId: 'craft_work',
+          frames: [
+            'assets/companions/rabbit/craft_work_000.png',
+            'assets/companions/rabbit/craft_work_001.png',
+            'assets/companions/rabbit/craft_work_002.png',
+            'assets/companions/rabbit/craft_work_003.png',
+          ],
+          fps: 5,
+          loopMode: SpriteLoopMode.loop,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 4,
+        ),
+        'focus_read': CompanionActionSpec(
+          actionId: 'focus_read',
+          frames: [
+            'assets/companions/rabbit/focus_read_000.png',
+            'assets/companions/rabbit/focus_read_001.png',
+            'assets/companions/rabbit/focus_read_002.png',
+          ],
+          fps: 5,
+          loopMode: SpriteLoopMode.pingPong,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 3,
+        ),
         'idle': CompanionActionSpec(
           actionId: 'idle',
           frames: [

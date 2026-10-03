@@ -186,11 +186,16 @@ void main() {
         CompanionPose.sleep,
       };
 
-      // The rabbit pack is in production: `idle` is complete at six frames and
-      // nothing else ships yet. Every other pose must still report ASSET_GAP
-      // rather than borrowing a neighbour's art, which is what the loop below
-      // asserts for it now that it is a pack rather than an absence.
-      const rabbitPosesWithArt = {CompanionPose.idle};
+      // The rabbit pack is in production. `idle`, `craft_work` and `focus_read`
+      // ship; `walk`, `sit_down` and `stand_up` are locomotion and posture
+      // states rather than behaviour poses, so they do not appear here. Every
+      // pose not listed must still report ASSET_GAP rather than borrowing a
+      // neighbour's art, which is what the loop below asserts.
+      const rabbitPosesWithArt = {
+        CompanionPose.idle,
+        CompanionPose.craftWork,
+        CompanionPose.focusRead,
+      };
 
       for (final id in CompanionManifestData.profiles.keys) {
         for (final pose in CompanionPose.values) {

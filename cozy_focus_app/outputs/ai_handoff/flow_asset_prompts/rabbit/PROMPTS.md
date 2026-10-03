@@ -551,3 +551,56 @@ hops had nothing to play.
 `celebrate` (5) → `tap_react` (3) + `pet_react` (3) → `sleep` (2) +
 `pause_rest` (2).
 Target: the dog and cat shape, **13 actions / 49 frames**.
+
+---
+
+# 13. Session 6 — craft_work and focus_read
+
+## Accepted
+
+**craft_work** — frame 1 introduces the props from the seated master (the pack's
+prop law: a prop-carrying action cannot be varied from a prop-free reference);
+frames 2-4 use frame 1 as the edit base with a do-not-change list.
+
+| Frame | Reference | Attempts | Beat |
+|---|---|---|---|
+| `craft_work_000` | seated master | 1 | mallet raised overhead, block in front |
+| `craft_work_001` | `craft_work_000` | 1 | mallet striking the block |
+| `craft_work_002` | `craft_work_000` | 1 | mallet resting on the block |
+| `craft_work_003` | `craft_work_000` | 1 | mallet lowered, inspecting the block |
+
+**focus_read** — frame 1 introduces an open book from the seated master; frames
+2-3 are eye and page movements over it.
+
+| Frame | Reference | Attempts |
+|---|---|---|
+| `focus_read_000` | seated master | 1 |
+| `focus_read_001` | `focus_read_000` | 1 |
+| `focus_read_002` | `focus_read_000` | 2 |
+
+## Flow began throttling
+
+`focus_read_002` failed silently once — the progress bar finished and produced no
+tile, the failure mode already recorded twice in this archive. The retry
+succeeded.
+
+Then `focus_think` frame 1 failed silently **twice in a row**, and after a page
+reload the ingredient picker stopped opening at all (the add button hit-tests
+correctly, the click lands, and no picker appears). That is the rate limit the
+cat archive describes: the workaround is a reload plus a quiet wait of a minute
+or more, and it did not clear within this session.
+
+**No frame was invented and no frame was accepted unverified.** The seven
+remaining actions are recorded below rather than approximated.
+
+## Imported
+
+**rabbit: 6 actions / 27 frames** — `idle` 6/6, `walk` 6/6, `sit_down` 4/4,
+`stand_up` 4/4, `craft_work` 4/4, `focus_read` 3/3.
+
+## Remaining, blocked on the throttle
+
+`focus_think` (3), `focus_write` (4), `celebrate` (5), `tap_react` (3),
+`pet_react` (3), `sleep` (2), `pause_rest` (2) — 22 frames. All of it is
+mechanical: the click method, the master references, the prop technique and the
+import pipeline are all recorded above.
