@@ -1,4 +1,4 @@
-﻿{
+{
   "status": "COMPLETED",
   "stage": "PHASE-8-COMPLETE",
   "next_stage": null,
@@ -263,5 +263,41 @@
       "the report pages' 21.14dp gutter and the category palette were deliberately left alone (design decisions)"
     ]
   },
-  "project_status": "ALL_PHASES_COMPLETE"
+  "project_status": "ALL_PHASES_COMPLETE",
+  "recovery_v4_2_1_rebuild": {
+    "note": "Separate track from PHASE-1..8, from the android-v1 release line and from the mochi-growth track. See FINAL_GATE.md for the measured evidence.",
+    "branch": "recovery/v4.2.1-rebuild",
+    "head_sha": "e956cf1b20928db2e57054241b0f23c0c80aefae",
+    "pushed": true,
+    "commits": 19,
+    "phases": {
+      "P7_room_placement": "DONE: capability, toolbar, edit/life separation; no RoomLayoutManager, no FurnitureInstance, no rotation",
+      "P8_collection_craft_loop": "PARTIAL: audit + the two truthfulness fixes shipped; three scope options open (materials, coin sink, name drift)",
+      "P9_companion_memory": "DONE: producers for first_focus and level_up inside the settlement transaction; long_session left open (needs a threshold)",
+      "P10_cat": "DONE: 13 actions / 49 frames, matching the dog exactly",
+      "P10_rabbit": "NOT STARTED",
+      "P11_daily_life": "NOT STARTED",
+      "P12_ai_personality": "NOT STARTED (optional by the roadmap)",
+      "P13_hardening": "PARTIAL: router leak fixed, release build closed, sprite canvas halved; signing and launcher icon need the owner"
+    },
+    "local_gate": {
+      "format": "PASS: 255 files, 0 changed",
+      "analyze": "PASS: 0 issues (flutter analyze --fatal-infos)",
+      "tests": "PASS: 1091/1091, twice consecutively",
+      "diff_check": "PASS",
+      "worktree": "clean; local HEAD == remote HEAD"
+    },
+    "release": {
+      "apk": "40.4 MB",
+      "aab": "58.9 MB",
+      "application_id": "com.yuhangzhu295.cozyfocus",
+      "signing": "NOT_RECOVERED: apksigner reports CN=Android Debug; no keystore exists and none was invented",
+      "launcher_icon": "P1: still the stock Flutter logo; no approved artwork exists"
+    },
+    "device_verified": "emulator-5554: collection 2/8 and 未开放, craft copy, P7 toolbar end to end, and post-canvas-change room alignment (feet on the cushion)",
+    "not_device_verified": "P4B visual gate: needs human judgement of whether the sprite art reads well",
+    "open_p0": 0,
+    "open_p1": 1,
+    "open_p2": 8
+  }
 }
