@@ -147,11 +147,18 @@ void main() {
     });
 
     test('the rabbit pack is present and partial, and says so', () {
-      // Its first action is complete; the rest are simply not there yet, which
-      // is a shorter actionIds list rather than a wrong one.
+      // It grows action by action, so the invariant is that whatever it declares
+      // is complete and honest - not a fixed count, which changes every session
+      // and would make this test churn rather than guard anything.
       final rabbit = CompanionActionManifestData.forCompanion('rabbit')!;
       expect(rabbit.actionIds, contains('idle'));
-      expect(rabbit.actionIds.length, 1);
+      for (final entry in rabbit.actions.entries) {
+        expect(entry.value.frames, isNotEmpty,
+            reason: 'rabbit/${entry.key} is declared but has no frames');
+        expect(entry.value.isComplete, isTrue,
+            reason:
+                'rabbit/${entry.key} is declared but short of its frame count');
+      }
     });
 
     test('the dog pack ships every requested action', () {

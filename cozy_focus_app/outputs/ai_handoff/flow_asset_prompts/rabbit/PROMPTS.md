@@ -379,3 +379,74 @@ an error, which is exactly how the cat pack was silently invisible once.
 `focus_read` (3) / `focus_think` (3) / `focus_write` (4) → `celebrate` (5) →
 `tap_react` (3) + `pet_react` (3) → `sleep` (2) + `pause_rest` (2).
 Target: the dog and cat shape, **13 actions / 49 frames**.
+
+---
+
+# 10. Session 3 — the walk cycle
+
+## A standing master had to come first
+
+The rabbit's approved master is seated and walk is a standing action, so a
+standing master was generated from it (one attempt, "Rabbit standing on all
+legs", UUID `5af4d19b…`). Identity, palette, camera and ground line carried
+over; the long ears, puff tail, sprout and the absence of whiskers all held.
+Every walk frame then attached **that** tile rather than the seated master.
+
+## Accepted
+
+| Frame | Tile name | Attempts |
+|---|---|---|
+| `walk_000` | Rabbit walking frame one | 2 |
+| `walk_001` | (passing) | 1 |
+| `walk_002` | (opposite contact) | 1 |
+| `walk_003` | (passing, mirrored) | 1 |
+| `walk_004` | (return) | 1 |
+| `walk_005` | (close) | 1 |
+
+`walk_000` took two attempts because the first was generated while the reference
+was unverified — see below.
+
+## A verification lesson: a mismatch means "not yet"
+
+The first `walk_000` was generated after a check reported
+`standing master attached: false`. The generation was submitted anyway, and the
+result was discarded.
+
+The check was wrong, not the attachment. The search returned exactly one option
+— "Rabbit standing on all legs" — and its thumbnail pointed at the right UUID.
+Re-reading the ingredient a few seconds later gave `5af4d19b…` and matched.
+
+**The ingredient `src` is not populated the instant the option is clicked.**
+Reading it too early reports a false negative. So a mismatch must be treated as
+"not yet readable" and re-checked, never as "wrong reference" — and a generation
+must not be submitted on an unverified reference.
+
+This is the mirror of the earlier lesson: there, a wrong reference was caught by
+checking; here, a correct one was nearly thrown away by checking too soon. The
+rule that covers both is: **verify, and if the answer is not what you expect,
+find out why before acting either way.**
+
+## A test that was pinning a count
+
+`companion_pack_completeness_test` gained a rabbit assertion last session that
+pinned `actionIds.length == 1`. Adding walk broke it — correctly, but for the
+wrong reason: it was guarding a number that changes every session rather than an
+invariant.
+
+It now asserts what actually matters: **every action the rabbit declares is
+complete**, has frames, and meets its frame count. That survives the pack
+growing, and it still fails if an action is ever declared without art.
+
+## Imported
+
+`python tools/productionise.py rabbit` → `tools/manifest.py rabbit` →
+`tools/gen_manifest_dart.py`.
+
+**rabbit: 2 actions / 12 frames** — `idle` 6/6, `walk` 6/6.
+
+## Remaining
+
+`sit_down` (4) + `stand_up` (4) → `craft_work` (4) → `focus_read` (3) /
+`focus_think` (3) / `focus_write` (4) → `celebrate` (5) → `tap_react` (3) +
+`pet_react` (3) → `sleep` (2) + `pause_rest` (2).
+Target: the dog and cat shape, **13 actions / 49 frames**.

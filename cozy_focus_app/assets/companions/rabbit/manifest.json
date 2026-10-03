@@ -5,7 +5,7 @@
     "width": 512,
     "height": 512
   },
-  "groundBaseline": 458,
+  "groundBaseline": 459,
   "centerAnchor": 255,
   "actions": {
     "idle": {
@@ -18,6 +18,25 @@
         "idle_005.png"
       ],
       "fps": 5,
+      "loopMode": "loop",
+      "targetFrameCount": 6,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
+    "walk": {
+      "frames": [
+        "walk_000.png",
+        "walk_001.png",
+        "walk_002.png",
+        "walk_003.png",
+        "walk_004.png",
+        "walk_005.png"
+      ],
+      "fps": 8,
       "loopMode": "loop",
       "targetFrameCount": 6,
       "interruptible": true,

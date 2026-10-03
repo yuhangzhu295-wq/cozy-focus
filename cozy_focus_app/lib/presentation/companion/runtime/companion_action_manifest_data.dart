@@ -464,7 +464,7 @@ abstract final class CompanionActionManifestData {
       posePack: 'rabbit',
       canvasWidth: 512,
       canvasHeight: 512,
-      groundBaseline: 458,
+      groundBaseline: 459,
       centerAnchor: 255,
       actions: {
         'idle': CompanionActionSpec(
@@ -478,6 +478,22 @@ abstract final class CompanionActionManifestData {
             'assets/companions/rabbit/idle_005.png',
           ],
           fps: 5,
+          loopMode: SpriteLoopMode.loop,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 6,
+        ),
+        'walk': CompanionActionSpec(
+          actionId: 'walk',
+          frames: [
+            'assets/companions/rabbit/walk_000.png',
+            'assets/companions/rabbit/walk_001.png',
+            'assets/companions/rabbit/walk_002.png',
+            'assets/companions/rabbit/walk_003.png',
+            'assets/companions/rabbit/walk_004.png',
+            'assets/companions/rabbit/walk_005.png',
+          ],
+          fps: 8,
           loopMode: SpriteLoopMode.loop,
           interruptible: true,
           reducedMotionFrames: [0],
