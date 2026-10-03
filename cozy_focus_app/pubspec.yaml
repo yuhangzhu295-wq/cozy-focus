@@ -66,4 +66,5 @@ flutter:
     # the bundle until it is named here. See docs/companion_assets.md.
     - assets/companions/dog/
     - assets/companions/cat/
+    - assets/companions/rabbit/
 

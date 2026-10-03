@@ -186,12 +186,19 @@ void main() {
         CompanionPose.sleep,
       };
 
+      // The rabbit pack is in production: `idle` is complete at six frames and
+      // nothing else ships yet. Every other pose must still report ASSET_GAP
+      // rather than borrowing a neighbour's art, which is what the loop below
+      // asserts for it now that it is a pack rather than an absence.
+      const rabbitPosesWithArt = {CompanionPose.idle};
+
       for (final id in CompanionManifestData.profiles.keys) {
         for (final pose in CompanionPose.values) {
           final result = resolver.resolve(id, pose);
           final expected = switch (id) {
             CompanionId.dog => dogPosesWithArt.contains(pose),
             CompanionId.cat => catPosesWithArt.contains(pose),
+            CompanionId.rabbit => rabbitPosesWithArt.contains(pose),
             _ => false,
           };
           expect(
@@ -206,12 +213,24 @@ void main() {
         }
       }
 
-      // The rabbit ships no production art at all yet.
-      for (final id in const [CompanionId.rabbit]) {
+      // No companion may claim a pose outside its own declared set.
+      for (final id in CompanionManifestData.profiles.keys) {
+        final claimed = resolver
+            .audit(id)
+            .values
+            .where((r) => r.hasProductionAsset)
+            .map((r) => r.pose)
+            .toSet();
+        final declared = switch (id) {
+          CompanionId.dog => dogPosesWithArt,
+          CompanionId.cat => catPosesWithArt,
+          CompanionId.rabbit => rabbitPosesWithArt,
+          _ => const <CompanionPose>{},
+        };
         expect(
-          resolver.audit(id).values.where((r) => r.hasProductionAsset),
+          claimed.difference(declared),
           isEmpty,
-          reason: '${id.value} must not claim art it does not have',
+          reason: '${id.value} claims art it does not have',
         );
       }
     });

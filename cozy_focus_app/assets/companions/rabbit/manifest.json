@@ -1,0 +1,61 @@
+{
+  "companionId": "rabbit",
+  "posePack": "rabbit",
+  "canvas": {
+    "width": 512,
+    "height": 512
+  },
+  "groundBaseline": 458,
+  "centerAnchor": 255,
+  "actions": {
+    "idle": {
+      "frames": [
+        "idle_000.png",
+        "idle_001.png",
+        "idle_002.png",
+        "idle_003.png",
+        "idle_004.png",
+        "idle_005.png"
+      ],
+      "fps": 5,
+      "loopMode": "loop",
+      "targetFrameCount": 6,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    }
+  },
+  "semanticFallback": {
+    "idle": "idle",
+    "prepare": "idle",
+    "glance": "idle",
+    "finish": "focus_write",
+    "micro_rest": "pause_rest",
+    "focus_read": "idle",
+    "focus_write": "idle",
+    "focus_think": "idle",
+    "craft_work": "idle",
+    "celebrate": "idle",
+    "pause_rest": "idle",
+    "sleep": "pause_rest",
+    "room_sit": "idle",
+    "room_read": "focus_read",
+    "room_work": "focus_write",
+    "room_sleep": "sleep",
+    "room_relax": "pause_rest",
+    "tap_react": "idle",
+    "pet_react": "idle"
+  },
+  "drawAliases": {
+    "finish": "focus_write",
+    "micro_rest": "pause_rest",
+    "room_read": "focus_read",
+    "room_work": "focus_write",
+    "room_sleep": "sleep",
+    "room_relax": "pause_rest"
+  },
+  "generatedFrom": "production_report_rabbit.json"
+}

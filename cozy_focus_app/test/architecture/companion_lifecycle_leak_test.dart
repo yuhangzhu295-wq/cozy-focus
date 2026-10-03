@@ -300,7 +300,18 @@ void main() {
       await tester.pump();
 
       // The semantic pose is preserved; only the movement is dropped.
-      expect(find.byType(ProceduralCompanionArt), findsOneWidget);
+      //
+      // Which channel draws it depends on whether the companion ships a
+      // production sequence for the pose. The rabbit used to have no pack and
+      // always took the procedural path; now that its `idle` ships, it takes the
+      // sprite path. The invariant is the same either way, so it is asserted
+      // rather than the channel.
+      expect(
+        find.byType(ProceduralCompanionArt).evaluate().isNotEmpty ||
+            find.byType(CompanionSpritePlayer).evaluate().isNotEmpty,
+        isTrue,
+        reason: 'the companion must still be drawn under reduced motion',
+      );
       expect(tester.binding.transientCallbackCount, 0,
           reason: 'reduced motion must stop the breathing controller');
     });

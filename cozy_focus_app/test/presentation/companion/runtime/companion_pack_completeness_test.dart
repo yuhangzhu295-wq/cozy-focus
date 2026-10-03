@@ -138,10 +138,20 @@ void main() {
     });
 
     test('a companion with no pack at all is simply absent, not broken', () {
-      // The rabbit ships no art yet. Absence must be a null lookup, not a throw.
-      expect(CompanionActionManifestData.forCompanion('rabbit'), isNull);
+      // Absence must be a null lookup, not a throw. The rabbit used to be the
+      // example here; it now ships a partial pack, so an unknown id carries the
+      // assertion instead and the rabbit is asserted to be present.
       expect(
           CompanionActionManifestData.forCompanion('not_a_companion'), isNull);
+      expect(CompanionActionManifestData.forCompanion('rabbit'), isNotNull);
+    });
+
+    test('the rabbit pack is present and partial, and says so', () {
+      // Its first action is complete; the rest are simply not there yet, which
+      // is a shorter actionIds list rather than a wrong one.
+      final rabbit = CompanionActionManifestData.forCompanion('rabbit')!;
+      expect(rabbit.actionIds, contains('idle'));
+      expect(rabbit.actionIds.length, 1);
     });
 
     test('the dog pack ships every requested action', () {
