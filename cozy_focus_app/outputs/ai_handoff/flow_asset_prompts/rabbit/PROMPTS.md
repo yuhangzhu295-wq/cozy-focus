@@ -663,3 +663,100 @@ options a few seconds later. **Wait for the list, then hit-test.**
 `focus_write` (1 of 4 staged), `celebrate` (5), `tap_react` (3), `pet_react` (3),
 `sleep` (2), `pause_rest` (2). All mechanical: the click method, the master
 references, the prop technique and the import pipeline are recorded above.
+
+---
+
+# §15 — Session 2026-10-03 (later): Flow degraded, rabbit paused at 7 actions
+
+## What was attempted
+
+`focus_write` frames 2 and 3 generated and downloaded successfully:
+
+- `write_001.jpg` — the pencil moving across the page
+- `write_002.jpg` — the end of the stroke
+
+Frame 4 (the pencil lifting clear of the page) was submitted and **dropped
+silently**: the editor cleared, and the tile count did not change. That is the
+same no-tile failure §14 records.
+
+## The difference this time
+
+Previously the throttle presented as a no-tile failure that a reload and a quiet
+wait would clear. This time the **reload did not restore the editor's controls**.
+After reloading:
+
+- the project grid, the prompt editor and both buttons
+  (`Add ingredients to the prompt box`, `Start generation`) are all present in the
+  DOM and enabled;
+- `document.elementsFromPoint` at the ingredient button's centre returns that
+  button as the topmost element — **nothing is overlaying it**;
+- clicking it at its true hit point, via `tab.cua.click`, **never opens the
+  picker**, and `input[aria-label="Search assets"]` never appears, across six
+  polls over twelve seconds.
+
+The UI renders and the backend refuses. This is a **degraded session**, not
+merely a rate limit, and no browser-side workaround recovers it.
+
+`tab.click(selector)` was also tried and fails with
+`ref ... not found (take a fresh snapshot() first)` — the selector path needs a
+prior `snapshot()`, which is worth knowing but was not the cause here.
+
+## Alternatives checked and ruled out
+
+The remaining frames need reference-conditioned generation, so that the pencil
+and notebook keep their exact drawing. A text-only generator cannot hold that,
+and would produce a rabbit that no longer matches the 30 frames already shipped.
+
+- **xAI** (`grok-imagine-image-pro`, `/v1/images/edits`, up to 3 input images) is
+  exactly the right shape of tool — but `XAI_API_KEY` is **not set** on this
+  machine, so it cannot be called.
+- **OpenAI** (`gpt-image-1`, `/v1/images/edits`) — `OPENAI_API_KEY` is set but
+  **expired**; the endpoint returns `401 invalid_api_key`.
+- Every other local skill (`image-vision`, `qwen-vision`, `anime-cel-style`,
+  `ab-agents-vision-minimax`, `vision-*`) is **analysis-only** and offers no
+  generation.
+
+So Flow is the only available generator, and it is currently unusable.
+
+## State left behind
+
+Staged, deliberately outside the import path, at
+`.asset_staging/refs/rabbit_focus_write_partial/`:
+
+| file | content |
+|---|---|
+| `write_000.jpg` | frame 1 — approved, generated earlier |
+| `write_001.jpg` | frame 2 — pencil moving across the page |
+| `write_002.jpg` | frame 3 — end of the stroke |
+
+**Three of four frames.** Frame 4 is the only one missing from this action.
+
+`write_000.jpg` is also the verified edit base for the action: search
+`"Rabbit writing"` in the ingredient picker and confirm the attached ingredient's
+`src` contains `d0898a97` before generating anything.
+
+## To resume
+
+1. Confirm Flow's editor is functional again — the ingredient button must open
+   the picker and the search box must render. **Do not start generating until
+   that is true**; a degraded session produces silent drops that look like
+   successes.
+2. Generate `focus_write` frame 4 from the `write_000` base (`d0898a97`): the
+   pencil lifted a small distance off the page, tip clear of the paper, the
+   holding paw following upward, everything else identical.
+3. Move all four frames into `.asset_staging/flow/rabbit/focus_write/`, then run
+   `python tools/productionise.py rabbit` → `tools/manifest.py rabbit` →
+   `tools/gen_manifest_dart.py`.
+4. Add `CompanionPose.focusWrite` to `rabbitPosesWithArt` in
+   `test/presentation/companion/multi_companion_test.dart`.
+5. Then the five remaining actions: `celebrate` (5), `tap_react` (3),
+   `pet_react` (3), `sleep` (2), `pause_rest` (2).
+
+Target: **13 actions / 49 frames**, matching the dog and the cat.
+
+## Why the pack is not left half-imported
+
+The pack-completeness test asserts that **every declared action ships its full
+frame count**. Importing a 3-of-4 `focus_write` would turn a green suite red for
+a cosmetic reason and would ship an action that visibly stutters. A partial
+action is a red gate, not partial progress — so it stays staged.
