@@ -494,6 +494,19 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 3,
         ),
+        'focus_think': CompanionActionSpec(
+          actionId: 'focus_think',
+          frames: [
+            'assets/companions/rabbit/focus_think_000.png',
+            'assets/companions/rabbit/focus_think_001.png',
+            'assets/companions/rabbit/focus_think_002.png',
+          ],
+          fps: 4,
+          loopMode: SpriteLoopMode.pingPong,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 3,
+        ),
         'idle': CompanionActionSpec(
           actionId: 'idle',
           frames: [

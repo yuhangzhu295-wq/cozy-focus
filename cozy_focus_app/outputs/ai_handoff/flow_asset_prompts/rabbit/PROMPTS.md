@@ -604,3 +604,62 @@ remaining actions are recorded below rather than approximated.
 `pet_react` (3), `sleep` (2), `pause_rest` (2) — 22 frames. All of it is
 mechanical: the click method, the master references, the prop technique and the
 import pipeline are all recorded above.
+
+---
+
+# 14. Session 7 — focus_think, and the throttle returns
+
+## Accepted
+
+**focus_think** — frame 1 from the seated master (paw to chin, head tilted,
+eyes up and away); frames 2-3 are head and eye movements over it.
+
+| Frame | Reference | Attempts | Tile name |
+|---|---|---|---|
+| `focus_think_000` | seated master | 1 | Rabbit thinking pose variation |
+| `focus_think_001` | `focus_think_000` | 1 | Rabbit thinking pose variation |
+| `focus_think_002` | `focus_think_000` | 2 | — |
+
+Frame 3 failed silently once and succeeded on the retry, the same pattern as
+`focus_read` frame 3.
+
+## The throttle came back and did not clear
+
+After `focus_think` imported cleanly, `focus_write` frame 1 generated on the
+first attempt ("Rabbit writing in notebook"), and then **frame 2 failed silently
+twice in a row** — the progress bar finished and no tile appeared, twice.
+
+The picker also began returning an empty option list for a term that had worked
+moments earlier, which is the same degradation the cat archive records.
+
+**No frame was invented and none was accepted unverified.**
+
+## A partial action would break the gate
+
+`focus_write` had one of four frames. Importing it would have declared an action
+that is short of its frame count, and the pack-completeness test asserts every
+declared action is complete — so a half-finished action is a red gate, not a
+partial win.
+
+The single accepted frame is therefore **set aside, not imported**, at
+`.asset_staging/refs/rabbit_focus_write_partial/write_000.jpg`. Moving the
+staging directory out of `.asset_staging/flow/rabbit/` is what keeps it out of
+the import; `productionise.py` treats every directory under there as an action.
+
+## Also worth recording
+
+A search that returns **zero** options makes the option hit-test return
+`{error}`, and the click then fails with "click requires ref or (x,y)". The cause
+was reading the option list before it had rendered — the same term returned three
+options a few seconds later. **Wait for the list, then hit-test.**
+
+## Imported
+
+**rabbit: 7 actions / 30 frames** — `idle` 6/6, `walk` 6/6, `sit_down` 4/4,
+`stand_up` 4/4, `craft_work` 4/4, `focus_read` 3/3, `focus_think` 3/3.
+
+## Remaining
+
+`focus_write` (1 of 4 staged), `celebrate` (5), `tap_react` (3), `pet_react` (3),
+`sleep` (2), `pause_rest` (2). All mechanical: the click method, the master
+references, the prop technique and the import pipeline are recorded above.
