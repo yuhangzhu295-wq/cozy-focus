@@ -847,3 +847,59 @@ Two reliable methods, both used here:
 `celebrate` (5), `tap_react` (3), `pet_react` (3), `sleep` (2), `pause_rest` (2).
 All mechanical, and none of them involve a prop the model might drop. Target:
 **13 actions / 49 frames**, matching the dog and the cat.
+
+---
+
+# §17 — Session 2026-10-03 (end): celebrate attempted, the throttle returned
+
+## What was attempted
+
+`celebrate` frame 1 of 5 (anticipation — the rabbit crouches to jump), from the
+**"Rabbit standing on all legs"** reference. Two attempts:
+
+1. Submitted, and then **no tile appeared over 54 seconds** across nine polls.
+2. Re-attached, submitted again, and **no tile appeared over 70 seconds** across
+   eleven polls.
+
+Both submissions cleared the editor, which is what a successful submit looks
+like, and both produced nothing. A search for `Rabbit crouch` afterwards
+returned **zero options**, confirming no asset was created rather than created
+and merely not rendered.
+
+This is the §14/§15 silent drop, back. Between the two attempts it was working:
+`focus_write`'s four frames generated and downloaded without trouble earlier in
+the same session.
+
+## The reference labels, for the next session
+
+Searched from the ingredient picker, which is how the base pose is chosen. The
+labels matter because several assets share a near-identical name and only some
+are the right pose.
+
+| Search term | Useful results |
+|---|---|
+| `Rabbit standing on all legs` | the standing base — the one to use for a hop |
+| `Rabbit standing up pose` | also standing |
+| `White chibi rabbit sitting` | the bare seated base — **this is the asset that was repeatedly mistaken for a bad generation in §16** |
+| `Rabbit sitting down` | seated |
+| `Rabbit writing in notebook` | the `focus_write` base (`d0898a97`) |
+
+## Remaining
+
+`celebrate` (5), `tap_react` (3), `pet_react` (3), `sleep` (2), `pause_rest` (2) —
+**15 frames**, target 13 actions / 49 frames.
+
+None of them involve a prop, so the §16 download trap is the only hazard, and the
+method for avoiding it is recorded there. Bases: `celebrate` from the standing
+rabbit; `tap_react`, `pet_react`, `sleep` and `pause_rest` from the seated one.
+
+## Where this leaves the pack
+
+**8 actions / 34 frames**, all complete, all imported, all reachable at runtime:
+`idle` 6/6, `walk` 6/6, `sit_down` 4/4, `stand_up` 4/4, `craft_work` 4/4,
+`focus_read` 3/3, `focus_think` 3/3, `focus_write` 4/4.
+
+The pack is honest at every point: everything it declares is finished, and every
+pose it does not have falls back to the procedural silhouette rather than
+borrowing another companion's art. The remaining five actions are blocked on an
+external service, not on anything in the repository.
