@@ -967,3 +967,74 @@ attempt 1 was zoomed and attempt 2 never produced a frame to judge.
 - `flow-content.google/image/<uuid>?Expires=<unix>` remains the most reliable
   way to identify a new asset: sort by `Expires` descending. New generations in
   this project land as `flow-content` tiles with the latest expiry.
+
+---
+
+# §19 — celebrate landed: 9 actions / 39 frames
+
+## Outcome
+
+`celebrate` is complete at **5/5**, declared `once`, 8 fps — the count
+`ACTION_SPEC` authors. The rabbit now ships **9 actions / 39 frames**.
+
+## The technique that made it work
+
+Every frame was generated from the **same standing reference**
+(`Rabbit standing on all legs`), not by chaining frame to frame. The prompt leads
+with the framing and only then describes the pose:
+
+```text
+Keep the framing of the attached image exactly. In the attached image the whole
+rabbit stands on all four legs and is SMALL in the middle of a white square...
+
+THE FRAMING IS THE MOST IMPORTANT REQUIREMENT. The output must show the WHOLE
+rabbit, from the tips of its ears to its feet, at the same small size, in the
+same place... Do NOT zoom in. Do NOT crop... If any part of the rabbit touches
+or is cut off by the edge of the image, the result is wrong.
+
+Then, keeping that framing, change only the pose: <pose>
+```
+
+This is the fix §18 identified. §18's attempt 1 put the framing in a passing
+clause and got a zoomed crop of one ear; leading with it produced a correctly
+framed full body every time.
+
+## Scale drift is real and does not matter
+
+The model's subject size varied enormously between frames — ink heights of
+**376, 876, 435, 733, 871** px on the same 1024 canvas. That is a ~2.3× spread.
+
+It is harmless: `tools/productionise.py` crops each frame to its ink bounding box
+and rescales so the subject height is `canvas * SUBJECT_H` (capped by width at
+96%). Every frame lands normalised, so the model's scale is absorbed. **Do not
+reject a frame for being the wrong size** — check the pose, the framing
+completeness, and the absence of a shadow instead.
+
+## One frame was rejected and redone
+
+Frame 4 ("just landed") came back as a **belly-flop** — lying down, legs splayed
+to the sides, and with a noticeably larger head than the rest of the sequence.
+It read as a fall rather than a happy landing, and it was off-model.
+
+Regenerated with the pose spelled out negatively as well as positively
+("STANDING UP on all four legs… clearly upright and standing, **not lying down
+and not splayed out**… keep the head the same size relative to the body"). The
+retry is a clean upright landing pose.
+
+The other four were accepted first time. No frame was accepted without being
+looked at on a contact sheet of the whole sequence.
+
+## Timing, confirmed
+
+Successful generations took **52–90 s** in this run. §18's rule holds: **poll for
+at least 120 s before calling a submission dropped.** Every frame here arrived
+between poll 6 and poll 11 of a 7.5 s loop.
+
+## Remaining
+
+`tap_react` (3), `pet_react` (3), `sleep` (2), `pause_rest` (2) — **10 frames**.
+Target: **13 actions / 49 frames**.
+
+None involve a prop. Bases: the seated reference (`White chibi rabbit sitting`)
+for all four. The framing-first prompt above is the template; the `celebrate`
+poses are recorded in this section's git history if a worked example is wanted.

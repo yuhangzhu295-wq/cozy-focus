@@ -8,6 +8,24 @@
   "groundBaseline": 459,
   "centerAnchor": 255,
   "actions": {
+    "celebrate": {
+      "frames": [
+        "celebrate_000.png",
+        "celebrate_001.png",
+        "celebrate_002.png",
+        "celebrate_003.png",
+        "celebrate_004.png"
+      ],
+      "fps": 8,
+      "loopMode": "once",
+      "targetFrameCount": 5,
+      "interruptible": false,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "craft_work": {
       "frames": [
         "craft_work_000.png",

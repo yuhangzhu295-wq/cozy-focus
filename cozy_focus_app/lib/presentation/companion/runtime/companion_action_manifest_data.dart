@@ -467,6 +467,21 @@ abstract final class CompanionActionManifestData {
       groundBaseline: 459,
       centerAnchor: 255,
       actions: {
+        'celebrate': CompanionActionSpec(
+          actionId: 'celebrate',
+          frames: [
+            'assets/companions/rabbit/celebrate_000.png',
+            'assets/companions/rabbit/celebrate_001.png',
+            'assets/companions/rabbit/celebrate_002.png',
+            'assets/companions/rabbit/celebrate_003.png',
+            'assets/companions/rabbit/celebrate_004.png',
+          ],
+          fps: 8,
+          loopMode: SpriteLoopMode.once,
+          interruptible: false,
+          reducedMotionFrames: [0],
+          targetFrameCount: 5,
+        ),
         'craft_work': CompanionActionSpec(
           actionId: 'craft_work',
           frames: [
