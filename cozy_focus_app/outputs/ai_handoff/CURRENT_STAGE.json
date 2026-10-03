@@ -294,8 +294,8 @@
       "signing": "NOT_RECOVERED: apksigner reports CN=Android Debug; no keystore exists and none was invented",
       "launcher_icon": "P1: still the stock Flutter logo; no approved artwork exists"
     },
-    "device_verified": "emulator-5554: collection 2/8 and 未开放, craft copy, P7 toolbar end to end, post-canvas-change room alignment (feet on the cushion), the rabbit pack wired in (selected companion drives the art), and the P11 daily routine firing in the room (seated on the sofa at 09:58 with the sofa/sit effect visible in the vitals)",
-    "not_device_verified": "P4B visual gate: needs human judgement of whether the sprite art reads well. P11 band changes: the emulator refuses adb root, so the clock could not be moved to another band - band-dependence is covered by tests instead.",
+    "device_verified": "emulator-5554: collection 2/8 and 未开放, craft copy, P7 toolbar end to end, post-canvas-change room alignment (feet on the cushion), the rabbit pack wired in (selected companion drives the art), the P11 daily routine firing in the room (seated on the sofa at 09:58 with the sofa/sit effect visible in the vitals), and the completed 13-action rabbit pack building, launching and drawing production sprites with a clean logcat.",
+    "not_device_verified": "P4B visual gate: needs human judgement of whether the sprite art reads well. P11 band changes: the emulator refuses adb root, so the clock could not be moved to another band - band-dependence is covered by tests instead. Rabbit action playback: only that the pack draws; tapping the rabbit in the room does not fire tap_react (the room page appears not to wire companion taps to the overlay), so per-action playback is covered by companion_pack_completeness_test.dart rather than on device.",
     "open_p0": 0,
     "open_p1": 1,
     "open_p2": 7

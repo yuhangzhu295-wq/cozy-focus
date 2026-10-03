@@ -1253,3 +1253,44 @@ Nothing in the rabbit pack. `P10` is done for all three companions.
 
 P12 (AI personality) remains optional and unstarted, and the two owner-blocked
 items — the release keystore and the launcher icon — are unchanged.
+
+---
+
+# §24 — Device verification of the completed pack
+
+Debug APK built from `b664fe5`, installed on `emulator-5554`
+(`sdk_gphone64_x86_64`), application id `com.yuhangzhu295.cozyfocus`.
+
+| Check | Result |
+|---|---|
+| Build + install + launch | OK |
+| The rabbit renders production sprites in the room | Yes — drawn from the pack, not the procedural silhouette |
+| `adb logcat` filtered for `exception\|error\|assert\|failed` | **Nothing** |
+| Evidence | `android_v1_runtime/p10_rabbit_complete_room.png` |
+
+## One check that did not work, and why it does not matter
+
+Tapping the rabbit in the room did **not** play a `tap_react` reaction, so this
+does not verify that action on the device. The likely reason is that the room
+page does not wire companion taps to the overlay — `tap_react` is driven from
+the home avatar's own tap handling, not from the room. That is a plausible
+design and not a defect introduced here, but it is **unverified** rather than
+verified, and is recorded as such.
+
+The remaining twelve actions were not exercised on the device either. What the
+device check establishes is narrower than "all thirteen play correctly": the app
+builds and runs with the enlarged pack, the rabbit draws real sprites, and
+nothing errors. The per-action wiring is covered by
+`companion_pack_completeness_test.dart`, which asserts every shipped pose
+resolves to a spec.
+
+## The room's label can disagree with the sprite
+
+The capture shows the label `小兔 在房间里晃悠` (the idle fallback) while the
+rabbit is drawn reading a book. The cause is that `_activityLabel` resolves the
+furniture from the anchor id to name the action, and a companion standing on the
+**floor anchor** has no furniture to look up — so it falls through to the
+cause-based sentence even though a `companionAction` is playing.
+
+Pre-existing and cosmetic, not a regression from this work, and recorded so the
+next session does not re-discover it as a new bug.
