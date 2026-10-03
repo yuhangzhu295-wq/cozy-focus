@@ -172,13 +172,21 @@ void main() {
       expect(idle, isNotNull, reason: 'rabbit/idle ships and must resolve');
       expect(idle!.frames, hasLength(6));
 
-      // `sleep` is not produced for the rabbit yet, so it must fall back to the
-      // procedural silhouette rather than borrowing another companion's frames.
+      // `sleep` used to be the example of an unshipped rabbit pose; it now
+      // ships, so `rest` carries the assertion instead. The point is unchanged:
+      // a pose the rabbit does not have must fall back to the procedural
+      // silhouette rather than borrowing another companion's frames.
       expect(
-          CompanionSpriteArt.resolveFor('rabbit', CompanionPose.sleep), isNull);
+          CompanionSpriteArt.resolveFor('rabbit', CompanionPose.rest), isNull);
       expect(
-          CompanionSpriteArt.resolveFor('dog', CompanionPose.sleep), isNotNull,
-          reason: 'the dog does ship sleep, so the null above is the rabbit');
+          CompanionSpriteArt.resolveFor('dog', CompanionPose.rest), isNotNull,
+          reason: 'the dog does ship rest, so the null above is the rabbit');
+
+      // And the pose that used to stand here now really does resolve, so the
+      // swap above cannot quietly become a no-op if `sleep` is ever removed.
+      expect(CompanionSpriteArt.resolveFor('rabbit', CompanionPose.sleep),
+          isNotNull,
+          reason: 'rabbit/sleep was imported and must resolve');
     });
 
     test('the dog pack ships every requested action', () {

@@ -128,6 +128,21 @@
         0
       ]
     },
+    "sleep": {
+      "frames": [
+        "sleep_000.png",
+        "sleep_001.png"
+      ],
+      "fps": 3,
+      "loopMode": "loop",
+      "targetFrameCount": 2,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "stand_up": {
       "frames": [
         "stand_up_000.png",

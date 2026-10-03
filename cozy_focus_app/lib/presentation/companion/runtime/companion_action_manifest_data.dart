@@ -566,6 +566,18 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 4,
         ),
+        'sleep': CompanionActionSpec(
+          actionId: 'sleep',
+          frames: [
+            'assets/companions/rabbit/sleep_000.png',
+            'assets/companions/rabbit/sleep_001.png',
+          ],
+          fps: 3,
+          loopMode: SpriteLoopMode.loop,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 2,
+        ),
         'stand_up': CompanionActionSpec(
           actionId: 'stand_up',
           frames: [

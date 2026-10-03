@@ -1038,3 +1038,71 @@ Target: **13 actions / 49 frames**.
 None involve a prop. Bases: the seated reference (`White chibi rabbit sitting`)
 for all four. The framing-first prompt above is the template; the `celebrate`
 poses are recorded in this section's git history if a worked example is wanted.
+
+---
+
+# §20 — sleep landed: 10 actions / 41 frames
+
+## Outcome
+
+`sleep` is complete at **2/2**, `loop`, 3 fps. The rabbit ships **10 actions /
+41 frames**.
+
+## The framing prompt, corrected again
+
+§19's framing text said the rabbit is **"SMALL in the middle of a white square"**
+and to keep it "at the same small size". Used verbatim for `sleep`, the model
+obeyed literally: the sleeping rabbit came back with an ink height of **109 px on
+a 1024 canvas**, which `productionise.py` would have had to upscale **3.66×** to
+reach its 399 px subject height. That is visible blur beside every other frame.
+
+The word "small" was the bug — it describes the *reference* incidentally, but the
+model reads it as an instruction about the *output*.
+
+Rewritten to anchor to the reference's own size rather than to an adjective:
+
+```text
+The output must show the WHOLE rabbit, from the tips of its ears to its feet, at
+the SAME SIZE and in the SAME POSITION as in the attached image. Do NOT zoom in.
+Do NOT crop. Do NOT make the rabbit smaller. Do NOT make the rabbit larger.
+```
+
+The retry came back at **544 px**, a 0.73× *down*scale — sharp, and the best
+result of the session. **Use this wording; do not reintroduce "small".**
+
+## A pose that is wider than it is tall
+
+The sleeping rabbit's ink box is **821 wide × 544 tall**. `productionise.py`
+caps the scale by width at 96 % of the canvas, so the width cap binds and the
+sleeping rabbit ends up shorter in the final sprite than the standing frames.
+
+That is correct, not a defect: a rabbit lying down *is* shorter than one
+standing. Worth knowing so it is not "fixed" later.
+
+## Verifying the right reference was attached
+
+Two assets now match the search `Sleeping rabbit` — the accepted frame and the
+rejected tiny one. Attaching the wrong one would have produced a frame 2 that did
+not match frame 1.
+
+They were told apart by **ink height** (544 vs 109), not by label: both labels
+are auto-generated from the prompt and are near-identical
+(`Sleeping rabbit image framing in…` / `Sleeping rabbit on white background`).
+Cheap and decisive — measure the candidate and compare with the frame already
+accepted.
+
+## A test that had to move, not be weakened
+
+`companion_pack_completeness_test.dart` asserted
+`resolveFor('rabbit', sleep) == null`, using `sleep` as its example of an
+unshipped pose. That assertion is now false. It was moved to `rest` — still
+unshipped for the rabbit — and a **positive** assertion was added that `sleep`
+now resolves, so the swap cannot quietly become a no-op if `sleep` is ever
+removed again.
+
+## Remaining
+
+`tap_react` (3), `pet_react` (3), `pause_rest` (2) — **8 frames**. Target:
+**13 actions / 49 frames**.
+
+All three are seated-pose variations; `White chibi rabbit sitting` is the base.
