@@ -505,3 +505,49 @@ the frames in order catches it.
 `focus_write` (4) → `celebrate` (5) → `tap_react` (3) + `pet_react` (3) →
 `sleep` (2) + `pause_rest` (2).
 Target: the dog and cat shape, **13 actions / 49 frames**.
+
+---
+
+# 12. Session 5 — stand_up
+
+## Accepted
+
+| Frame | Reference | Attempts |
+|---|---|---|
+| `stand_up_000` | seated master (`39c6616e…`) | 1 |
+| `stand_up_001` | seated master | 1 |
+| `stand_up_002` | **standing** master | 1 |
+| `stand_up_003` | **standing** master | 1 |
+
+Frames 3 and 4 use the **standing** master rather than the seated one. The cat's
+stand_up used the seated master through frame 3, but this pack had already shown
+that a verified reference does not guarantee the instructed posture (§11), so
+frames 3 and 4 were biased toward the pose they must land on and the prompt
+carried the requirement twice:
+
+```
+CRITICAL: the rabbit must be STANDING on all four legs … It must NOT be sitting.
+```
+
+The sequence was checked in order before import: seated → seated with the chest
+just lifting → rising with the hindquarters off the ground → nearly standing →
+standing, with frame 4 matching the standing master.
+
+## The transition pair is complete
+
+With `sit_down` and `stand_up` both shipping, the room's whole seating chain
+closes: walk to a seat → sit down → idle → stand up → walk away. Before this the
+rabbit hard-cut between standing and seated, because the state machine's posture
+hops had nothing to play.
+
+## Imported
+
+**rabbit: 4 actions / 20 frames** — `idle` 6/6, `walk` 6/6, `sit_down` 4/4,
+`stand_up` 4/4.
+
+## Remaining
+
+`craft_work` (4) → `focus_read` (3) / `focus_think` (3) / `focus_write` (4) →
+`celebrate` (5) → `tap_react` (3) + `pet_react` (3) → `sleep` (2) +
+`pause_rest` (2).
+Target: the dog and cat shape, **13 actions / 49 frames**.
