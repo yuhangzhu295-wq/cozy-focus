@@ -94,6 +94,21 @@ IN_PLACE_MAX_DRIFT = 0.10
 
 SIGNATURE_SIZE = 64
 
+# Where the clip came from. This is not bookkeeping: it decides whether the run
+# is allowed to write into the shipping asset directory.
+#
+# A clip rendered locally from already-approved frames exercises the whole chain
+# -- probe, decode, select, alpha, normalise, QA -- but the frames that come out
+# the far end are a round-trip of art that already exists. They are not new
+# production art, and writing them over `assets/companions/` would silently
+# replace approved sprites with a re-encoded copy of themselves.
+#
+# So: TEST_VIDEO != PRODUCTION_ART, enforced rather than documented. A test clip
+# must name an --out-root; only a real Flow clip may write to production.
+SOURCE_TEST_VIDEO = "test_video"
+SOURCE_FLOW_VIDEO = "flow_video"
+SOURCE_KINDS = (SOURCE_TEST_VIDEO, SOURCE_FLOW_VIDEO)
+
 
 # ── ffmpeg / ffprobe ─────────────────────────────────────────────────────────
 
@@ -461,7 +476,7 @@ def qa_frames(frame_paths, loop, expect_in_place, contract, raw_drift=None):
 # ── orchestration ────────────────────────────────────────────────────────────
 
 def run(video, companion, action, target, loop_mode, expect_in_place,
-        keep_temp=False, out_root=None):
+        keep_temp=False, out_root=None, source_kind=SOURCE_TEST_VIDEO):
     """Runs the whole chain and returns the report.
 
     [out_root] redirects the normalised output. It exists so the pipeline can be
@@ -471,7 +486,19 @@ def run(video, companion, action, target, loop_mode, expect_in_place,
     """
     report = {"companion": companion, "action": action,
               "video": os.path.basename(video),
-              "requested_frames": target, "loop_mode": loop_mode}
+              "requested_frames": target, "loop_mode": loop_mode,
+              "source_kind": source_kind}
+
+    if source_kind not in SOURCE_KINDS:
+        raise ValueError(f"source_kind must be one of {SOURCE_KINDS}")
+    if source_kind == SOURCE_TEST_VIDEO and out_root is None:
+        raise SystemExit(
+            "refusing to write a TEST_VIDEO into assets/companions/.\n"
+            "A clip built locally from existing frames round-trips art that\n"
+            "already ships; overwriting the pack with it would replace\n"
+            "approved sprites with a re-encoded copy. Pass --out-root to\n"
+            "write somewhere else, or --source-kind flow_video for a real\n"
+            "clip. TEST_VIDEO != PRODUCTION_ART.")
 
     info = ffprobe(video)
     report["source"] = info
@@ -538,10 +565,14 @@ def main():
                          "assets/companions/ (used to validate without touching "
                          "approved art)")
     ap.add_argument("--keep-temp", action="store_true")
+    ap.add_argument("--source-kind", default=SOURCE_TEST_VIDEO,
+                    choices=SOURCE_KINDS,
+                    help="test_video (default) requires --out-root; only "
+                         "flow_video may write into assets/companions/")
     a = ap.parse_args()
 
     rep = run(a.video, a.companion, a.action, a.frames, a.loop,
-              a.expect_in_place, a.keep_temp, a.out_root)
+              a.expect_in_place, a.keep_temp, a.out_root, a.source_kind)
     print(json.dumps(rep, indent=2, ensure_ascii=False))
     return 0 if rep.get("verdict") == "PASS" else 1
 

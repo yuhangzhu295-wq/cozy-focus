@@ -73,6 +73,23 @@ class PetDao extends DatabaseAccessor<AppDatabase> with _$PetDaoMixin {
     return rows.map(_mapMemory).toList();
   }
 
+  /// Deletes memories whose id begins with [prefix]. Returns how many went.
+  ///
+  /// This exists for QA fixture cleanup, and it is deliberately narrow. The
+  /// debug fixture harness (`lib/dev/qa_fixture.dart`) seeds memories to reach a
+  /// growth state, and `IPetRepository` exposes no delete — so without this the
+  /// harness could add QA memories and never remove them, which would leave
+  /// residue in the database it is supposed to be able to clean up.
+  ///
+  /// A prefix rather than a list of ids so cleanup cannot be defeated by a
+  /// half-remembered id, and a prefix rather than "all memories for a pet" so it
+  /// **cannot delete real memories**: production ids are `mem_<pet>_<type>_<ts>`
+  /// (see `CompanionMemory._idFor`) and never start with the QA prefix. That is
+  /// the property the reset test pins.
+  Future<int> deleteMemoriesWithIdPrefix(String prefix) {
+    return (delete(petMemories)..where((t) => t.id.like('$prefix%'))).go();
+  }
+
   domain.Pet _mapPet(dynamic row) => domain.Pet(
         id: row.id as String,
         userId: row.userId as String,
