@@ -58,7 +58,12 @@ abstract final class FurnitureCatalog {
         id: 'sit',
         label: '坐下',
         companionAction: 'room_sit',
-        triggers: [FurnitureTrigger.playerTap, FurnitureTrigger.energyLow],
+        triggers: [
+          FurnitureTrigger.playerTap,
+          FurnitureTrigger.energyLow,
+          // The evening routine winds down on the sofa. See daily_routine.dart.
+          FurnitureTrigger.routine,
+        ],
         effect: FurnitureEffect(energy: 4, mood: 3),
         minDwell: Duration(seconds: 14),
         maxDwell: Duration(seconds: 28),
@@ -67,7 +72,12 @@ abstract final class FurnitureCatalog {
         id: 'rest',
         label: '休息',
         companionAction: 'pause_rest',
-        triggers: [FurnitureTrigger.playerTap, FurnitureTrigger.energyLow],
+        triggers: [
+          FurnitureTrigger.playerTap,
+          FurnitureTrigger.energyLow,
+          // The evening routine's second choice, when sitting is not enough.
+          FurnitureTrigger.routine,
+        ],
         effect: FurnitureEffect(energy: 10, mood: 5),
         minDwell: Duration(seconds: 18),
         maxDwell: Duration(seconds: 32),
@@ -117,7 +127,12 @@ abstract final class FurnitureCatalog {
         id: 'craft',
         label: '做点小东西',
         companionAction: 'craft_work',
-        triggers: [FurnitureTrigger.playerTap, FurnitureTrigger.idle],
+        // The middle of the day is when it makes things. See daily_routine.dart.
+        triggers: [
+          FurnitureTrigger.playerTap,
+          FurnitureTrigger.idle,
+          FurnitureTrigger.routine,
+        ],
         effect: FurnitureEffect(mood: 6, energy: -5),
         minDwell: Duration(seconds: 14),
         maxDwell: Duration(seconds: 26),
@@ -137,7 +152,12 @@ abstract final class FurnitureCatalog {
         id: 'read',
         label: '看书',
         companionAction: 'focus_read',
-        triggers: [FurnitureTrigger.playerTap, FurnitureTrigger.idle],
+        // The morning routine starts the day here. See daily_routine.dart.
+        triggers: [
+          FurnitureTrigger.playerTap,
+          FurnitureTrigger.idle,
+          FurnitureTrigger.routine,
+        ],
         effect: FurnitureEffect(
           focus: 8,
           mood: 4,
@@ -151,7 +171,12 @@ abstract final class FurnitureCatalog {
         id: 'search',
         label: '找一本书',
         companionAction: 'focus_think',
-        triggers: [FurnitureTrigger.idle, FurnitureTrigger.playerTap],
+        // The afternoon routine goes looking for something to read.
+        triggers: [
+          FurnitureTrigger.idle,
+          FurnitureTrigger.playerTap,
+          FurnitureTrigger.routine,
+        ],
         effect: FurnitureEffect(
           focus: 6,
           energy: -2,
@@ -199,7 +224,13 @@ abstract final class FurnitureCatalog {
         id: 'sit',
         label: '坐一会儿',
         companionAction: 'room_sit',
-        triggers: [FurnitureTrigger.idle, FurnitureTrigger.playerTap],
+        // A seat is a seat: the routine's `seat` steps are satisfied by the rug
+        // when the player owns no sofa.
+        triggers: [
+          FurnitureTrigger.idle,
+          FurnitureTrigger.playerTap,
+          FurnitureTrigger.routine,
+        ],
         effect: FurnitureEffect(energy: 3, mood: 4),
         minDwell: Duration(seconds: 12),
         maxDwell: Duration(seconds: 24),

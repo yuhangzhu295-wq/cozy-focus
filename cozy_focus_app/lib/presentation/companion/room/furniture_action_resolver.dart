@@ -23,6 +23,7 @@
 library;
 
 import '../runtime/companion_id.dart';
+import '../runtime/daily_routine.dart';
 import '../time_of_day.dart';
 import 'anchor_point.dart';
 import 'companion_vitals.dart';
@@ -40,6 +41,15 @@ enum RoomDecisionCause {
   night('night'),
   tired('tired'),
   playerRequest('player_request'),
+
+  /// The companion's daily routine, chosen because of the time of day.
+  ///
+  /// It outranks only [idle]. Everything above it is a stronger cause — the
+  /// player asked, a session is running, the companion is tired or it is
+  /// bedtime — and everything below it is "nothing in particular", which is
+  /// exactly the window the routine exists to fill. See `daily_routine.dart`.
+  routine('routine'),
+
   idle('idle');
 
   final String id;
@@ -122,6 +132,12 @@ class RoomDecisionInput {
   /// decision function's signature does not have to change when it is used.
   final CompanionId companionId;
 
+  /// The daily routine to consult, defaulting to the shipped one.
+  ///
+  /// Injected rather than read statically so a test can state the day it wants
+  /// to assert against, instead of only being able to test the shipped table.
+  final DailyRoutine routine;
+
   const RoomDecisionInput({
     required this.anchors,
     required this.vitals,
@@ -131,6 +147,7 @@ class RoomDecisionInput {
     this.focusPaused = false,
     this.request,
     this.companionId = CompanionId.dog,
+    this.routine = DailyRoutine.shipped,
   });
 }
 
@@ -201,6 +218,14 @@ abstract final class FurnitureActionResolver {
       final decision = _restDecision(input);
       if (decision != null) return decision;
     }
+
+    // The daily routine. It sits here and not higher on purpose: every branch
+    // above is a stronger cause, and the branch below is "nothing in
+    // particular" — which is the window the routine exists to fill. Before this
+    // existed, 05:00 to 22:59 fell straight through to the idle walk, so the
+    // companion had a bedtime and no day.
+    final routine = _routineDecision(input);
+    if (routine != null) return routine;
 
     return _idleDecision(input);
   }
@@ -314,6 +339,40 @@ abstract final class FurnitureActionResolver {
         anchor: bestAnchor,
         action: best,
       );
+    }
+    return null;
+  }
+
+  /// The companion's daily routine for the current band.
+  ///
+  /// Walks the band's steps in preference order. For each step it looks for
+  /// anchors playing that step's role, and takes the first one whose named
+  /// action exists **and has agreed to be part of the day** by carrying
+  /// [FurnitureTrigger.routine].
+  ///
+  /// That second condition is what keeps the catalog authoritative. A step that
+  /// names behaviour which never opted in is a data error, and it is dropped
+  /// here rather than honoured — so the routine cannot smuggle in an action the
+  /// catalog does not consider routine-capable, and `daily_routine_test.dart`
+  /// fails if the shipped table ever names one.
+  ///
+  /// `null` when nothing in the routine is available, which is the signal to
+  /// fall through to the idle walk. A player who owns only a bed still gets a
+  /// companion that lives in the room rather than one that stands still.
+  static RoomDecision? _routineDecision(RoomDecisionInput input) {
+    for (final step in input.routine.stepsFor(input.timeOfDay)) {
+      for (final anchor in anchorsForRole(input.anchors, step.role)) {
+        if (!input.unlockedItemIds.contains(anchor.itemId)) continue;
+        final entity = FurnitureCatalog.forId(anchor.itemId);
+        final action = entity?.actionById(step.action);
+        if (action == null) continue;
+        if (!action.isAvailableOn(FurnitureTrigger.routine)) continue;
+        return _decisionFor(
+          cause: RoomDecisionCause.routine,
+          anchor: anchor,
+          action: action,
+        );
+      }
     }
     return null;
   }

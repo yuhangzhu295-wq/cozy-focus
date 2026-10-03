@@ -411,8 +411,14 @@ void main() {
       await container.read(craftRepositoryProvider).upsertInventoryItem(
             owned('sofa', quantity: 1),
           );
+      await container.read(craftRepositoryProvider).upsertInventoryItem(
+            owned('desk', quantity: 1),
+          );
       await container.read(craftRepositoryProvider).placeRoomItem(
             placed('sofa', x: 0.35, y: 0.6, id: 'room-sofa'),
+          );
+      await container.read(craftRepositoryProvider).placeRoomItem(
+            placed('desk', x: 0.7, y: 0.5, id: 'room-desk'),
           );
       await container.read(craftControllerProvider.notifier).loadAll();
 
@@ -429,12 +435,19 @@ void main() {
       // The first placement snaps, so the companion is not walking yet.
       expect(travellingNow(), isFalse);
 
-      // Asking for the sofa moves the companion to a different anchor, which is
-      // a real journey rather than a placement.
+      // Two anchors are placed, and the request below is aimed at whichever one
+      // the companion is *not* already using. A single anchor would not do: the
+      // daily routine legitimately settles the companion on the sofa at this
+      // hour, and asking it to sit where it already is is not a journey.
+      final atSofa = container.read(roomSimulationProvider).activity.anchorId ==
+          'sofa_anchor';
+
+      // Asking for the other anchor moves the companion, which is a real
+      // journey rather than a placement.
       container.read(roomSimulationProvider.notifier).requestAction(
-            itemId: 'sofa',
-            actionId: 'sit',
-            roomItemId: 'room-sofa',
+            itemId: atSofa ? 'desk' : 'sofa',
+            actionId: atSofa ? 'write' : 'sit',
+            roomItemId: atSofa ? 'room-desk' : 'room-sofa',
           );
       await tester.pump();
 

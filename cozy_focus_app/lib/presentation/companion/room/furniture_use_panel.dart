@@ -238,6 +238,10 @@ class CompanionVitalsBar extends StatelessWidget {
       RoomDecisionCause.night => '夜深了，$companionName 有点困',
       RoomDecisionCause.tired => '$companionName 有点累了',
       RoomDecisionCause.playerRequest => '$companionName 听你的',
+      // A routine decision always carries an action, so this line is only
+      // reached if the catalog lost the action the routine named. It reads as
+      // the day rather than as a failure.
+      RoomDecisionCause.routine => '$companionName 在过自己的小日子',
       RoomDecisionCause.idle => '$companionName 在房间里晃悠',
     };
   }

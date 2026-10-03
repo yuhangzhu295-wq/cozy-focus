@@ -61,6 +61,20 @@ enum FurnitureTrigger {
   /// It is night where the player is.
   night('night'),
 
+  /// The daily routine picked this, because of the time of day.
+  ///
+  /// Distinct from [idle], and the difference is the whole point of the daily
+  /// routine: `idle` means *nothing else is claiming the companion*, while
+  /// `routine` means *the companion's day says it is time for this*. An action
+  /// may carry both — the routine chooses it when its band calls for it, and
+  /// the idle walk still falls back to it at any hour.
+  ///
+  /// Carrying this trigger is what makes an action **eligible to be scheduled**.
+  /// `daily_routine_test.dart` asserts that every action named by the routine
+  /// table actually carries it, so a step cannot point at behaviour that has not
+  /// agreed to be part of the day.
+  routine('routine'),
+
   /// Nothing else is claiming the companion.
   idle('idle');
 

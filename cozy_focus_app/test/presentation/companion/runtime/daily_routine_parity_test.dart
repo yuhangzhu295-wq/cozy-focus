@@ -37,7 +37,8 @@ void main() {
       final authored = fromJson.stepsFor(band);
       final bundled = DailyRoutine.shipped.stepsFor(band);
 
-      expect(bundled.length, authored.length, reason: '${wireIdFor(band)} count');
+      expect(bundled.length, authored.length,
+          reason: '${wireIdFor(band)} count');
       for (var i = 0; i < authored.length; i++) {
         final label = '${wireIdFor(band)}[$i]';
         expect(bundled[i].role, authored[i].role, reason: '$label role');
@@ -61,7 +62,8 @@ void main() {
     for (final band in TimeOfDayBand.values) {
       if (DailyRoutine.unscheduledBands.contains(band)) continue;
       expect(DailyRoutine.shipped.stepsFor(band), isNotEmpty,
-          reason: '${wireIdFor(band)} must have a routine, or the day has a hole');
+          reason:
+              '${wireIdFor(band)} must have a routine, or the day has a hole');
     }
   });
 
