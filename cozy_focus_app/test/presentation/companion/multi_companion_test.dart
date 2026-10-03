@@ -186,16 +186,18 @@ void main() {
         CompanionPose.sleep,
       };
 
-      // The rabbit pack is in production. `idle`, `craft_work`, `focus_read` and
-      // `focus_think` ship; `walk`, `sit_down` and `stand_up` are locomotion and
-      // posture states rather than behaviour poses, so they do not appear here.
-      // Every pose not listed must still report ASSET_GAP rather than borrowing
-      // a neighbour's art, which is what the loop below asserts.
+      // The rabbit pack is in production. `idle`, `craft_work`, `focus_read`,
+      // `focus_think` and `focus_write` ship; `walk`, `sit_down` and `stand_up`
+      // are locomotion and posture states rather than behaviour poses, so they
+      // do not appear here. Every pose not listed must still report ASSET_GAP
+      // rather than borrowing a neighbour's art, which is what the loop below
+      // asserts.
       const rabbitPosesWithArt = {
         CompanionPose.idle,
         CompanionPose.craftWork,
         CompanionPose.focusRead,
         CompanionPose.focusThink,
+        CompanionPose.focusWrite,
       };
 
       for (final id in CompanionManifestData.profiles.keys) {

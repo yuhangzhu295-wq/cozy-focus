@@ -760,3 +760,90 @@ The pack-completeness test asserts that **every declared action ships its full
 frame count**. Importing a 3-of-4 `focus_write` would turn a green suite red for
 a cosmetic reason and would ship an action that visibly stutters. A partial
 action is a red gate, not partial progress — so it stays staged.
+
+---
+
+# §16 — Session 2026-10-03 (later still): Flow recovered, focus_write landed
+
+## Outcome
+
+**rabbit: 8 actions / 34 frames.** `focus_write` is complete at 4/4 and the
+manifest declares `4/4 loop 5 fps`, matching `ACTION_SPEC` in `tools/manifest.py`.
+
+The four frames are the rabbit holding the open notebook with the pencil at
+slightly different points along the page. Same character, same props, same
+palette, no shadow, flat white background — checked on a contact sheet of all
+four before import.
+
+## The failure was mine, not the model's
+
+Five frames were generated across this session and **all five were correct**.
+Four of them were reported as failures — "the model dropped the notebook and the
+pencil, drew a bare rabbit" — and that report was wrong.
+
+What actually happened: the tile grid contains the rabbit's **idle and walk
+frames, which legitimately have no props**. The download picked `imgs[last]`,
+which was one of those pre-existing bare tiles, not the frame that had just been
+generated. The conclusion "the model removed the props" was drawn from four
+images that were never the model's output for this action.
+
+This is the same class of mistake §14 records twice — a contact sheet indexed
+wrongly, and a search returning my own output — and the lesson generalises:
+
+> **A download is not verified until you can say why it is the new file.** The
+> tile grid is not ordered by recency, so "the last tile" is a guess.
+
+Three attempts were wasted on prompt rewrites aimed at a failure that did not
+exist, including two rewrites that made the prompt worse by piling on
+"the notebook must stay" clauses.
+
+## How the new tile is actually identified
+
+Two reliable methods, both used here:
+
+1. **Set difference.** Record every tile `src` before submitting, then poll for a
+   `src` that was not in that set. This is exact and needs no ordering
+   assumption. It only works if the before-set is captured in the same script
+   run as the poll.
+2. **Signed-URL expiry.** Tiles served from `flow-content.google/image/<uuid>`
+   carry `?Expires=<unix>`. A newer generation has a later expiry, so sorting by
+   `Expires` descending puts the newest tile first. The six flow-content tiles
+   at the time of writing ordered cleanly.
+
+## Two download traps
+
+- **`=s1024` only applies to `flow.google.com/asb/...` URLs.** Those are
+  thumbnails (`=s512-rw`) and accept a size suffix; the recompressed result is
+  ~78 KB. The `flow-content.google/image/...` URLs are **already full
+  resolution** and have no size suffix — appending `=s1024` makes them fail with
+  `TypeError: Failed to fetch`. The full-resolution file is ~240 KB, which is the
+  size to expect for an accepted frame.
+- **The signed URLs need the browser's session.** `curl` gets a 302 to an HTML
+  page, which looks like a successful download until `PIL` refuses to open it
+  (`<!doctype html` is not a JPEG). Fetch inside the page context instead:
+  `fetch(url)` in `tab.playwright.evaluate`, return base64, write with `fs`.
+
+## Also worth recording
+
+- `ACTION_SPEC` in `tools/manifest.py` authors `focus_write` as **4 frames for
+  every companion**. A target is production intent, not a transcription of the
+  disk — `companion_pack_completeness_test.dart` has a test whose whole purpose
+  is to fail when a target is lowered to match the frames on hand. Lowering it to
+  3 to fit what had been produced would have been exactly that failure.
+- The rabbit's pack test is stricter than the dog's or cat's: it asserts **every
+  declared action is complete**. So a 3-of-4 import is a red gate, which is why
+  the frames were staged rather than imported in §15.
+- `tab.reload` does not exist; reloading is `tab.reload()`. `tab.click(selector)`
+  needs a prior `snapshot()`.
+
+## Imported
+
+**rabbit: 8 actions / 34 frames** — `idle` 6/6, `walk` 6/6, `sit_down` 4/4,
+`stand_up` 4/4, `craft_work` 4/4, `focus_read` 3/3, `focus_think` 3/3,
+`focus_write` 4/4.
+
+## Remaining
+
+`celebrate` (5), `tap_react` (3), `pet_react` (3), `sleep` (2), `pause_rest` (2).
+All mechanical, and none of them involve a prop the model might drop. Target:
+**13 actions / 49 frames**, matching the dog and the cat.

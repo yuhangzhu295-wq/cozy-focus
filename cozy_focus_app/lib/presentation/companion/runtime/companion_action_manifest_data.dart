@@ -507,6 +507,20 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 3,
         ),
+        'focus_write': CompanionActionSpec(
+          actionId: 'focus_write',
+          frames: [
+            'assets/companions/rabbit/focus_write_000.png',
+            'assets/companions/rabbit/focus_write_001.png',
+            'assets/companions/rabbit/focus_write_002.png',
+            'assets/companions/rabbit/focus_write_003.png',
+          ],
+          fps: 5,
+          loopMode: SpriteLoopMode.loop,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 4,
+        ),
         'idle': CompanionActionSpec(
           actionId: 'idle',
           frames: [
