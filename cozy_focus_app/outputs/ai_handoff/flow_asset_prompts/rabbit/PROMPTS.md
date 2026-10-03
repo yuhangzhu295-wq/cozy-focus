@@ -903,3 +903,67 @@ The pack is honest at every point: everything it declares is finished, and every
 pose it does not have falls back to the procedural silhouette rather than
 borrowing another companion's art. The remaining five actions are blocked on an
 external service, not on anything in the repository.
+
+---
+
+# §18 — Correction: §17's "silent drop" was mostly a polling bug
+
+## The correction
+
+§17 concludes that Flow was "dropping submissions silently" again. That
+conclusion is **wrong, or at least unproven**, and it is corrected here because
+it would send the next session looking for a server-side problem that is not
+there.
+
+The measurement that overturns it: a generation that succeeds now takes
+**~60-70 seconds** to appear as a tile. Earlier in the same session it took
+**~15 seconds**. §17 polled for **54 seconds** and then **70 seconds** before
+concluding nothing had been created. Both windows sit at or *below* the real
+latency.
+
+So the two §17 attempts were most likely **slow successes** that I stopped
+watching too early. The follow-up search for `Rabbit crouch` returning zero
+options is not evidence either: it was run while the generation would still have
+been in flight.
+
+> **Rule: poll for at least 120 seconds before calling a submission dropped.**
+
+This is the third time in this archive that a "the tool is broken" conclusion
+turned out to be a measurement error — §16 was a bad download, §17 was a short
+poll, and §14 was a stale reference read. The pattern is worth naming: **when
+the same operation succeeds and then "fails" with no change in inputs, suspect
+the observation before the tool.**
+
+## What was actually attempted for celebrate
+
+Reference: **"Rabbit standing on all legs"**, verified by rendering it — a
+correct full-body standing rabbit on white, 512×512. (Confirmed separately,
+because §14's lesson is that a verified id is not a verified image.)
+
+| Attempt | Outcome |
+|---|---|
+| 1 | **Landed** (`adb7b83d`, 226 750 bytes) but the rabbit is **zoomed in** — only an ear, the sprout and part of the head, filling the frame. No full body, no crouch. **Rejected.** |
+| 2 | Prompt strengthened with an explicit framing paragraph ("keep that framing… do NOT zoom in… if any part is cut off by the edge the result is wrong"). **No tile after ~100 s.** Outcome unknown — it may still have been in flight. |
+
+Attempt 1 is a genuine model failure, not a measurement error: the framing
+instruction was too weak. `celebrate` is a hop, and the pose descriptions that
+worked for `focus_write` said "same canvas placement, same body scale" as a
+passing clause; that is evidently not enough when the requested pose changes the
+body's height.
+
+**Next session should lead with the framing, not the pose.** Attempt 2's prompt
+is the shape to use; give it a 120 s poll.
+
+## State
+
+Unchanged at **8 actions / 34 frames**. Nothing from `celebrate` was imported:
+attempt 1 was zoomed and attempt 2 never produced a frame to judge.
+
+## Also worth recording
+
+- The ingredient picker sometimes needs the "Add ingredients" button clicked
+  **twice** before the search box appears. A single click that does nothing is
+  not a broken session; retry it.
+- `flow-content.google/image/<uuid>?Expires=<unix>` remains the most reliable
+  way to identify a new asset: sort by `Expires` descending. New generations in
+  this project land as `flow-content` tiles with the latest expiry.
