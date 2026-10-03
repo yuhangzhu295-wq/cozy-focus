@@ -2,7 +2,8 @@
 
 Archive of every Google Flow generation attempt for the rabbit sprite pack.
 
-**Status: `ASSET_GENERATION_BLOCKED` at the master. Nothing was generated.**
+**Status: UNBLOCKED. Master and `idle` frame 1 are generated and accepted.**
+The block below was self-inflicted and is now understood — see §6.
 
 ---
 
@@ -198,3 +199,127 @@ authored at the right size from the start.
 5. Add `CompanionPose` entries to `catPosesWithArt`-style expectations in
    `multi_companion_test`, which will fail loudly until they are updated — that
    is the test doing its job.
+
+---
+
+# 6. The block, solved — how to click this Flow build
+
+The owner clicked once and the master appeared, which proved the page was fine.
+The block was in how the click was aimed.
+
+## What was actually wrong
+
+The input path was never the problem. Instrumenting the button with capture-phase
+listeners and clicking its centre showed a **complete, trusted** event sequence
+arriving on the right element:
+
+```
+pointerdown -> mousedown -> pointerup -> mouseup -> click   (isTrusted: true, x/y exact)
+```
+
+The problem was **which element** those events reached.
+
+`document.elementFromPoint` at the button's bounding-box centre returned
+`FLOW-GENERATE-ICON-BUTTON`, the **custom-element wrapper**, which carries no
+handler. A point a few pixels higher returned `MAT-ICON`, the icon **inside** the
+`<button>` — and a click there works.
+
+Two compounding details:
+
+- The wrapper and the inner button report the **same 32×32 rect at the same
+  centre**, so the bounding box cannot tell you which one is on top.
+- The control's rect **moves as the prompt box grows**. A coordinate computed from
+  an earlier rect is stale by the time the click lands. This is why the same
+  centre worked once and failed another time.
+
+## The method that works
+
+**Hit-test before clicking.** Pick a point that `elementFromPoint` confirms is the
+target or a descendant of it, and only then click.
+
+```js
+const pt = await tab.playwright.evaluate(() => {
+  const el = document.querySelector('button[aria-label="Start generation"]');
+  if (!el || el.disabled) return { error: "not clickable" };
+  const r = el.getBoundingClientRect();
+  for (const fy of [0.5, 0.4, 0.3, 0.6, 0.2]) {
+    for (const fx of [0.5, 0.4, 0.6]) {
+      const x = Math.round(r.x + r.width * fx);
+      const y = Math.round(r.y + r.height * fy);
+      const top = document.elementFromPoint(x, y);
+      if (top && (top === el || el.contains(top))) return { x, y, hit: top.tagName };
+    }
+  }
+  return { error: "no point hit-tests to the element" };
+});
+await tab.cua.click({ x: pt.x, y: pt.y });
+```
+
+Verified end to end: this submitted a generation and the prompt box cleared
+(`promptLen: 0`, button back to `disabled`).
+
+## Two more input techniques this build requires
+
+**Typing into the prompt box.** Playwright's locator path fails here (the editor
+is only 20 px tall, so the actionability check times out), `cua.click` on it does
+not focus it, and `Control+a`/Delete does not clear it. What works:
+
+```js
+await tab.playwright.evaluate(() => {
+  const e = document.querySelector(".ProseMirror");
+  e.focus();
+  const r = document.createRange();
+  r.selectNodeContents(e);
+  const s = window.getSelection();
+  s.removeAllRanges();
+  s.addRange(r);
+});
+await tab.cua.type({ text: prompt });
+```
+
+**Typing into an Angular input** (the asset search box). Assigning `.value` does
+not notify Angular; use the native setter plus an input event:
+
+```js
+const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+setter.call(input, "rabbit");
+input.dispatchEvent(new Event("input", { bubbles: true }));
+```
+
+## The lesson
+
+`getByRole` and coordinate clicks both failed, and neither reported why. The
+instrumentation did: the events were arriving, just on the wrong node. **When a
+click silently does nothing, record the events that actually land and check their
+`target` — before concluding the surface is broken.**
+
+An earlier wrong conclusion of mine is worth recording too: I searched the
+`get_visible_dom()` node list for `"generate"` and found nothing, and briefly
+believed the control was unreachable. The label is `"Start generation"` — which
+does not contain `"generate"`. A substring filter is not a search.
+
+## 7. Accepted
+
+| Action | Frame | Reference | Attempts | Tile name |
+|---|---|---|---|---|
+| master | — | none (prompt carries the silhouette) | owner clicked; 1 generation | White chibi rabbit sitting |
+| `idle` | 000 | — | — | the master |
+| `idle` | 001 | master (ingredient, UUID-verified) | 1 | Rabbit breathing idle pose |
+
+The master was checked against the code spec before use: long upright ears,
+**no whiskers**, puff tail, cream fur, dusty-pink inner ear, green sprout, seated
+on the ground line. It is unmistakably not the dog (floppy ears) and not the cat
+(triangular ears and whiskers).
+
+`idle_001` was verified against the master: identity, camera, scale and placement
+hold; only the breath differs.
+
+## 8. Remaining
+
+`idle` 002–005, then the rest of the 13-action / 49-frame contract, in the order
+of player visibility: `walk` (6) → `sit_down` (4) + `stand_up` (4) →
+`craft_work` (4) → `focus_read`/`focus_think`/`focus_write` → `celebrate` (5) →
+`tap_react` (3) + `pet_react` (3) → `sleep` (2) + `pause_rest` (2).
+
+The pipeline is ready and emits at the **512** canvas, so the rabbit is authored
+at the right size from the start.
