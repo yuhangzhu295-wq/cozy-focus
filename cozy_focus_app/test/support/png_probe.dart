@@ -134,14 +134,18 @@ PngImage decodePng(Uint8List bytes) {
   final channels = switch (colorType) {
     0 => 1, // grey
     2 => 3, // RGB
+    3 => 1, // indexed -- one palette index per pixel
     4 => 2, // grey + alpha
     6 => 4, // RGBA
     _ => throw PngFormatException(
-        'unsupported colour type $colorType (0, 2, 4, 6 only)'),
+        'unsupported colour type $colorType (0, 2, 3, 4, 6 only)'),
   };
 
-  // Walk the chunks collecting IDAT.
+  // Walk the chunks collecting IDAT, and for indexed PNGs also the palette and
+  // its transparency table.
   final idat = BytesBuilder(copy: false);
+  Uint8List? palette;
+  Uint8List? paletteAlpha;
   var offset = 8;
   while (offset + 8 <= bytes.length) {
     final length = data.getUint32(offset);
@@ -149,10 +153,19 @@ PngImage decodePng(Uint8List bytes) {
     final bodyStart = offset + 8;
     if (type == 'IDAT') {
       idat.add(Uint8List.sublistView(bytes, bodyStart, bodyStart + length));
+    } else if (type == 'PLTE') {
+      palette = Uint8List.sublistView(bytes, bodyStart, bodyStart + length);
+    } else if (type == 'tRNS') {
+      paletteAlpha =
+          Uint8List.sublistView(bytes, bodyStart, bodyStart + length);
     } else if (type == 'IEND') {
       break;
     }
     offset = bodyStart + length + 4; // + CRC
+  }
+
+  if (colorType == 3 && palette == null) {
+    throw const PngFormatException('indexed PNG has no PLTE chunk');
   }
 
   final raw = Uint8List.fromList(zlib.decode(idat.takeBytes()));
@@ -219,6 +232,21 @@ PngImage decodePng(Uint8List bytes) {
           rgba[dst + 1] = line[src + 1];
           rgba[dst + 2] = line[src + 2];
           rgba[dst + 3] = 255;
+        case 3:
+          // Expand the palette index. A tRNS entry shorter than the palette
+          // leaves the remaining entries fully opaque, which is what the PNG
+          // spec says and what an encoder relying on a default does.
+          final index = line[src];
+          final p = index * 3;
+          if (p + 2 >= palette!.length) {
+            throw PngFormatException('palette index $index is out of range');
+          }
+          rgba[dst] = palette[p];
+          rgba[dst + 1] = palette[p + 1];
+          rgba[dst + 2] = palette[p + 2];
+          rgba[dst + 3] = (paletteAlpha != null && index < paletteAlpha.length)
+              ? paletteAlpha[index]
+              : 255;
         case 4:
           final g = line[src];
           rgba[dst] = g;
@@ -240,3 +268,40 @@ PngImage decodePng(Uint8List bytes) {
 
 /// Decodes the PNG at [path].
 PngImage decodePngFile(String path) => decodePng(File(path).readAsBytesSync());
+
+/// Whether the PNG in [bytes] can express transparency.
+///
+/// True for colour type 6 (truecolour + alpha) and 4 (grey + alpha), which carry
+/// an alpha channel per pixel, and for colour type 3 (indexed) **only when a
+/// `tRNS` chunk is present**, which is how an indexed PNG carries alpha.
+///
+/// Types 0 (grey) and 2 (RGB) are always false: neither has any way to express
+/// transparency, so a frame in one of them is a rectangle rather than a
+/// character. That is the property the sprite tests actually care about, which
+/// is why they ask this rather than testing for a specific encoding.
+bool pngCarriesAlpha(Uint8List bytes) {
+  if (bytes.length < 33) return false;
+  final colorType = bytes[25];
+  if (colorType == 4 || colorType == 6) return true;
+  if (colorType != 3) return false;
+  return _hasChunk(bytes, 'tRNS');
+}
+
+/// Whether [bytes] contains a PNG chunk of the given [type].
+///
+/// Walks the chunk list rather than searching for the four bytes, so a
+/// compressed pixel stream that happens to spell `tRNS` cannot pass.
+bool _hasChunk(Uint8List bytes, String type) {
+  var offset = 8; // past the signature
+  while (offset + 8 <= bytes.length) {
+    final length = (bytes[offset] << 24) |
+        (bytes[offset + 1] << 16) |
+        (bytes[offset + 2] << 8) |
+        bytes[offset + 3];
+    final chunkType = String.fromCharCodes(bytes, offset + 4, offset + 8);
+    if (chunkType == type) return true;
+    if (chunkType == 'IEND') return false;
+    offset += 12 + length; // length + type + body + CRC
+  }
+  return false;
+}

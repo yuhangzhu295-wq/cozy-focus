@@ -6,6 +6,8 @@ import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_m
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_pose.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../support/png_probe.dart';
+
 /// Guards for the sprite asset pack.
 ///
 /// ## What these can and cannot prove
@@ -136,10 +138,9 @@ void main() {
         final manifest = CompanionActionManifestData.forCompanion(companion)!;
         for (final path in manifest.allFrames) {
           final bytes = File(path).readAsBytesSync();
-          // PNG colour type 6 is truecolour with alpha; 4 is grey+alpha.
-          final colorType = bytes[25];
-          expect(colorType, anyOf(4, 6),
-              reason: '$path is not an alpha PNG (colour type $colorType)');
+          expect(pngCarriesAlpha(bytes), isTrue,
+              reason: '$path cannot express transparency '
+                  '(colour type ${bytes[25]})');
         }
       }
     });

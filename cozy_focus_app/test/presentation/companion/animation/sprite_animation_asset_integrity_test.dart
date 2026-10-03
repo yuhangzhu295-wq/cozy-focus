@@ -43,12 +43,18 @@ void main() {
     test('every frame is a PNG carrying an alpha channel', () {
       // Without alpha the character is a rectangle, and the anchor measurement
       // below would be measuring the canvas rather than the character.
+      //
+      // The check is on transparency, not on encoding -- see `pngCarriesAlpha`.
+      // Sprites ship as indexed PNGs to keep the app's weight down (19.2 MB of
+      // frames became 3.1 MB), and an indexed PNG carries alpha through a `tRNS`
+      // chunk rather than an alpha channel per pixel.
       for (final entry in produced().entries) {
         for (final path in entry.value) {
           final bytes = File(path).readAsBytesSync();
           expect(bytes.length, greaterThan(33), reason: '$path is truncated');
-          expect(bytes[25], anyOf(4, 6),
-              reason: '$path is not an alpha PNG (colour type ${bytes[25]})');
+          expect(pngCarriesAlpha(bytes), isTrue,
+              reason: '$path cannot express transparency '
+                  '(colour type ${bytes[25]})');
         }
       }
     });
