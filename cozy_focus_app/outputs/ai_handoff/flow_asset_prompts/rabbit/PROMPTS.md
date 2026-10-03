@@ -1106,3 +1106,49 @@ removed again.
 **13 actions / 49 frames**.
 
 All three are seated-pose variations; `White chibi rabbit sitting` is the base.
+
+---
+
+# §21 — pause_rest landed: 11 actions / 43 frames
+
+## Outcome
+
+`pause_rest` is complete at **2/2**, `pingpong`, 3 fps. The rabbit ships
+**11 actions / 43 frames**.
+
+Both frames measure **730 × 587** px ink — identical boxes, with the second
+differing only in the set of the ears and a touch of body rise. That is what a
+two-frame breathing loop should look like, and identical ink boxes are a cheap
+way to confirm a "subtle variation" request was honoured rather than a whole new
+pose being invented.
+
+## Finding the reference by measurement, again
+
+`pause_rest` frame 2 needed frame 1 as its base. The library labels are
+auto-generated from the prompt and are useless for this: the accepted frame is
+called `Resting rabbit image framing`, and searching `Rabbit` returns 15 entries
+whose labels overlap heavily with the sleeping and celebrate ones.
+
+So the frame was identified by **downloading the candidates and measuring their
+ink boxes** against the frame already accepted (730 × 587), then confirming the
+attached chip's `src` contained `b531e39c` before generating. The same technique
+as §20, now the default for "attach the frame I just made".
+
+## A test that moves each time the pack grows
+
+`companion_pack_completeness_test.dart` uses one unshipped rabbit pose as its
+"missing pose returns null" example. It has now moved twice — `sleep`, then
+`rest`, now `tap_react` — because the pack keeps growing underneath it.
+
+Each move carries forward a **positive** assertion for the poses that left, so
+the example cannot quietly become a no-op. That is deliberate: the test is a
+moving target by nature, and the guard is what keeps it honest rather than
+routine.
+
+## Remaining
+
+`tap_react` (3), `pet_react` (3) — **6 frames**. Target: **13 actions / 49
+frames**.
+
+Both are seated-pose reactions; `White chibi rabbit sitting` is the base, and the
+framing-first prompt of §20 is the template.

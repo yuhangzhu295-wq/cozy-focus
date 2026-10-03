@@ -552,6 +552,18 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 6,
         ),
+        'pause_rest': CompanionActionSpec(
+          actionId: 'pause_rest',
+          frames: [
+            'assets/companions/rabbit/pause_rest_000.png',
+            'assets/companions/rabbit/pause_rest_001.png',
+          ],
+          fps: 3,
+          loopMode: SpriteLoopMode.pingPong,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 2,
+        ),
         'sit_down': CompanionActionSpec(
           actionId: 'sit_down',
           frames: [

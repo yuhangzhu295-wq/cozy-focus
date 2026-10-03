@@ -111,6 +111,21 @@
         0
       ]
     },
+    "pause_rest": {
+      "frames": [
+        "pause_rest_000.png",
+        "pause_rest_001.png"
+      ],
+      "fps": 3,
+      "loopMode": "pingpong",
+      "targetFrameCount": 2,
+      "interruptible": true,
+      "overlayBehavior": "pause",
+      "returnBehavior": "resume",
+      "reducedMotionFrames": [
+        0
+      ]
+    },
     "sit_down": {
       "frames": [
         "sit_down_000.png",

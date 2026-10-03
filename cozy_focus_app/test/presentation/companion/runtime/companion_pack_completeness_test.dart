@@ -172,21 +172,25 @@ void main() {
       expect(idle, isNotNull, reason: 'rabbit/idle ships and must resolve');
       expect(idle!.frames, hasLength(6));
 
-      // `sleep` used to be the example of an unshipped rabbit pose; it now
-      // ships, so `rest` carries the assertion instead. The point is unchanged:
-      // a pose the rabbit does not have must fall back to the procedural
-      // silhouette rather than borrowing another companion's frames.
-      expect(
-          CompanionSpriteArt.resolveFor('rabbit', CompanionPose.rest), isNull);
-      expect(
-          CompanionSpriteArt.resolveFor('dog', CompanionPose.rest), isNotNull,
-          reason: 'the dog does ship rest, so the null above is the rabbit');
-
-      // And the pose that used to stand here now really does resolve, so the
-      // swap above cannot quietly become a no-op if `sleep` is ever removed.
-      expect(CompanionSpriteArt.resolveFor('rabbit', CompanionPose.sleep),
+      // The unshipped-pose example keeps moving as the pack grows: `sleep`,
+      // then `rest`, and now `tap_react`. The point is unchanged — a pose the
+      // rabbit does not have must fall back to the procedural silhouette rather
+      // than borrowing another companion's frames — and the positive assertions
+      // below stop the earlier examples quietly becoming no-ops.
+      expect(CompanionSpriteArt.resolveFor('rabbit', CompanionPose.tapReact),
+          isNull);
+      expect(CompanionSpriteArt.resolveFor('dog', CompanionPose.tapReact),
           isNotNull,
-          reason: 'rabbit/sleep was imported and must resolve');
+          reason:
+              'the dog does ship tap_react, so the null above is the rabbit');
+
+      for (final pose in const [CompanionPose.sleep, CompanionPose.rest]) {
+        expect(
+          CompanionSpriteArt.resolveFor('rabbit', pose),
+          isNotNull,
+          reason: 'rabbit/${pose.id} was imported and must resolve',
+        );
+      }
     });
 
     test('the dog pack ships every requested action', () {
