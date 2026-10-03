@@ -450,3 +450,58 @@ growing, and it still fails if an action is ever declared without art.
 `focus_think` (3) / `focus_write` (4) → `celebrate` (5) → `tap_react` (3) +
 `pet_react` (3) → `sleep` (2) + `pause_rest` (2).
 Target: the dog and cat shape, **13 actions / 49 frames**.
+
+---
+
+# 11. Session 4 — sit_down
+
+## Accepted
+
+| Frame | Reference | Attempts |
+|---|---|---|
+| `sit_down_000` | standing master | 2 |
+| `sit_down_001` | standing master | 1 |
+| `sit_down_002` | standing master | 1 |
+| `sit_down_003` | seated master (`39c6616e…`) | 1 |
+
+Frame 4 uses the **seated** master, not frame 3, because the animation hands over
+from `sit_down` to `idle` — the last transition frame must match the pose it
+hands over to.
+
+## A sequence that ran backwards, caught by looking at it
+
+The first `sit_down_000` came back **seated**, not standing, even though the
+standing master was attached and verified and the prompt asked for a standing
+rabbit. `sit_down_001` then came back standing. The pair read as a sit *up*.
+
+The contact sheet is what caught it: the frames were in the wrong order, and at
+thumbnail size that is easy to misread as "fine". Rendering frames 0 and 1 at
+full size made it unambiguous — frame 0 was seated with its front paws together,
+frame 1 was up on four straight legs.
+
+Regenerated frame 0 with the standing requirement stated twice, once as its own
+CRITICAL paragraph:
+
+```
+CRITICAL: the rabbit must be STANDING on all four legs, exactly as in the
+attached reference. It must NOT be sitting.
+```
+
+and rephrased the action so it is explicitly a *near-neighbour of the reference*
+rather than a description of a lower pose. The regenerated frame is standing,
+and the sequence now runs standing → lowering → settled → seated.
+
+**The lesson:** a verified reference does not guarantee the instructed pose. The
+model can return the right character in the wrong posture, and only looking at
+the frames in order catches it.
+
+## Imported
+
+**rabbit: 3 actions / 16 frames** — `idle` 6/6, `walk` 6/6, `sit_down` 4/4.
+
+## Remaining
+
+`stand_up` (4) → `craft_work` (4) → `focus_read` (3) / `focus_think` (3) /
+`focus_write` (4) → `celebrate` (5) → `tap_react` (3) + `pet_react` (3) →
+`sleep` (2) + `pause_rest` (2).
+Target: the dog and cat shape, **13 actions / 49 frames**.
