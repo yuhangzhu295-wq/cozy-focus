@@ -61,3 +61,6 @@ linux/flutter/generated_plugins.cmake
 
 # Dart-generated source files ARE committed (they are the build artifact)
 # Do NOT add *.g.dart here -- Drift DAO generated files must stay tracked
+
+# Python bytecode from the tools/ scripts
+__pycache__/
