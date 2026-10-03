@@ -381,8 +381,15 @@ abstract final class FurnitureActionResolver {
   ///
   /// Deliberately deterministic: it walks the anchors in id order and takes the
   /// first unlocked idle action. A random pick here would make the companion
-  /// untestable for no gain — the *variety* the brief wants comes from the
-  /// dwell expiring and the decision being re-made, not from the pick itself.
+  /// untestable for no gain.
+  ///
+  /// Note what "deterministic" costs, because it is easy to assume otherwise:
+  /// re-making the decision returns the *same* answer, so the dwell expiring
+  /// does not by itself produce variety. What varies across a day is the band
+  /// — see `daily_routine.dart` — and this fallback is what runs when the
+  /// routine has nothing to say. The device confirmed this: a companion left in
+  /// the room repeated one action for as long as the band held. See
+  /// `P11_DAILY_LIFE_DEVICE_VERIFICATION.md` §3.
   static RoomDecision _idleDecision(RoomDecisionInput input) {
     final anchors = input.anchors.values.toList()
       ..sort((a, b) => a.roomItemId.compareTo(b.roomItemId));

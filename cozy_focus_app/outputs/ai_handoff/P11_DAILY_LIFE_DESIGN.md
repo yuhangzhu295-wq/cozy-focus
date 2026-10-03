@@ -168,3 +168,27 @@ a branch insertion rather than a table edit and a branch insertion at once.
 - **Not a second bedtime.** `lateNight` is left to the rule that already owns it.
 - **Not a business change.** It cannot reach the reward economy, and a test
   proves it rather than a comment claiming it.
+
+---
+
+## 5. What the device showed
+
+Verified at runtime on the emulator, not only in tests. The full record is
+`P11_DAILY_LIFE_DEVICE_VERIFICATION.md`; the two findings that changed how this
+feature should be described are:
+
+1. **It works, and the vitals prove which action ran.** At 09:58 with only a
+   sofa, the room seated the companion and the vitals read `75 / 84 / 60` —
+   exactly the `sofa/sit` effect applied to the defaults. `sofa/sit` is not
+   `idle`-triggered, so no branch other than the routine could have selected it.
+
+2. **It is a preference list, not a scheduler, and that is visible.** The
+   companion repeated the same action for as long as the band held, and because
+   `sofa/sit` restores energy the vitals saturated at `99 / 100 / 60`. The
+   variety in a day comes from the **band changing** — four times between 05:00
+   and 23:00 — not from the dwell expiring. An earlier comment in
+   `_idleDecision` claimed otherwise and has been corrected; the device is what
+   settled it.
+
+Neither finding is a defect, but both are consequences a reader should not have
+to discover by leaving the app open for an hour, so they are written down here.
