@@ -1152,3 +1152,44 @@ frames**.
 
 Both are seated-pose reactions; `White chibi rabbit sitting` is the base, and the
 framing-first prompt of §20 is the template.
+
+---
+
+# §22 — tap_react landed: 12 actions / 46 frames
+
+## Outcome
+
+`tap_react` is complete at **3/3**, `once`, 8 fps. The rabbit ships **12 actions /
+46 frames**.
+
+The three frames read as a reaction: startled (ears snapped up, eyes wide, small
+"oh") → a taller bob with a paw lifted → settled and pleased. Ink widths are
+identical at 461 px across all three, so the framing held; heights rise and fall
+(873 → 926 → 871), which is the bob doing its job.
+
+Frames 2 and 3 were generated from the frame before them rather than from the
+seated base, so the reaction stays continuous.
+
+## A wrong assertion caught before it shipped
+
+Moving the unshipped-pose example to `greeting`, the first version asserted
+`resolveFor('dog', greeting)` is **not null**, on the assumption that the dog
+covers every pose. It does not — the dog's thirteen actions are `idle`, `walk`,
+`stand_up`, `sit_down`, `focus_read`, `focus_write`, `focus_think`,
+`pause_rest`, `tap_react`, `pet_react`, `craft_work`, `celebrate`, `sleep`, and
+`greeting` is not among them. That assertion would have failed.
+
+The cross-check was replaced with the honest one: the same lookup for poses the
+rabbit *does* ship must return a spec, which proves the null belongs to the
+rabbit rather than to a broken resolver — and needs no assumption about the dog.
+
+## A churn note
+
+The unshipped-pose example has now moved three times in three batches. It is
+settled on `greeting` because that belongs to the overlay vocabulary rather than
+the behaviour pack, so it should stay unshipped once the pack is complete.
+
+## Remaining
+
+`pet_react` (3) — **3 frames**. Target: **13 actions / 49 frames**, matching the
+dog and the cat exactly.

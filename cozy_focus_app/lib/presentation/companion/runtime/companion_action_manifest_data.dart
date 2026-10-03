@@ -604,6 +604,19 @@ abstract final class CompanionActionManifestData {
           reducedMotionFrames: [0],
           targetFrameCount: 4,
         ),
+        'tap_react': CompanionActionSpec(
+          actionId: 'tap_react',
+          frames: [
+            'assets/companions/rabbit/tap_react_000.png',
+            'assets/companions/rabbit/tap_react_001.png',
+            'assets/companions/rabbit/tap_react_002.png',
+          ],
+          fps: 8,
+          loopMode: SpriteLoopMode.once,
+          interruptible: true,
+          reducedMotionFrames: [0],
+          targetFrameCount: 3,
+        ),
         'walk': CompanionActionSpec(
           actionId: 'walk',
           frames: [

@@ -172,19 +172,24 @@ void main() {
       expect(idle, isNotNull, reason: 'rabbit/idle ships and must resolve');
       expect(idle!.frames, hasLength(6));
 
-      // The unshipped-pose example keeps moving as the pack grows: `sleep`,
-      // then `rest`, and now `tap_react`. The point is unchanged — a pose the
-      // rabbit does not have must fall back to the procedural silhouette rather
-      // than borrowing another companion's frames — and the positive assertions
-      // below stop the earlier examples quietly becoming no-ops.
-      expect(CompanionSpriteArt.resolveFor('rabbit', CompanionPose.tapReact),
+      // The unshipped-pose example has moved three times as the pack grew:
+      // `sleep`, then `rest`, then `tap_react`. It now uses `greeting`, which
+      // belongs to the overlay vocabulary rather than the behaviour pack, so it
+      // should stay unshipped and stop this test churning every batch.
+      //
+      // Note the null is *the rabbit's*, and the assertions below are what prove
+      // it rather than a broken resolver: the same lookup for poses the rabbit
+      // does ship returns a spec. An earlier version of this compared against
+      // the dog, which would have been wrong here — the dog's thirteen actions
+      // do not include `greeting` either.
+      expect(CompanionSpriteArt.resolveFor('rabbit', CompanionPose.greeting),
           isNull);
-      expect(CompanionSpriteArt.resolveFor('dog', CompanionPose.tapReact),
-          isNotNull,
-          reason:
-              'the dog does ship tap_react, so the null above is the rabbit');
 
-      for (final pose in const [CompanionPose.sleep, CompanionPose.rest]) {
+      for (final pose in const [
+        CompanionPose.sleep,
+        CompanionPose.rest,
+        CompanionPose.tapReact,
+      ]) {
         expect(
           CompanionSpriteArt.resolveFor('rabbit', pose),
           isNotNull,
