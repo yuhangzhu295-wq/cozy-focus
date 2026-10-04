@@ -142,6 +142,13 @@ the art reads well. The reports state it as a field:
 The evidence a human would review: `p16_walk_gait.png` (P17's four-frame gait),
 the `motion/idle` and `motion_gate/walk` frame sets, and the running app.
 
+Device screenshots from this phase live in
+`outputs/ai_handoff/android_v1_runtime/` alongside the other phase evidence:
+`p21_home.png`, `p21_room.png`, `p21_after_tap.png`, `p21_sofa_panel.png` and
+`p21_rug_panel.png`. The two panel shots are also the visual record of the
+open `BEHAVIOR_AUTHORITY` finding — they show the room naming an action the
+avatar does not necessarily present (see `P27_FINAL_RC_GATE.md` §3, P25 D5).
+
 ---
 
 ## 5. Gates
