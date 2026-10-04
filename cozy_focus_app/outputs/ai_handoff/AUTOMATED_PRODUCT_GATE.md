@@ -1,6 +1,6 @@
 # Automated product gate
 
-Generated 2026-10-04 14:53:15 at `3e6ef82a`. Local equals remote: **YES**.
+Generated 2026-10-04 14:58:36 at `ce484a95`. Local equals remote: **YES**.
 
 | Gate | Status | Evidence |
 |---|---|---|
@@ -12,8 +12,8 @@ Generated 2026-10-04 14:53:15 at `3e6ef82a`. Local equals remote: **YES**.
 | `MIGRATION` | **PASS** | 15/15 passed |
 | `LIFECYCLE` | **PASS** | 52/52 passed |
 | `ASSET_GATES` | **PASS** | 75/75 passed |
-| `APK` | **NOT_TESTED** | --skip-builds was passed |
-| `AAB` | **NOT_TESTED** | --skip-builds was passed |
+| `APK` | **PASS** | 29.5 MB (budget 34 MB) |
+| `AAB` | **PASS** | 48.1 MB (budget 55 MB) |
 | `DIFF_CHECK` | **PASS** | no whitespace errors |
 | `RELEASE_SIGNING` | **BLOCKED** | RELEASE_SIGNING = NOT_RECOVERED: android/key.properties is absent, and no keystore was invented. The build switches over with no code change the moment it appears. |
 | `LAUNCHER_ICON` | **BLOCKED** | still the stock Flutter logo (dominant colours 0,0,0 / 84,197,248 / 1,87,155); no approved artwork exists, so none was invented |
@@ -25,11 +25,10 @@ Generated 2026-10-04 14:53:15 at `3e6ef82a`. Local equals remote: **YES**.
 
 ## Counts
 
-- **PASS**: 9
+- **PASS**: 11
 - **FAIL**: 1
 - **BLOCKED**: 3
 - **DEFERRED**: 3
-- **NOT_TESTED**: 2
 
 ---
 
