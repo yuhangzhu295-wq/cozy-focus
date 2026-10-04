@@ -151,6 +151,32 @@ no sprite sequence in any pack and renders through the Mochi rig, exactly as it
 did before this change. Nothing regressed, and a dedicated sustained-sit sprite
 remains an art task.
 
+### Seen on a device, and what was not
+
+Run on the Android emulator (`GoodnightPixel7Api34`, API 34) with the debug QA
+fixture, which seeds through the real repositories. Screenshots are in
+`outputs/ai_handoff/android_v1_runtime/`:
+
+| Shot | What it shows |
+|---|---|
+| `d5_room_two_anchors_sit.png` | rug + sofa placed; the cat is seated on the cushion and the status reads 正在坐一会儿 |
+| `d5_room_craft_at_desk.png` | all five items placed; the cat is at the desk and the status reads 正在做点小东西 |
+| `d5_room_craft_frame_b.png`, `d5_room_craft_frame_c.png` | the same commitment, frames apart — the craft sequence is playing, not frozen |
+
+**What this shows:** the action name in the status bar and the pose the avatar
+draws agree. That is the D5 property, observed rather than inferred.
+
+**What it does not show, stated plainly.** The furniture *use panel* — where the
+player picks 坐下 / 休息 / 打个盹 — did not open under adb-synthesised input, on
+any of the five items. The panel is not at fault: `p21_sofa_panel.png`, captured
+earlier with a real touch, shows it working and listing all three actions. The
+likely cause is that `input tap` reaches Flutter as a pan, which the room page
+uses for dragging furniture. **So "pick 休息 and watch the pose change" was not
+exercised on the device in this pass.** The pose is proven to follow the
+committed action by
+`test/presentation/companion/runtime/room_committed_action_test.dart`, but a test
+is not a finger and the difference is worth keeping.
+
 ---
 
 ## 4. What the program proved, and what it did not
