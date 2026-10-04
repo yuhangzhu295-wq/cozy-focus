@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cozy_focus_app/core/auth/current_user.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart'
     hide CraftJob, CraftRecipe, InventoryItem, RoomItem;
-import 'package:cozy_focus_app/domain/models/craft_models.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/companion/collection/collection_acquisition.dart';
@@ -187,17 +186,11 @@ void main() {
     record('图鉴 / Collection', '回到图鉴', '显示已拥有', atOwned.statusLine, '去房间摆放');
 
     // ── 7. place it, through the repository the room page writes with ─────
-    await container.read(craftRepositoryProvider).placeRoomItem(RoomItem(
-          id: 'room-$_targetItemId',
-          userId: localMvpUserId,
-          itemId: _targetItemId,
-          positionX: 0.4,
-          positionY: 0.6,
-          scale: 1.0,
-          zIndex: 1,
-          isVisible: true,
-          placedAt: clock.now(),
-        ));
+    // Through the controller, which is what the room page calls. Writing the
+    // row straight through the repository would skip the availability check
+    // (`placeRoomItemIfAvailable` verifies the inventory inside a transaction),
+    // so a broken check would still leave this test green.
+    await craft.placeItem(_targetItemId, 0.4, 0.6);
     await craft.loadAll();
     final atPlaced = collectionVm();
     expect(atPlaced.placedCount, 1);
@@ -207,11 +200,17 @@ void main() {
 
     // ── 8. the player asks the furniture for an action ────────────────────
     final bedAction = FurnitureCatalog.forId(_targetItemId)!.actions.first;
+    // The row id comes from the placement, not from a literal: the controller
+    // generates it, and a request naming a row that does not exist is refused.
+    final placedRow = container
+        .read(craftControllerProvider)
+        .roomItems
+        .firstWhere((r) => r.itemId == _targetItemId);
     sim.debugAdvance(const Duration(seconds: 60));
     sim.requestAction(
       itemId: _targetItemId,
       actionId: bedAction.id,
-      roomItemId: 'room-$_targetItemId',
+      roomItemId: placedRow.id,
     );
     final asked = container.read(roomSimulationProvider);
     expect(asked.cause, RoomDecisionCause.playerRequest,

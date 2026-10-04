@@ -238,6 +238,28 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
     required String actionId,
     required String roomItemId,
   }) {
+    // Asking for what the companion is already doing is not a new decision.
+    //
+    // `request` is allowed to preempt the live commitment — that is how the
+    // player changes their mind — so without this a second tap of the same chip
+    // ran the whole decision again and applied the effect a second time. The
+    // bed's nap is +34 energy, so one accidental double tap took the companion
+    // from depleted to capped. Re-tapping the action that is already running is
+    // the same instruction, not a second one.
+    final live = state.activity;
+    final alreadyDoingIt = state.playerCommitmentItemId == itemId &&
+        live.actionId == actionId &&
+        live.endsAt > state.elapsedSinceStart;
+    if (alreadyDoingIt) {
+      // Acknowledge the tap without deciding again: the commitment stands, its
+      // dwell is untouched, and the effect is not applied a second time. The
+      // cause is set because it is true — the player did ask for this — and
+      // leaving it as whatever the routine said would make the room deny a
+      // request it just honoured.
+      state = state.copyWith(cause: RoomDecisionCause.playerRequest);
+      return;
+    }
+
     state = state.copyWith(
       request: PlayerRequest(
         itemId: itemId,

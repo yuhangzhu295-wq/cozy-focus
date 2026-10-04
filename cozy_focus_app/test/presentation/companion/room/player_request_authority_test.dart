@@ -214,6 +214,26 @@ void main() {
               'afterRequest=$afterRequest after=${state().vitals.energy}');
     });
 
+    test('re-requesting the same action does not apply its effect twice',
+        () async {
+      // The review caught this: `request` is allowed to preempt the live
+      // commitment, so a second tap of the same chip ran the decision again and
+      // applied the effect again. The bed's nap is +34 energy, so one accidental
+      // double tap took the companion from depleted to capped.
+      await place('sofa');
+      sim().requestAction(
+          itemId: 'sofa', actionId: 'sit', roomItemId: 'room-sofa');
+      final afterFirst = state().vitals.energy;
+
+      sim().requestAction(
+          itemId: 'sofa', actionId: 'sit', roomItemId: 'room-sofa');
+
+      expect(state().vitals.energy, afterFirst,
+          reason: 'asking again for what is already running is the same '
+              'instruction, not a second one');
+      expect(state().activity.actionId, 'sit');
+    });
+
     test('once the dwell really expires the loop may choose again', () async {
       await place('sofa');
       sim().requestAction(
