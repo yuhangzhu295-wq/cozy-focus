@@ -1,10 +1,11 @@
 {
-  "generated_at": "2026-10-04 14:38:46",
-  "head": "c8d8b89fbaee2c31378cb2737a37587e55c0f559",
-  "remote_head": "c8d8b89fbaee2c31378cb2737a37587e55c0f559",
+  "generated_at": "2026-10-04 14:53:15",
+  "head": "3e6ef82ada039b70103e656c1e4401e2cdf17085",
+  "remote_head": "3e6ef82ada039b70103e656c1e4401e2cdf17085",
   "local_equals_remote": true,
   "counts": {
-    "PASS": 11,
+    "PASS": 9,
+    "NOT_TESTED": 2,
     "BLOCKED": 3,
     "DEFERRED": 3,
     "FAIL": 1
@@ -13,62 +14,60 @@
     {
       "gate": "FORMAT",
       "status": "PASS",
-      "evidence": "268 files, 0 changed",
+      "evidence": "269 files, 0 changed",
       "seconds": 2.7
     },
     {
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 11.0
+      "seconds": 8.2
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
-      "evidence": "1190/1190 passed",
-      "seconds": 72.3
+      "evidence": "1196/1196 passed",
+      "seconds": 73.6
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "20/20 passed",
-      "seconds": 8.5
+      "seconds": 9.5
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 3.6
+      "seconds": 3.9
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "15/15 passed",
-      "seconds": 6.7
+      "seconds": 7.7
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
-      "evidence": "46/46 passed",
-      "seconds": 8.0
+      "evidence": "52/52 passed",
+      "seconds": 9.3
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 8.1
+      "seconds": 8.3
     },
     {
       "gate": "APK",
-      "status": "PASS",
-      "evidence": "29.5 MB (budget 34 MB)",
-      "seconds": 11.3
+      "status": "NOT_TESTED",
+      "evidence": "--skip-builds was passed"
     },
     {
       "gate": "AAB",
-      "status": "PASS",
-      "evidence": "48.1 MB (budget 55 MB)",
-      "seconds": 7.6
+      "status": "NOT_TESTED",
+      "evidence": "--skip-builds was passed"
     },
     {
       "gate": "DIFF_CHECK",
@@ -109,8 +108,8 @@
     {
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "FAIL",
-      "evidence": "BEHAVIOR_AUTHORITY_COUNT = 2 (gate 1): the room runs two behaviour decisions that can disagree. Open pending the P25 D5 decision - does tapping furniture choose the action or only the destination. Fixing it before that answer would be fixing it the wrong way.",
-      "seconds": 0.0
+      "evidence": "BEHAVIOR_AUTHORITY_COUNT=2 (measured): the room can commit an action it cannot show on sofa,desk,bookshelf. The presentation layer has a second, independent say in what the companion does. Open pending the P25 D5 decision - does tapping furniture choose the action or only the destination. Fixing it before that answer would be fixing it the wrong way.",
+      "seconds": 3.5
     },
     {
       "gate": "FLOW_GENERATION",
@@ -119,5 +118,5 @@
       "seconds": 0.0
     }
   ],
-  "note": "Every gate shells out to the command that already exists; none re-implements a check. BLOCKED is never reported as PASS."
+  "note": "Gates that can be re-run shell out to the command that already exists; none re-implements a check. The gates that report a standing owner or external state rather than a measurement (RELEASE_SIGNING, LAUNCHER_ICON, OWNER_VISUAL_GATE, DEVICE_MATRIX, PRODUCT_DECISIONS, FLOW_GENERATION) say so in their own evidence instead of pretending to have measured. BLOCKED is never reported as PASS."
 }

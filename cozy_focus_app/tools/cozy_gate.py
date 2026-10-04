@@ -200,12 +200,38 @@ def gate_product_decisions():
 
 
 def gate_behavior_authority():
-    """P19's gate still fails, and this reports it rather than hiding it."""
-    return FAIL, (
-        "BEHAVIOR_AUTHORITY_COUNT = 2 (gate 1): the room runs two behaviour "
-        "decisions that can disagree. Open pending the P25 D5 decision - does "
-        "tapping furniture choose the action or only the destination. Fixing it "
-        "before that answer would be fixing it the wrong way.")
+    """Runs the measurement instead of reciting its result.
+
+    P19 recorded the count from a one-off reading of the code, and this gate
+    then repeated that number as a literal for several phases. A gate that
+    recites a finding it never re-measures cannot notice the day the finding
+    stops being true - in either direction. It now runs the measurement in
+    `test/architecture/behavior_authority_test.dart`, which derives the count
+    from the catalog, and decides from the number printed.
+    """
+    ok, out = run("flutter test --no-pub "
+                  "test/architecture/behavior_authority_test.dart")
+    m = re.search(r"BEHAVIOR_AUTHORITY_COUNT=(\d+)", out)
+    if not m:
+        # The measurement did not report. That is not a pass: a gate whose input
+        # is missing must say so rather than repeat the last number it remembers.
+        return FAIL, (
+            "the measurement reported no count, so this gate has nothing to "
+            "decide from: " + tail(out))
+    count = int(m.group(1))
+    items = re.search(r"BEHAVIOR_AUTHORITY_AMBIGUOUS_ITEMS=(\S*)", out)
+    ambiguous = items.group(1) if items else "?"
+    if count > 1:
+        return FAIL, (
+            f"BEHAVIOR_AUTHORITY_COUNT={count} (measured): the room can commit "
+            f"an action it cannot show on {ambiguous or 'no item'}. The "
+            "presentation layer has a second, independent say in what the "
+            "companion does. Open pending the P25 D5 decision - does tapping "
+            "furniture choose the action or only the destination. Fixing it "
+            "before that answer would be fixing it the wrong way.")
+    return PASS, (
+        f"BEHAVIOR_AUTHORITY_COUNT={count} (measured): the presented posture is "
+        "determined by the committed action.")
 
 
 def gate_flow_video():
@@ -287,8 +313,13 @@ def main():
         "counts": counts,
         "gates": results,
         "note": (
-            "Every gate shells out to the command that already exists; none "
-            "re-implements a check. BLOCKED is never reported as PASS."
+            "Gates that can be re-run shell out to the command that already "
+            "exists; none re-implements a check. The gates that report a "
+            "standing owner or external state rather than a measurement "
+            "(RELEASE_SIGNING, LAUNCHER_ICON, OWNER_VISUAL_GATE, DEVICE_MATRIX, "
+            "PRODUCT_DECISIONS, FLOW_GENERATION) say so in their own evidence "
+            "instead of pretending to have measured. BLOCKED is never reported "
+            "as PASS."
         ),
     }
     os.makedirs(OUT_DIR, exist_ok=True)

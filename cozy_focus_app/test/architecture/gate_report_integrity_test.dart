@@ -102,4 +102,44 @@ void main() {
         reason: 'a gate report without the revision it describes cannot be '
             'acted on');
   });
+
+  test('a gate that can be measured says it measured', () {
+    // The specific lie this report told for several phases: BEHAVIOR_AUTHORITY
+    // returned `FAIL` with a hard-coded count, so the gate could never notice
+    // the day the count changed. It now runs
+    // `test/architecture/behavior_authority_test.dart` and reports the number
+    // that measurement printed.
+    //
+    // The word "measured" is the marker. It is not decoration: it is the claim
+    // that a number was derived at run time rather than remembered, and a
+    // future edit that goes back to a literal has to delete the word to do it.
+    final byName = {
+      for (final g in gates) (g as Map)['gate'] as String: g,
+    };
+    final evidence = byName['BEHAVIOR_AUTHORITY']!['evidence'] as String;
+    expect(evidence, contains('measured'),
+        reason: 'BEHAVIOR_AUTHORITY must report a measured count, not a '
+            'remembered one: $evidence');
+    expect(evidence, contains('BEHAVIOR_AUTHORITY_COUNT='),
+        reason: 'the evidence must name the count it decided from: $evidence');
+  });
+
+  test('a standing gate does not claim to have measured anything', () {
+    // The other half of the same honesty rule. These gates report an owner or
+    // external state; they cannot be re-run and must not imply otherwise.
+    final byName = {
+      for (final g in gates) (g as Map)['gate'] as String: g,
+    };
+    for (final name in const [
+      'OWNER_VISUAL_GATE',
+      'DEVICE_MATRIX',
+      'PRODUCT_DECISIONS',
+      'FLOW_GENERATION',
+    ]) {
+      final evidence = byName[name]!['evidence'] as String;
+      expect(evidence, isNot(contains('measured')),
+          reason: '$name reports a standing state, so it must not claim a '
+              'measurement it did not take: $evidence');
+    }
+  });
 }
