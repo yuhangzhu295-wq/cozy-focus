@@ -89,6 +89,11 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
       }
     }
+    // All attempts failed. Say so rather than abandoning the directory in
+    // silence -- on a machine where something holds the handle this would
+    // otherwise accumulate temp directories with no signal at all.
+    // ignore: avoid_print
+    print('WARNING: could not remove ${selectionDir.path}; leaving it behind');
   });
 
   /// A container over the same database — a restart, not a reset.
@@ -236,13 +241,20 @@ void main() {
       // ── 20. restart ──────────────────────────────────────────────────────
       final after = restart();
       addTearDown(after.dispose);
-      expect(
-          await after.read(companionSelectionProvider.notifier).select(
-                CompanionId.rabbit,
-              ),
-          isTrue);
-      expect(after.read(companionSelectionProvider), CompanionId.rabbit,
-          reason: 'the chosen companion survives a restart');
+      // Read the persisted selection back from the file the app would read on
+      // the next launch, **without selecting anything first**.
+      //
+      // Selecting would defeat the point twice over: `CompanionSelection.select`
+      // writes the value before the assertion reads it, and it short-circuits on
+      // an unchanged state — so the assertion would observe its own write rather
+      // than what survived the restart, and a regression in which the first
+      // container's `write()` silently failed would leave it green.
+      final persisted = await FileCompanionSelectionStore(
+        directoryOverride: selectionDir,
+      ).read();
+      expect(persisted, CompanionId.rabbit,
+          reason: 'the chosen companion must survive a restart, read back from '
+              'the file rather than re-selected');
       expect(await db.craftDao.findRoomItems('default_user'), hasLength(1));
       expect((await db.petDao.findProgress(pet.id))!.experiencePoints, 150);
       expect(await db.petDao.findMemories(pet.id), hasLength(2));
