@@ -188,6 +188,19 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
 
   RoomSimulationController(this._ref) : super(RoomSimulationState.initial);
 
+  /// Whether the decision loop narrates itself to the console.
+  ///
+  /// P28 left a device symptom that survived four code-level fixes: a player's
+  /// 休息 gave way after about five seconds against an eighteen-second dwell,
+  /// with no exception in logcat. `RoomDecisionTrace` records committed
+  /// decisions but not the evaluations that *declined*, nor the raw clock gap —
+  /// which is precisely the gap that leaves the five seconds unexplained. These
+  /// lines make the replacement readable instead of guessed at, and `kDebugMode`
+  /// keeps them out of a release build entirely.
+  static void _diag(String message) {
+    if (kDebugMode) debugPrint('P28TRACE|$message');
+  }
+
   /// How much of a wall-clock gap a tick is allowed to credit.
   ///
   /// Pure so the policy can be read and tested on its own. `_tick` and
@@ -337,6 +350,9 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
     final now = DateTime.now();
     final raw = _lastTick == null ? tickInterval : now.difference(_lastTick!);
     final elapsed = creditedFor(raw);
+    _diag(
+        'tick raw=${raw.inMilliseconds}ms credited=${elapsed.inMilliseconds}ms '
+        'elapsed=${(state.elapsedSinceStart + elapsed).inMilliseconds}ms');
     _lastTick = now;
     state = state.copyWith(
       vitals: state.vitals.afterElapsed(elapsed),
@@ -364,8 +380,16 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
     final committed = state.activity;
     final owesDwell = committed.endsAt > state.elapsedSinceStart;
 
+    _diag('eval via=$via force=$force owesDwell=$owesDwell '
+        'committed=${committed.actionId ?? '-'} '
+        'remaining=${(committed.endsAt - state.elapsedSinceStart).inMilliseconds}ms '
+        'commitment=${state.playerCommitmentRoomItemId ?? '-'}');
+
     // The loop's own tick never interrupts a commitment.
-    if (!force && owesDwell) return;
+    if (!force && owesDwell) {
+      _diag('  declined: dwell holds');
+      return;
+    }
 
     final craft = _ref.read(craftControllerProvider);
     final home = _ref.read(homeControllerProvider);
@@ -395,6 +419,7 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
           state.playerCommitmentRoomItemId!,
           state.playerCommitmentItemId!,
         )) {
+      _diag('  declined: player commitment holds');
       return;
     }
     final CompanionId companionId =
@@ -439,6 +464,10 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
     final applied = decision.effect.isNeutral
         ? state.vitals
         : state.vitals.copyWithEffect(decision.effect);
+
+    _diag('  commit cause=${decision.cause.id} action=${decision.actionId} '
+        'anchor=${decision.anchorId} room=${decision.roomItemId} '
+        'endsAt=${nextActivity.endsAt.inMilliseconds}ms');
 
     _record(RoomDecisionTrace(
       at: state.elapsedSinceStart,
