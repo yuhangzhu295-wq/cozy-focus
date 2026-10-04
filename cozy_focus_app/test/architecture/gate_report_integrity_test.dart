@@ -83,16 +83,28 @@ void main() {
     }
   });
 
-  test('a failing gate is reported as failing, not omitted', () {
-    // P19's gate fails and stays in the report. A report that dropped its
-    // failures would look better and mean less.
+  test('the behaviour-authority gate is present and reports its status', () {
+    // This gate was `FAIL` from P19 until D5 was answered, and this test used to
+    // assert that literal — so greening it required editing this test on
+    // purpose rather than the report changing quietly. That is what happened:
+    // P25 D5 decided the room is action-authoritative, the presentation now
+    // presents the committed action, and the measured count fell from 2 to 1.
+    //
+    // It asserts the gate is *present* rather than pinning a status, because
+    // what this file exists to protect is that the report never drops or
+    // misreports a gate — the verdict itself belongs to the measurement, which
+    // `behavior_authority_test.dart` computes.
     final byName = {
       for (final g in gates) (g as Map)['gate'] as String: g,
     };
     expect(byName['BEHAVIOR_AUTHORITY'], isNotNull,
-        reason: 'the failing architecture gate must not be dropped from the '
-            'report to make it look cleaner');
-    expect(byName['BEHAVIOR_AUTHORITY']!['status'], 'FAIL');
+        reason: 'the architecture gate must not be dropped from the report to '
+            'make it look cleaner');
+    expect(
+      ['PASS', 'FAIL'],
+      contains(byName['BEHAVIOR_AUTHORITY']!['status']),
+      reason: 'this gate is measured, so it is either passing or failing',
+    );
   });
 
   test('the report states whether local matches remote', () {

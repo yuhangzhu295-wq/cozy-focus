@@ -65,23 +65,45 @@ one.
 
 **The decision:** how long a session has to be to be memorable. One number.
 
-### D5 — What "use furniture" decides · `PRODUCT_DECISION_REQUIRED` · **the highest-value item**
+### D5 — What "use furniture" decides · **DECIDED — the action**
 
-**Verified today:** the room runs **two behaviour decisions that can disagree**.
-`FurnitureActionResolver` picks the activity — anchor, action and
-`companionAction` — and `room_page.dart:587` passes only the anchor's **role** to
-`CompanionAvatar`, so the chosen action never reaches the renderer while the label
-names it. No pack ships any `room_*` action, so those resolve through a documented
-`semanticFallback` chain: a desk `craft` presents `focus_write` art under a label
-reading 正在做点小东西.
+**Was:** the room ran **two behaviour decisions that could disagree**.
+`FurnitureActionResolver` picked the activity — anchor, action and
+`companionAction` — and `room_page.dart` passed only the anchor's **role** to
+`CompanionAvatar`, so the chosen action never reached the renderer while the
+label named it. The sofa's 坐下 (+4 精神) and 休息 (+10 精神) were two buttons
+with different effects and identical on-screen behaviour.
 
-**The decision:** does tapping furniture choose **the action**, or only **where
-the companion goes**? The UI and catalog describe the first; the avatar path
-effectively does the second.
+**The decision:** *does tapping furniture choose the action, or only where the
+companion goes?* **The owner chose the action.** Tapping furniture chooses what
+the companion does; the panel's label is a promise the avatar must keep.
 
-**Why this gates other work:** the answer determines the direction of any merge
-between the two deciders. Fixing it the wrong way would be worse than leaving it —
-which is why P19 reported it as `FAIL` rather than repairing it.
+**Implemented.** The room is now **action-authoritative**:
+
+- `CompanionAvatar` takes a `companionAction` and puts it on
+  `CompanionContext.macroBehavior` — a field that already existed and that
+  **nothing had ever read**, which is the clearest sign the wiring was the
+  intended design all along.
+- `CompanionBehaviorDirector._pickMacro` presents a committed behaviour instead
+  of picking a second one from the anchor's ambient recipe, and the ambient
+  recipe no longer gets a veto over it. `updateContext` also re-picks when the
+  action changes at the *same* anchor, because 坐下 and 休息 share the `seat`
+  anchor and the slot alone cannot see the change.
+- `room_page` passes `simulation.companionAction`.
+
+**Measured, not asserted.** `test/architecture/behavior_authority_test.dart`
+drives the real director with the real catalog for every action the furniture
+can commit. `BEHAVIOR_AUTHORITY_COUNT` fell from **2 to 1**, and the gate now
+reads that number instead of reciting it. Two negative verifications hold the
+measurement up: removing the committed action restores 2 and names the eight
+overridden actions; the page-level test fails if `room_page` stops forwarding.
+
+**One honest gap.** `room_sit` — the sofa and the rug — has no sprite sequence
+in any pack; it renders through the Mochi rig (`mochi_pose_spec.dart`), which is
+what it already did before this change, so nothing regressed. A dedicated
+sustained-sit sprite remains an art task, and it is the one place where "the
+panel names it" is carried by the rig rather than by a production sequence.
+
 
 ### D6 — Growth economy · `PRODUCT_DECISION_REQUIRED`
 
@@ -142,35 +164,38 @@ Recorded so the register is complete rather than a list of complaints.
 | The QA fixture harness is debug-only | Separate entry point, import-scanning guard, `kDebugMode` throw |
 | One record per session is enforced by the database | `uniqueKeys => [{sessionId}]`, proven load-bearing in P20 |
 | `sit_down` is `reverse(stand_up)` for the dog and rabbit | Measured and visually reviewed; acceptable, not proven better (P16) |
+| **D5 — tapping furniture chooses the action** | `room_page` → `CompanionAvatar.companionAction` → `CompanionContext.macroBehavior` → `CompanionBehaviorDirector`; measured `BEHAVIOR_AUTHORITY_COUNT = 1` |
 
 ---
 
 ## 5. What this phase did not do
 
-- **It implemented nothing.** No default was chosen to close a question.
+- **It implemented nothing.** No default was chosen to close a question. *(D5 was
+  decided later, by the owner, and implemented as its own change — see below.)*
 - **It did not re-open settled questions.** The three defects fixed in this
   program — the uncontrolled companion clock, the leaking router, the sprite
   weight — are not listed as open.
-- **It did not treat `FAIL` as resolved.** P19's gate still fails, and D5 is the
-  reason why.
+- **It did not treat `FAIL` as resolved.** P19's gate failed at the time of this
+  phase, and D5 was the reason why.
 
 ---
 
 ## 6. Status
 
 ```
-P25_PRODUCT_DECISIONS: OPEN
+P25_PRODUCT_DECISIONS: PARTIALLY_CLOSED
 
-PRODUCT_DECISION_REQUIRED:  7   (D1-D7)
+DECIDED AND IMPLEMENTED:    1   (D5 — the owner chose the action)
+PRODUCT_DECISION_REQUIRED:  6   (D1-D4, D6, D7)
 DEFERRED:                   6   (F1-F6)
 BLOCKED_EXTERNAL:           4   (B1-B4)
-APPROVED / SHIPPED:         7   (section 4)
+APPROVED / SHIPPED:         8   (section 4)
 ```
 
-**OPEN is the honest answer.** Six of the seven decisions are product choices that
-would be a guess if made here. The seventh — D5 — is a genuine architectural
-question whose answer changes what a correct fix even is, which is why P19 left
-it failing rather than repairing it.
+**Six decisions remain open, and they are product choices** that would be a guess
+if made here. **D5 was the seventh and is now closed:** the owner decided that
+tapping furniture chooses the action, so the room is action-authoritative and
+P19's gate passes on a measured count of 1 rather than a remembered 2.
 
 The four blocked items need the owner or an artist, not an agent. Nothing in this
 list is blocked on engineering.

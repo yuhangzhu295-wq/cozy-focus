@@ -1,16 +1,16 @@
 # Automated product gate
 
-Generated 2026-10-04 14:58:36 at `ce484a95`. Local equals remote: **YES**.
+Generated 2026-10-04 20:28:51 at `de9a730f`. Local equals remote: **YES**.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| `FORMAT` | **PASS** | 269 files, 0 changed |
+| `FORMAT` | **PASS** | 270 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
-| `UNIT_TESTS` | **PASS** | 1196/1196 passed |
+| `UNIT_TESTS` | **PASS** | 1202/1202 passed |
 | `INTEGRATION_TESTS` | **PASS** | 20/20 passed |
 | `GOLDEN_FLOW` | **PASS** | 6/6 passed |
 | `MIGRATION` | **PASS** | 15/15 passed |
-| `LIFECYCLE` | **PASS** | 52/52 passed |
+| `LIFECYCLE` | **PASS** | 51/51 passed |
 | `ASSET_GATES` | **PASS** | 75/75 passed |
 | `APK` | **PASS** | 29.5 MB (budget 34 MB) |
 | `AAB` | **PASS** | 48.1 MB (budget 55 MB) |
@@ -19,14 +19,13 @@ Generated 2026-10-04 14:58:36 at `ce484a95`. Local equals remote: **YES**.
 | `LAUNCHER_ICON` | **BLOCKED** | still the stock Flutter logo (dominant colours 0,0,0 / 84,197,248 / 1,87,155); no approved artwork exists, so none was invented |
 | `OWNER_VISUAL_GATE` | **DEFERRED** | OWNER_VISUAL_GATE is REQUIRED and is never decided by a measurement. P21's technical gates pass; whether the art reads well is human judgement. |
 | `DEVICE_MATRIX` | **DEFERRED** | device verification exists and is recorded (collection, craft, P7 toolbar, room alignment, the rabbit pack, the P11 routine, indexed sprites, the P14 fix, and the P21 idle and travel motion gates) - but it was driven by hand each time, not by this script. A re-runnable device matrix would need an unattended driver. |
-| `PRODUCT_DECISIONS` | **DEFERRED** | P25 records 7 PRODUCT_DECISION_REQUIRED, 6 DEFERRED and 4 BLOCKED_EXTERNAL. Nothing was implemented to close a question. |
-| `BEHAVIOR_AUTHORITY` | **FAIL** | BEHAVIOR_AUTHORITY_COUNT=2 (measured): the room can commit an action it cannot show on sofa,desk,bookshelf. The presentation layer has a second, independent say in what the companion does. Open pending the P25 D5 decision - does tapping furniture choose the action or only the destination. Fixing it before that answer would be fixing it the wrong way. |
+| `PRODUCT_DECISIONS` | **DEFERRED** | P25 records 6 PRODUCT_DECISION_REQUIRED (D1-D4, D6, D7), 6 DEFERRED and 4 BLOCKED_EXTERNAL. D5 was decided by the owner - tapping furniture chooses the action - and is implemented; see BEHAVIOR_AUTHORITY, which now measures 1. The remaining six are product choices, and none was defaulted on the owner's behalf. |
+| `BEHAVIOR_AUTHORITY` | **PASS** | BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action. |
 | `FLOW_GENERATION` | **BLOCKED** | FLOW_GENERATION: no video surface reachable in Flow, and Flow's own banner reports video generation degraded. The video-to-sprite pipeline is built and validated against a local clip; no production video art exists. |
 
 ## Counts
 
-- **PASS**: 11
-- **FAIL**: 1
+- **PASS**: 12
 - **BLOCKED**: 3
 - **DEFERRED**: 3
 

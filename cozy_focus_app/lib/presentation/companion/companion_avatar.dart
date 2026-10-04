@@ -79,6 +79,22 @@ class CompanionAvatar extends ConsumerStatefulWidget {
   /// authoritative and is not read or written here.
   final String? roomAnchor;
 
+  /// The action the room has already committed the companion to.
+  ///
+  /// A semantic behaviour id (`room_sit`, `pause_rest`, `focus_read`, …). It is
+  /// the same vocabulary [CompanionMacroBehavior] uses, and the same one the
+  /// furniture panel names to the player.
+  ///
+  /// Supplying it makes the room **action-authoritative**: the simulation
+  /// decided what the companion is doing when the player tapped the furniture,
+  /// so the presentation presents that instead of picking a second, independent
+  /// behaviour from the anchor's ambient recipe. Without it the panel could name
+  /// one action while the avatar drew another.
+  ///
+  /// Only the room sets this. Every other context leaves it null and keeps
+  /// selecting from its own recipe.
+  final String? companionAction;
+
   /// The companion's own condition, when the page has real vitals to hand.
   ///
   /// Read-only: the runtime reads it so behaviour can depend on how the
@@ -126,6 +142,7 @@ class CompanionAvatar extends ConsumerStatefulWidget {
     this.focusCategoryId,
     this.companionId,
     this.roomAnchor,
+    this.companionAction,
     this.animationState,
     this.vitals = PresentationVitals.neutral,
     this.travelling = false,
@@ -223,7 +240,11 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
         oldWidget.focusProgress != widget.focusProgress ||
         oldWidget.focusCategoryId != widget.focusCategoryId ||
         oldWidget.companionId != widget.companionId ||
-        oldWidget.roomAnchor != widget.roomAnchor) {
+        oldWidget.roomAnchor != widget.roomAnchor ||
+        // The room re-decides while the companion stays at the same anchor —
+        // sitting, then resting on the same sofa. Without this the new action
+        // would never reach the director.
+        oldWidget.companionAction != widget.companionAction) {
       _sync();
     }
     if (oldWidget.travelling != widget.travelling) {
@@ -315,6 +336,10 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
       timeOfDay: TimeOfDayResolver.resolve(ref.read(focusClockProvider).now()),
       reducedMotion: _reducedMotion,
       roomAnchor: widget.roomAnchor,
+      // The room's committed action, when it has one. `fromId` returns null for
+      // an id this build does not know, which degrades to the recipe path rather
+      // than throwing — the same treatment an unknown recipe entry gets.
+      macroBehavior: CompanionMacroBehavior.fromId(widget.companionAction),
       vitals: widget.vitals,
     );
   }

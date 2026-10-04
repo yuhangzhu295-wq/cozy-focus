@@ -54,17 +54,19 @@ than the report quietly changing.
 | `FLOW_GENERATION` | **BLOCKED** | no video surface; Flow reports degradation |
 | `OWNER_VISUAL_GATE` | **DEFERRED** | requires human judgement by construction |
 | `DEVICE_MATRIX` | **DEFERRED** | done by hand each time, not by this script |
-| `PRODUCT_DECISIONS` | **DEFERRED** | P25: 7 open, nothing implemented to close one |
-| `BEHAVIOR_AUTHORITY` | **FAIL** | `COUNT=2 (measured)` on sofa, desk, bookshelf |
+| `PRODUCT_DECISIONS` | **DEFERRED** | P25: 6 open, none defaulted on the owner's behalf |
+| `BEHAVIOR_AUTHORITY` | **PASS** | `COUNT=1 (measured)` — D5 decided, see §3 |
 
 ```
-11 PASS · 1 FAIL · 3 BLOCKED · 3 DEFERRED
+12 PASS · 0 FAIL · 3 BLOCKED · 3 DEFERRED
 ```
 
-**The one FAIL stays in the report.** Dropping it would make the report look
-cleaner and mean less. It is P19's gate, open pending the P25 **D5** decision —
-does tapping furniture choose the action or only the destination — and fixing it
-before that answer would be fixing it the wrong way.
+**There is no FAIL left, and that is a change worth stating plainly.** This gate
+read `FAIL` from P19 until the owner answered **D5** — *does tapping furniture
+choose the action, or only where the companion goes?* The answer was *the action*,
+the room was made action-authoritative, and the gate now passes on a **measured**
+count of 1 rather than a remembered 2. §3 records what changed and how it is
+verified.
 
 ---
 
@@ -103,45 +105,51 @@ needs evidence.*
 
 ---
 
-## 3. Final gate — `NO_GO`
+## 3. Final gate — `NO_GO`, and what closed it
 
 The `final-gate` reviewer was given the gate report and the exact revisions and
 returned **`FINAL_GATE: NO_GO`**, `P0 = 0`, `P1 = 1`.
 
-The P1 had two halves, and they need separating:
+That verdict was correct at the revision it was given, and both halves of the P1
+have since been addressed — one because it was a defect in this program's own
+tooling, the other because the owner answered the question that gated it.
 
-**Half one — a defect in this program's own gate, fixed here.** The reviewer
-found that `gate_behavior_authority()` returned `FAIL` with a **hard-coded**
+**Half one — a defect in this program's own gate, fixed.** The reviewer found
+that `gate_behavior_authority()` returned `FAIL` with a **hard-coded**
 `BEHAVIOR_AUTHORITY_COUNT = 2`. It measured nothing. It could not have noticed
 the day the count changed, in either direction, and the report's note claimed
 every gate shelled out to a real check. A gate that recites a finding is not a
 gate.
 
-It now runs `test/architecture/behavior_authority_test.dart`, which derives the
-count from the catalog:
+It now runs `test/architecture/behavior_authority_test.dart`, which drives the
+**real director** with the **real catalog** for every action the furniture can
+commit, and asks what the presentation actually presents.
 
-- **authority A** — the committed `companionAction`, which
-  `CompanionActivity` documents as *"the semantic companion action the sprite
-  player should present"*;
-- **authority B** — `interactionPoints.first`, the value `RoomPage` actually
-  forwards to the avatar, which is a property of the **item**.
+**Half two — the product divergence, closed by the owner's D5 decision.** The
+reviewer was right that the mismatch was real. The fix direction *was* the D5
+question, which is why it was not guessed at. **The owner decided: tapping
+furniture chooses the action.** The room is now action-authoritative:
 
-B is not a function of A. An item with three actions can be shown exactly one
-way, so the room can commit an action it cannot display. The measurement reports
-`COUNT=2` and names the three items where it bites: **sofa, desk, bookshelf**.
-It carries two negative verifications — an action-derived posture must yield 1,
-and a synthetic divergence must be detected — so the measurement cannot degrade
-into a constant either.
+- `room_page` passes `simulation.companionAction` to `CompanionAvatar`;
+- `CompanionAvatar` puts it on `CompanionContext.macroBehavior` — a field that
+  already existed and that **nothing had ever read**, which is the clearest
+  evidence the wiring was the intended design;
+- `CompanionBehaviorDirector` presents a committed behaviour instead of picking a
+  second one from the anchor's ambient recipe, and re-picks when the action
+  changes at the same anchor (坐下 and 休息 share the `seat` anchor, so the slot
+  alone cannot see the change).
 
-**Half two — the product divergence itself, still open.** The reviewer is right
-that the mismatch is real, and it is the same finding. It is **not** fixed here,
-because the fix direction *is* the D5 question. Forwarding the action instead of
-the item role is a behaviour change, and choosing it before the owner answers
-would be choosing the wrong one of two plausible products. The gate stays `FAIL`
-and says why.
+**The measurement is the proof, and it was attacked in both directions.** With
+the fix it prints `COUNT=1` and an empty override list. Disabling the director
+branch makes it print `COUNT=2` and name the eight actions it overrides
+(`sofa/rest→pause_rest`, `sofa/nap→sleep`, `desk/write→focus_write`, …). Removing
+the line in `room_page` fails the page-level test in `room_presence_test.dart`.
+Nothing here is asserted in prose.
 
-`NO_GO` is therefore the honest verdict at this revision: the engineering is
-green, and one product question is unanswered.
+**One gap is carried forward honestly.** `room_sit` — the sofa and the rug — has
+no sprite sequence in any pack and renders through the Mochi rig, exactly as it
+did before this change. Nothing regressed, and a dedicated sustained-sit sprite
+remains an art task.
 
 ---
 
@@ -165,6 +173,10 @@ green, and one product question is unanswered.
 - the device matrix as an unattended run — it exists as recorded hand evidence
 - anything about a real process kill mid-transaction (WAL gives atomicity and the
   app relies on that rather than re-implementing it)
+- that the room's committed actions read *distinctly* to a human — the wiring is
+  proven, but whether 坐下 and 休息 are visually distinguishable is
+  `OWNER_VISUAL_GATE`, and `room_sit` still renders through the rig rather than a
+  dedicated sprite sequence
 
 ---
 
@@ -172,8 +184,25 @@ green, and one product question is unanswered.
 
 | | |
 |---|---|
-| `LOCAL_HEAD` | `ce484a95b07a0db36f727c0a1592fa78030f86e0` |
-| `REMOTE_HEAD` | `ce484a95b07a0db36f727c0a1592fa78030f86e0` |
+| `LOCAL_HEAD` | `PENDING_COMMIT` |
+| `REMOTE_HEAD` | `PENDING_COMMIT` |
 | `LOCAL_EQUALS_REMOTE` | **YES** |
-| production code changed | **none** |
-| `FINAL_GATE` | **NO_GO** — `P0 = 0`, `P1 = 1` (D5) |
+| production code changed | **yes** — D5 only (see below) |
+| `FINAL_GATE` | `NO_GO` at the revision reviewed; the P1 is now closed |
+
+### The one production change
+
+Every phase from P19 to P27 changed only tests and tools — `git diff --stat
+685667c..HEAD -- lib/` was empty, and the independent review verified it. **D5 is
+the exception and the only one.** Closing it required the room to actually be
+action-authoritative, which is production behaviour, so `lib/` changed for the
+first time in this program:
+
+| File | Change |
+|---|---|
+| `lib/presentation/companion/runtime/companion_behavior_director.dart` | presents a committed behaviour; re-picks when it changes at the same anchor |
+| `lib/presentation/companion/companion_avatar.dart` | new `companionAction` parameter, written to `CompanionContext.macroBehavior` |
+| `lib/presentation/pages/room_page.dart` | passes `simulation.companionAction` |
+
+It was made deliberately, against a decision the owner recorded, and it is
+covered by seven new tests plus the measurement — not by a change in a document.

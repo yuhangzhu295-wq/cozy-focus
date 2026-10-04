@@ -3,141 +3,163 @@
 /// ## Why this exists
 ///
 /// P19 recorded `BEHAVIOR_AUTHORITY_COUNT = 2` from a one-off reading of the
-/// code. `tools/cozy_gate.py` then reported that number for several phases — as
-/// a constant. A gate that recites a finding it never re-measures is not a gate;
-/// it cannot notice the day the finding stops being true, in either direction.
-/// This file is the missing measurement, so the gate can run it.
+/// code, and `tools/cozy_gate.py` then reported that number for several phases
+/// — as a literal. A gate that recites a finding it never re-measures cannot
+/// notice the day the finding stops being true, in either direction.
 ///
-/// ## The two authorities
+/// ## What the two authorities were
 ///
 /// * **A — the decision.** `FurnitureActionResolver` commits an action, and
-///   `CompanionActivity.companionAction` is documented as *"the semantic
-///   companion action the sprite player should present."* The contract says the
-///   committed action is what gets presented.
-/// * **B — the presentation.** `RoomPage` forwards
-///   `FurnitureCatalog.forId(itemId).interactionPoints.first` to the avatar. That
-///   value is a property of the **item**, so every action on one item presents
-///   the *same* posture.
+///   `CompanionActivity.companionAction` carries it. The furniture panel names
+///   the same action to the player.
+/// * **B — the presentation.** `RoomPage` forwarded only the anchor's *role*, so
+///   the presentation picked its own behaviour from the anchor's ambient recipe.
+///   On the sofa, `seat` allowed exactly one behaviour, `room_sit` — so 坐下,
+///   休息 and 小睡 all drew the same thing while the panel named three.
 ///
-/// B is therefore not a function of A. On an item with three actions, the room
-/// can commit any of three and the page can show only one — that is the second
-/// authority, and it is the divergence the gate reports.
+/// ## How it is measured
 ///
-/// ## This file measures; it does not assert the product is wrong
+/// Not by reading the source. For every action the catalog can commit, this
+/// drives the *real* director with the *real* catalog and asks what it presents.
+/// When the committed action comes back verbatim the presentation is not making
+/// a second decision, and there is one authority. The measurement runs the
+/// engine, so it can only be satisfied by the engine behaving.
 ///
-/// The tests here pass today. That is deliberate: the fix direction is the
-/// owner's decision (P25 D5 — does tapping furniture choose the action, or only
-/// the destination), and committing a red test would be committing a broken
-/// state. The gate reads the measured count and decides. When D5 is answered and
-/// the page forwards the action, [authorityCount] returns 1 with no edit here.
+/// D5 (P25) answered this in favour of the action: tapping furniture chooses the
+/// action, so the count is 1 and the gate passes. If the wiring regressed, the
+/// director would present the anchor's behaviour instead and the count would
+/// return to 2 without anyone editing this file.
 library;
 
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cozy_focus_app/presentation/companion/room/furniture_catalog.dart';
-import 'package:cozy_focus_app/presentation/companion/room/furniture_entity.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_behavior_director.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_context.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/random_source.dart';
 
-/// How a posture is chosen for [action] on [item].
-typedef PostureSelector = String? Function(
-  FurnitureEntity item,
-  FurnitureAction action,
-);
+import '../presentation/companion/runtime/catalog_test_support.dart';
 
-/// Authority B as the app implements it today: the item's first interaction
-/// point, which carries no information about *which* action was committed.
-String? itemDerivedPosture(FurnitureEntity item, FurnitureAction action) =>
-    item.interactionPoints.isEmpty ? null : item.interactionPoints.first;
-
-/// Authority B as the activity contract intends it: the action's own companion
-/// action, which is the value the sprite player is told to present.
-String? actionDerivedPosture(FurnitureEntity item, FurnitureAction action) =>
-    action.companionAction;
-
-/// The furniture items on which the room can commit an action it cannot show.
+/// The actions the catalog can commit that the presentation does **not** present
+/// verbatim — the concrete evidence for a count above 1.
 ///
-/// An item is ambiguous when it declares more distinct actions than [posture]
-/// can distinguish. Ambiguity on any item means the presentation layer holds a
-/// second, independent say in what the companion does.
-List<String> ambiguousItems(PostureSelector posture) {
-  final ambiguous = <String>[];
+/// Empty means the presentation honours the room's decision.
+List<String> overriddenActions() {
+  final catalog = loadShippedCatalog();
+  final overridden = <String>[];
+
   for (final entry in FurnitureCatalog.entities.entries) {
     final item = entry.value;
-    final actions = item.actions.map((a) => a.id).toSet();
-    final postures = item.actions.map((a) => posture(item, a)).toSet();
-    if (postures.length < actions.length) ambiguous.add(entry.key);
+    if (item.interactionPoints.isEmpty) continue;
+    final anchor = item.interactionPoints.first;
+
+    for (final action in item.actions) {
+      final committed = CompanionMacroBehavior.fromId(action.companionAction);
+      if (committed == null) continue;
+
+      final director = CompanionBehaviorDirector(
+        catalog: catalog,
+        context: CompanionContext(
+          companionId: CompanionId.dog,
+          baseContext: CompanionBaseContext.room,
+          roomAnchor: anchor,
+          macroBehavior: committed,
+        ),
+        random: SeededRandomSource(1),
+      );
+      if (director.currentMacroBehavior != committed) {
+        overridden.add('${entry.key}/${action.id}→${action.companionAction}');
+      }
+    }
   }
-  return ambiguous;
+  return overridden;
+}
+
+/// What the presentation picks when the room commits **nothing**.
+///
+/// This is authority B on its own: the anchor's ambient recipe. Comparing it
+/// against the committed actions is what makes the measurement meaningful — if
+/// the two agreed for every action, a count of 2 would describe no real risk.
+CompanionMacroBehavior? ambientPickFor(String itemId) {
+  final catalog = loadShippedCatalog();
+  final item = FurnitureCatalog.forId(itemId);
+  if (item == null || item.interactionPoints.isEmpty) return null;
+  return CompanionBehaviorDirector(
+    catalog: catalog,
+    context: CompanionContext(
+      companionId: CompanionId.dog,
+      baseContext: CompanionBaseContext.room,
+      roomAnchor: item.interactionPoints.first,
+    ),
+    random: SeededRandomSource(1),
+  ).currentMacroBehavior;
 }
 
 /// The measured number of authorities that decide what the companion presents.
-///
-/// 1 when the presented posture is determined by the committed action; 2 when
-/// the presentation has an independent say.
-int authorityCount(PostureSelector posture) =>
-    ambiguousItems(posture).isEmpty ? 1 : 2;
+int authorityCount() => overriddenActions().isEmpty ? 1 : 2;
 
 void main() {
   test('the measurement matches how the room is actually wired', () {
-    final ambiguous = ambiguousItems(itemDerivedPosture);
-    final count = authorityCount(itemDerivedPosture);
+    final overridden = overriddenActions();
+    final count = authorityCount();
 
     // The marker the gate parses. Kept on one line, with no other text, so a
     // reader of the gate log can check the number rather than trust it.
     // ignore: avoid_print
     print('BEHAVIOR_AUTHORITY_COUNT=$count');
     // ignore: avoid_print
-    print('BEHAVIOR_AUTHORITY_AMBIGUOUS_ITEMS=${ambiguous.join(',')}');
+    print('BEHAVIOR_AUTHORITY_OVERRIDDEN=${overridden.join(',')}');
 
-    // The catalog is the reason the count is what it is. If this ever becomes
-    // empty, either the presentation was fixed or the catalog lost its actions
-    // — and the gate would go green for the wrong reason. Naming the items here
-    // makes that visible in the log rather than only in the count.
-    expect(FurnitureCatalog.entities, isNotEmpty,
-        reason:
-            'the catalog must not be empty, or this measurement is vacuous');
-    expect(ambiguous, isNotEmpty,
-        reason: 'if no item is ambiguous the count is 1 and the gate should '
-            'pass — update the gate deliberately rather than by accident');
+    expect(count, 1,
+        reason: 'D5 decided that tapping furniture chooses the action, so the '
+            'presentation must present it. Overridden: $overridden');
   });
 
-  test('negative verification: an action-derived posture is a single authority',
-      () {
-    // The measurement must be able to return 1. If it always returned 2, the
-    // gate would be a constant again, just written differently.
-    expect(authorityCount(actionDerivedPosture), 1,
-        reason: 'when the presented posture comes from the committed action, '
-            'there is only one authority');
-    expect(ambiguousItems(actionDerivedPosture), isEmpty);
+  test(
+      'negative verification: dropping the committed action restores two '
+      'authorities', () {
+    // The measurement must be able to see the *old* behaviour, or it is not
+    // measuring anything. Without a committed action the director falls back to
+    // the anchor's ambient recipe — which is precisely authority B.
+    final sofaAmbient = ambientPickFor('sofa');
+    expect(sofaAmbient, CompanionMacroBehavior.roomSit,
+        reason: 'the seat anchor ambient behaviour is room_sit');
+
+    // The sofa commits three different actions, so an ambient pick that is one
+    // fixed behaviour for all of them is a real disagreement, not a formality.
+    final sofaActions = FurnitureCatalog.forId('sofa')!
+        .actions
+        .map((a) => a.companionAction)
+        .toSet();
+    expect(sofaActions.length, greaterThan(1),
+        reason: 'the measurement needs a multi-action item to be meaningful');
+    final sofaBehaviours =
+        sofaActions.map(CompanionMacroBehavior.fromId).toSet();
+    expect(sofaBehaviours, isNot(contains(null)),
+        reason: 'every committed action must be a real behaviour id');
+    expect(
+      sofaBehaviours,
+      isNot({sofaAmbient}),
+      reason: 'the committed actions and the ambient pick must be able to '
+          'disagree, which is what the second authority cost',
+    );
   });
 
-  test('negative verification: a synthetic divergence is detected', () {
-    // Collapse every action on an item to one posture, as the item-derived
-    // selector does, and confirm the measurement sees the divergence. This is
-    // the check that the first test is not passing for an unrelated reason.
-    String? alwaysTheSame(FurnitureEntity item, FurnitureAction action) =>
-        'constant';
-
-    final multiAction = FurnitureCatalog.entities.values
-        .where((item) => item.actions.length > 1)
-        .map((item) => item.id)
-        .toList();
-    expect(multiAction, isNotEmpty,
-        reason:
-            'the synthetic divergence needs at least one multi-action item');
-    expect(ambiguousItems(alwaysTheSame), containsAll(multiAction));
-    expect(authorityCount(alwaysTheSame), 2);
-  });
-
-  test('every item the room can commit an action on declares a posture', () {
-    // A guard on the measurement's own inputs: an item with no interaction
-    // point would make `itemDerivedPosture` null and silently inflate the
-    // ambiguity count for a reason that has nothing to do with authority.
-    for (final entry in FurnitureCatalog.entities.entries) {
-      expect(entry.value.interactionPoints, isNotEmpty,
-          reason: '${entry.key} has no interaction point, so the room cannot '
-              'place the companion on it at all');
-      expect(entry.value.actions, isNotEmpty,
-          reason: '${entry.key} declares no action');
+  test('every catalog action is a behaviour the runtime knows', () {
+    // A guard on the measurement's own inputs: a `companionAction` that is not
+    // a real behaviour id would be silently skipped above, shrinking the
+    // measurement instead of failing it.
+    final unknown = <String>[];
+    for (final item in FurnitureCatalog.entities.values) {
+      for (final action in item.actions) {
+        if (CompanionMacroBehavior.fromId(action.companionAction) == null) {
+          unknown.add('${item.id}/${action.id}→${action.companionAction}');
+        }
+      }
     }
+    expect(unknown, isEmpty,
+        reason: 'these committed actions name no behaviour, so the room could '
+            'never present them: $unknown');
   });
 }

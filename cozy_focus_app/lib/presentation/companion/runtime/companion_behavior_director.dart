@@ -59,6 +59,13 @@ class CompanionBehaviorDirector {
   /// *visible* at the moment it happens.
   String? _macroSlot;
 
+  /// The committed behaviour the last context carried.
+  ///
+  /// The slot alone cannot see a *new* decision: two actions on one piece of
+  /// furniture share an anchor, so the slot does not change when the simulation
+  /// moves the companion from sitting to resting. This is what notices.
+  String? _committedId;
+
   Duration _now = Duration.zero;
 
   /// Availability per companion, resolved on demand and cached.
@@ -102,6 +109,7 @@ class CompanionBehaviorDirector {
         _availabilityOf =
             availabilityOf ?? CompanionActionAvailabilityResolver.resolve {
     _macroSlot = _slotFor(_context);
+    _committedId = _context.macroBehavior?.id;
     _pickMacro();
   }
 
@@ -194,8 +202,14 @@ class CompanionBehaviorDirector {
   void updateContext(CompanionContext next) {
     _context = next;
     final slot = _slotFor(next);
-    if (slot != _macroSlot) {
+    final committed = next.macroBehavior?.id;
+    if (slot != _macroSlot || committed != _committedId) {
+      // A new slot, or the simulation committing to a different action at the
+      // same anchor. The second case is invisible to the slot: sitting and
+      // resting on one sofa share the `seat` anchor, so without this the
+      // presentation would keep drawing the action the companion has finished.
       _macroSlot = slot;
+      _committedId = committed;
       _pickMacro();
       return;
     }
@@ -203,6 +217,13 @@ class CompanionBehaviorDirector {
       // The job or session ended while the same slot stayed selected. Drop the
       // now-ungrounded behaviour immediately rather than letting it finish.
       _pickMacro();
+      return;
+    }
+    if (committed != null) {
+      // The business already decided what the companion is doing, so the
+      // ambient recipe does not get a veto over it. Without this the room's
+      // committed action would be re-picked away on the next context push,
+      // because the anchor's recipe only allows its own single behaviour.
       return;
     }
     final current = _macro;
@@ -390,6 +411,37 @@ class CompanionBehaviorDirector {
       _macro = CompanionMacroBehavior.idle;
       _macroEndsAt = _now + _ungroundedDwell;
       _usedFallback = !availability.hasOwnDrawing(CompanionPose.idle);
+      return;
+    }
+
+    // A committed behaviour outranks the ambient recipe.
+    //
+    // In the room the *simulation* decides what the companion is doing: the
+    // player tapped a piece of furniture, the panel named the action, and the
+    // activity carries the dwell and the effect. The presentation's job is then
+    // to present that decision, not to make a second one from the anchor's
+    // ambient pool — which is exactly how the room came to name one action and
+    // draw another. `CompanionContext.macroBehavior` is where the decision
+    // arrives; it is null in every other context, which keep picking from their
+    // recipe as before.
+    final committed = _context.macroBehavior;
+    if (committed != null) {
+      if (availability.canSchedule(committed.pose)) {
+        // A behaviour whose drawing is a fallback is not a distinct behaviour, so
+        // it is reported rather than counted as variety — the same rule the
+        // recipe path applies below.
+        _usedFallback = !availability.hasOwnDrawing(committed.pose);
+        _macro = committed;
+        _macroEndsAt = _now + _ungroundedDwell;
+        return;
+      }
+      // The companion cannot play it at all. Degrade to idle and say so, rather
+      // than presenting a behaviour this pack has no drawing for.
+      _usedFallback = true;
+      _macro = availability.canSchedule(CompanionPose.idle)
+          ? CompanionMacroBehavior.idle
+          : null;
+      _macroEndsAt = _now + _ungroundedDwell;
       return;
     }
 

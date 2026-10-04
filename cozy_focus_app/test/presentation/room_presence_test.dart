@@ -12,6 +12,7 @@ import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 import 'package:cozy_focus_app/presentation/companion/room/room_simulation.dart';
 import 'package:cozy_focus_app/presentation/companion/room_presence.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_context.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
 import 'package:cozy_focus_app/presentation/pages/room_page.dart';
@@ -329,6 +330,50 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.byType(CompanionAvatar), findsOneWidget);
+    });
+
+    testWidgets('the avatar is told the action the room committed',
+        (tester) async {
+      // D5: the room is **action-authoritative**. The furniture panel names an
+      // action to the player, so the avatar has to be given that same action.
+      // Before D5 the page passed only the anchor's role, and the presentation
+      // picked its own behaviour from the anchor's ambient recipe — which is how
+      // the room could name one action and draw another.
+      await container.read(craftRepositoryProvider).upsertInventoryItem(
+            owned('rug', quantity: 1),
+          );
+      await container.read(craftRepositoryProvider).placeRoomItem(
+            placed('rug', x: 0.35, y: 0.6, id: 'room-rug'),
+          );
+      await container.read(craftControllerProvider.notifier).loadAll();
+
+      await tester.pumpWidget(_app(container, const RoomPage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final avatar =
+          tester.widget<CompanionAvatar>(find.byType(CompanionAvatar));
+      expect(avatar.companionAction, isNotNull,
+          reason: 'the room committed an action on the rug, so the page must '
+              'tell the avatar what it is');
+      expect(CompanionMacroBehavior.fromId(avatar.companionAction), isNotNull,
+          reason: 'the action must be a behaviour the runtime knows, not a '
+              'free-form string: ${avatar.companionAction}');
+    });
+
+    testWidgets('with nothing placed the avatar is told no action',
+        (tester) async {
+      // The other side of the same wiring. Idling at the floor anchor commits no
+      // action, so the anchor's ambient recipe stays in charge — the change is
+      // additive rather than a page that always names something.
+      await container.read(craftControllerProvider.notifier).loadAll();
+      await tester.pumpWidget(_app(container, const RoomPage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final avatar =
+          tester.widget<CompanionAvatar>(find.byType(CompanionAvatar));
+      expect(avatar.companionAction, isNull);
     });
 
     testWidgets('Mochi stands on the resolved seat, by its feet',

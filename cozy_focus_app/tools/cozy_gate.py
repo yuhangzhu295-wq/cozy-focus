@@ -195,8 +195,11 @@ def gate_device_matrix():
 
 def gate_product_decisions():
     return DEFERRED, (
-        "P25 records 7 PRODUCT_DECISION_REQUIRED, 6 DEFERRED and 4 "
-        "BLOCKED_EXTERNAL. Nothing was implemented to close a question.")
+        "P25 records 6 PRODUCT_DECISION_REQUIRED (D1-D4, D6, D7), 6 DEFERRED "
+        "and 4 BLOCKED_EXTERNAL. D5 was decided by the owner - tapping "
+        "furniture chooses the action - and is implemented; see "
+        "BEHAVIOR_AUTHORITY, which now measures 1. The remaining six are "
+        "product choices, and none was defaulted on the owner's behalf.")
 
 
 def gate_behavior_authority():

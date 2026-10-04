@@ -590,9 +590,15 @@ class _RoomPageState extends ConsumerState<RoomPage>
           // The room is the one place with real vitals, so it is the one place
           // that supplies them. Passed through, never interpreted here.
           vitals: simulation.vitals.toPresentationVitals(),
-          // The anchor's role picks the posture the sprite pipeline presents;
-          // the simulation chose *which* anchor, so the two cannot disagree.
+          // The anchor's role places the companion and selects the ambient
+          // recipe when nothing more specific is known.
           roomAnchor: _anchorRoleFor(anchor.itemId),
+          // ...but the simulation's committed action is what the companion is
+          // actually doing, and it is the same action the furniture panel names
+          // to the player. Passing it is what stops the room saying one thing
+          // and drawing another. Null while the companion is only travelling or
+          // idling at the floor anchor, which leaves the anchor in charge.
+          companionAction: simulation.companionAction,
           showStateBadge: false,
         ),
       ),
