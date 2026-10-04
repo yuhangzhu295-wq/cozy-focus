@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../companion_selection.dart';
@@ -49,6 +50,72 @@ import '../room_presence.dart';
 /// the widget tree happened to rebuild, which is exactly the "flash between
 /// poses" failure the sprite player was written to avoid. One timer, at a low
 /// frequency, with a committed dwell, is what makes an action read as a choice.
+/// One decision the loop made, and what it displaced.
+///
+/// ## Why this exists
+///
+/// A player chose `sit` on the sofa and the companion was doing something else
+/// two seconds later. Nothing in the state said *which* transition did that:
+/// `activity` shows only the winner, and `cause` only its reason. This records
+/// the loser too, so a replacement can be explained instead of guessed at.
+///
+/// Diagnostics, not business state. Nothing reads it but a test and a log.
+class RoomDecisionTrace {
+  /// Loop time when this decision was committed.
+  final Duration at;
+
+  /// Why the loop was evaluating. One of `tick`, `request`, `evaluateNow`,
+  /// `arranging`, `focusPause`.
+  final String via;
+
+  /// Whether the evaluation was forced past the dwell guard.
+  final bool forced;
+
+  /// The decision that won.
+  final String cause;
+  final String? actionId;
+  final String? anchorId;
+
+  /// When the winner's commitment expires.
+  final Duration? endsAt;
+
+  /// What it displaced, when it displaced anything.
+  final String? replacedCause;
+  final String? replacedActionId;
+
+  /// How much of the displaced commitment was still owed. Non-null and positive
+  /// means an unexpired commitment was taken away — the thing P28 is about.
+  final Duration? replacedRemaining;
+
+  const RoomDecisionTrace({
+    required this.at,
+    required this.via,
+    required this.forced,
+    required this.cause,
+    this.actionId,
+    this.anchorId,
+    this.endsAt,
+    this.replacedCause,
+    this.replacedActionId,
+    this.replacedRemaining,
+  });
+
+  /// Whether this decision cut short a commitment that had time left on it.
+  bool get preemptedLiveCommitment =>
+      replacedRemaining != null && replacedRemaining! > Duration.zero;
+
+  @override
+  String toString() {
+    final replaced = replacedCause == null
+        ? ''
+        : ' replaced=$replacedCause/${replacedActionId ?? '-'}'
+            ' remaining=${replacedRemaining?.inSeconds}s';
+    return 'RoomDecisionTrace($via${forced ? '/forced' : ''} '
+        'at=${at.inSeconds}s -> $cause/${actionId ?? '-'} '
+        'endsAt=${endsAt?.inSeconds}s$replaced)';
+  }
+}
+
 class RoomSimulationController extends StateNotifier<RoomSimulationState> {
   final Ref _ref;
 
@@ -85,7 +152,40 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
   /// Whether the player is arranging. Read by tests and by the page's hint.
   bool get isArranging => _arranging;
 
+  /// The last decisions the loop made, newest last.
+  ///
+  /// Bounded, because it is diagnostics: a long session would otherwise keep
+  /// every decision it ever made alive for the sake of a test that reads the
+  /// tail.
+  final List<RoomDecisionTrace> _trace = [];
+  static const int _traceLimit = 64;
+
+  /// The recorded decisions. Read by the P28 diagnostics test and by a debug
+  /// log; nothing in the app depends on it.
+  List<RoomDecisionTrace> get decisionTrace => List.unmodifiable(_trace);
+
+  /// The decisions that cut short a commitment which still had time left.
+  List<RoomDecisionTrace> get preemptions => [
+        for (final t in _trace)
+          if (t.preemptedLiveCommitment) t
+      ];
+
   RoomSimulationController(this._ref) : super(RoomSimulationState.initial);
+
+  /// Advances the loop's own clock by [elapsed] and evaluates, exactly as a tick
+  /// would, without waiting for the real two-second timer.
+  ///
+  /// Exposed for tests only. A dwell runs up to thirty seconds, so a test that
+  /// had to wait for it would be slow and would race the wall clock; this is the
+  /// same arithmetic [_tick] performs, driven directly.
+  @visibleForTesting
+  void debugAdvance(Duration elapsed) {
+    state = state.copyWith(
+      vitals: state.vitals.afterElapsed(elapsed),
+      elapsedSinceStart: state.elapsedSinceStart + elapsed,
+    );
+    _evaluate(via: 'tick');
+  }
 
   /// Starts the interval loop. Does nothing when it is already running.
   void start() {
@@ -117,7 +217,9 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
   void setArranging(bool arranging) {
     if (_arranging == arranging) return;
     _arranging = arranging;
-    if (!arranging && _running && mounted) _evaluate(force: true);
+    if (!arranging && _running && mounted) {
+      _evaluate(force: true, via: 'arranging');
+    }
   }
 
   @override
@@ -143,7 +245,7 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
         roomItemId: roomItemId,
       ),
     );
-    _evaluate(force: true);
+    _evaluate(force: true, via: 'request');
   }
 
   /// Clears a request the player made and then abandoned.
@@ -160,12 +262,12 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
   void setFocusPaused(bool paused) {
     if (state.focusPaused == paused) return;
     state = state.copyWith(focusPaused: paused);
-    if (paused) _evaluate(force: true);
+    if (paused) _evaluate(force: true, via: 'focusPause');
   }
 
   /// Runs one decision immediately. Exposed for tests and for the moment a
   /// focus session starts, where waiting up to a tick would be visible.
-  void evaluateNow() => _evaluate(force: true);
+  void evaluateNow() => _evaluate(force: true, via: 'evaluateNow');
 
   void _tick() {
     final now = DateTime.now();
@@ -176,7 +278,7 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
       vitals: state.vitals.afterElapsed(elapsed),
       elapsedSinceStart: state.elapsedSinceStart + elapsed,
     );
-    _evaluate();
+    _evaluate(via: 'tick');
   }
 
   /// Whether the loop may choose a new activity.
@@ -189,17 +291,43 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
       forced || !arranging;
 
   /// The heart of the loop.
-  void _evaluate({bool force = false}) {
+  void _evaluate({bool force = false, String via = 'tick'}) {
     // Rearranging suppresses *choosing*, not time: the vitals tick and the
     // companion stays where it is, but it does not commit to an anchor that the
     // player is in the middle of moving.
     if (!mayChoose(arranging: _arranging, forced: force)) return;
 
     final committed = state.activity;
-    if (!force && committed.endsAt > state.elapsedSinceStart) return;
+    final owesDwell = committed.endsAt > state.elapsedSinceStart;
+
+    // The loop's own tick never interrupts a commitment.
+    if (!force && owesDwell) return;
 
     final craft = _ref.read(craftControllerProvider);
     final home = _ref.read(homeControllerProvider);
+
+    // P28.2 — a player's accepted action outranks a forced re-evaluation.
+    //
+    // The forced entry points are ordinary housekeeping: the page calls them
+    // after `loadAll`, after a placement property changes, after a removal, when
+    // a drag ends, and on the focus-pause edge. None of those is a reason to take
+    // the companion off the action the player just chose — and before this they
+    // did, because the one-shot `request` had already been consumed, so the
+    // forced evaluation re-picked from the routine and restarted the dwell. On a
+    // device that read as "I tapped the sofa and the cat went back to the
+    // bookshelf two seconds later".
+    //
+    // It holds until the dwell expires, with two exceptions, both explicit:
+    // the player making a *new* request, and a focus pause (the brief's break).
+    // The furniture ceasing to be usable ends it too — that is the one thing
+    // that must still invalidate it.
+    if (force &&
+        owesDwell &&
+        state.playerCommitmentItemId != null &&
+        !_preemptingEntryPoints.contains(via) &&
+        _commitmentIsStillUsable(craft, state.playerCommitmentItemId!)) {
+      return;
+    }
     final CompanionId companionId =
         state.companionId ?? _ref.read(companionSelectionProvider);
 
@@ -243,6 +371,23 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
         ? state.vitals
         : state.vitals.copyWithEffect(decision.effect);
 
+    _record(RoomDecisionTrace(
+      at: state.elapsedSinceStart,
+      via: via,
+      forced: force,
+      cause: decision.cause.id,
+      actionId: decision.actionId,
+      anchorId: decision.anchorId,
+      endsAt: nextActivity.endsAt,
+      // Only a *commitment* can be replaced. The first decision of a session
+      // displaces `CompanionActivity.idle`, which is the absence of one, and
+      // recording that as a preemption would drown the real ones.
+      replacedCause: committed.isBusy ? state.cause.id : null,
+      replacedActionId: committed.actionId,
+      replacedRemaining:
+          committed.isBusy ? committed.endsAt - state.elapsedSinceStart : null,
+    ));
+
     state = state.copyWith(
       vitals: applied,
       activity: nextActivity,
@@ -250,7 +395,45 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
       // A request is consumed by being decided on, whether or not it was
       // honoured: leaving it set would re-apply it forever.
       clearRequest: state.request != null,
+      // Remember whose decision this was, so a later forced evaluation can tell
+      // a player's action from the loop's own. See the guard above.
+      playerCommitmentItemId: decision.cause == RoomDecisionCause.playerRequest
+          ? decision.itemId
+          : null,
+      clearPlayerCommitment: decision.cause != RoomDecisionCause.playerRequest,
     );
+  }
+
+  /// The entry points that may end a live player commitment early.
+  ///
+  /// * `request` — the player changed their mind; the newest request wins.
+  /// * `focusPause` — a real business event (the brief's break), documented as
+  ///   higher authority than a furniture choice.
+  ///
+  /// Everything else that forces an evaluation is housekeeping and must not
+  /// preempt. `arranging` and `evaluateNow` are the two the room page calls
+  /// routinely.
+  static const Set<String> _preemptingEntryPoints = {'request', 'focusPause'};
+
+  /// Whether the furniture a player commitment was made against is still usable:
+  /// owned, placed and visible.
+  ///
+  /// A sofa that has been picked up, hidden or sold cannot be sat on, so the
+  /// commitment ends with it. This is the check that keeps the guard above from
+  /// being "never re-decide".
+  bool _commitmentIsStillUsable(CraftState craft, String itemId) {
+    final owned =
+        craft.inventory.any((i) => i.itemId == itemId && i.quantity > 0);
+    final placed =
+        craft.roomItems.any((r) => r.itemId == itemId && r.isVisible);
+    return owned && placed;
+  }
+
+  void _record(RoomDecisionTrace trace) {
+    _trace.add(trace);
+    if (_trace.length > _traceLimit) {
+      _trace.removeAt(0);
+    }
   }
 
   /// The item ids the player actually owns.
@@ -282,6 +465,17 @@ class RoomSimulationState {
   /// A player request not yet consumed.
   final PlayerRequest? request;
 
+  /// The furniture a player-requested action is committed to.
+  ///
+  /// Non-null while the current activity is one the *player* asked for and whose
+  /// dwell has not expired. It is what lets a forced re-evaluation tell "the
+  /// player chose this a moment ago" apart from "the loop chose this", which the
+  /// one-shot [request] cannot: by the time a forced evaluation runs, the request
+  /// has been consumed.
+  ///
+  /// Cleared whenever the loop commits an activity of its own.
+  final String? playerCommitmentItemId;
+
   /// Monotonic loop time. Used for the commitment deadline, so the deadline does
   /// not depend on wall-clock jumps.
   final Duration elapsedSinceStart;
@@ -296,6 +490,7 @@ class RoomSimulationState {
     required this.cause,
     this.companionId,
     this.request,
+    this.playerCommitmentItemId,
     this.elapsedSinceStart = Duration.zero,
     this.focusPaused = false,
   });
@@ -319,6 +514,8 @@ class RoomSimulationState {
     CompanionId? companionId,
     PlayerRequest? request,
     bool clearRequest = false,
+    String? playerCommitmentItemId,
+    bool clearPlayerCommitment = false,
     Duration? elapsedSinceStart,
     bool? focusPaused,
   }) =>
@@ -328,6 +525,9 @@ class RoomSimulationState {
         cause: cause ?? this.cause,
         companionId: companionId ?? this.companionId,
         request: clearRequest ? null : (request ?? this.request),
+        playerCommitmentItemId: clearPlayerCommitment
+            ? null
+            : (playerCommitmentItemId ?? this.playerCommitmentItemId),
         elapsedSinceStart: elapsedSinceStart ?? this.elapsedSinceStart,
         focusPaused: focusPaused ?? this.focusPaused,
       );

@@ -458,6 +458,14 @@ RoomDecisionCause _routineCauseFor(
   clock.advance(when.difference(current));
   final room = container.read(roomSimulationProvider.notifier);
   room.start();
+  // Let any live player commitment expire before reading.
+  //
+  // A dwell is measured in *loop* time, and this helper stops the loop after
+  // each read, so no loop time accrues between calls. Without this the read
+  // would return the action the player chose earlier rather than the routine's
+  // decision for this hour -- and `evaluateNow` no longer bypasses a live
+  // commitment, which is the whole point of P28.
+  room.debugAdvance(const Duration(seconds: 40));
   room.evaluateNow();
   final cause = container.read(roomSimulationProvider).cause;
   room.stop();
