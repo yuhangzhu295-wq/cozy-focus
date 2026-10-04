@@ -176,6 +176,13 @@ class FurnitureUsePanel extends ConsumerWidget {
     CompanionActionAvailability availability,
     FurnitureAction action,
   ) {
+    // The catalog is the authority on what a tap can cause. `sofa/nap` carries
+    // only the `energyLow` trigger — it is something the companion does when it
+    // is tired, not something the player commands — yet the panel offered it,
+    // because the filter tested drawability alone. An action a tap is not
+    // declared to cause is not a player choice.
+    if (!action.triggers.contains(FurnitureTrigger.playerTap)) return false;
+
     final macro = CompanionMacroBehavior.fromId(action.companionAction);
     if (macro == null) return false;
     // `canSchedule` first: `hasOwnDrawing` only checks the fallback set, so on

@@ -125,6 +125,22 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
   /// times a second would burn battery to discover that nothing has changed.
   static const Duration tickInterval = Duration(seconds: 2);
 
+  /// The longest gap a single tick will credit to the loop's clock.
+  ///
+  /// The loop measures the time it was *running*, not the wall clock. A timer
+  /// that arrives late — the app was backgrounded, the frame loop stalled, the
+  /// device clock changed — must not be credited as time the player spent
+  /// watching the companion. Without this bound one late tick adds more than a
+  /// whole dwell, `endsAt` is already in the past, and the action the player just
+  /// chose disappears on the next evaluation. That is the second half of the
+  /// P28 defect, and it survived the first fix.
+  ///
+  /// Two intervals covers ordinary scheduling jitter while refusing any gap that
+  /// means the loop was not running. It bounds the *credit*, so a genuinely
+  /// backgrounded app resumes with its commitment intact and counts down from
+  /// where it left off rather than having silently expired.
+  static const Duration maxTickCredit = Duration(seconds: 4);
+
   Timer? _timer;
   DateTime? _lastTick;
 
@@ -172,12 +188,38 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
 
   RoomSimulationController(this._ref) : super(RoomSimulationState.initial);
 
+  /// How much of a wall-clock gap a tick is allowed to credit.
+  ///
+  /// Pure so the policy can be read and tested on its own. `_tick` and
+  /// [debugTickWithGap] both go through it, so changing it here changes the loop.
+  /// A backwards reading is as untrustworthy as a huge one — both fall back to a
+  /// single interval rather than moving the loop's clock at all.
+  @visibleForTesting
+  static Duration creditedFor(Duration raw) =>
+      raw.isNegative || raw > maxTickCredit ? tickInterval : raw;
+
+  /// Runs one loop tick with [raw] standing in for the wall-clock gap, applying
+  /// the same credit bound `_tick` applies.
+  ///
+  /// Distinct from [debugAdvance], which is deliberately *raw* so a test can
+  /// expire a dwell. This one exists so the bound is exercised through the path
+  /// that uses it, rather than as a bare formula.
+  @visibleForTesting
+  void debugTickWithGap(Duration raw) {
+    final elapsed = creditedFor(raw);
+    state = state.copyWith(
+      vitals: state.vitals.afterElapsed(elapsed),
+      elapsedSinceStart: state.elapsedSinceStart + elapsed,
+    );
+    _evaluate(via: 'tick');
+  }
+
   /// Advances the loop's own clock by [elapsed] and evaluates, exactly as a tick
   /// would, without waiting for the real two-second timer.
   ///
-  /// Exposed for tests only. A dwell runs up to thirty seconds, so a test that
-  /// had to wait for it would be slow and would race the wall clock; this is the
-  /// same arithmetic [_tick] performs, driven directly.
+  /// Exposed for tests only, and **raw on purpose**: it bypasses [maxTickCredit]
+  /// so a test can expire a dwell deliberately. Use [debugTickWithGap] to
+  /// exercise the bound itself.
   @visibleForTesting
   void debugAdvance(Duration elapsed) {
     state = state.copyWith(
@@ -293,8 +335,8 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
 
   void _tick() {
     final now = DateTime.now();
-    final elapsed =
-        _lastTick == null ? tickInterval : now.difference(_lastTick!);
+    final raw = _lastTick == null ? tickInterval : now.difference(_lastTick!);
+    final elapsed = creditedFor(raw);
     _lastTick = now;
     state = state.copyWith(
       vitals: state.vitals.afterElapsed(elapsed),
@@ -346,8 +388,13 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
     if (force &&
         owesDwell &&
         state.playerCommitmentItemId != null &&
+        state.playerCommitmentRoomItemId != null &&
         !_preemptingEntryPoints.contains(via) &&
-        _commitmentIsStillUsable(craft, state.playerCommitmentItemId!)) {
+        _commitmentIsStillUsable(
+          craft,
+          state.playerCommitmentRoomItemId!,
+          state.playerCommitmentItemId!,
+        )) {
       return;
     }
     final CompanionId companionId =
@@ -422,6 +469,10 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
       playerCommitmentItemId: decision.cause == RoomDecisionCause.playerRequest
           ? decision.itemId
           : null,
+      playerCommitmentRoomItemId:
+          decision.cause == RoomDecisionCause.playerRequest
+              ? decision.roomItemId
+              : null,
       clearPlayerCommitment: decision.cause != RoomDecisionCause.playerRequest,
     );
   }
@@ -443,12 +494,19 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
   /// A sofa that has been picked up, hidden or sold cannot be sat on, so the
   /// commitment ends with it. This is the check that keeps the guard above from
   /// being "never re-decide".
-  bool _commitmentIsStillUsable(CraftState craft, String itemId) {
+  bool _commitmentIsStillUsable(
+    CraftState craft,
+    String roomItemId,
+    String itemId,
+  ) {
     final owned =
         craft.inventory.any((i) => i.itemId == itemId && i.quantity > 0);
-    final placed =
-        craft.roomItems.any((r) => r.itemId == itemId && r.isVisible);
-    return owned && placed;
+    if (!owned) return false;
+    // The exact row the player tapped must still be there, still be the item it
+    // was, and still be visible. A second sofa of the same kind does not stand in
+    // for the one that was picked up.
+    return craft.roomItems
+        .any((r) => r.id == roomItemId && r.itemId == itemId && r.isVisible);
   }
 
   void _record(RoomDecisionTrace trace) {
@@ -498,6 +556,12 @@ class RoomSimulationState {
   /// Cleared whenever the loop commits an activity of its own.
   final String? playerCommitmentItemId;
 
+  /// The *placed row* the commitment is against.
+  ///
+  /// Two sofas share an `itemId`, so validating on that alone forgives the
+  /// removal of the very sofa the companion is sitting on. This is the instance.
+  final String? playerCommitmentRoomItemId;
+
   /// Monotonic loop time. Used for the commitment deadline, so the deadline does
   /// not depend on wall-clock jumps.
   final Duration elapsedSinceStart;
@@ -513,6 +577,7 @@ class RoomSimulationState {
     this.companionId,
     this.request,
     this.playerCommitmentItemId,
+    this.playerCommitmentRoomItemId,
     this.elapsedSinceStart = Duration.zero,
     this.focusPaused = false,
   });
@@ -537,6 +602,7 @@ class RoomSimulationState {
     PlayerRequest? request,
     bool clearRequest = false,
     String? playerCommitmentItemId,
+    String? playerCommitmentRoomItemId,
     bool clearPlayerCommitment = false,
     Duration? elapsedSinceStart,
     bool? focusPaused,
@@ -550,6 +616,9 @@ class RoomSimulationState {
         playerCommitmentItemId: clearPlayerCommitment
             ? null
             : (playerCommitmentItemId ?? this.playerCommitmentItemId),
+        playerCommitmentRoomItemId: clearPlayerCommitment
+            ? null
+            : (playerCommitmentRoomItemId ?? this.playerCommitmentRoomItemId),
         elapsedSinceStart: elapsedSinceStart ?? this.elapsedSinceStart,
         focusPaused: focusPaused ?? this.focusPaused,
       );

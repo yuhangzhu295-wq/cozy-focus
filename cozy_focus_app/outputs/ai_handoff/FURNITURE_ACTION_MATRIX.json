@@ -10,7 +10,9 @@
       "rug/sit"
     ],
     "playerTapDeclared": 9,
-    "offeredByPanel": 1
+    "withoutPlayerTapTrigger": [
+      "sofa/nap"
+    ]
   },
   "actions": [
     {

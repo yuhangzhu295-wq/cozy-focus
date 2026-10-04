@@ -63,6 +63,14 @@ class RoomDecision {
   /// The furniture involved, when the decision uses some.
   final String? itemId;
 
+  /// The *placed row* the decision is about, when it uses one.
+  ///
+  /// `itemId` names a kind of furniture; two sofas share it. This names the one
+  /// the player actually tapped, which is what a commitment has to be validated
+  /// against — otherwise removing the sofa the companion is sitting on is
+  /// forgiven by the other sofa still standing in the room.
+  final String? roomItemId;
+
   /// The anchor to travel to.
   final String anchorId;
 
@@ -81,6 +89,7 @@ class RoomDecision {
   const RoomDecision({
     required this.cause,
     required this.anchorId,
+    this.roomItemId,
     required this.dwell,
     this.itemId,
     this.actionId,
@@ -242,6 +251,10 @@ abstract final class FurnitureActionResolver {
       request.roomItemId,
     );
     if (anchor == null) return null;
+    // The row must be an instance of the item that was asked for. Without this a
+    // request naming a sofa row but an itemId of `bed` resolved the sofa's anchor
+    // and committed a bed action to it.
+    if (anchor.itemId != request.itemId) return null;
     final entity = FurnitureCatalog.forId(request.itemId);
     final action = entity?.actionById(request.actionId);
     if (entity == null || action == null) return null;
@@ -425,6 +438,7 @@ abstract final class FurnitureActionResolver {
       RoomDecision(
         cause: cause,
         itemId: anchor.itemId,
+        roomItemId: anchor.roomItemId,
         anchorId: anchor.id,
         actionId: action.id,
         companionAction: action.companionAction,

@@ -264,6 +264,83 @@ void main() {
     });
   });
 
+  group('the commitment survives what the audit found', () {
+    test('a late tick does not credit away the dwell', () async {
+      // The audit's high-priority finding: `_tick` added
+      // `DateTime.now().difference(_lastTick)` to the loop clock with no upper
+      // bound, so one late tick — backgrounded app, stalled frame loop, a clock
+      // change — added more than a whole dwell and expired a commitment the
+      // player had just made. The loop measures the time it was *running*.
+      await place('sofa');
+      sim().requestAction(
+          itemId: 'sofa', actionId: 'sit', roomItemId: 'room-sofa');
+      final owed = state().activity.endsAt - state().elapsedSinceStart;
+
+      // A gap far longer than any dwell.
+      sim().debugTickWithGap(const Duration(seconds: 30));
+
+      expect(state().activity.actionId, 'sit',
+          reason: 'a late tick must not stand in for time the player watched');
+      // The gap is credited as exactly one interval, not thirty seconds: the
+      // loop was not running for the rest, so the dwell counts down by the tick
+      // it actually took rather than expiring.
+      expect(
+        state().activity.endsAt - state().elapsedSinceStart,
+        owed - RoomSimulationController.tickInterval,
+        reason: 'and the commitment still has its dwell left to run',
+      );
+    });
+
+    test('the credit bound is the policy the loop actually uses', () {
+      // `_tick` calls this, so the bound cannot be changed in one place and
+      // quietly not apply in the other.
+      expect(RoomSimulationController.creditedFor(const Duration(seconds: 2)),
+          const Duration(seconds: 2));
+      expect(RoomSimulationController.creditedFor(const Duration(seconds: 30)),
+          RoomSimulationController.tickInterval);
+      expect(RoomSimulationController.creditedFor(const Duration(seconds: -5)),
+          RoomSimulationController.tickInterval);
+    });
+
+    test('removing the sofa the player tapped ends it, even with another sofa',
+        () async {
+      // The audit's second finding: validity was checked by `itemId`, so a
+      // second sofa of the same kind forgave the removal of the one the
+      // companion was actually sitting on.
+      await place('sofa', id: 'room-sofa');
+      await container.read(craftRepositoryProvider).placeRoomItem(
+            _placed('sofa', id: 'room-sofa-2'),
+          );
+      await container.read(craftControllerProvider.notifier).loadAll();
+
+      sim().requestAction(
+          itemId: 'sofa', actionId: 'sit', roomItemId: 'room-sofa');
+      expect(state().playerCommitmentRoomItemId, 'room-sofa');
+
+      await container.read(craftRepositoryProvider).removeRoomItem('room-sofa');
+      await container.read(craftControllerProvider.notifier).loadAll();
+      sim().evaluateNow();
+
+      expect(state().playerCommitmentRoomItemId, isNull,
+          reason: 'the row the commitment was against is gone; a second sofa '
+              'of the same kind does not stand in for it');
+    });
+
+    test('a request naming a row of a different item is refused', () async {
+      // The request path resolved an anchor by `roomItemId` without checking
+      // that the row was an instance of the requested item.
+      await place('sofa', id: 'room-sofa');
+      await place('bed', id: 'room-bed');
+
+      sim().requestAction(
+          itemId: 'sofa', actionId: 'sit', roomItemId: 'room-bed');
+
+      expect(state().cause, isNot(RoomDecisionCause.playerRequest),
+          reason: 'the bed row is not a sofa');
+      expect(state().playerCommitmentRoomItemId, isNull);
+    });
+  });
+
   group('diagnostics', () {
     test('the trace shows housekeeping no longer preempts the request',
         () async {

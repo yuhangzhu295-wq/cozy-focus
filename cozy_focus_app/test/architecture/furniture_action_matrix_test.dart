@@ -234,8 +234,14 @@ void main() {
         'visualGaps': visualGaps,
         'playerTapDeclared':
             entries.where((e) => e['playerTapDeclared'] == true).length,
-        'offeredByPanel':
-            entries.where((e) => e['playerTapDeclared'] != true).length,
+        // Named for what it is. This field used to be called `offeredByPanel`
+        // while computing the count of actions *lacking* a playerTap trigger —
+        // the opposite of its name, and the value `1` was `sofa/nap`.
+        'withoutPlayerTapTrigger': [
+          for (final e in entries)
+            if (e['playerTapDeclared'] != true)
+              '${e['itemId']}/${e['actionId']}',
+        ],
       },
       'actions': entries,
     };
@@ -253,7 +259,7 @@ void main() {
     // ignore: avoid_print
     print('ACTION_MATRIX_VISUAL_GAPS=${visualGaps.join(',')}');
     // ignore: avoid_print
-    print('ACTION_MATRIX_OFFERED_WITHOUT_PLAYER_TAP='
+    print('ACTION_MATRIX_WITHOUT_PLAYER_TAP='
         '${entries.where((e) => e['playerTapDeclared'] != true).map((e) => '${e['itemId']}/${e['actionId']}').join(',')}');
 
     expect(failures, isEmpty,
@@ -275,11 +281,16 @@ void main() {
           if (FurnitureUsePanel.isOfferable(availability, a)) a.id,
       ];
       expect(offered, contains('rest'),
-          reason: '$companion can draw pause_rest');
-      expect(offered, contains('nap'), reason: '$companion can draw sleep');
+          reason: '$companion can draw pause_rest and the catalog declares it '
+              'a playerTap action');
       expect(offered, isNot(contains('sit')),
           reason: '$companion has no sit drawing, so offering it would be a '
               'button that lies');
+      expect(offered, isNot(contains('nap')),
+          reason:
+              'sofa/nap carries only the energyLow trigger - it is what the '
+              'companion does when tired, not something the player commands. '
+              'Offering it was catalog/UI drift, caught by the P28 audit.');
     }
   });
 }
