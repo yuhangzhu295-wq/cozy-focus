@@ -5,6 +5,9 @@ import '../../../domain/models/craft_models.dart';
 import '../room/anchor_point.dart';
 import '../room_presence.dart';
 import 'furniture_action_resolver.dart';
+import '../companion_selection.dart';
+import '../runtime/companion_action_availability.dart';
+import '../runtime/companion_context.dart';
 import '../room/furniture_catalog.dart';
 import '../room/furniture_entity.dart';
 import '../room/room_simulation.dart';
@@ -56,6 +59,15 @@ class FurnitureUsePanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entity = FurnitureCatalog.forId(roomItem.itemId);
+    final availability = CompanionActionAvailabilityResolver.resolve(
+      ref.watch(companionSelectionProvider).value,
+    );
+    final offerable = entity == null
+        ? const <FurnitureAction>[]
+        : [
+            for (final action in entity.actions)
+              if (isOfferable(availability, action)) action,
+          ];
 
     if (entity == null || !unlocked) {
       return _frame(
@@ -99,16 +111,21 @@ class FurnitureUsePanel extends ConsumerWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final action in entity.actions) _actionChip(action),
+              for (final action in offerable) _actionChip(action),
             ],
           ),
+          if (offerable.isEmpty)
+            const Text(
+              '这件家具现在没有能做的动作',
+              style: TextStyle(fontSize: 12, color: Color(0xFF9A8F80)),
+            ),
         ],
       ),
     );
   }
 
   Widget _actionChip(FurnitureAction action) {
-    final effect = _describeEffect(action.effect);
+    final effect = describeEffect(action.effect);
     return GestureDetector(
       onTap: () => onUse(action),
       child: Container(
@@ -137,17 +154,63 @@ class FurnitureUsePanel extends ConsumerWidget {
     );
   }
 
+  /// Whether [action] may be offered as a player choice.
+  ///
+  /// P28.4: an action the companion cannot actually show is not a choice, it is
+  /// a button that lies. 坐下 on the sofa and 坐一会儿 on the rug are the two
+  /// that failed this: `room_sit` has no frames of its own in any pack, no
+  /// `drawAliases` entry, and the rig draws it as `MochiPoseSpec(earRotation:
+  /// 0.06)` — the idle pose with a fractionally turned ear. Every layer says
+  /// idle, so the label promised a sit the player never saw.
+  ///
+  /// Adding approved art is the other way to fix it and is not an option here:
+  /// inventing placeholder art is explicitly out of bounds. So the unsupported
+  /// action is hidden instead, and the row reports that it has nothing to offer
+  /// rather than offering something it cannot show.
+  ///
+  /// This is deliberately a *capability* test, not a hardcoded list: give
+  /// `room_sit` real frames, or a `drawAliases` entry, and the chip comes back
+  /// with no code change here.
+  @visibleForTesting
+  static bool isOfferable(
+    CompanionActionAvailability availability,
+    FurnitureAction action,
+  ) {
+    final macro = CompanionMacroBehavior.fromId(action.companionAction);
+    if (macro == null) return false;
+    // `canSchedule` first: `hasOwnDrawing` only checks the fallback set, so on
+    // its own it answers `true` for a pose the pack has never heard of.
+    return availability.canSchedule(macro.pose) &&
+        availability.hasOwnDrawing(macro.pose);
+  }
+
   /// Renders an effect in the player's terms, or an empty string when neutral.
   ///
   /// Words rather than numbers: the player is choosing an interaction, not
   /// tuning a stat sheet, and a signed integer is not what the object *means*.
-  static String _describeEffect(FurnitureEffect effect) {
+  ///
+  /// ## Every phrase here has to be true
+  ///
+  /// P28.5: a phrase may only appear when the corresponding effect has a real,
+  /// observable runtime consequence. The three meters the room shows —
+  /// [CompanionVitalsBar]'s 心情 / 精力 / 专注 — are the whole of what a
+  /// furniture action can currently change, so those are the only three things
+  /// promised.
+  ///
+  /// `FurnitureEffect.knowledge` used to add 认识新事物 here. Nothing reads it:
+  /// `CompanionVitals.copyWithEffect` carries mood, energy, focus and
+  /// relationship, no page shows a knowledge value, and no session or craft
+  /// record is written from it. The phrase promised a consequence that did not
+  /// exist, so the promise was removed rather than a knowledge mechanic invented
+  /// to justify it. The field stays as data for a future feature that would have
+  /// to earn the sentence back.
+  @visibleForTesting
+  static String describeEffect(FurnitureEffect effect) {
     final parts = <String>[];
     if (effect.energy > 0) parts.add('恢复精神');
     if (effect.energy < 0) parts.add('消耗一些精力');
     if (effect.mood > 0) parts.add('心情变好');
     if (effect.focus > 0) parts.add('更专注');
-    if (effect.knowledge.isNotEmpty) parts.add('认识新事物');
     return parts.join(' · ');
   }
 

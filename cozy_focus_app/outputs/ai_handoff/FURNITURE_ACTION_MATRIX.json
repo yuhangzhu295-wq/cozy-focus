@@ -1,0 +1,487 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "FurnitureCatalog + companions/*/manifest.json + a driven RoomSimulationController",
+  "note": "Generated audit artifact. Every value is projected from the product or measured by running it; do not hand-edit.",
+  "summary": {
+    "actions": 10,
+    "runtimeReal": 10,
+    "visualGaps": [
+      "sofa/sit",
+      "rug/sit"
+    ],
+    "playerTapDeclared": 9,
+    "offeredByPanel": 1
+  },
+  "actions": [
+    {
+      "itemId": "sofa",
+      "itemLabel": "沙发",
+      "furnitureType": "seating",
+      "purpose": "累了就窝在这里，慢慢恢复精神",
+      "interactionPoints": [
+        "seat"
+      ],
+      "anchorRole": "seat",
+      "actionId": "sit",
+      "actionLabel": "坐下",
+      "companionAction": "room_sit",
+      "triggers": [
+        "player_tap",
+        "energy_low",
+        "routine"
+      ],
+      "requiresUnlock": true,
+      "minDwellMs": 14000,
+      "maxDwellMs": 28000,
+      "effect": {
+        "energy": 4,
+        "mood": 3,
+        "focus": 0,
+        "relationship": 0,
+        "knowledge": []
+      },
+      "playerTapDeclared": true,
+      "checks": {
+        "itemCanBeOwned": true,
+        "itemCanBePlaced": true,
+        "anchorExists": true,
+        "companionActionResolves": true,
+        "visualCapability": {
+          "dog": "fallback",
+          "cat": "fallback",
+          "rabbit": "fallback"
+        },
+        "visualGap": true,
+        "reachableByPlayerTap": true,
+        "reachedIntendedAnchor": true,
+        "minDwellHolds": true,
+        "effectAppliedOnce": true,
+        "exitsCleanly": true,
+        "runtimePass": true
+      }
+    },
+    {
+      "itemId": "sofa",
+      "itemLabel": "沙发",
+      "furnitureType": "seating",
+      "purpose": "累了就窝在这里，慢慢恢复精神",
+      "interactionPoints": [
+        "seat"
+      ],
+      "anchorRole": "seat",
+      "actionId": "rest",
+      "actionLabel": "休息",
+      "companionAction": "pause_rest",
+      "triggers": [
+        "player_tap",
+        "energy_low",
+        "routine"
+      ],
+      "requiresUnlock": true,
+      "minDwellMs": 18000,
+      "maxDwellMs": 32000,
+      "effect": {
+        "energy": 10,
+        "mood": 5,
+        "focus": 0,
+        "relationship": 0,
+        "knowledge": []
+      },
+      "playerTapDeclared": true,
+      "checks": {
+        "itemCanBeOwned": true,
+        "itemCanBePlaced": true,
+        "anchorExists": true,
+        "companionActionResolves": true,
+        "visualCapability": {
+          "dog": "own",
+          "cat": "own",
+          "rabbit": "own"
+        },
+        "visualGap": false,
+        "reachableByPlayerTap": true,
+        "reachedIntendedAnchor": true,
+        "minDwellHolds": true,
+        "effectAppliedOnce": true,
+        "exitsCleanly": true,
+        "runtimePass": true
+      }
+    },
+    {
+      "itemId": "sofa",
+      "itemLabel": "沙发",
+      "furnitureType": "seating",
+      "purpose": "累了就窝在这里，慢慢恢复精神",
+      "interactionPoints": [
+        "seat"
+      ],
+      "anchorRole": "seat",
+      "actionId": "nap",
+      "actionLabel": "打个盹",
+      "companionAction": "sleep",
+      "triggers": [
+        "energy_low"
+      ],
+      "requiresUnlock": true,
+      "minDwellMs": 26000,
+      "maxDwellMs": 44000,
+      "effect": {
+        "energy": 22,
+        "mood": 6,
+        "focus": 0,
+        "relationship": 0,
+        "knowledge": []
+      },
+      "playerTapDeclared": false,
+      "checks": {
+        "itemCanBeOwned": true,
+        "itemCanBePlaced": true,
+        "anchorExists": true,
+        "companionActionResolves": true,
+        "visualCapability": {
+          "dog": "own",
+          "cat": "own",
+          "rabbit": "own"
+        },
+        "visualGap": false,
+        "reachableByPlayerTap": true,
+        "reachedIntendedAnchor": true,
+        "minDwellHolds": true,
+        "effectAppliedOnce": true,
+        "exitsCleanly": true,
+        "runtimePass": true
+      }
+    },
+    {
+      "itemId": "desk",
+      "itemLabel": "书桌",
+      "furnitureType": "work_surface",
+      "purpose": "专注的时候，在这里陪你一起工作",
+      "interactionPoints": [
+        "work"
+      ],
+      "anchorRole": "work",
+      "actionId": "write",
+      "actionLabel": "写字",
+      "companionAction": "focus_write",
+      "triggers": [
+        "focus_running",
+        "player_tap"
+      ],
+      "requiresUnlock": true,
+      "minDwellMs": 16000,
+      "maxDwellMs": 30000,
+      "effect": {
+        "energy": -6,
+        "mood": 0,
+        "focus": 12,
+        "relationship": 0,
+        "knowledge": []
+      },
+      "playerTapDeclared": true,
+      "checks": {
+        "itemCanBeOwned": true,
+        "itemCanBePlaced": true,
+        "anchorExists": true,
+        "companionActionResolves": true,
+        "visualCapability": {
+          "dog": "own",
+          "cat": "own",
+          "rabbit": "own"
+        },
+        "visualGap": false,
+        "reachableByPlayerTap": true,
+        "reachedIntendedAnchor": true,
+        "minDwellHolds": true,
+        "effectAppliedOnce": true,
+        "exitsCleanly": true,
+        "runtimePass": true
+      }
+    },
+    {
+      "itemId": "desk",
+      "itemLabel": "书桌",
+      "furnitureType": "work_surface",
+      "purpose": "专注的时候，在这里陪你一起工作",
+      "interactionPoints": [
+        "work"
+      ],
+      "anchorRole": "work",
+      "actionId": "study",
+      "actionLabel": "学习",
+      "companionAction": "focus_think",
+      "triggers": [
+        "focus_running",
+        "player_tap"
+      ],
+      "requiresUnlock": true,
+      "minDwellMs": 16000,
+      "maxDwellMs": 30000,
+      "effect": {
+        "energy": -4,
+        "mood": 0,
+        "focus": 10,
+        "relationship": 0,
+        "knowledge": []
+      },
+      "playerTapDeclared": true,
+      "checks": {
+        "itemCanBeOwned": true,
+        "itemCanBePlaced": true,
+        "anchorExists": true,
+        "companionActionResolves": true,
+        "visualCapability": {
+          "dog": "own",
+          "cat": "own",
+          "rabbit": "own"
+        },
+        "visualGap": false,
+        "reachableByPlayerTap": true,
+        "reachedIntendedAnchor": true,
+        "minDwellHolds": true,
+        "effectAppliedOnce": true,
+        "exitsCleanly": true,
+        "runtimePass": true
+      }
+    },
+    {
+      "itemId": "desk",
+      "itemLabel": "书桌",
+      "furnitureType": "work_surface",
+      "purpose": "专注的时候，在这里陪你一起工作",
+      "interactionPoints": [
+        "work"
+      ],
+      "anchorRole": "work",
+      "actionId": "craft",
+      "actionLabel": "做点小东西",
+      "companionAction": "craft_work",
+      "triggers": [
+        "player_tap",
+        "idle",
+        "routine"
+      ],
+      "requiresUnlock": true,
+      "minDwellMs": 14000,
+      "maxDwellMs": 26000,
+      "effect": {
+        "energy": -5,
+        "mood": 6,
+        "focus": 0,
+        "relationship": 0,
+        "knowledge": []
+      },
+      "playerTapDeclared": true,
+      "checks": {
+        "itemCanBeOwned": true,
+        "itemCanBePlaced": true,
+        "anchorExists": true,
+        "companionActionResolves": true,
+        "visualCapability": {
+          "dog": "own",
+          "cat": "own",
+          "rabbit": "own"
+        },
+        "visualGap": false,
+        "reachableByPlayerTap": true,
+        "reachedIntendedAnchor": true,
+        "minDwellHolds": true,
+        "effectAppliedOnce": true,
+        "exitsCleanly": true,
+        "runtimePass": true
+      }
+    },
+    {
+      "itemId": "bookshelf",
+      "itemLabel": "书架",
+      "furnitureType": "storage",
+      "purpose": "翻翻书，慢慢认识更多东西",
+      "interactionPoints": [
+        "front"
+      ],
+      "anchorRole": "front",
+      "actionId": "read",
+      "actionLabel": "看书",
+      "companionAction": "focus_read",
+      "triggers": [
+        "player_tap",
+        "idle",
+        "routine"
+      ],
+      "requiresUnlock": true,
+      "minDwellMs": 16000,
+      "maxDwellMs": 30000,
+      "effect": {
+        "energy": -3,
+        "mood": 4,
+        "focus": 8,
+        "relationship": 0,
+        "knowledge": [
+          "reading"
+        ]
+      },
+      "playerTapDeclared": true,
+      "checks": {
+        "itemCanBeOwned": true,
+        "itemCanBePlaced": true,
+        "anchorExists": true,
+        "companionActionResolves": true,
+        "visualCapability": {
+          "dog": "own",
+          "cat": "own",
+          "rabbit": "own"
+        },
+        "visualGap": false,
+        "reachableByPlayerTap": true,
+        "reachedIntendedAnchor": true,
+        "minDwellHolds": true,
+        "effectAppliedOnce": true,
+        "exitsCleanly": true,
+        "runtimePass": true
+      }
+    },
+    {
+      "itemId": "bookshelf",
+      "itemLabel": "书架",
+      "furnitureType": "storage",
+      "purpose": "翻翻书，慢慢认识更多东西",
+      "interactionPoints": [
+        "front"
+      ],
+      "anchorRole": "front",
+      "actionId": "search",
+      "actionLabel": "找一本书",
+      "companionAction": "focus_think",
+      "triggers": [
+        "idle",
+        "player_tap",
+        "routine"
+      ],
+      "requiresUnlock": true,
+      "minDwellMs": 12000,
+      "maxDwellMs": 22000,
+      "effect": {
+        "energy": -2,
+        "mood": 0,
+        "focus": 6,
+        "relationship": 0,
+        "knowledge": [
+          "exploring"
+        ]
+      },
+      "playerTapDeclared": true,
+      "checks": {
+        "itemCanBeOwned": true,
+        "itemCanBePlaced": true,
+        "anchorExists": true,
+        "companionActionResolves": true,
+        "visualCapability": {
+          "dog": "own",
+          "cat": "own",
+          "rabbit": "own"
+        },
+        "visualGap": false,
+        "reachableByPlayerTap": true,
+        "reachedIntendedAnchor": true,
+        "minDwellHolds": true,
+        "effectAppliedOnce": true,
+        "exitsCleanly": true,
+        "runtimePass": true
+      }
+    },
+    {
+      "itemId": "bed",
+      "itemLabel": "小床",
+      "furnitureType": "seating",
+      "purpose": "夜深了，睡一觉养足精神",
+      "interactionPoints": [
+        "lie"
+      ],
+      "anchorRole": "lie",
+      "actionId": "sleep",
+      "actionLabel": "睡觉",
+      "companionAction": "sleep",
+      "triggers": [
+        "night",
+        "player_tap",
+        "energy_low"
+      ],
+      "requiresUnlock": true,
+      "minDwellMs": 30000,
+      "maxDwellMs": 60000,
+      "effect": {
+        "energy": 34,
+        "mood": 6,
+        "focus": 0,
+        "relationship": 0,
+        "knowledge": []
+      },
+      "playerTapDeclared": true,
+      "checks": {
+        "itemCanBeOwned": true,
+        "itemCanBePlaced": true,
+        "anchorExists": true,
+        "companionActionResolves": true,
+        "visualCapability": {
+          "dog": "own",
+          "cat": "own",
+          "rabbit": "own"
+        },
+        "visualGap": false,
+        "reachableByPlayerTap": true,
+        "reachedIntendedAnchor": true,
+        "minDwellHolds": true,
+        "effectAppliedOnce": true,
+        "exitsCleanly": true,
+        "runtimePass": true
+      }
+    },
+    {
+      "itemId": "rug",
+      "itemLabel": "地毯",
+      "furnitureType": "seating",
+      "purpose": "随便坐坐，晒晒暖暖的光",
+      "interactionPoints": [
+        "seat"
+      ],
+      "anchorRole": "seat",
+      "actionId": "sit",
+      "actionLabel": "坐一会儿",
+      "companionAction": "room_sit",
+      "triggers": [
+        "idle",
+        "player_tap",
+        "routine"
+      ],
+      "requiresUnlock": true,
+      "minDwellMs": 12000,
+      "maxDwellMs": 24000,
+      "effect": {
+        "energy": 3,
+        "mood": 4,
+        "focus": 0,
+        "relationship": 0,
+        "knowledge": []
+      },
+      "playerTapDeclared": true,
+      "checks": {
+        "itemCanBeOwned": true,
+        "itemCanBePlaced": true,
+        "anchorExists": true,
+        "companionActionResolves": true,
+        "visualCapability": {
+          "dog": "fallback",
+          "cat": "fallback",
+          "rabbit": "fallback"
+        },
+        "visualGap": true,
+        "reachableByPlayerTap": true,
+        "reachedIntendedAnchor": true,
+        "minDwellHolds": true,
+        "effectAppliedOnce": true,
+        "exitsCleanly": true,
+        "runtimePass": true
+      }
+    }
+  ]
+}
