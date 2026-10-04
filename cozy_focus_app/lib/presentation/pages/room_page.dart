@@ -205,17 +205,34 @@ class _RoomPageState extends ConsumerState<RoomPage>
     // animation controller handles the visual transitions independently.
   }
 
+  /// The travel ticker, created once and then started and stopped.
+  ///
+  /// `SingleTickerProviderStateMixin` permits exactly one ticker for the lifetime
+  /// of the state, and `createTicker` **throws** on a second call. The previous
+  /// code disposed and re-created on every journey, so the second piece of
+  /// furniture the companion walked to threw — and it threw inside the
+  /// simulation's own tick, because the anchor-change listener runs from
+  /// `_evaluate`. Reproduced in logcat on the Pixel 7 emulator:
+  ///
+  /// ```
+  /// SingleTickerProviderStateMixin.createTicker (ticker_provider.dart:201)
+  ///   _RoomPageState._startTravelTicker (room_page.dart:210)
+  ///   _RoomPageState._onAnchorChanged (room_page.dart:198)
+  ///   RoomSimulationController._evaluate (room_simulation.dart:413)
+  ///   RoomSimulationController._tick (room_simulation.dart:303)
+  /// ```
+  ///
+  /// A Ticker restarts from zero, which is exactly what
+  /// `LocomotionController.startTravel` expects, so one instance is enough.
   void _startTravelTicker() {
-    _travelTicker?.dispose();
-    _travelTicker = createTicker((elapsed) {
-      final arrived = _locomotion.advanceTo(elapsed);
-      if (mounted) setState(() {});
-      if (arrived) {
-        _travelTicker?.dispose();
-        _travelTicker = null;
-      }
-    })
-      ..start();
+    final ticker = _travelTicker ??= createTicker(_onTravelTick);
+    if (!ticker.isActive) ticker.start();
+  }
+
+  void _onTravelTick(Duration elapsed) {
+    final arrived = _locomotion.advanceTo(elapsed);
+    if (mounted) setState(() {});
+    if (arrived) _travelTicker?.stop();
   }
 
   /// Applies a placement change and then lets the companion re-decide.
