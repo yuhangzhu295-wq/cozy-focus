@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
+import '../companion/collection/collection_acquisition.dart';
 import '../companion/collection_unlock.dart';
 import '../controllers/craft_controller.dart';
 import '../controllers/growth_controller.dart';
@@ -258,6 +259,26 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
       }
     }
 
+    final Map<String, int> placedCounts = {};
+    for (final placed in craftState.roomItems) {
+      placedCounts[placed.itemId] = (placedCounts[placed.itemId] ?? 0) + 1;
+    }
+
+    // P29.1 — the acquisition view is derived from the live craft, inventory and
+    // room state on every build, never copied into the catalog. Change a
+    // recipe's duration and this page changes with it.
+    CollectionAcquisitionViewModel vmFor(CollectionCatalogItem item) =>
+        CollectionAcquisitionViewModel.from(
+          itemId: item.id,
+          itemName: item.name,
+          obtainable: item.obtainable,
+          recipes: craftState.recipes,
+          activeJob: craftState.activeJob,
+          activeRecipe: craftState.activeRecipe,
+          ownedQuantity: inventoryQuantities[item.id] ?? 0,
+          placedCount: placedCounts[item.id] ?? 0,
+        );
+
     final filteredItems = _selectedCategory == '全部'
         ? kCollectionCatalog
         : kCollectionCatalog
@@ -295,7 +316,7 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
             const SizedBox(height: 16),
             _buildCategoryFilter(categories),
             const SizedBox(height: 16),
-            _buildCollectionGrid(filteredItems, inventoryQuantities),
+            _buildCollectionGrid(filteredItems, vmFor),
             const SizedBox(height: 20),
             _buildEncouragementBanner(),
             const SizedBox(height: 24),
@@ -417,7 +438,11 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
                     ),
                     SizedBox(height: 2),
                     Text(
-                      '用专注，解锁更多美好的事物吧！',
+                      // P29.6 — the loop, in the one place the page already
+                      // explains itself. This replaced a vague line rather than
+                      // adding a block: the copy was the problem, and a second
+                      // banner saying the same thing would be clutter.
+                      '选配方 → 专注变制作进度 → 做好入库存 → 摆进房间',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -517,9 +542,38 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
     );
   }
 
+  /// The acquisition detail for one item (P29.3).
+  ///
+  /// Every number in the sheet comes from the live recipe and job, so editing a
+  /// recipe changes this without touching the collection catalog.
+  Future<void> _showAcquisitionDetail(
+    CollectionAcquisitionViewModel vm,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
+      ),
+      builder: (sheetContext) => _AcquisitionSheet(
+        vm: vm,
+        onGo: (route) {
+          Navigator.of(sheetContext).pop();
+          // A recipe detail is a pushed page; the room and the inventory are
+          // destinations. Both are existing routes — no CTA here invents one.
+          if (route.startsWith('/craft/detail')) {
+            context.push(route);
+          } else {
+            context.go(route);
+          }
+        },
+      ),
+    );
+  }
+
   Widget _buildCollectionGrid(
     List<CollectionCatalogItem> items,
-    Map<String, int> inventoryQuantities,
+    CollectionAcquisitionViewModel Function(CollectionCatalogItem) vmFor,
   ) {
     return GridView.builder(
       shrinkWrap: true,
@@ -536,89 +590,90 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        final quantity = inventoryQuantities[item.id] ?? 0;
-        final isOwned = quantity > 0;
+        final vm = vmFor(item);
+        final isOwned = vm.ownedQuantity > 0;
 
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(
-              color: isOwned ? AppColors.primarySage : AppColors.border,
-              width: isOwned ? 1.5 : 1.0,
+        return GestureDetector(
+          onTap: vm.isTappable ? () => _showAcquisitionDetail(vm) : null,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(
+                color: isOwned ? AppColors.primarySage : AppColors.border,
+                width: isOwned ? 1.5 : 1.0,
+              ),
             ),
-          ),
-          padding: const EdgeInsets.all(6),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: isOwned
-                        ? AppColors.primaryLight
-                        : AppColors.surfaceMuted,
-                    child: Opacity(
-                      opacity: isOwned ? 1 : 0.48,
-                      child: CozyFurnitureArtwork(
-                        itemId: item.id,
-                        size: 36,
+            padding: const EdgeInsets.all(6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: isOwned
+                          ? AppColors.primaryLight
+                          : AppColors.surfaceMuted,
+                      child: Opacity(
+                        opacity: isOwned ? 1 : 0.48,
+                        child: CozyFurnitureArtwork(
+                          itemId: item.id,
+                          size: 36,
+                        ),
                       ),
                     ),
+                    if (!isOwned)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Colors.grey,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.lock_rounded,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  item.name,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isOwned
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
                   ),
-                  if (!isOwned)
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.grey,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.lock_rounded,
-                          size: 10,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                item.name,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color:
-                      isOwned ? AppColors.textPrimary : AppColors.textSecondary,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                isOwned
-                    ? '已拥有 x$quantity'
-                    : item.obtainable
-                        ? '未收集'
-                        : '未开放',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 9,
-                  color:
-                      isOwned ? AppColors.primarySage : AppColors.textTertiary,
-                  fontWeight: isOwned ? FontWeight.bold : FontWeight.normal,
+                const SizedBox(height: 2),
+                Text(
+                  vm.statusLine,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: isOwned
+                        ? AppColors.primarySage
+                        : AppColors.textTertiary,
+                    fontWeight: isOwned ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -660,4 +715,111 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
       ),
     );
   }
+}
+
+/// The acquisition detail sheet.
+///
+/// Shows what the item is, how it is obtained, how much real progress it needs,
+/// what the current state is and what the player can do next — the five things
+/// P29.3 asks for — and nothing the product cannot back up.
+class _AcquisitionSheet extends StatelessWidget {
+  final CollectionAcquisitionViewModel vm;
+  final void Function(String route) onGo;
+
+  const _AcquisitionSheet({required this.vm, required this.onGo});
+
+  @override
+  Widget build(BuildContext context) {
+    final recipe = vm.recipe;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CozyFurnitureArtwork(itemId: vm.itemId, size: 40),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(vm.itemName,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _row('获取方式', vm.howToObtain),
+          if (recipe != null) ...[
+            const SizedBox(height: 8),
+            _row('制作工坊', recipe.name),
+            const SizedBox(height: 8),
+            _row('需要专注', '${recipe.requiredMinutes} 分钟'),
+            const SizedBox(height: 8),
+            // Materials are read from the recipe, not asserted. Today every
+            // shipped recipe costs time only, and the sheet says so rather than
+            // showing an empty list that reads like a missing feature.
+            _row('材料需求', vm.requiresMaterials ? _materialsText() : '无需额外材料'),
+          ],
+          if (vm.status == CollectionAcquisitionStatus.crafting) ...[
+            const SizedBox(height: 8),
+            _row('当前进度',
+                '${vm.progressSeconds ~/ 60} / ${vm.requiredMinutes} 分钟'),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: vm.progressFraction,
+                minHeight: 6,
+                backgroundColor: AppColors.surfaceMuted,
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(AppColors.primarySage),
+              ),
+            ),
+          ],
+          if (vm.ownedQuantity > 0) ...[
+            const SizedBox(height: 8),
+            _row('当前拥有', 'x${vm.ownedQuantity}'),
+          ],
+          if (vm.placedCount > 0) ...[
+            const SizedBox(height: 8),
+            _row('已摆放', 'x${vm.placedCount}'),
+          ],
+          const SizedBox(height: 18),
+          // An unavailable item gets no button at all. A disabled one would
+          // imply a path that does not exist.
+          if (vm.ctaLabel != null && vm.ctaRoute != null)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => onGo(vm.ctaRoute!),
+                child: Text(vm.ctaLabel!),
+              ),
+            )
+          else
+            const Text('当前版本尚未开放',
+                style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
+        ],
+      ),
+    );
+  }
+
+  String _materialsText() =>
+      vm.ingredientCosts.entries.map((e) => '${e.key} x${e.value}').join('、');
+
+  Widget _row(String label, String value) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 72,
+            child: Text(label,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textTertiary)),
+          ),
+          Expanded(
+            child:
+                Text(value, style: const TextStyle(fontSize: 12, height: 1.4)),
+          ),
+        ],
+      );
 }
