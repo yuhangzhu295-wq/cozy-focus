@@ -1,0 +1,69 @@
+{
+  "note": "Every step was reached through the call the app makes. No SQLite writes, no seeding of the target furniture, craft or placement.",
+  "targetItemId": "bed",
+  "steps": [
+    {
+      "screen": "图鉴 / Collection",
+      "action": "看到未收集的小床",
+      "expected": "卡片可点，且指出获取路径",
+      "observed": "status=craftable cta=开始制作",
+      "next_action_visible": "打开获取详情"
+    },
+    {
+      "screen": "获取详情 / Acquisition",
+      "action": "查看获取方式",
+      "expected": "说明如何获得、需要多久",
+      "observed": "在制作工坊开始制作，专注时间会变成制作进度；需要专注 60 分钟",
+      "next_action_visible": "开始制作"
+    },
+    {
+      "screen": "制作 / Craft",
+      "action": "开始制作",
+      "expected": "真实的制作任务开始",
+      "observed": "job=bed status=crafting",
+      "next_action_visible": "继续专注"
+    },
+    {
+      "screen": "专注 / Focus",
+      "action": "开始专注",
+      "expected": "专注会话真实运行",
+      "observed": "status=running",
+      "next_action_visible": "专注推进制作"
+    },
+    {
+      "screen": "专注完成 / Focus done",
+      "action": "完成专注",
+      "expected": "专注时间变成制作进度并完成",
+      "observed": "inventory=1",
+      "next_action_visible": "去房间摆放"
+    },
+    {
+      "screen": "图鉴 / Collection",
+      "action": "回到图鉴",
+      "expected": "显示已拥有",
+      "observed": "已拥有 x1",
+      "next_action_visible": "去房间摆放"
+    },
+    {
+      "screen": "房间 / Room",
+      "action": "摆放小床",
+      "expected": "真实房间行存在",
+      "observed": "placed=1",
+      "next_action_visible": "点击家具"
+    },
+    {
+      "screen": "房间 / Room",
+      "action": "点击小床选择「睡觉」",
+      "expected": "宠物接受这个动作",
+      "observed": "action=sleep cause=player_request",
+      "next_action_visible": "宠物走过去并开始"
+    },
+    {
+      "screen": "房间 / Room",
+      "action": "等待",
+      "expected": "动作保持承诺的时长",
+      "observed": "dwell=30s of 30s",
+      "next_action_visible": "（流程结束）"
+    }
+  ]
+}
