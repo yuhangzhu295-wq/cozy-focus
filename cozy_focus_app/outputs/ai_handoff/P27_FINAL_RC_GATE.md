@@ -34,7 +34,7 @@ non-`PASS` gate may lack evidence, and the three known-blocked gates must still
 read `BLOCKED` — so greening one requires deliberately updating that test rather
 than the report quietly changing.
 
-### Result at `ce484a9`
+### Result at `b911caa`
 
 | Gate | Status | Evidence |
 |---|---|---|
@@ -184,8 +184,8 @@ remains an art task.
 
 | | |
 |---|---|
-| `LOCAL_HEAD` | `PENDING_COMMIT` |
-| `REMOTE_HEAD` | `PENDING_COMMIT` |
+| `LOCAL_HEAD` | `b911caa` |
+| `REMOTE_HEAD` | `b911caa` |
 | `LOCAL_EQUALS_REMOTE` | **YES** |
 | production code changed | **yes** — D5 only (see below) |
 | `FINAL_GATE` | `NO_GO` at the revision reviewed; the P1 is now closed |

@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-04 20:28:51",
-  "head": "de9a730f83b73f7573181ed84047c751ab3823e4",
-  "remote_head": "de9a730f83b73f7573181ed84047c751ab3823e4",
+  "generated_at": "2026-10-04 20:32:45",
+  "head": "b911caab1df0280a073d86c097f7a2d66824a2c7",
+  "remote_head": "b911caab1df0280a073d86c097f7a2d66824a2c7",
   "local_equals_remote": true,
   "counts": {
     "PASS": 12,
@@ -13,61 +13,61 @@
       "gate": "FORMAT",
       "status": "PASS",
       "evidence": "270 files, 0 changed",
-      "seconds": 2.5
+      "seconds": 4.3
     },
     {
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 10.4
+      "seconds": 13.9
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
       "evidence": "1202/1202 passed",
-      "seconds": 85.4
+      "seconds": 81.8
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "20/20 passed",
-      "seconds": 11.9
+      "seconds": 15.9
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 5.7
+      "seconds": 5.0
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "15/15 passed",
-      "seconds": 13.3
+      "seconds": 9.6
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "51/51 passed",
-      "seconds": 11.0
+      "seconds": 14.1
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 10.9
+      "seconds": 12.1
     },
     {
       "gate": "APK",
       "status": "PASS",
       "evidence": "29.5 MB (budget 34 MB)",
-      "seconds": 21.1
+      "seconds": 18.0
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "48.1 MB (budget 55 MB)",
-      "seconds": 12.5
+      "seconds": 13.4
     },
     {
       "gate": "DIFF_CHECK",
@@ -109,7 +109,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 6.1
+      "seconds": 6.0
     },
     {
       "gate": "FLOW_GENERATION",
