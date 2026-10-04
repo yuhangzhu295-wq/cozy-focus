@@ -131,6 +131,12 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                       recipe: recipe,
                       placedCount: placed,
                       unplacedCount: unplaced,
+                      // Navigates; it does not place. The label used to read
+                      // 摆放到房间, which promised the furniture would be put
+                      // down — the P30 device walk tapped it, landed in the
+                      // room, and the database still had zero room rows. Placing
+                      // needs a position, and the room's own 摆放家具 toolbar is
+                      // where that happens, so the button says where it goes.
                       onPlace: () => context.go('/room'),
                     );
                   },
@@ -536,7 +542,7 @@ class _InventoryCell extends StatelessWidget {
               ),
               icon: const Icon(Icons.add_home_work_outlined, size: 16),
               onPressed: unplacedCount > 0 ? onPlace : null,
-              label: Text(unplacedCount > 0 ? '摆放到房间' : '已全部摆放'),
+              label: Text(unplacedCount > 0 ? '去房间摆放' : '已全部摆放'),
             ),
           ),
         ],
