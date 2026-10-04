@@ -1,0 +1,6 @@
+P28TRACE|eval via=tick force=false owesDwell=false committed=search remaining=-1999ms commitment=-
+P28TRACE|  commit cause=routine action=search anchor=bookshelf_anchor room=qa_room_bookshelf endsAt=422002ms
+P28TRACE|eval via=tick force=false owesDwell=false committed=search remaining=-2000ms commitment=-
+P28TRACE|  commit cause=tired action=sleep anchor=bed_anchor room=qa_room_bed endsAt=454003ms
+P28TRACE|eval via=tick force=false owesDwell=false committed=sleep remaining=-1998ms commitment=-
+P28TRACE|  commit cause=routine action=search anchor=bookshelf_anchor room=qa_room_bookshelf endsAt=468001ms
