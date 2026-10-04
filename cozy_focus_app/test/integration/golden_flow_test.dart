@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
@@ -51,16 +52,23 @@ void main() {
   late AppDatabase db;
   late _MutableClock clock;
   late ProviderContainer container;
+  late Directory selectionDir;
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     clock = _MutableClock(DateTime(2026, 10, 3, 10, 0, 0));
+    // A real directory, so the companion selection is genuinely persisted. An
+    // in-memory store here would make the restart assertion below vacuous: it
+    // would assert that a value written two lines earlier is still readable two
+    // lines later, in the same object.
+    selectionDir = Directory.systemTemp.createTempSync('cozy_golden_sel_');
     container = ProviderContainer(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         focusClockProvider.overrideWithValue(clock),
-        companionSelectionStoreProvider
-            .overrideWithValue(InMemoryCompanionSelectionStore()),
+        companionSelectionStoreProvider.overrideWithValue(
+          FileCompanionSelectionStore(directoryOverride: selectionDir),
+        ),
       ],
     );
   });
@@ -68,15 +76,34 @@ void main() {
   tearDown(() async {
     container.dispose();
     await db.close();
+    // Best-effort. On Windows the selection file's handle can outlive the read
+    // by a moment, and a failed cleanup is a harness annoyance rather than a
+    // result -- it must not turn a passing test red.
+    for (var attempt = 0; attempt < 5; attempt++) {
+      try {
+        if (selectionDir.existsSync()) {
+          selectionDir.deleteSync(recursive: true);
+        }
+        return;
+      } on FileSystemException {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+    }
   });
 
   /// A container over the same database — a restart, not a reset.
+  /// A container over the same database *and the same selection file*.
+  ///
+  /// The file matters: `companionSelectionStoreProvider` is overridden in both
+  /// places, so pointing the restart at a fresh store would make the
+  /// "survives a restart" assertion below prove nothing.
   ProviderContainer restart() => ProviderContainer(
         overrides: [
           appDatabaseProvider.overrideWithValue(db),
           focusClockProvider.overrideWithValue(clock),
-          companionSelectionStoreProvider
-              .overrideWithValue(InMemoryCompanionSelectionStore()),
+          companionSelectionStoreProvider.overrideWithValue(
+            FileCompanionSelectionStore(directoryOverride: selectionDir),
+          ),
         ],
       );
 

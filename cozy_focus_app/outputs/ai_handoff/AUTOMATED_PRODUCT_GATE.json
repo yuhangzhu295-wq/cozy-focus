@@ -1,0 +1,123 @@
+{
+  "generated_at": "2026-10-04 14:17:34",
+  "head": "ce2b91dd03a67080166f665d0d14a668d6e30f61",
+  "remote_head": "ce2b91dd03a67080166f665d0d14a668d6e30f61",
+  "local_equals_remote": true,
+  "counts": {
+    "PASS": 11,
+    "BLOCKED": 3,
+    "DEFERRED": 3,
+    "FAIL": 1
+  },
+  "gates": [
+    {
+      "gate": "FORMAT",
+      "status": "PASS",
+      "evidence": "268 files, 0 changed",
+      "seconds": 2.5
+    },
+    {
+      "gate": "ANALYZE",
+      "status": "PASS",
+      "evidence": "0 issues",
+      "seconds": 8.7
+    },
+    {
+      "gate": "UNIT_TESTS",
+      "status": "PASS",
+      "evidence": "1190/1190 passed",
+      "seconds": 72.6
+    },
+    {
+      "gate": "INTEGRATION_TESTS",
+      "status": "PASS",
+      "evidence": "20/20 passed",
+      "seconds": 7.3
+    },
+    {
+      "gate": "GOLDEN_FLOW",
+      "status": "PASS",
+      "evidence": "6/6 passed",
+      "seconds": 3.7
+    },
+    {
+      "gate": "MIGRATION",
+      "status": "PASS",
+      "evidence": "15/15 passed",
+      "seconds": 6.9
+    },
+    {
+      "gate": "LIFECYCLE",
+      "status": "PASS",
+      "evidence": "46/46 passed",
+      "seconds": 6.8
+    },
+    {
+      "gate": "ASSET_GATES",
+      "status": "PASS",
+      "evidence": "75/75 passed",
+      "seconds": 7.4
+    },
+    {
+      "gate": "APK",
+      "status": "PASS",
+      "evidence": "29.5 MB (budget 34 MB)",
+      "seconds": 9.4
+    },
+    {
+      "gate": "AAB",
+      "status": "PASS",
+      "evidence": "48.1 MB (budget 55 MB)",
+      "seconds": 7.5
+    },
+    {
+      "gate": "DIFF_CHECK",
+      "status": "PASS",
+      "evidence": "no whitespace errors",
+      "seconds": 0.1
+    },
+    {
+      "gate": "RELEASE_SIGNING",
+      "status": "BLOCKED",
+      "evidence": "RELEASE_SIGNING = NOT_RECOVERED: android/key.properties is absent, and no keystore was invented. The build switches over with no code change the moment it appears.",
+      "seconds": 0.0
+    },
+    {
+      "gate": "LAUNCHER_ICON",
+      "status": "BLOCKED",
+      "evidence": "still the stock Flutter logo (dominant colours 0,0,0 / 84,197,248 / 1,87,155); no approved artwork exists, so none was invented",
+      "seconds": 0.0
+    },
+    {
+      "gate": "OWNER_VISUAL_GATE",
+      "status": "DEFERRED",
+      "evidence": "OWNER_VISUAL_GATE is REQUIRED and is never decided by a measurement. P21's technical gates pass; whether the art reads well is human judgement.",
+      "seconds": 0.0
+    },
+    {
+      "gate": "DEVICE_MATRIX",
+      "status": "DEFERRED",
+      "evidence": "device verification exists and is recorded (collection, craft, P7 toolbar, room alignment, the rabbit pack, the P11 routine, indexed sprites, the P14 fix, and the P21 idle and travel motion gates) - but it was driven by hand each time, not by this script. A re-runnable device matrix would need an unattended driver.",
+      "seconds": 0.0
+    },
+    {
+      "gate": "PRODUCT_DECISIONS",
+      "status": "DEFERRED",
+      "evidence": "P25 records 7 PRODUCT_DECISION_REQUIRED, 6 DEFERRED and 4 BLOCKED_EXTERNAL. Nothing was implemented to close a question.",
+      "seconds": 0.0
+    },
+    {
+      "gate": "BEHAVIOR_AUTHORITY",
+      "status": "FAIL",
+      "evidence": "BEHAVIOR_AUTHORITY_COUNT = 2 (gate 1): the room runs two behaviour decisions that can disagree. Open pending the P25 D5 decision - does tapping furniture choose the action or only the destination. Fixing it before that answer would be fixing it the wrong way.",
+      "seconds": 0.0
+    },
+    {
+      "gate": "FLOW_GENERATION",
+      "status": "BLOCKED",
+      "evidence": "FLOW_GENERATION: no video surface reachable in Flow, and Flow's own banner reports video generation degraded. The video-to-sprite pipeline is built and validated against a local clip; no production video art exists.",
+      "seconds": 0.0
+    }
+  ],
+  "note": "Every gate shells out to the command that already exists; none re-implements a check. BLOCKED is never reported as PASS."
+}

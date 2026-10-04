@@ -27,12 +27,27 @@ void main() {
 
   test('the parity check covers every companion the data declares', () {
     // The property that makes the rest of this file meaningful. If someone adds
-    // a companion to the catalog and this file still only checks three, the
-    // suite would be green and wrong.
+    // a companion and this file still only checks three, the suite would be
+    // green and wrong.
+    //
+    // An earlier version compared `companions` against the expression it was
+    // derived from -- the same expression on both sides, so it could never fail.
+    // This compares the *sources* instead, which can disagree: a companion
+    // present in one and missing from the other is a real defect, and it is the
+    // shape an incomplete addition actually takes.
     expect(companions, isNotEmpty);
-    expect(companions.map((c) => c.value).toSet(),
-        CompanionManifestData.profiles.keys.map((c) => c.value).toSet(),
-        reason: 'the loop must be over the data, not a hard-coded list');
+
+    final profiles =
+        CompanionManifestData.profiles.keys.map((c) => c.value).toSet();
+    final actionManifests = CompanionActionManifestData.manifests.keys.toSet();
+
+    expect(companions.map((c) => c.value).toSet(), profiles,
+        reason: 'the parity loop must cover exactly the catalog profiles');
+    expect(actionManifests, profiles,
+        reason: 'a companion with a catalog profile and no action manifest, or '
+            'the reverse, would be half-registered. Profiles only: '
+            '${profiles.difference(actionManifests)}; manifests only: '
+            '${actionManifests.difference(profiles)}');
   });
 
   group('five dimensions, compared against the dog as reference', () {
