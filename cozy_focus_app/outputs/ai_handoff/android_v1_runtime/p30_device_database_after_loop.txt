@@ -1,0 +1,4 @@
+room_items: [('50b000fe-1153-4c39-a447-21527439ec42', 'rug', 0.3, 0.3, 1)]
+inventory: [('rug', 1)]
+craft_jobs: [('rug', 'completed', 1818)]
+focus_records: 2
