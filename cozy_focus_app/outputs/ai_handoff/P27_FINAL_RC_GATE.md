@@ -162,20 +162,49 @@ fixture, which seeds through the real repositories. Screenshots are in
 | `d5_room_two_anchors_sit.png` | rug + sofa placed; the cat is seated on the cushion and the status reads 正在坐一会儿 |
 | `d5_room_craft_at_desk.png` | all five items placed; the cat is at the desk and the status reads 正在做点小东西 |
 | `d5_room_craft_frame_b.png`, `d5_room_craft_frame_c.png` | the same commitment, frames apart — the craft sequence is playing, not frozen |
+| `d5_room_search_at_bookshelf.png` | the cat has walked to the bookshelf and the status reads 正在找一本书 — `search`, not the `read` the anchor alone would have given |
+| `d5_sofa_panel_open.png` | the furniture use panel, listing 让 Mochi 坐下 / 休息 / 打个盹 |
 
 **What this shows:** the action name in the status bar and the pose the avatar
-draws agree. That is the D5 property, observed rather than inferred.
+draws agree, across four different actions on three different pieces of
+furniture. That is the D5 property, observed rather than inferred.
 
-**What it does not show, stated plainly.** The furniture *use panel* — where the
-player picks 坐下 / 休息 / 打个盹 — did not open under adb-synthesised input, on
-any of the five items. The panel is not at fault: `p21_sofa_panel.png`, captured
-earlier with a real touch, shows it working and listing all three actions. The
-likely cause is that `input tap` reaches Flutter as a pan, which the room page
-uses for dragging furniture. **So "pick 休息 and watch the pose change" was not
-exercised on the device in this pass.** The pose is proven to follow the
-committed action by
-`test/presentation/companion/runtime/room_committed_action_test.dart`, but a test
-is not a finger and the difference is worth keeping.
+### The panel needed a real click, and that is now settled
+
+`adb shell input tap` does **not** reach the furniture's `GestureDetector` on any
+of the five items — the panel never opened. The cause is confirmed rather than
+guessed: driving the same emulator through Computer Use, with a real pointer, opens
+it every time (`d5_sofa_panel_open.png`). `input tap` is reaching Flutter as a pan,
+and the room page uses a pan to drag furniture — which is also why the companion
+appeared frozen during that earlier pass: `onPanStart` sets `arranging`, and a
+synthesised tap that never delivers the matching end leaves the simulation
+declining to choose. **Both of those were artifacts of my input method, not
+product defects**, and the earlier note in this document saying the companion was
+simply parked is superseded by this.
+
+### One observation I could not explain
+
+Choosing **让 Mochi 坐下** from the sofa panel does take effect: the status reads
+正在坐下 and the sit effect lands (心情 75 → 78). But within roughly two to four
+seconds the status is back to 正在找一本书 and the companion has not left the
+bookshelf. Six frames at four-second intervals are all 正在找一本书, so the revert
+happened before the first of them.
+
+That does not match the code I read. `_forRequest` builds the decision through
+`_decisionFor`, which sets `dwell: action.minDwell` — 14 seconds for the sofa's
+`sit` — and `_evaluate` returns early while `activity.endsAt > elapsedSinceStart`.
+The panel's `onUse` only calls `requestAction` and closes; it does not force a
+re-evaluation. So a commitment that expires in a few seconds is not what those
+lines predict.
+
+**I am recording this as an open observation, not a diagnosis.** The most
+plausible mechanism I can see is a large tick delta: `_tick` advances
+`elapsedSinceStart` by `now.difference(_lastTick)`, so one long gap would push the
+clock past a freshly set `endsAt` and expire the commitment immediately. I have
+not instrumented it, so I am not claiming it. It needs a look before release,
+because "tap the sofa and the cat sits on the sofa" is the behaviour a player will
+expect from that panel.
+
 
 ---
 
