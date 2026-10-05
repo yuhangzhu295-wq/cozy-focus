@@ -4,20 +4,18 @@
   "branch": "recovery/v4.2.1-rebuild",
   "updated_at_slice": "P32A archive reader",
   "phase": "P32",
-  "slice": "P32A_extractor_partial",
+  "slice": "P32A_extractor_partial + P34 prerequisite (manifest geometry)",
   "start_sha": "0a116e2",
-  "latest_sha": "59b5cdd",
-  "remote_sha": "59b5cdd",
+  "latest_sha": "65a2a29",
+  "remote_sha": "65a2a29",
   "local_equals_remote": true,
   "worktree": "clean",
-
   "completed_phases": {
     "P28_action_truth": "PASS",
     "P29_acquisition_ux": "PASS",
     "P30_user_golden_flow": "PASS (device-walked, database-verified)",
     "P31_companion_pack_standard": "PASS"
   },
-
   "completed_slices_p32": [
     "P32 dependency audit + archive ^4.3.0 (0a116e2) — 2 additive packages, no drift",
     "P32A archive policy: traversal, bombs, entry count, symlinks, duplicates (83ab5c3)",
@@ -25,56 +23,49 @@
     "P32B pack validator: strict, refuses rather than defaults (aa93aec)",
     "P32C install rules: safe pack id, built-in collision, species (ece716d)",
     "P32D registry: installed packs, revision counter, selection repair (271ca6d)",
-    "P32A archive reader: decode + policy, returns bytes not writes (59b5cdd)"
+    "P32A archive reader: decode + policy, returns bytes not writes (59b5cdd)",
+    "P34 prerequisite: manifest.py verifies geometry against the pack contract instead of certifying itself, with the uniform-shift negative proof (65a2a29)"
   ],
-
   "test_counts": {
     "full_suite": "1333/1333",
     "pack_suite": "86",
     "format": "PASS (287 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)"
   },
-
   "runtime_evidence": {
     "device": "Pixel 7 API 34 emulator",
     "P30_loop": "collection -> craft -> 30min focus -> inventory -> room -> furniture action, verified against the device SQLite",
     "P28_dwell": "instrumented decision trace showed a player action held its full 18s dwell",
     "artifacts": "outputs/ai_handoff/android_v1_runtime/"
   },
-
   "open_findings": [
+    "P34: the geometry fix is in, but no pack has been rebuilt through it yet. The existing dog/cat/rabbit manifests were produced by the old self-certifying code, so their declared 458/255 has never actually been checked against their frames. Rebuilding one pack is the first real exercise of the new check.",
     "P32: symlink rejection is NOT verified through the reader. ZipEncoder drops symbolicLink through a round trip, so isSymbolicLink comes back false. The policy refusal is covered directly; whether the decoder reports a real symlink is unverified.",
     "P32: duplicate-name ZIP entries cannot be built with ZipEncoder; the policy rule is covered directly but not through the reader.",
     "P32: the reader does not fabricate a compressed size, so the expansion-ratio bomb check is inert on this path; per-entry and total byte caps still apply.",
-    "P31/P34: manifest.py derives groundBaseline/centerAnchor from the mean of the output frames themselves, so a uniformly drifted pack self-certifies. Must be fixed before P34 PASS; expected geometry needs an independent source, plus a negative proof (shift all frames -> geometry gate must fail).",
     "docs/companion_assets.md is stale: claims 1024x1024 canvas with 919/511 anchors and that every pack must be added to pubspec.yaml; the real JSON is 512x512 with ~458/255.",
     "P33: multi_companion_parity_test forces every profile to the dog's 13 actions. Right for built-ins, wrong as an admission requirement for a user partial pack; the two contracts must be scoped apart.",
     "P28.4: room_sit still projects to idle with no frames of its own; sofa/sit and rug/sit are hidden from the panel, but the routine and idle still select room_sit.",
     "Room: the travel ticker starts immediately after startTravel and _onCompanionAnimationChanged is empty, so the comment claiming movement waits for stand_up describes behaviour the code does not implement."
   ],
-
   "known_blockers": {
     "RELEASE_SIGNING": "NOT_RECOVERED — android/key.properties absent, no keystore invented",
     "LAUNCHER_ICON": "BLOCKED — stock Flutter icon, no approved artwork",
     "OWNER_VISUAL_GATE": "REQUIRED",
     "VERTEX_AI": "BLOCKED_EXTERNAL — no credentials, no project, no gcloud (relevant to P37 only)"
   },
-
   "owner_decisions_required": [
     "P32 §31A: a displayed 30-minute session settles 29:55, five seconds under a 1800s recipe. Reproduce the exact cause first; fix if it is a defect, else PRODUCT_DECISION_REQUIRED between elapsed truth and planned-duration grace.",
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-
-  "next_action": "P32C: atomic installer. Take CompanionPackReadResult.files, validate the manifest and PNGs against the extracted bytes, write into <app-data>/companion_import_staging/<uuid>/, then rename into <app-data>/companions/<packId>/. No partial install may enter the registry. Then P32D dynamic frame source (CompanionFrameSource: AssetImage vs FileImage) and P32E runtime refresh via the registry revision.",
-
+  "next_action": "P32C: atomic installer. Take CompanionPackReadResult.files, validate the manifest and PNGs against the extracted bytes, write into <app-data>/companion_import_staging/<uuid>/, then rename into <app-data>/companions/<packId>/. No partial install may enter the registry. Before implementing, run the HY4 audit the program requires for the runtime half, because making an installed pack appear without a restart means changing when CompanionAvatar, CompanionBehaviorDirector, the visual registry and the catalog rebuild.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git rev-parse origin/recovery/v4.2.1-rebuild; git status --short",
     "read this file",
     "read outputs/ai_handoff/P32_LOCAL_IMPORT_EXPORT.md",
     "continue from next_action; do not redo completed phases"
   ],
-
   "process_notes": [
     "Never write file content through a shell heredoc in this environment: it has silently truncated content three times (one commit message, two file writes). Use the file tool and verify after writing.",
     "Prefer patching by rewriting a file whole over matching long anchors: dart format rewraps and breaks anchors silently.",
