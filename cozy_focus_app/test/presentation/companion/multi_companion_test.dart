@@ -11,6 +11,9 @@ import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_selection.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_visual_registry.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_spec.dart';
+import 'package:cozy_focus_app/presentation/companion/pack/installed_pack_profiles.dart';
+import 'package:cozy_focus_app/presentation/companion/pack/installed_pack_registry.dart';
+import 'package:cozy_focus_app/presentation/companion/pack/installed_packs_provider.dart';
 import 'package:cozy_focus_app/presentation/companion/procedural_companion_art.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_asset_resolver.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
@@ -372,5 +375,105 @@ void main() {
       );
       expect(semantics.hasFlag(SemanticsFlag.isSelected), isTrue);
     });
+
+    testWidgets('the picker offers a way into the import flow', (tester) async {
+      // A feature a user cannot find is a feature that does not exist, and this
+      // is the only door to a custom companion.
+      final c = containerWith(InMemoryCompanionSelectionStore());
+      await tester.pumpWidget(app(c));
+      await tester.pump();
+
+      expect(find.text('导入宠物包'), findsOneWidget);
+      expect(find.byIcon(Icons.add_circle_outline_rounded), findsOneWidget);
+    });
+
+    testWidgets('only an imported companion offers export and delete',
+        (tester) async {
+      // A tall surface so the fourth card is built: the list is lazy, and on the
+      // default 800x600 test window the imported companion is below the fold.
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final root = Directory.systemTemp.createTempSync('cozy_picker_');
+      addTearDown(() {
+        if (root.existsSync()) root.deleteSync(recursive: true);
+      });
+      _writePackTo(root, 'mimi');
+
+      final c = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          companionSelectionStoreProvider
+              .overrideWithValue(InMemoryCompanionSelectionStore()),
+          homeControllerProvider.overrideWith(
+            (ref) => _PresetHomeController(ref, const HomeUIState()),
+          ),
+          companionPackRootProvider.overrideWithValue(root.path),
+        ],
+      );
+      addTearDown(c.dispose);
+
+      c.read(installedPacksProvider.notifier).install(
+            const InstalledCompanionPack(
+              packId: 'mimi',
+              displayName: '小豆',
+              species: 'dog',
+              source: 'local_import',
+              formatVersion: 1,
+              checksum: 'abc',
+              relativeDirectory: 'companion_packs/mimi',
+            ),
+          );
+
+      await tester.pumpWidget(app(c));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      // It is listed, and marked as one the user brought in.
+      expect(find.text('小豆'), findsOneWidget);
+      expect(find.text('导入的'), findsOneWidget);
+
+      // Exactly one menu: the built-in three are part of the app, and offering
+      // to delete them would promise something the app does not do.
+      expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
+    });
   });
+}
+
+/// Writes an installed pack to [root], as the installer would have.
+///
+/// The frames are a real PNG because the picker draws the companion: a file that
+/// is not an image would fail to decode and turn a UI assertion into a decode
+/// error.
+void _writePackTo(Directory root, String packId) {
+  final dir = Directory('${root.path}/$packId')..createSync(recursive: true);
+  File('${dir.path}/manifest.json').writeAsStringSync(jsonEncode({
+    'companionId': packId,
+    'posePack': '${packId}_art',
+    'canvas': {'width': 512, 'height': 512},
+    'groundBaseline': 458,
+    'centerAnchor': 255,
+    'actions': {
+      'idle': {
+        'frames': ['idle_000.png', 'idle_001.png'],
+        'fps': 5,
+        'loopMode': 'loop',
+      },
+    },
+  }));
+  final png = <int>[
+    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, //
+    0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+    0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+    0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
+    0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+    0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+    0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+    0x42, 0x60, 0x82,
+  ];
+  for (final name in const ['idle_000.png', 'idle_001.png']) {
+    File('${dir.path}/$name').writeAsBytesSync(png);
+  }
 }
