@@ -1,13 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+
+import 'presentation/companion/pack/companion_pack_install_plan.dart';
+import 'presentation/companion/pack/installed_pack_profiles.dart';
 import 'presentation/navigation/app_router.dart';
 import 'presentation/theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Where installed companion packs live. Resolved once, here, rather than in a
+  // provider: the catalog is synchronous and a build must not await a path. Until
+  // this runs, `companionPackRootProvider` is null and nothing is installed -
+  // which is true, and a better answer than a guess.
+  final documents = await getApplicationDocumentsDirectory();
+
   runApp(
-    const ProviderScope(
-      child: CozyFocusApp(),
+    ProviderScope(
+      overrides: [
+        companionPackRootProvider.overrideWithValue(
+          '${documents.path}/${CompanionPackInstallRules.root}',
+        ),
+      ],
+      child: const CozyFocusApp(),
     ),
   );
 }
