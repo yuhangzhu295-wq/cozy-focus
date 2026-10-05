@@ -1,3 +1,9 @@
+> **SUPERSEDED by P31_COMPANION_PACK_STANDARD.md.** The owner changed the roadmap to
+> pack-first: a companion is a `CompanionAssetPack`, and cloud AI is an optional
+> convenience that produces one rather than the product object itself. The findings
+> below still stand — Vertex credentials are absent on this machine, and built-in
+> parity demands thirteen actions — and both are carried into the new document.
+
 # P31 — Custom Pet Technical Spike
 
 Bounded spike, not a product commitment. Read-only architecture audit at
