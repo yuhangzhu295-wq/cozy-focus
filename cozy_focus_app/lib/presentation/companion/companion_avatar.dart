@@ -14,6 +14,7 @@ import 'runtime/companion_event.dart';
 import 'companion_presentation_mapper.dart';
 import 'focus_phase.dart';
 import 'companion_selection.dart';
+import 'pack/companion_availability_provider.dart';
 import 'pack/installed_pack_profiles.dart';
 import 'companion_visual_registry.dart';
 import 'runtime/companion_behavior_director.dart';
@@ -203,6 +204,11 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
       // can make behaviour selection deterministic. See
       // [companionRandomSourceProvider].
       random: ref.read(companionRandomSourceProvider),
+      // And this one so an installed pack is asked for what it actually ships.
+      // Without it the director falls back to the built-in table, which knows
+      // nothing about a pack the user brought, and would schedule the dog's
+      // thirteen actions against artwork that has four.
+      availabilityOf: ref.read(companionAvailabilityProvider),
     );
     // The opening pose is already in place; only later changes need a transition.
     _animation.settleAt(_director.intent);
@@ -445,6 +451,7 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
       catalog: catalog,
       context: _readContext(),
       random: ref.read(companionRandomSourceProvider),
+      availabilityOf: ref.read(companionAvailabilityProvider),
     );
     _animation.settleAt(_director.intent);
   }

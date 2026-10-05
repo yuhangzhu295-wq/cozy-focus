@@ -95,6 +95,7 @@ void main() {
 
   testWidgets('a picked pack is described before anything is written',
       (tester) async {
+    useTallSurface(tester);
     final c = containerWith(_FakePicker(
       PickedCompanionPack('mimi.cozy_pet', goodPack(name: '小豆')),
     ));
@@ -109,10 +110,17 @@ void main() {
     // The preview: what the user is about to install, and the two things only
     // they can answer.
     expect(find.text('mimi'), findsOneWidget);
-    expect(find.text('动作 1'), findsOneWidget);
+    // Against the app's action vocabulary, not the pack's own count. This pack
+    // ships `idle` alone, and "1 / 13" says so where "1" would not.
+    expect(find.text('动作 1 / 13'), findsOneWidget);
     expect(find.text('帧 2'), findsOneWidget);
     expect(find.text('画布 512×512'), findsOneWidget);
     expect(find.text('安装这个伙伴'), findsOneWidget);
+
+    // And the missing actions are named, before the user commits. A pack that
+    // cannot read should not look like one that can.
+    expect(find.textContaining('这个伙伴会 1 个动作'), findsOneWidget);
+    expect(find.textContaining('不会'), findsOneWidget);
 
     // Nothing was written: a preview is not an install.
     expect(root.listSync(), isEmpty);
@@ -120,6 +128,7 @@ void main() {
 
   testWidgets('the name the pack declares is prefilled, and install writes it',
       (tester) async {
+    useTallSurface(tester);
     final c = containerWith(_FakePicker(
       PickedCompanionPack('mimi.cozy_pet', goodPack(name: '小豆')),
     ));
@@ -166,6 +175,7 @@ void main() {
 
   testWidgets('a bad file is refused in words, and nothing is written',
       (tester) async {
+    useTallSurface(tester);
     final c = containerWith(_FakePicker(
       PickedCompanionPack(
         'not-a-pack.cozy_pet',
@@ -185,6 +195,7 @@ void main() {
 
   testWidgets('a frame that is not really a PNG is refused before install',
       (tester) async {
+    useTallSurface(tester);
     final archive = Archive();
     archive.addFile(ArchiveFile.typedData(
       'manifest.json',
@@ -221,6 +232,7 @@ void main() {
   });
 
   testWidgets('closing the picker is not an error', (tester) async {
+    useTallSurface(tester);
     final picker = _FakePicker(null);
     final c = containerWith(picker);
     await tester.pumpWidget(app(c));
@@ -234,6 +246,15 @@ void main() {
     expect(find.text('选择宠物包文件'), findsOneWidget);
     expect(find.text('这个文件装不了'), findsNothing);
   });
+}
+
+/// A tall surface, because the preview grows with what the pack ships — a pack
+/// that declares one action carries a completeness note — and the install button
+/// sits at the bottom of that column.
+void useTallSurface(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1080, 2400);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
 }
 
 class _FakePicker implements CompanionPackPicker {

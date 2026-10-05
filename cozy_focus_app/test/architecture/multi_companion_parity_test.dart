@@ -22,6 +22,20 @@ import 'package:flutter_test/flutter_test.dart';
 /// companion added to the data is therefore covered **without editing this
 /// file**, and a test asserts exactly that — otherwise a parity suite that
 /// hard-coded three names would keep passing while a fourth went unchecked.
+///
+/// ## Scope: the built-in three, and deliberately not an installed pack
+///
+/// This is an admission requirement for a companion **we ship**, and it must not
+/// be extended to one a user installs. A user's pack will not have thirteen
+/// actions — that is the premise of partial packs, not a defect — and demanding
+/// parity of it would either fail every honest pack or push someone into faking
+/// actions to satisfy a test. P33's answer to a partial pack is capability
+/// gating, tested in `partial_pack_capability_test.dart`, not parity.
+///
+/// The loop is built-in-only by construction: `CompanionManifestData.profiles` is
+/// the compiled-in table, and an installed pack is never added to it. This note
+/// is here because the next person to widen a loop will be looking for a reason
+/// not to.
 void main() {
   final companions = CompanionManifestData.profiles.keys.toList();
 

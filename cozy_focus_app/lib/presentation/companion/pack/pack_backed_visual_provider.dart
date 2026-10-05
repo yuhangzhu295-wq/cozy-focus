@@ -46,18 +46,40 @@ class PackBackedCompanionVisualProvider extends CompanionVisualProvider {
           if (manifest.hasExactAction(pose)) pose,
       };
 
+  /// The spec this pack would draw, or null when it has nothing for it.
+  ///
+  /// Separated from [build] so the decision is assertable without a widget tree.
+  /// That matters more than it sounds: rendering a pack means reading frames
+  /// from disk, and a widget test that waits on a file-backed image stream hangs
+  /// rather than fails — so the choice between "draw the state", "draw the pose"
+  /// and "draw nothing" has to be testable on its own.
+  CompanionActionSpec? specFor(
+    CompanionPresentationIntent intent,
+    CompanionVisualOptions options,
+  ) {
+    // An animation state with no pose behind it - walk, the stand/sit
+    // transitions - is asked for by id, the same way the built-in provider asks.
+    //
+    // But only if this pack actually ships that action. A state is an *override*
+    // of the pose, and an override the pack has no art for is not available to
+    // it: forcing it would draw an empty box where the companion was. So the
+    // override is declined and the pose path is taken instead, which is exactly
+    // what `animationState == null` means. The pack is not asked to fake a walk
+    // and no other companion's art is borrowed - the companion is simply shown
+    // doing what it can, and the capability report still says `walk` is missing.
+    final state = options.animationState;
+    final stateSpec =
+        state == null ? null : manifest.specFor(state.assetActionId);
+    return stateSpec ?? manifest.specForRendering(intent.pose);
+  }
+
   @override
   Widget build(
     BuildContext context,
     CompanionPresentationIntent intent,
     CompanionVisualOptions options,
   ) {
-    // An animation state with no pose behind it - walk, the stand/sit
-    // transitions - is asked for by id, the same way the built-in provider asks.
-    final state = options.animationState;
-    final spec = state != null
-        ? manifest.specFor(state.assetActionId)
-        : manifest.specForRendering(intent.pose);
+    final spec = specFor(intent, options);
 
     if (spec == null) {
       // The pack has no frames for this pose and no declared alias for it.

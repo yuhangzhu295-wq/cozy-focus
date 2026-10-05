@@ -14,6 +14,7 @@ import '../companion/pack/installed_packs_provider.dart';
 import '../companion/runtime/companion_id.dart';
 import '../companion/runtime/companion_manifest_data.dart';
 import '../theme/app_theme.dart';
+import '../widgets/companion_completeness.dart';
 
 /// Screen: import a `.cozy_pet` companion pack.
 ///
@@ -418,7 +419,14 @@ class _PreviewView extends StatelessWidget {
                 runSpacing: 8,
                 alignment: WrapAlignment.center,
                 children: [
-                  _Fact(label: '动作', value: '${preview.actionIds.length}'),
+                  // Against the app's own action vocabulary, not the pack's own
+                  // count: "13 actions" says nothing, "4 / 13" says exactly how
+                  // much of the companion arrived.
+                  _Fact(
+                    label: '动作',
+                    value: preview.completeness?.summary ??
+                        '${preview.actionIds.length}',
+                  ),
                   _Fact(label: '帧', value: '${preview.frameCount}'),
                   if (preview.canvasWidth != null)
                     _Fact(
@@ -427,6 +435,9 @@ class _PreviewView extends StatelessWidget {
                             '${preview.canvasWidth}×${preview.canvasHeight}'),
                 ],
               ),
+              if (preview.completeness != null &&
+                  !preview.completeness!.isComplete)
+                CompanionCompletenessNote(completeness: preview.completeness!),
             ],
           ),
         ),

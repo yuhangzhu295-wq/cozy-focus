@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../companion/companion_avatar.dart';
 import '../companion/companion_selection.dart';
+import '../companion/pack/companion_availability_provider.dart';
+import '../companion/pack/companion_pack_completeness.dart';
 import '../companion/pack/companion_pack_exporter.dart';
 import '../companion/pack/companion_pack_picker.dart';
 import '../companion/pack/companion_pack_removal.dart';
@@ -15,6 +17,7 @@ import '../companion/runtime/companion_id.dart';
 import '../companion/runtime/companion_manifest_data.dart';
 import '../companion/runtime/companion_profile.dart';
 import '../theme/app_theme.dart';
+import '../widgets/companion_completeness.dart';
 
 /// Screen 08: Companion Picker (08 伙伴选择).
 ///
@@ -51,6 +54,7 @@ class CompanionPickerPage extends ConsumerWidget {
     // and the per-card actions. The revision itself is not used - the set is.
     ref.watch(installedPacksProvider);
     final installedIds = ref.read(installedPacksProvider.notifier).installedIds;
+    final completenessOf = ref.watch(companionCompletenessProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundWarm,
@@ -80,6 +84,7 @@ class CompanionPickerPage extends ConsumerWidget {
                     companionId: id,
                     selected: id == selected,
                     installed: installed,
+                    completeness: installed ? completenessOf(id.value) : null,
                     onTap: () => ref
                         .read(companionSelectionProvider.notifier)
                         .select(id),
@@ -301,6 +306,7 @@ class _CompanionCard extends StatelessWidget {
   final CompanionId companionId;
   final bool selected;
   final bool installed;
+  final CompanionPackCompleteness? completeness;
   final VoidCallback onTap;
   final VoidCallback? onExport;
   final VoidCallback? onDelete;
@@ -311,6 +317,7 @@ class _CompanionCard extends StatelessWidget {
     required this.selected,
     required this.installed,
     required this.onTap,
+    this.completeness,
     this.onExport,
     this.onDelete,
   });
@@ -391,6 +398,13 @@ class _CompanionCard extends StatelessWidget {
                         runSpacing: 6,
                         children: [
                           if (installed) const _TraitChip(label: '导入的'),
+                          // What this companion can actually do, against the
+                          // app's own action vocabulary. On the card rather than
+                          // only at import, because this list is where a user
+                          // decides which companion to live with.
+                          if (completeness != null)
+                            CompanionCompletenessBadge(
+                                completeness: completeness!),
                           for (final trait in profile.traits)
                             _TraitChip(label: trait),
                         ],

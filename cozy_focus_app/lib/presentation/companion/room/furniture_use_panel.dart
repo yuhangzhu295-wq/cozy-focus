@@ -6,6 +6,7 @@ import '../room/anchor_point.dart';
 import '../room_presence.dart';
 import 'furniture_action_resolver.dart';
 import '../companion_selection.dart';
+import '../pack/companion_availability_provider.dart';
 import '../runtime/companion_action_availability.dart';
 import '../runtime/companion_context.dart';
 import '../room/furniture_catalog.dart';
@@ -59,7 +60,10 @@ class FurnitureUsePanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entity = FurnitureCatalog.forId(roomItem.itemId);
-    final availability = CompanionActionAvailabilityResolver.resolve(
+    // Through the availability provider, not the resolver directly: the resolver
+    // knows the shipped three and would answer for an installed pack with the
+    // dog's capabilities, offering a chip the pack has no art to perform.
+    final availability = ref.watch(companionAvailabilityProvider)(
       ref.watch(companionSelectionProvider).value,
     );
     final offerable = entity == null

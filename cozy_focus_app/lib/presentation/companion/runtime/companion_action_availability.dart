@@ -1,4 +1,6 @@
+import '../animation/sprite_animation_manifest.dart';
 import '../animation/sprite_animation_manifest_data.dart';
+import 'companion_action_manifest.dart';
 import 'companion_action_manifest_data.dart';
 import 'companion_manifest_data.dart';
 import 'companion_pose.dart';
@@ -94,20 +96,46 @@ abstract final class CompanionActionAvailabilityResolver {
 
   /// Availability for [companionId].
   ///
-  /// An id this build does not ship resolves to the **default companion's**
-  /// availability, mirroring what `CompanionCatalog.profileFor` and the visual
-  /// registry already do. Anything else would leave an unknown id with no
-  /// behaviour at all while its picture still rendered, which is the one
-  /// combination the runtime is built to avoid.
+  /// **Built-ins only.** An id this build does not ship resolves to the default
+  /// companion's availability, mirroring what `CompanionCatalog.profileFor` and
+  /// the visual registry do for the *shipped* three.
+  ///
+  /// That mirroring was right while every companion was compiled in, and it is
+  /// wrong the moment a companion can be installed: an installed pack draws its
+  /// own art, which is honest about the poses it does not ship, while this would
+  /// hand its behaviour the dog's thirteen actions. The two answers would
+  /// disagree — the pack would be asked for `focus_read` and draw an empty box.
+  ///
+  /// So a caller that can see installed packs must not use this entry point for
+  /// them. Use [resolveForManifest] with the pack's own manifest, or
+  /// `companionAvailabilityProvider`, which does that lookup.
   static CompanionActionAvailability resolve(String companionId) {
     final effectiveId =
         CompanionActionManifestData.forCompanion(companionId) != null
             ? companionId
             : CompanionManifestData.defaultProfileId.value;
 
-    final manifest = CompanionActionManifestData.forCompanion(effectiveId);
-    final contract = SpriteAnimationManifestData.forCompanion(effectiveId);
+    return resolveForManifest(
+      companionId: effectiveId,
+      manifest: CompanionActionManifestData.forCompanion(effectiveId),
+      contract: SpriteAnimationManifestData.forCompanion(effectiveId),
+    );
+  }
 
+  /// Availability for [companionId] from [manifest], whatever its origin.
+  ///
+  /// The one implementation. A built-in arrives here with the compiled-in
+  /// manifest and its animation contract; an installed pack arrives with the
+  /// manifest read from its own directory and **no contract**, because a
+  /// contract is a statement about artwork we produced and there is none for a
+  /// pack a user brought. That is why [contract] is optional rather than
+  /// defaulted to the dog's: defaulting it would report the dog's plan as the
+  /// pack's plan, which is the same defect in a different field.
+  static CompanionActionAvailability resolveForManifest({
+    required String companionId,
+    required CompanionActionManifest? manifest,
+    SpriteAnimationManifest? contract,
+  }) {
     final schedulable = <String>{};
     final fallbackOnly = <String>{};
     if (manifest != null) {
@@ -136,7 +164,7 @@ abstract final class CompanionActionAvailabilityResolver {
     }
 
     return CompanionActionAvailability(
-      companionId: effectiveId,
+      companionId: companionId,
       schedulable: Set.unmodifiable(schedulable),
       fallbackOnly: Set.unmodifiable(fallbackOnly),
       planned: Set.unmodifiable(planned),

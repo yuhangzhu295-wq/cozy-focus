@@ -138,4 +138,18 @@ abstract final class SpriteAnimationManifestData {
   /// The contract for [companionId], or `null` when none is authored yet.
   static SpriteAnimationManifest? forCompanion(String companionId) =>
       byCompanion[companionId];
+
+  /// Every action id the app has a production contract for.
+  ///
+  /// This is the app's own action vocabulary, and the honest yardstick for "how
+  /// complete is this companion": a pack that ships four of these is a partial
+  /// companion, and saying so is the difference between a truthful report and
+  /// one that counts whatever action names the pack happens to use.
+  ///
+  /// A union across every contract rather than a hardcoded list, so it grows
+  /// when the cat and rabbit get contracts of their own instead of drifting
+  /// away from a list someone has to remember to edit.
+  static Set<String> get productionActionIds => {
+        for (final contract in byCompanion.values) ...contract.assets.keys,
+      };
 }

@@ -25,11 +25,13 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'companion_pack_archive_reader.dart';
+import 'companion_pack_completeness.dart';
 import 'companion_pack_install_plan.dart';
 import 'companion_pack_installer.dart';
 import 'companion_pack_validator.dart';
 import 'installed_pack_registry.dart';
 import 'installed_packs_provider.dart';
+import '../runtime/companion_action_manifest.dart';
 
 /// What an archive turned out to contain, before anything is written.
 ///
@@ -69,6 +71,13 @@ class CompanionPackPreview {
   /// in hand rather than from a pack that has not been installed yet.
   final Uint8List? idleFrame;
 
+  /// How complete this pack's action set is, against the app's own vocabulary.
+  ///
+  /// Shown before the install, because "this companion ships four of the
+  /// thirteen actions" is something a user should know while they can still
+  /// change their mind, not after.
+  final CompanionPackCompleteness? completeness;
+
   final PackValidationResult validation;
 
   const CompanionPackPreview({
@@ -83,6 +92,7 @@ class CompanionPackPreview {
     this.actionIds = const [],
     this.frameCount = 0,
     this.idleFrame,
+    this.completeness,
   });
 
   /// True when this pack could be installed, subject to a name and a species.
@@ -247,6 +257,9 @@ abstract final class CompanionPackImporter {
       actionIds: actionIds,
       frameCount: frames.length,
       idleFrame: _firstIdleFrame(read, actions),
+      completeness: CompanionPackCompleteness.of(
+        CompanionActionManifest.fromJson(manifest),
+      ),
     );
   }
 
