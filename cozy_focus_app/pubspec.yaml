@@ -39,6 +39,7 @@ dependencies:
   collection: ^1.19.1
   share_plus: ^12.0.2
   gal: ^2.3.3
+  archive: ^4.3.0
 
 dev_dependencies:
   flutter_test:
