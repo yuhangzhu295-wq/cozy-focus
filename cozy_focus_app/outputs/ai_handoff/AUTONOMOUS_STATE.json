@@ -4,10 +4,10 @@
   "branch": "recovery/v4.2.1-rebuild",
   "updated_at_slice": "P32A archive reader",
   "phase": "P32",
-  "slice": "P32A_extractor_partial + P34 prerequisite (manifest geometry)",
+  "slice": "P32A_extractor_partial + P34 prerequisite (manifest geometry, measured)",
   "start_sha": "0a116e2",
-  "latest_sha": "65a2a29",
-  "remote_sha": "65a2a29",
+  "latest_sha": "9ba2d5a",
+  "remote_sha": "9ba2d5a",
   "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
@@ -24,13 +24,16 @@
     "P32C install rules: safe pack id, built-in collision, species (ece716d)",
     "P32D registry: installed packs, revision counter, selection repair (271ca6d)",
     "P32A archive reader: decode + policy, returns bytes not writes (59b5cdd)",
-    "P34 prerequisite: manifest.py verifies geometry against the pack contract instead of certifying itself, with the uniform-shift negative proof (65a2a29)"
+    "P34 prerequisite: manifest.py verifies geometry against the pack contract instead of certifying itself, with the uniform-shift negative proof (65a2a29)",
+    "Geometry measured against the contracts: dog verifies (49 frames, mean 458/255, worst 1px in a 2px tolerance); cat and rabbit have no contract and are now refused clearly (9ba2d5a)"
   ],
   "test_counts": {
     "full_suite": "1333/1333",
     "pack_suite": "86",
     "format": "PASS (287 files, 0 changed)",
-    "analyze": "PASS (0 issues, --fatal-infos)"
+    "analyze": "PASS (0 issues, --fatal-infos)",
+    "geometry_negative_proof": "PASS (uniform 40px shift refused)",
+    "pack_geometry_audit": "PASS (dog verified; cat/rabbit have no contract)"
   },
   "runtime_evidence": {
     "device": "Pixel 7 API 34 emulator",
@@ -39,7 +42,8 @@
     "artifacts": "outputs/ai_handoff/android_v1_runtime/"
   },
   "open_findings": [
-    "P34: the geometry fix is in, but no pack has been rebuilt through it yet. The existing dog/cat/rabbit manifests were produced by the old self-certifying code, so their declared 458/255 has never actually been checked against their frames. Rebuilding one pack is the first real exercise of the new check.",
+    "P34: cat and rabbit have NO geometry contract (assets/companions/<c>/animation_manifest.json is dog-only), so manifest.py now refuses them. Their packs cannot be certified until a contract is written for each. This is a real gap in the shipped asset tooling, not a code bug.",
+    "tools/productionise.py measure() reads split()[-1] as alpha; on the indexed PNGs the packs ship, that band is the palette index. audit_pack_geometry.py converts to RGBA first. productionise itself was not changed - worth a look before P34, since it writes the production report the manifest is built from.",
     "P32: symlink rejection is NOT verified through the reader. ZipEncoder drops symbolicLink through a round trip, so isSymbolicLink comes back false. The policy refusal is covered directly; whether the decoder reports a real symlink is unverified.",
     "P32: duplicate-name ZIP entries cannot be built with ZipEncoder; the policy rule is covered directly but not through the reader.",
     "P32: the reader does not fabricate a compressed size, so the expansion-ratio bomb check is inert on this path; per-entry and total byte caps still apply.",
