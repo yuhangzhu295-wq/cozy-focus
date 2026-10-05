@@ -504,5 +504,25 @@ void main() {
         isNull,
       );
     });
+
+    test('a declared semantic fallback is drawn, not left blank', () async {
+      // The pack said: if you are asked for focus_read, draw idle. The behaviour
+      // side already treats it as schedulable on the strength of that
+      // declaration — so the drawing side must honour the same declaration, or
+      // the companion vanishes the moment the director picks it. An empty box
+      // during every focus session is exactly the dishonesty this phase exists
+      // to remove.
+      final c = await containerWithPack(
+        'xiaomao',
+        actions: const ['idle'],
+        fallbacks: const {'focus_read': 'idle'},
+      );
+
+      expect(
+        specFor(c, 'xiaomao', pose: CompanionPose.focusRead)?.actionId,
+        'idle',
+        reason: 'the pack declared what to draw instead; honour it',
+      );
+    });
   });
 }

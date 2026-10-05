@@ -33,7 +33,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COMPANIONS = os.path.join(ROOT, "assets", "companions")
 
 
-def build(source_dir, pack_id, display_name, species, out_path):
+def build(source_dir, pack_id, display_name, species, out_path, actions=None):
     manifest_path = os.path.join(source_dir, "manifest.json")
     if not os.path.exists(manifest_path):
         raise SystemExit(f"no manifest.json in {source_dir}")
@@ -48,6 +48,28 @@ def build(source_dir, pack_id, display_name, species, out_path):
     # Not pack data: it describes how the *shipped* art was produced, and this is
     # not the shipped art under its shipped identity.
     manifest.pop("generatedFrom", None)
+
+    if actions is not None:
+        # A partial pack, which is what P33 is about: a real user will bring a
+        # handful of actions, not thirteen. `idle` is kept because the format
+        # requires it - a companion with nothing to draw when it is standing
+        # still has no honest answer at all.
+        wanted = set(actions) | {"idle"}
+        unknown = wanted - set(manifest["actions"])
+        if unknown:
+            raise SystemExit(f"the source has no such actions: {sorted(unknown)}")
+        manifest["actions"] = {
+            k: v for k, v in manifest["actions"].items() if k in wanted
+        }
+        # A fallback or alias pointing at a dropped action would be a promise the
+        # pack cannot keep, and the validator refuses it - correctly.
+        for key in ("semanticFallback", "drawAliases"):
+            if key in manifest:
+                manifest[key] = {
+                    k: v
+                    for k, v in manifest[key].items()
+                    if v in manifest["actions"]
+                }
 
     frames = []
     for action in manifest["actions"].values():
@@ -85,14 +107,21 @@ def main():
     parser.add_argument("--name", default="小豆", help="the display name")
     parser.add_argument("--species", default="cat", help="dog, cat or rabbit")
     parser.add_argument("--out", default="build/demo_pack.cozy_pet")
+    parser.add_argument(
+        "--actions",
+        default=None,
+        help="comma-separated actions to keep, for a partial pack "
+        "(e.g. idle,walk). Omit for the whole set.",
+    )
     args = parser.parse_args()
+    actions = args.actions.split(",") if args.actions else None
 
     source_dir = os.path.join(COMPANIONS, args.source)
     if not os.path.isdir(source_dir):
         raise SystemExit(f"no such shipped companion: {args.source}")
 
     manifest, frames = build(
-        source_dir, args.id, args.name, args.species, args.out
+        source_dir, args.id, args.name, args.species, args.out, actions
     )
 
     size = os.path.getsize(args.out)

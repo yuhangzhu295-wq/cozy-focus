@@ -70,7 +70,14 @@ class PackBackedCompanionVisualProvider extends CompanionVisualProvider {
     final state = options.animationState;
     final stateSpec =
         state == null ? null : manifest.specFor(state.assetActionId);
-    return stateSpec ?? manifest.specForRendering(intent.pose);
+    return stateSpec ??
+        manifest.specForRendering(intent.pose) ??
+        // And if the pack declared what to draw instead, honour it. This is the
+        // pack's own instruction, not the app's guess: the behaviour side
+        // already treats such a pose as schedulable on the strength of the same
+        // declaration, so refusing it here would make the two answers disagree
+        // and leave the companion blank for the whole of a focus session.
+        manifest.declaredFallbackFor(intent.pose);
   }
 
   @override

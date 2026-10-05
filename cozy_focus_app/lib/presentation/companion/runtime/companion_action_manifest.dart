@@ -266,6 +266,26 @@ class CompanionActionManifest {
     return fallback;
   }
 
+  /// The spec the pack *declares* for [pose] when it has no art of its own.
+  ///
+  /// The middle step of [resolve], without the implicit idle at the end.
+  ///
+  /// The distinction matters because the two are different promises. A declared
+  /// fallback is the pack saying "if you ask for this, draw that" — an
+  /// instruction, and honouring it is not a substitution. The last-resort idle
+  /// is the app's own guess, and [specForRendering] refuses it on purpose.
+  ///
+  /// Without this, a pack that declares a fallback is schedulable for a pose the
+  /// drawing side then renders as nothing: the behaviour answer and the drawing
+  /// answer disagree, and the companion vanishes mid-session.
+  CompanionActionSpec? declaredFallbackFor(CompanionPose pose) {
+    final fallbackId = semanticFallback[pose.id];
+    if (fallbackId == null) return null;
+    final fallback = actions[fallbackId];
+    if (fallback == null || fallback.isEmpty) return null;
+    return fallback;
+  }
+
   /// Whether [pose] is served by its *own* action rather than a fallback.
   ///
   /// This is the honest per-pose answer the asset gate reports: a partial pack
