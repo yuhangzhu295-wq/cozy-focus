@@ -52,6 +52,8 @@ from PIL import Image, ImageFilter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Reused, not re-implemented: the one normalisation path in this repo.
 import productionise as prod  # noqa: E402
+# And the one reader of the geometry contract.
+import manifest  # noqa: E402
 
 APP = prod.APP
 STAGE = prod.STAGE            # .asset_staging/flow/<companion>/<action>/
@@ -73,11 +75,26 @@ BASELINE_Y = prod.BASELINE_Y
 SHARPNESS_MIN_RATIO = 0.5
 
 # Two frames are "the same picture" when their signatures differ by less than
-# this. Calibrated against art that is already approved rather than chosen: the
-# closest pair among the dog's six shipped `idle` frames differs by 0.0100, so
-# any threshold above that would reject work the project has already accepted.
-# 0.005 sits below it with 2x headroom.
-DUPLICATE_MAX_DISTANCE = 0.005
+# this.
+#
+# Recalibrated against all three shipped packs, because the original number was
+# calibrated against the dog alone and was wrong for the rest. Measured closest
+# pair per pack, per action:
+#
+#     dog     idle 0.0100   sleep 0.1028   walk 0.0231   focus_read 0.0274
+#     cat     idle 0.0044   sleep 0.0495   walk 0.0221   focus_read 0.0048
+#     rabbit  idle 0.0053   sleep 0.0204   walk 0.0296   focus_read 0.0111
+#
+# The old 0.005 sat below the dog's 0.0100 with 2x headroom and *above* the cat's
+# 0.0044 and the rabbit's 0.0053 - so it rejected two thirds of the approved art
+# for being subtle. Found when the pack builder's video path refused to produce an
+# idle action from the cat's own frames.
+#
+# 0.002 sits below the smallest real pair (0.0044) with over 2x headroom, and well
+# above an identical frame (0.0) and a three-level colour nudge (0.0023). It still
+# catches the thing this is for: two frames of a clip that really are the same
+# picture, sampled twice.
+DUPLICATE_MAX_DISTANCE = 0.002
 
 # A loop seam is visible when the wrap from last frame to first is much bigger
 # than a normal step. The ratio is seam distance / median step distance.
@@ -339,19 +356,21 @@ def load_contract(companion):
     because the contract declares `groundBaseline: 458` while the constant
     implied 460. A second implementation of the contract is a second thing to
     drift, so this one reads it.
+
+    It now *delegates* to `manifest.load_contract` rather than parsing the file
+    again, which is what that paragraph always claimed. The two had drifted in
+    exactly the way it warns about: this one returned `tolerancePx` and a tuple
+    canvas, `manifest` returned `anchorTolerancePx` and a list, so handing one
+    tool's contract to the other raised `KeyError: 'tolerancePx'` - which is how
+    the pack builder found it. The naming difference is now confined to this
+    function, where the single reader's result is adapted for `qa_frames`.
     """
-    # Always the real assets directory, never the redirected output root: the
-    # contract is an *input* the art must satisfy, so redirecting where output
-    # goes must not also move the thing it is measured against.
-    path = os.path.join(ASSETS, companion, "animation_manifest.json")
-    with open(path, encoding="utf-8") as fh:
-        c = json.load(fh)
-    canvas = c["canvas"]
+    contract = manifest.load_contract(companion)
     return {
-        "canvas": (int(canvas["width"]), int(canvas["height"])),
-        "groundBaseline": int(c["groundBaseline"]),
-        "centerAnchor": int(c["centerAnchor"]),
-        "tolerancePx": int(c["anchorTolerancePx"]),
+        "canvas": tuple(contract["canvas"]),
+        "groundBaseline": contract["groundBaseline"],
+        "centerAnchor": contract["centerAnchor"],
+        "tolerancePx": contract["anchorTolerancePx"],
     }
 
 
@@ -476,13 +495,20 @@ def qa_frames(frame_paths, loop, expect_in_place, contract, raw_drift=None):
 # ── orchestration ────────────────────────────────────────────────────────────
 
 def run(video, companion, action, target, loop_mode, expect_in_place,
-        keep_temp=False, out_root=None, source_kind=SOURCE_TEST_VIDEO):
+        keep_temp=False, out_root=None, source_kind=SOURCE_TEST_VIDEO,
+        contract=None):
     """Runs the whole chain and returns the report.
 
     [out_root] redirects the normalised output. It exists so the pipeline can be
     validated end to end -- and deliberately sabotaged, for the negative checks --
     without touching the approved art in `assets/companions/`. The default is the
     real output directory, which is what production runs want.
+
+    [contract] overrides the geometry the QA holds the frames to. It defaults to
+    the contract of [companion], which is right when producing a shipped pack and
+    wrong for a user's pack, whose id has no contract of its own. The pack builder
+    passes the geometry profile the user chose, so the frames are held to a
+    declared template rather than to a contract derived from themselves.
     """
     report = {"companion": companion, "action": action,
               "video": os.path.basename(video),
@@ -534,7 +560,7 @@ def run(video, companion, action, target, loop_mode, expect_in_place,
 
         raw_drift = in_place_drift(staged) if expect_in_place else None
         qa = qa_frames(final, loop_mode == "loop", expect_in_place,
-                       load_contract(companion), raw_drift)
+                       contract or load_contract(companion), raw_drift)
         report["qa"] = qa
         report["verdict"] = qa["verdict"]
 
