@@ -158,6 +158,7 @@ abstract final class CompanionManifestData {
     CompanionId.dog: _profile(
       id: CompanionId.dog,
       displayName: 'Mochi',
+      species: 'dog',
       posePack: 'mochi',
       tagline: '温柔又治愈的小家伙，总是用温暖的陪伴让你放松心情。',
       traits: const ['温暖', '陪伴', '治愈'],
@@ -171,6 +172,7 @@ abstract final class CompanionManifestData {
     CompanionId.cat: _profile(
       id: CompanionId.cat,
       displayName: '小猫',
+      species: 'cat',
       posePack: 'cat',
       tagline: '活泼好奇的小伙伴，总能用灵动的互动带给你快乐和动力。',
       traits: const ['灵动', '陪伴', '活力'],
@@ -184,6 +186,7 @@ abstract final class CompanionManifestData {
     CompanionId.rabbit: _profile(
       id: CompanionId.rabbit,
       displayName: '小兔',
+      species: 'rabbit',
       posePack: 'rabbit',
       tagline: '安静温柔的小伙伴，用轻柔的陪伴，守护你专注的每一刻。',
       traits: const ['温暖', '陪伴', '温柔'],
@@ -199,6 +202,7 @@ abstract final class CompanionManifestData {
   static CompanionProfile _profile({
     required CompanionId id,
     required String displayName,
+    required String species,
     required String posePack,
     required String tagline,
     required List<String> traits,
@@ -208,6 +212,7 @@ abstract final class CompanionManifestData {
       CompanionProfile(
         id: id,
         displayName: displayName,
+        species: species,
         posePack: posePack,
         tagline: tagline,
         traits: traits,

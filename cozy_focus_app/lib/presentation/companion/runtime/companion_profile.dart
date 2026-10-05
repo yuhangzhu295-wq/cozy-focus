@@ -16,6 +16,18 @@ class CompanionProfile {
   /// Which pose pack (visual provider) draws this companion.
   final String posePack;
 
+  /// The animal this companion is, e.g. `dog` / `cat` / `rabbit`.
+  ///
+  /// Deliberately **separate from [id]**. Today `dog`, `cat` and `rabbit` are
+  /// identity ids that happen to name a species too, and that coincidence holds
+  /// only while there is exactly one companion per species. The moment two dogs
+  /// can exist — which is what a user-supplied pack makes possible — an id can no
+  /// longer answer "what animal is this", and the motion semantics that a pack
+  /// must reuse depend on that answer.
+  ///
+  /// Null when a profile does not declare one. Nothing may infer it from [id].
+  final String? species;
+
   /// One-line character description, used by the companion picker.
   final String tagline;
 
@@ -60,6 +72,7 @@ class CompanionProfile {
     this.tapOverlay = CompanionOverlay.tapReact,
     this.longPressOverlay = CompanionOverlay.petReact,
     this.roomAnchors = const {},
+    this.species,
   });
 
   factory CompanionProfile.fromJson(CompanionId id, Map<String, dynamic> json) {
@@ -101,6 +114,7 @@ class CompanionProfile {
       tapOverlay: tap ?? CompanionOverlay.tapReact,
       longPressOverlay: longPress ?? CompanionOverlay.petReact,
       roomAnchors: Map.unmodifiable(anchors),
+      species: json['species'] as String?,
     );
   }
 
