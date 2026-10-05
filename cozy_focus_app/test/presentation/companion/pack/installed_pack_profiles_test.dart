@@ -110,15 +110,15 @@ void main() {
       // The load is asynchronous, so let it run.
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final profile =
+      final runtime =
           c.read(installedPackProfilesProvider)[const CompanionId('mimi')];
-      expect(profile, isNotNull, reason: 'the pack is installed and readable');
-      expect(profile!.displayName, 'Mimi');
-      expect(profile.posePack, 'mimi_art',
+      expect(runtime, isNotNull, reason: 'the pack is installed and readable');
+      expect(runtime!.profile.displayName, 'Mimi');
+      expect(runtime.profile.posePack, 'mimi_art',
           reason:
               'the pose pack comes from the manifest, which is what tells the '
               'runtime which provider draws it');
-      expect(profile.species, 'dog');
+      expect(runtime.profile.species, 'dog');
     });
 
     test('a pack whose manifest cannot be read is left out, not faked',

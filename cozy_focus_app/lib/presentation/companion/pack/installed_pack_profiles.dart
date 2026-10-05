@@ -16,6 +16,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../runtime/companion_action_manifest.dart';
+import '../runtime/companion_frame_source.dart';
 import '../runtime/companion_id.dart';
 import '../runtime/companion_profile.dart';
 import 'installed_pack_registry.dart';
@@ -33,8 +35,24 @@ final companionPackRootProvider = Provider<String?>((ref) => null);
 ///
 /// Watches the installed-pack revision and re-reads when it changes, so a pack
 /// installed while the app is running appears without a restart.
+/// Everything the runtime needs about one installed pack.
+///
+/// Identity, the manifest a provider draws from, and where the bytes are. Kept
+/// together because they come from one directory and must agree.
+class InstalledPackRuntime {
+  final CompanionProfile profile;
+  final CompanionActionManifest manifest;
+  final CompanionFrameSource frameSource;
+
+  const InstalledPackRuntime({
+    required this.profile,
+    required this.manifest,
+    required this.frameSource,
+  });
+}
+
 class InstalledPackProfiles
-    extends StateNotifier<Map<CompanionId, CompanionProfile>> {
+    extends StateNotifier<Map<CompanionId, InstalledPackRuntime>> {
   InstalledPackProfiles(this._ref) : super(const {}) {
     _ref.listen<int>(installedPacksProvider, (_, __) => _load());
     _load();
@@ -50,32 +68,36 @@ class InstalledPackProfiles
       return;
     }
 
-    final profiles = <CompanionId, CompanionProfile>{};
+    final loaded = <CompanionId, InstalledPackRuntime>{};
     for (final pack in registry.packs) {
-      final profile = _profileFor(root, pack);
-      if (profile != null) profiles[CompanionId(pack.packId)] = profile;
+      final runtime = _runtimeFor(root, pack);
+      if (runtime != null) loaded[CompanionId(pack.packId)] = runtime;
     }
     // A pack whose manifest cannot be read is left out rather than faked. It is
     // still installed, and the installer's validation is what should have caught
     // a bad manifest — so reaching here means the files changed underneath us,
     // and offering the companion would mean rendering something unverified.
-    if (mounted) state = profiles;
+    if (mounted) state = loaded;
   }
 
-  /// Reads one pack's identity from its manifest.
-  CompanionProfile? _profileFor(String root, InstalledCompanionPack pack) {
-    final file =
-        File('$root/${pack.packId}/${InstalledPackProfiles.manifestName}');
+  /// Reads one pack's identity and manifest.
+  InstalledPackRuntime? _runtimeFor(String root, InstalledCompanionPack pack) {
+    final dir = '$root/${pack.packId}';
+    final file = File('$dir/${InstalledPackProfiles.manifestName}');
     if (!file.existsSync()) return null;
     try {
       final json = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-      final posePack = json['posePack'];
-      if (posePack is! String || posePack.isEmpty) return null;
-      return CompanionProfile(
-        id: CompanionId(pack.packId),
-        displayName: pack.displayName,
-        posePack: posePack,
-        species: pack.species,
+      final manifest = CompanionActionManifest.fromJson(json);
+      if (manifest.posePack.isEmpty) return null;
+      return InstalledPackRuntime(
+        profile: CompanionProfile(
+          id: CompanionId(pack.packId),
+          displayName: pack.displayName,
+          posePack: manifest.posePack,
+          species: pack.species,
+        ),
+        manifest: manifest,
+        frameSource: CompanionFrameSource.directory(dir),
       );
     } catch (_) {
       return null;
@@ -87,6 +109,6 @@ class InstalledPackProfiles
 
 /// The installed packs' profiles. Read synchronously; loaded asynchronously.
 final installedPackProfilesProvider = StateNotifierProvider<
-    InstalledPackProfiles, Map<CompanionId, CompanionProfile>>(
+    InstalledPackProfiles, Map<CompanionId, InstalledPackRuntime>>(
   (ref) => InstalledPackProfiles(ref),
 );

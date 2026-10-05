@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'mochi_visual_provider.dart';
 import 'placeholder_visual_providers.dart';
 import 'runtime/companion_id.dart';
+import 'pack/installed_pack_profiles.dart';
+import 'pack/pack_backed_visual_provider.dart';
 import 'runtime/companion_visual_provider.dart';
 
 /// The app's companion visual registry — the one place a companion is wired in.
@@ -32,6 +34,21 @@ CompanionVisualRegistry buildCompanionVisualRegistry() {
 /// *testable*: a test can register a brand-new companion's provider and assert
 /// that a page renders it with no page edit. It also means nothing in the widget
 /// tree has to know a species to obtain a drawing.
-final companionVisualRegistryProvider = Provider<CompanionVisualRegistry>(
-  (ref) => buildCompanionVisualRegistry(),
-);
+final companionVisualRegistryProvider =
+    Provider<CompanionVisualRegistry>((ref) {
+  final registry = buildCompanionVisualRegistry();
+  // One generic provider per installed pack, from that pack's own manifest and
+  // directory. Not a class per pet: a pack is data, so the registry gains a
+  // companion without a new type.
+  final installed = ref.watch(installedPackProfilesProvider);
+  for (final entry in installed.entries) {
+    registry.register(
+      PackBackedCompanionVisualProvider(
+        manifest: entry.value.manifest,
+        frameSource: entry.value.frameSource,
+      ),
+      companionId: entry.key,
+    );
+  }
+  return registry;
+});

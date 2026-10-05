@@ -164,8 +164,10 @@ final companionCatalogProvider = Provider<CompanionCatalog>((ref) {
   // Watch the installed profiles, so a pack installed while the app is running
   // appears in the catalog without a restart. The recipes are shared, so an
   // installed companion behaves through the same data as a built-in one.
-  return bundledCompanionCatalog()
-      .withProfiles(ref.watch(installedPackProfilesProvider));
+  final installed = ref.watch(installedPackProfilesProvider);
+  return bundledCompanionCatalog().withProfiles({
+    for (final entry in installed.entries) entry.key: entry.value.profile,
+  });
 });
 
 /// The selected companion's display name.
