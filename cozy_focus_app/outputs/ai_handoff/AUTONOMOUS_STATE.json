@@ -4,10 +4,10 @@
   "branch": "recovery/v4.2.1-rebuild",
   "updated_at_slice": "P32A archive reader",
   "phase": "P32",
-  "slice": "P32 implementation complete; device flow and handoff remain",
+  "slice": "P32 implementation complete; import UI and device flow remain",
   "start_sha": "0a116e2",
-  "latest_sha": "496fdfa",
-  "remote_sha": "496fdfa",
+  "latest_sha": "f45f8b3",
+  "remote_sha": "f45f8b3",
   "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
@@ -36,7 +36,9 @@
     "format": "PASS (287 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
     "geometry_negative_proof": "PASS (uniform 40px shift refused)",
-    "pack_geometry_audit": "PASS (dog verified; cat/rabbit have no contract)"
+    "pack_geometry_audit": "PASS (dog verified; cat/rabbit have no contract)",
+    "debug_apk": "PASS (141.9 MB)",
+    "release_apk": "PASS (29.6 MB)"
   },
   "runtime_evidence": {
     "device": "Pixel 7 API 34 emulator",
@@ -68,7 +70,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P32: build debug and release APKs (production source changed), finish the P32 handoff, then the device flow from the brief. After that P33.",
+  "next_action": "P32: build the import UI - a file picker for .cozy_pet, a preview, and the install action wired to the reader -> validator -> installer -> controller, plus export and delete on an installed companion. Then the device flow from the brief. Then P33.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git rev-parse origin/recovery/v4.2.1-rebuild; git status --short",
     "read this file",
@@ -93,7 +95,8 @@
     "P32_tests": "integration test proving hot install with no restart, failing if revision observation is removed",
     "P32_device": "the emulator flow in the program brief",
     "P32_handoff": "finish outputs/ai_handoff/P32_LOCAL_IMPORT_EXPORT.md",
-    "P32_release_build": "debug and release APK, since production source changed"
+    "P32_release_build": "debug and release APK, since production source changed",
+    "P32_import_ui": "NOT BUILT, and it is what blocks the device flow: there is no way for a user to reach the import engine. P32 needs a file picker for .cozy_pet, a preview, an install action wired to CompanionPackArchiveReader -> CompanionPackValidator -> CompanionPackInstaller -> InstalledPacksController, and a delete/export action on an installed companion. The engine is done; the door is not."
   },
   "p32_done": [
     "installedPacksProvider: the single observable revision signal, plus selectableIds as the one answer to 'what companions exist' (b376e4c)",
