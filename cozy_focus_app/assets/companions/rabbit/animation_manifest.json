@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "note": "The 小兔 (rabbit) animation contract: what must be produced, including animations that do not exist yet. Same canvas and anchors as the dog's pack, because all three were authored on the same rig - declared here rather than derived from the frames, so tools/audit_pack_geometry.py can hold the frames to it.",
+  "companionId": "rabbit",
+  "posePack": "rabbit",
+  "canvas": {
+    "width": 512,
+    "height": 512
+  },
+  "groundBaseline": 458,
+  "centerAnchor": 255,
+  "anchorTolerancePx": 2,
+  "firstBatch": [
+    "idle",
+    "walk",
+    "sit_down",
+    "stand_up"
+  ],
+  "assets": {
+    "idle": {
+      "targetFrameCount": 6,
+      "fps": 5,
+      "loopMode": "loop",
+      "role": "ambient"
+    },
+    "walk": {
+      "targetFrameCount": 6,
+      "fps": 8,
+      "loopMode": "loop",
+      "role": "ambient"
+    },
+    "sit_down": {
+      "targetFrameCount": 4,
+      "fps": 8,
+      "loopMode": "once",
+      "role": "transition"
+    },
+    "stand_up": {
+      "targetFrameCount": 4,
+      "fps": 8,
+      "loopMode": "once",
+      "role": "transition"
+    },
+    "focus_write": {
+      "targetFrameCount": 4,
+      "fps": 5,
+      "loopMode": "loop",
+      "role": "task"
+    },
+    "focus_read": {
+      "targetFrameCount": 3,
+      "fps": 5,
+      "loopMode": "pingpong",
+      "role": "task"
+    },
+    "focus_think": {
+      "targetFrameCount": 3,
+      "fps": 4,
+      "loopMode": "pingpong",
+      "role": "task"
+    },
+    "craft_work": {
+      "targetFrameCount": 4,
+      "fps": 5,
+      "loopMode": "loop",
+      "role": "task"
+    },
+    "pause_rest": {
+      "targetFrameCount": 2,
+      "fps": 3,
+      "loopMode": "pingpong",
+      "role": "rest"
+    },
+    "sleep": {
+      "targetFrameCount": 2,
+      "fps": 3,
+      "loopMode": "loop",
+      "role": "rest"
+    },
+    "celebrate": {
+      "targetFrameCount": 5,
+      "fps": 8,
+      "loopMode": "once",
+      "role": "celebration"
+    },
+    "tap_react": {
+      "targetFrameCount": 3,
+      "fps": 8,
+      "loopMode": "once",
+      "role": "interaction"
+    },
+    "pet_react": {
+      "targetFrameCount": 3,
+      "fps": 6,
+      "loopMode": "once",
+      "role": "interaction"
+    }
+  }
+}

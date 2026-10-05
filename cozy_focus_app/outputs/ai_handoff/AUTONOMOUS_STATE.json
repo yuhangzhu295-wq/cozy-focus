@@ -6,7 +6,7 @@
   "phase": "P33",
   "slice": "P33 COMPLETE. Next: P34.",
   "start_sha": "0a116e2",
-  "latest_sha": "b13e7b1",
+  "latest_sha": "pending",
   "remote_sha": "3e7fc85",
   "local_equals_remote": false,
   "worktree": "clean",
@@ -48,7 +48,6 @@
     "The reader's `unreadable_archive` branch is effectively unreachable. ZipDecoder in archive 4.3.0 does not throw for unparseable input - measured: garbage, half-truncated, and 8-byte-header inputs all return a zero-file archive, and corrupt bytes in the middle still yield files. Malformed input arrives as `empty_archive` or as a manifest validation failure. Safety is unchanged (refused, zero files) but the old comment described an unreachable path."
   ],
   "open_findings": [
-    "P34: cat and rabbit have NO geometry contract (assets/companions/<c>/animation_manifest.json is dog-only), so manifest.py refuses them. Their packs cannot be certified until a contract is written for each.",
     "CORRECTED at b13e7b1: productionise.measure and asset_pipeline.measure read split()[-1] as alpha, which is the palette index on an indexed PNG - but BOTH call sites already convert to RGBA first, so nothing was broken. The earlier note called it a bug; checking it properly says it was a latent trap. Both functions now convert for themselves and refuse an empty frame, proven by tools/test_measure_alpha.py against 147 real indexed frames (115 of which distinguish the two channels, so the proof is not vacuous).",
     "P32: symlink rejection is NOT verified through the reader, and duplicate-name ZIP entries cannot be built with ZipEncoder. Both rules are covered directly at the policy level only.",
     "P32: the expansion-ratio bomb check is inert on this path; per-entry and total byte caps still apply.",
@@ -56,7 +55,8 @@
     "docs/companion_assets.md is stale: claims 1024x1024 canvas with 919/511 anchors and that every pack must be added to pubspec.yaml; the real JSON is 512x512 with ~458/255.",
     "P33: multi_companion_parity_test forces every profile to the dog's 13 actions. Right for built-ins, wrong as an admission requirement for a user partial pack; the two contracts must be scoped apart.",
     "P28.4: room_sit still projects to idle with no frames of its own; sofa/sit and rug/sit are hidden from the panel, but the routine and idle still select room_sit.",
-    "Room: the travel ticker starts immediately after startTravel and _onCompanionAnimationChanged is empty, so the comment claiming movement waits for stand_up describes behaviour the code does not implement."
+    "Room: the travel ticker starts immediately after startTravel and _onCompanionAnimationChanged is empty, so the comment claiming movement waits for stand_up describes behaviour the code does not implement.",
+    "P34 remains: the pack builder itself (video/frame directory -> .cozy_pet) is not built. Its prerequisites are now in place: measurement is trustworthy, and all three shipped packs have a contract the builder can hold new packs to."
   ],
   "known_blockers": {
     "RELEASE_SIGNING": "NOT_RECOVERED - android/key.properties absent, no keystore invented",
@@ -69,7 +69,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P34: the local asset/video pack builder. Reuse video_to_sprite.py, productionise.py, manifest.py and the PNG probe; do not duplicate asset QA. Two prerequisites are already known: cat and rabbit have no geometry contract, so manifest.py refuses them, and productionise.measure() reads split()[-1] as alpha, which is the palette index on the indexed PNGs the packs ship.",
+  "next_action": "P34: build the local pack builder. Input is a directory of action videos or sprite frames; output is a .cozy_pet. Reuse video_to_sprite.py, productionise.py, manifest.py and the audit tool rather than duplicating asset QA. The builder must run the same strict validator the importer runs, so a pack it produces is one the app will accept.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git status --short",
     "read this file",
@@ -110,7 +110,8 @@
     "Two vocabularies overlap and neither contains the other: the contract's 13 actions include walk, sit_down and stand_up, which are animation states rather than poses, so a complete pack reports ten schedulable poses. Pinned by a test with the reason."
   ],
   "p34_progress": [
-    "measure()/asset_pipeline.measure() convert to RGBA themselves and refuse an empty frame (b13e7b1), with tools/test_measure_alpha.py as the proof.",
-    "STILL OPEN: cat and rabbit have no geometry contract (assets/companions/<c>/animation_manifest.json is dog-only), so manifest.py refuses them. The frames measure clean against the same 458/255 the dog uses, so writing the contract is a data task - but it must be written from the production intent, not copied from a measurement, or it is the self-certification bug again."
+    "measure()/asset_pipeline.measure() convert to RGBA themselves and refuse an empty frame (b13e7b1), proven by tools/test_measure_alpha.py against 147 real indexed frames.",
+    "CLOSED: cat and rabbit now have geometry contracts (assets/companions/<c>/animation_manifest.json), declared with the same authored canvas and anchors as the dog, so manifest.py no longer refuses them. All three packs verify: mean baseline 458, mean centre 255, worst deviation 1px inside a 2px tolerance.",
+    "DECIDED: the Dart mirror sprite_animation_manifest_data.dart still carries only the dog. Adding cat and rabbit would mean three identical 13-asset blocks as Dart consts, for a `targets` report nothing reads at runtime - a second copy to keep in step. The JSON contracts are what the tooling reads, and they are the ones that had to exist."
   ]
 }
