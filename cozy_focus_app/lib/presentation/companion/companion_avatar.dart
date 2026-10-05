@@ -14,6 +14,7 @@ import 'runtime/companion_event.dart';
 import 'companion_presentation_mapper.dart';
 import 'focus_phase.dart';
 import 'companion_selection.dart';
+import 'pack/installed_pack_profiles.dart';
 import 'companion_visual_registry.dart';
 import 'runtime/companion_behavior_director.dart';
 import 'runtime/companion_context.dart';
@@ -415,6 +416,31 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
         )!;
   }
 
+  /// Rebuilds the registry and director when the installed set has changed.
+  ///
+  /// The director is replaced rather than mutated: it caches availability per
+  /// companion id, and a companion installed a moment ago has no entry in that
+  /// cache. Replacing it refreshes the data, not the role - this remains the one
+  /// behaviour authority, and there is still exactly one of it.
+  ///
+  /// Cheap when nothing changed: the providers return the same instance, so the
+  /// identity check exits before doing any work.
+  void _refreshRuntimeIfInstalledSetChanged() {
+    final registry = ref.read(companionVisualRegistryProvider);
+    final catalog = ref.read(companionCatalogProvider);
+    if (identical(registry, _registry) &&
+        identical(catalog, _director.catalog)) {
+      return;
+    }
+    _registry = registry;
+    _director = CompanionBehaviorDirector(
+      catalog: catalog,
+      context: _readContext(),
+      random: ref.read(companionRandomSourceProvider),
+    );
+    _animation.settleAt(_director.intent);
+  }
+
   /// A gesture reaches the director through its event entry, not by calling
   /// `triggerOverlay` directly.
   ///
@@ -432,13 +458,20 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    // Watched so the avatar follows business state changes. The catalog and the
-    // registry are deliberately *not* watched: they are read once when the
-    // director is built, because they are constant for this widget's lifetime.
-    // Watching them would only cause rebuilds that change nothing.
+    // Watched so the avatar follows business state changes.
+    //
+    // The catalog and the registry used to be read once at init, on the grounds
+    // that they were constant for this widget's lifetime. That stopped being true
+    // when a companion could be installed while the app is running: a pack that
+    // arrives mid-session is in the catalog and the registry, and an avatar that
+    // never looked again would keep drawing the old companion until it was
+    // rebuilt. So the installed set is watched and the runtime is refreshed when
+    // it changes.
     ref.watch(homeControllerProvider);
     ref.watch(craftControllerProvider);
     ref.watch(companionSelectionProvider);
+    ref.watch(installedPackProfilesProvider);
+    _refreshRuntimeIfInstalledSetChanged();
 
     return CompanionPresentationClock(
       director: _director,
