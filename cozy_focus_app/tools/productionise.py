@@ -98,9 +98,24 @@ def write_sprite(rgba, dst):
 
 
 def measure(png):
-    a = np.asarray(png.split()[-1])
+    """The visible bounding box of a frame.
+
+    Converts to RGBA itself rather than trusting the caller to have done it.
+    Every call site does convert today, so this changes no behaviour - it removes
+    a trap. On an indexed PNG the last band is the *palette index*, not alpha, so
+    a future caller passing a file straight from disk would get a
+    plausible-looking measurement of the wrong thing. `audit_pack_geometry.py`
+    exists because that mistake was made once already.
+    """
+    rgba = png.convert("RGBA")
+    a = np.asarray(rgba.split()[-1])
     ys, xs = np.nonzero(a > 8)
-    return {"canvas": [png.width, png.height],
+    if len(xs) == 0:
+        # A frame with nothing visible in it is a production defect, and the
+        # failure it would otherwise produce - `xs.min()` on an empty array -
+        # does not say so.
+        raise ValueError("frame has no visible pixels to measure")
+    return {"canvas": [rgba.width, rgba.height],
             "visualBounds": [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())],
             "centerX": float((xs.min() + xs.max()) / 2),
             "bottomY": int(ys.max()),

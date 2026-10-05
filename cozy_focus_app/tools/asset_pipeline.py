@@ -71,10 +71,19 @@ def normalise(rgba, canvas=CANVAS):
 
 
 def measure(png):
-    a = np.asarray(png.split()[-1])
+    """The visible bounding box of a frame, plus how much of it is opaque.
+
+    Converts to RGBA itself rather than trusting the caller to have done it. On
+    an indexed PNG the last band is the *palette index*, not alpha, so a caller
+    passing a file straight from disk would measure the wrong thing plausibly.
+    """
+    rgba = png.convert("RGBA")
+    a = np.asarray(rgba.split()[-1])
     ys, xs = np.nonzero(a > 8)
+    if len(xs) == 0:
+        raise ValueError("frame has no visible pixels to measure")
     return {
-        "canvas": [png.width, png.height],
+        "canvas": [rgba.width, rgba.height],
         "visualBounds": [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())],
         "centerX": float((xs.min() + xs.max()) / 2),
         "bottomY": int(ys.max()),
