@@ -52,6 +52,23 @@ class CompanionCatalog {
         overlayRecipes = Map.unmodifiable(overlayRecipes),
         roomRecipes = Map.unmodifiable(roomRecipes);
 
+  /// A copy with [extra] profiles added, sharing every recipe.
+  ///
+  /// The recipes are shared rather than copied on purpose: an installed companion
+  /// behaves through the same behaviour data as a built-in one, which is the
+  /// architecture rule that a companion's origin must not change how it behaves.
+  /// Only the identity differs.
+  CompanionCatalog withProfiles(Map<CompanionId, CompanionProfile> extra) {
+    if (extra.isEmpty) return this;
+    return CompanionCatalog(
+      profiles: {...profiles, ...extra},
+      contextRecipes: _contextRecipes,
+      overlayRecipes: overlayRecipes,
+      roomRecipes: roomRecipes,
+      defaultProfileId: defaultProfileId,
+    );
+  }
+
   /// Every companion the catalog knows about, in manifest order.
   List<CompanionId> get companionIds => profiles.keys.toList(growable: false);
 

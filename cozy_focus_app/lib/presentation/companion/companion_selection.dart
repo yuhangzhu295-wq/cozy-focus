@@ -9,6 +9,7 @@ import 'runtime/companion_catalog.dart';
 import 'runtime/companion_id.dart';
 import 'runtime/companion_manifest_data.dart';
 import 'pack/installed_packs_provider.dart';
+import 'pack/installed_pack_profiles.dart';
 
 /// Persistence for the one piece of state the companion picker owns.
 ///
@@ -159,9 +160,13 @@ final companionSelectionProvider =
 /// A provider rather than a direct call, so a test can substitute a catalog and
 /// assert that pages follow the *data* — including a companion this build has
 /// never heard of.
-final companionCatalogProvider = Provider<CompanionCatalog>(
-  (ref) => bundledCompanionCatalog(),
-);
+final companionCatalogProvider = Provider<CompanionCatalog>((ref) {
+  // Watch the installed profiles, so a pack installed while the app is running
+  // appears in the catalog without a restart. The recipes are shared, so an
+  // installed companion behaves through the same data as a built-in one.
+  return bundledCompanionCatalog()
+      .withProfiles(ref.watch(installedPackProfilesProvider));
+});
 
 /// The selected companion's display name.
 ///
