@@ -161,4 +161,60 @@ void main() {
     expect(entries.single.name, 'idle_000.png',
         reason: 'the policy must not rewrite the entries it is given');
   });
+
+  group('what a pack is allowed to contain', () {
+    test('a pack with no manifest at its root is refused', () {
+      final result = inspect([file('idle_000.png'), file('idle_001.png')]);
+      expect(result.codes, contains('no_manifest'));
+    });
+
+    test('a manifest that is not at the root is refused', () {
+      // The rule is "exactly allowed", so a nested one does not count - and the
+      // pack then has no manifest where the installer will look for it.
+      final result = inspect([file('sub/manifest.json'), file('idle_000.png')]);
+      expect(result.codes, contains('no_manifest'));
+    });
+
+    test('two manifests are refused', () {
+      final result = inspect([
+        file('manifest.json'),
+        file('manifest.json'),
+        file('idle_000.png'),
+      ]);
+      // Also a duplicate entry, which is reported separately.
+      expect(result.codes, contains('duplicate_manifest'));
+    });
+
+    test('a file type a pack has no use for is refused', () {
+      // Refused rather than ignored: ignoring it would still mean writing it.
+      for (final name in const [
+        'notes.txt',
+        'evil.exe',
+        'lib.so',
+        'idle_000'
+      ]) {
+        expect(inspect([file('manifest.json'), file(name)]).codes,
+            contains('disallowed_file_type'),
+            reason: name);
+      }
+    });
+
+    test('a manifest and PNG frames are allowed', () {
+      final result = inspect([
+        file('manifest.json'),
+        file('idle_000.png'),
+        file('idle_001.png'),
+      ]);
+      expect(result.ok, isTrue, reason: '$result');
+    });
+
+    test('the extension check is case-insensitive', () {
+      final result = inspect([
+        file('MANIFEST.JSON'),
+        file('IDLE_000.PNG'),
+      ]);
+      expect(result.codes, isNot(contains('disallowed_file_type')));
+      expect(result.codes, isNot(contains('no_manifest')));
+    });
+  });
 }

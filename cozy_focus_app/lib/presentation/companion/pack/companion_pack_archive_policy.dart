@@ -92,6 +92,17 @@ class PackArchiveLimits {
 abstract final class CompanionPackArchivePolicy {
   const CompanionPackArchivePolicy._();
 
+  /// The only file types a companion pack contains.
+  ///
+  /// A pack is a manifest and PNG frames. Anything else is either a mistake or
+  /// an attempt to carry something in alongside the art, and neither belongs in
+  /// a pack - so the type is refused rather than ignored, because ignoring it
+  /// would still mean writing it to disk.
+  static const Set<String> allowedExtensions = {'.json', '.png'};
+
+  /// The manifest's name, which must sit at the pack's root.
+  static const String manifestName = 'manifest.json';
+
   /// Inspects [entries] and reports every reason the archive must not be
   /// extracted.
   ///
@@ -176,6 +187,36 @@ abstract final class CompanionPackArchivePolicy {
                 'bytes');
         break;
       }
+    }
+
+    // What a pack is allowed to contain.
+    final manifests = <String>[];
+    for (final entry in entries) {
+      final name = entry.name;
+      if (name.trim().isEmpty) continue; // already reported
+
+      final lower = name.toLowerCase();
+      final dot = lower.lastIndexOf('.');
+      final extension = dot < 0 ? '' : lower.substring(dot);
+      if (!allowedExtensions.contains(extension)) {
+        reject(
+            'disallowed_file_type',
+            '"$name" is not one of ${allowedExtensions.join(', ')}; a pack is a '
+                'manifest and PNG frames');
+      }
+
+      // At the root, by exact name. A nested `sub/manifest.json` does not match,
+      // which is what makes "exactly allowed" true rather than approximate.
+      if (lower == manifestName) manifests.add(name);
+    }
+
+    if (manifests.isEmpty) {
+      reject('no_manifest', 'a pack must carry $manifestName at its root');
+    } else if (manifests.length > 1) {
+      reject(
+          'duplicate_manifest',
+          '$manifestName appears ${manifests.length} times, so which one is '
+              'authoritative is undefined');
     }
 
     return PackValidationResult(problems);
