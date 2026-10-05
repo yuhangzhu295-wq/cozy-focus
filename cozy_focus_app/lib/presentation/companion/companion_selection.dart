@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'runtime/companion_catalog.dart';
 import 'runtime/companion_id.dart';
 import 'runtime/companion_manifest_data.dart';
+import 'pack/installed_packs_provider.dart';
 
 /// Persistence for the one piece of state the companion picker owns.
 ///
@@ -102,8 +103,19 @@ final companionSelectionStoreProvider = Provider<CompanionSelectionStore>(
 class CompanionSelection extends StateNotifier<CompanionId> {
   final CompanionSelectionStore _store;
 
-  CompanionSelection(this._store)
-      : super(CompanionManifestData.defaultProfileId) {
+  /// The companion ids this app may select: the built-in profiles plus anything
+  /// installed.
+  ///
+  /// Passed in rather than read from the static built-in table, because that
+  /// table cannot know about a pack the user installed a moment ago — and a
+  /// selection that refuses a companion the app can render is exactly the bug
+  /// this exists to prevent.
+  final Set<String> _selectable;
+
+  CompanionSelection(this._store, {Set<String>? selectableIds})
+      : _selectable = selectableIds ??
+            CompanionManifestData.profiles.keys.map((id) => id.value).toSet(),
+        super(CompanionManifestData.defaultProfileId) {
     _restore();
   }
 
@@ -116,8 +128,7 @@ class CompanionSelection extends StateNotifier<CompanionId> {
     if (mounted) state = stored;
   }
 
-  static bool _isKnown(CompanionId id) =>
-      CompanionManifestData.profiles.containsKey(id);
+  bool _isKnown(CompanionId id) => _selectable.contains(id.value);
 
   /// Selects [id], persisting it. An unknown id is refused rather than stored.
   Future<bool> select(CompanionId id) async {
@@ -130,9 +141,18 @@ class CompanionSelection extends StateNotifier<CompanionId> {
 }
 
 final companionSelectionProvider =
-    StateNotifierProvider<CompanionSelection, CompanionId>(
-  (ref) => CompanionSelection(ref.watch(companionSelectionStoreProvider)),
-);
+    StateNotifierProvider<CompanionSelection, CompanionId>((ref) {
+  // Watch the installed set so a pack installed while the app is running becomes
+  // selectable without a restart. Rebuilding recreates the notifier, which
+  // re-reads the persisted selection.
+  ref.watch(installedPacksProvider);
+  return CompanionSelection(
+    ref.watch(companionSelectionStoreProvider),
+    selectableIds: ref.read(installedPacksProvider.notifier).selectableIds(
+          CompanionManifestData.profiles.keys.map((id) => id.value).toSet(),
+        ),
+  );
+});
 
 /// The catalog the presentation layer reads.
 ///
