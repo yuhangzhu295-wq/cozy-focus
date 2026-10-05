@@ -20,16 +20,9 @@ import '../runtime/companion_action_manifest.dart';
 import '../runtime/companion_frame_source.dart';
 import '../runtime/companion_id.dart';
 import '../runtime/companion_profile.dart';
+import 'companion_pack_root.dart';
 import 'installed_pack_registry.dart';
 import 'installed_packs_provider.dart';
-
-/// The directory installed packs live under, or null when none is known.
-///
-/// A plain value rather than an asynchronous lookup: the catalog is synchronous
-/// and a build must not await a path. The app resolves it once at startup and
-/// overrides this; until it does, nothing is installed — which is true, and is a
-/// better answer than a guess.
-final companionPackRootProvider = Provider<String?>((ref) => null);
 
 /// The installed packs' profiles, keyed by companion id.
 ///

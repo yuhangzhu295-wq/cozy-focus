@@ -9,7 +9,7 @@ import '../companion/pack/companion_pack_import.dart';
 import '../companion/pack/companion_pack_install_plan.dart';
 import '../companion/pack/companion_pack_picker.dart';
 import '../companion/pack/companion_pack_validator.dart';
-import '../companion/pack/installed_pack_profiles.dart';
+import '../companion/pack/companion_pack_root.dart';
 import '../companion/pack/installed_packs_provider.dart';
 import '../companion/runtime/companion_id.dart';
 import '../companion/runtime/companion_manifest_data.dart';

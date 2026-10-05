@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'presentation/companion/pack/companion_pack_install_plan.dart';
-import 'presentation/companion/pack/installed_pack_profiles.dart';
+import 'presentation/companion/pack/companion_pack_root.dart';
 import 'presentation/navigation/app_router.dart';
 import 'presentation/theme/app_theme.dart';
 

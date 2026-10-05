@@ -54,6 +54,55 @@ class InstalledCompanionPack {
     required this.relativeDirectory,
   });
 
+  /// The record as it is written to disk.
+  ///
+  /// This is the *install record*, and it is what makes an install survive a
+  /// restart. The pack's contents are never copied here — the manifest on disk
+  /// stays the authority for what a pack contains — but the answers the user gave
+  /// at import, and the source, exist nowhere else: the format leaves the name
+  /// and the species optional precisely because a shipped pack gets them from the
+  /// app's own profile table, which a user's pack does not have.
+  Map<String, dynamic> toJson() => {
+        'packId': packId,
+        'displayName': displayName,
+        'species': species,
+        'source': source,
+        'formatVersion': formatVersion,
+        'checksum': checksum,
+        'relativeDirectory': relativeDirectory,
+      };
+
+  /// Reads a record, or null when the entry cannot be trusted.
+  ///
+  /// Null rather than a defaulted record: a half-read record would put a
+  /// companion in the list under a name nobody chose.
+  static InstalledCompanionPack? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final packId = json['packId'];
+    final displayName = json['displayName'];
+    final species = json['species'];
+    final source = json['source'];
+    final formatVersion = json['formatVersion'];
+    final checksum = json['checksum'];
+    final relativeDirectory = json['relativeDirectory'];
+    if (packId is! String || packId.isEmpty) return null;
+    if (displayName is! String) return null;
+    if (species is! String) return null;
+    if (source is! String) return null;
+    if (formatVersion is! int) return null;
+    if (checksum is! String) return null;
+    if (relativeDirectory is! String) return null;
+    return InstalledCompanionPack(
+      packId: packId,
+      displayName: displayName,
+      species: species,
+      source: source,
+      formatVersion: formatVersion,
+      checksum: checksum,
+      relativeDirectory: relativeDirectory,
+    );
+  }
+
   @override
   String toString() =>
       'InstalledCompanionPack($packId, $species, v$formatVersion)';
@@ -147,6 +196,40 @@ class InstalledPackRegistry {
   /// per step. Kept separate from [remove] so the ordinary case cannot forget to
   /// notify.
   bool removeSilently(String packId) => _packs.remove(packId) != null;
+
+  /// Replaces the contents with what a cold start found on disk.
+  ///
+  /// One revision bump for the whole set, because a startup is one change and
+  /// not one per pack. Returns true when the contents actually changed, so a
+  /// caller can avoid telling every consumer the world changed on a start where
+  /// nothing did.
+  bool adoptAll(Iterable<InstalledCompanionPack> recovered) {
+    final incoming = {for (final pack in recovered) pack.packId: pack};
+    if (incoming.length == _packs.length) {
+      var same = true;
+      for (final entry in incoming.entries) {
+        final existing = _packs[entry.key];
+        if (existing == null ||
+            existing.checksum != entry.value.checksum ||
+            existing.displayName != entry.value.displayName ||
+            existing.species != entry.value.species) {
+          same = false;
+          break;
+        }
+      }
+      if (same) return false;
+    }
+
+    _packs
+      ..clear()
+      ..addAll(incoming);
+    _revision++;
+    return true;
+  }
+
+  /// The records, as they should be written to disk.
+  List<InstalledCompanionPack> get records => List.unmodifiable(
+      _packs.values.toList()..sort((a, b) => a.packId.compareTo(b.packId)));
 }
 
 /// Repairs a companion selection after a pack is removed.

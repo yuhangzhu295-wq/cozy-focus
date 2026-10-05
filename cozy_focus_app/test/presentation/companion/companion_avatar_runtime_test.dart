@@ -12,7 +12,7 @@ import 'package:cozy_focus_app/presentation/companion/animation/animation_state.
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_selection.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_prop.dart';
-import 'package:cozy_focus_app/presentation/companion/pack/installed_pack_profiles.dart';
+import 'package:cozy_focus_app/presentation/companion/pack/companion_pack_root.dart';
 import 'package:cozy_focus_app/presentation/companion/pack/installed_pack_registry.dart';
 import 'package:cozy_focus_app/presentation/companion/pack/installed_packs_provider.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_player.dart';

@@ -11,7 +11,7 @@ import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_selection.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_visual_registry.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_spec.dart';
-import 'package:cozy_focus_app/presentation/companion/pack/installed_pack_profiles.dart';
+import 'package:cozy_focus_app/presentation/companion/pack/companion_pack_root.dart';
 import 'package:cozy_focus_app/presentation/companion/pack/installed_pack_registry.dart';
 import 'package:cozy_focus_app/presentation/companion/pack/installed_packs_provider.dart';
 import 'package:cozy_focus_app/presentation/companion/procedural_companion_art.dart';

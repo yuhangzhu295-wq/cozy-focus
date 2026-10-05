@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cozy_focus_app/presentation/companion/companion_selection.dart';
 import 'package:cozy_focus_app/presentation/companion/pack/companion_pack_import.dart';
-import 'package:cozy_focus_app/presentation/companion/pack/installed_pack_profiles.dart';
+import 'package:cozy_focus_app/presentation/companion/pack/companion_pack_root.dart';
 import 'package:cozy_focus_app/presentation/companion/pack/installed_packs_provider.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
 
