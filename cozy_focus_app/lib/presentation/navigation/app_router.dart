@@ -16,6 +16,7 @@ import '../pages/craft_detail_page.dart';
 import '../pages/inventory_page.dart';
 import '../pages/room_page.dart';
 import '../pages/companion_picker_page.dart';
+import '../pages/companion_import_page.dart';
 import '../pages/mochi_growth_page.dart';
 import '../pages/pet_dress_page.dart';
 import '../pages/pet_collection_page.dart';
@@ -78,6 +79,10 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
         GoRoute(
           path: '/companions',
           builder: (context, state) => const CompanionPickerPage(),
+        ),
+        GoRoute(
+          path: '/companions/import',
+          builder: (context, state) => const CompanionImportPage(),
         ),
         GoRoute(
           path: '/growth/dress',

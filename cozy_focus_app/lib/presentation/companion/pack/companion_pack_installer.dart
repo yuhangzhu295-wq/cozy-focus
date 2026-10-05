@@ -106,7 +106,7 @@ abstract final class CompanionPackInstaller {
     // ── collision, decided before a single byte is written ──────────────────
     if (installedIds.contains(plan.packId)) {
       final known = installedChecksums[plan.packId];
-      final incoming = _checksumOf(read.files);
+      final incoming = checksumOf(read.files);
       return CompanionPackInstallReport(
         status: known == incoming
             ? CompanionPackInstallStatus.alreadyInstalled
@@ -180,7 +180,7 @@ abstract final class CompanionPackInstaller {
           formatVersion: manifest['packFormatVersion'] is int
               ? manifest['packFormatVersion'] as int
               : 1,
-          checksum: _checksumOf(read.files),
+          checksum: checksumOf(read.files),
           relativeDirectory: plan.relativeDirectory,
         ),
       );
@@ -239,7 +239,12 @@ abstract final class CompanionPackInstaller {
   /// Over the *contents*, not the archive: the same pack zipped twice produces
   /// different bytes, so hashing the archive would make a re-import look like a
   /// different pack and turn an idempotent install into a conflict.
-  static String _checksumOf(List<CompanionPackFile> files) {
+  ///
+  /// Public because the import path has to ask the same question *before*
+  /// planning: "is this the pack I already have, or a different one under the
+  /// same id?" A second implementation of that rule is how the two answers drift
+  /// apart, so there is one.
+  static String checksumOf(List<CompanionPackFile> files) {
     // Over the names *and the bytes*. An earlier version hashed only
     // `name:length`, which meant two packs whose frames differed but happened to
     // be the same size hashed alike - so a genuinely different pack would have
