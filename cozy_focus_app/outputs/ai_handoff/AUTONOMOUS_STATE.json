@@ -2,12 +2,12 @@
   "program": "RESUME_P32_THROUGH_P40",
   "project": "COZY_FOCUS",
   "branch": "recovery/v4.2.1-rebuild",
-  "updated_at_slice": "P34 complete; pack builder built, self-consumed and device-walked",
-  "phase": "P34",
-  "slice": "P34 COMPLETE (builder, both input paths, device-walked). Next: P35.",
+  "updated_at_slice": "P35 complete; the room commits nothing the companion cannot perform",
+  "phase": "P35",
+  "slice": "P35 COMPLETE. Next: P36 (offline local custom pet golden flow).",
   "start_sha": "0a116e2",
-  "latest_sha": "01b4e86",
-  "remote_sha": "01b4e86",
+  "latest_sha": "4c3bc4d",
+  "remote_sha": "4c3bc4d",
   "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
@@ -17,12 +17,13 @@
     "P31_companion_pack_standard": "PASS",
     "P32_local_import_export": "PASS (device-walked, filesystem-verified)",
     "P33_partial_pack_capability": "PASS (device-verified)",
-    "P34_local_pack_builder": "PASS (device-walked)"
+    "P34_local_pack_builder": "PASS (device-walked)",
+    "P35_custom_companion_runtime": "PASS"
   },
   "test_counts": {
-    "full_suite": "1456/1456",
+    "full_suite": "1473/1473",
     "pack_suite": "173",
-    "format": "PASS (316 files, 0 changed)",
+    "format": "PASS (319 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
     "geometry_negative_proof": "PASS (uniform 40px shift refused)",
     "pack_geometry_audit": "PASS (dog verified; cat/rabbit have no contract)",
@@ -72,7 +73,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P35: custom companion runtime productionization. Audit the room decision/effect path so no furniture effect is committed for an action the companion cannot perform, and make capability truth apply to autonomous routine/idle decisions as well as the player-facing panel. Then verify hot install, cold start, selection, delete, fallback, partial and complete capability with no custom-companion page branch and no per-pet provider class.",
+  "next_action": "P36: the local custom pet golden flow, offline. Build a .cozy_pet with the CLI, import it through the real picker, preview, install, select, then Home -> Focus -> Pause -> Resume -> Complete -> Room -> Walk -> furniture action if the capability exists -> restart -> still selected -> export -> delete -> safe fallback -> re-import -> works again. No SQLite result seeding, no hidden developer UI, no network. Verify every state claim against the registry, the filesystem and runtime diagnostics, not screenshots.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git status --short",
     "read this file",
@@ -98,7 +99,9 @@
     "P33_partial_pack_capability": "PASS",
     "P34_to_P40": "NOT_STARTED",
     "P34_local_pack_builder": "PASS",
-    "P35_to_P40": "NOT_STARTED"
+    "P35_to_P40": "NOT_STARTED",
+    "P35_custom_companion_runtime": "PASS",
+    "P36_to_P40": "NOT_STARTED"
   },
   "p33_device_flow": {
     "device": "Pixel 7 API 34 emulator",
@@ -136,5 +139,21 @@
     "The frame path kept the source frame names, so idle/000.png and walk/000.png collided and the second action overwrote the first - both would have played the same pictures, and the importer accepted it because the validator checks frames within an action, not between them. Frames are now namespaced per action. Found by the self-consumption test.",
     "video_to_sprite.load_contract and manifest.load_contract read the same file into two different shapes (tolerancePx + tuple canvas vs anchorTolerancePx + list), so handing one to the other raised KeyError. video_to_sprite now delegates to the single reader.",
     "DUPLICATE_MAX_DISTANCE was 0.005, calibrated on the dog alone; the cat's closest idle pair is 0.0044 and the rabbit's 0.0053, so the video QA refused two thirds of the approved art. Now 0.002, with the measured pairs for all three packs recorded beside it."
+  ],
+  "p35_results": {
+    "ROOM_CAPABILITY_TRUTH": "PASS (no capability -> no commitment -> no effect)",
+    "ROOM_SIT": "PASS (panel hides it; a pack without a fallback for it cannot be given it)",
+    "SEARCH_STUDY": "PASS (shared focus_think recorded and pinned, not removed)",
+    "FIRST_CLASS_GUARD": "PASS (one generic provider, no source branch, no isCustom branch)",
+    "PARTIAL_AND_COMPLETE_CAPABILITY": "PASS (covered by P33/P34 suites)",
+    "HOT_COLD_SELECT_DELETE_FALLBACK": "PASS (covered by P32/P33/P34, re-walked in P36)"
+  },
+  "p35_decisions": [
+    "The decision gate uses canPerform, not canShow. canShow is the panel's question (a chip promises a specific visible action); using it in the decision refused the dog its own sofa, because room_sit is a declared fallback rather than shipped frames, and broke fifteen P28 commitment tests.",
+    "bookshelf/search keeps sharing focus_think with desk/study. The labels describe what the player asks for, and one animation is the honest answer. The test that pins it found two more shared pairs (room_sit on sofa/rug, sleep on sofa nap/bed) which are now recorded too."
+  ],
+  "p35_open": [
+    "room_sit still has no frames of its own. The panel does not offer it; give it frames or a drawAliases entry and the chip returns with no code change.",
+    "The animation-state path (travel, posture transitions) is still a separate selection path from the director."
   ]
 }
