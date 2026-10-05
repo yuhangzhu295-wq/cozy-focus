@@ -4,10 +4,10 @@
   "branch": "recovery/v4.2.1-rebuild",
   "updated_at_slice": "P32A archive reader",
   "phase": "P32",
-  "slice": "P32E_runtime_refresh (1 of N: the revision signal)",
+  "slice": "P32E_runtime_refresh (2 of N: revision signal + live selection)",
   "start_sha": "0a116e2",
-  "latest_sha": "b376e4c",
-  "remote_sha": "b376e4c",
+  "latest_sha": "7357839",
+  "remote_sha": "7357839",
   "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
@@ -68,7 +68,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P32E continues: make companionCatalogProvider and companionVisualRegistryProvider watch installedPacksProvider; change CompanionSelection._isKnown to query selectableIds; add PackBackedCompanionVisualProvider from an installed manifest; make CompanionAvatar observe the revision. Then the hot-install integration test and its negative proof.",
+  "next_action": "P32E continues. The hard one is the catalog: it is synchronous and built from a compiled mirror, while an installed pack needs a manifest read from disk, so companionCatalogProvider needs an async or preloaded path before it can watch the revision. Then the visual registry, the pack-backed provider, and CompanionAvatar observing the revision.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git rev-parse origin/recovery/v4.2.1-rebuild; git status --short",
     "read this file",
@@ -91,11 +91,10 @@
   },
   "p32_remaining": {
     "P32E_runtime_refresh": [
-      "companionCatalogProvider watches the revision and rebuilds from installed manifests",
+      "companionCatalogProvider watches the revision and rebuilds from installed manifests (needs an async manifest read; the catalog is synchronous today)",
       "companionVisualRegistryProvider watches the revision",
-      "CompanionSelection._isKnown queries the live valid id set (selectableIds), not static profiles",
       "PackBackedCompanionVisualProvider instantiated from an installed manifest, registered via CompanionVisualRegistry.register",
-      "CompanionAvatar observes the revision instead of caching registry/director at init (companion_avatar.dart:161-162,189-197,409-415,433-459)",
+      "CompanionAvatar observes the revision instead of caching registry/director at init (companion_avatar.dart:189-197 uses ref.read; :409-415 reads the catalog again)",
       "CompanionBehaviorDirector availability refreshes from the live catalog without a second director",
       "integration test: install with no restart -> selectable -> renders file frames -> missing actions never scheduled; must fail if revision observation is removed"
     ],
@@ -105,6 +104,7 @@
     "P32_device": "the emulator flow in the program brief"
   },
   "p32_done": [
-    "installedPacksProvider: the single observable revision signal, plus selectableIds as the one answer to 'what companions exist' (b376e4c)"
+    "installedPacksProvider: the single observable revision signal, plus selectableIds as the one answer to 'what companions exist' (b376e4c)",
+    "CompanionSelection._isKnown consults the injected live id set, and companionSelectionProvider watches the revision, so an installed pack is selectable without a restart (7357839)"
   ]
 }
