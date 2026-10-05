@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'companion_frame_source.dart';
+
 import 'package:flutter/material.dart';
 
 import 'companion_action_manifest.dart';
@@ -44,6 +46,14 @@ class CompanionSpritePlayer extends StatefulWidget {
   /// off-screen or the page is inactive passes `false`.
   final bool enabled;
 
+  /// Where the frames' bytes come from.
+  ///
+  /// Bundled assets by default, which is what every built-in pack uses. An
+  /// installed pack passes its own directory. The player, its timing, its loop
+  /// mode and its reduced-motion handling are unchanged either way - only the
+  /// provider differs, which is what keeps this one player rather than two.
+  final CompanionFrameSource frameSource;
+
   const CompanionSpritePlayer({
     super.key,
     required this.spec,
@@ -51,6 +61,7 @@ class CompanionSpritePlayer extends StatefulWidget {
     this.reducedMotion = false,
     this.semanticLabel,
     this.enabled = true,
+    this.frameSource = const CompanionFrameSource.assets(),
   });
 
   @override
@@ -185,7 +196,7 @@ class _CompanionSpritePlayerState extends State<CompanionSpritePlayer>
     for (final path in _frames) {
       if (_precached.contains(path)) continue;
       _precached.add(path);
-      final provider = AssetImage(path);
+      final provider = widget.frameSource.providerFor(path);
       precacheImage(provider, context, onError: (_, __) {
         // A missing frame must degrade to "not drawn", never to a crash. The
         // asset tests are what catch a genuinely missing file.
@@ -211,8 +222,10 @@ class _CompanionSpritePlayerState extends State<CompanionSpritePlayer>
       label: widget.semanticLabel,
       child: SizedBox.square(
         dimension: widget.size,
-        child: Image.asset(
-          frame,
+        child: Image(
+          // The same widget for both sources: `Image.asset` is only shorthand for
+          // `Image(image: AssetImage(...))`, so the built-in path is unchanged.
+          image: widget.frameSource.providerFor(frame),
           fit: BoxFit.contain,
           // The canvas is identical across frames, so smoothing between frames
           // is only ever a sub-pixel resample.
