@@ -78,6 +78,51 @@ DRAW_ALIASES = {
 }
 
 
+def load_contract(companion):
+    """The pack's declared geometry, from its production contract.
+
+    `assets/companions/<companion>/animation_manifest.json` is the independent
+    source: it states the canvas and anchors a pack is *supposed* to have, and it
+    is written before the frames are produced rather than derived from them.
+    """
+    path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "assets", "companions", companion, "animation_manifest.json",
+    )
+    with open(path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    canvas = raw.get("canvas") or {}
+    return {
+        "groundBaseline": int(raw["groundBaseline"]),
+        "centerAnchor": int(raw["centerAnchor"]),
+        "canvas": [int(canvas.get("width", 0)), int(canvas.get("height", 0))],
+        "anchorTolerancePx": int(raw.get("anchorTolerancePx", 0)),
+    }
+
+
+def check_geometry(measured, contract):
+    """Why `measured` does not satisfy `contract`, as a list of strings.
+
+    Empty means it does. The tolerance is the contract's own, so a pack that
+    declares a tighter one is held to it.
+    """
+    tolerance = contract.get("anchorTolerancePx", 0)
+    problems = []
+    for field in ("groundBaseline", "centerAnchor"):
+        delta = abs(int(measured[field]) - int(contract[field]))
+        if delta > tolerance:
+            problems.append(
+                f"{field} measured {measured[field]} against a declared "
+                f"{contract[field]} (off by {delta}px, tolerance {tolerance}px)"
+            )
+    if list(measured.get("canvas", [])) != list(contract.get("canvas", [])):
+        problems.append(
+            f"canvas measured {measured.get('canvas')} against a declared "
+            f"{contract.get('canvas')}"
+        )
+    return problems
+
+
 def build(companion):
     rep = json.load(open(os.path.join(APP, ".asset_staging", f"production_report_{companion}.json"), encoding="utf-8"))
     out_dir = os.path.join(APP, "assets", "companions", companion)
@@ -106,6 +151,26 @@ def build(companion):
     canvas = rep["frames"][0]["canvas"] if rep["frames"] else [1024, 1024]
     bottoms = [f["bottomY"] for f in rep["frames"]]
     centers = [f["centerX"] for f in rep["frames"]]
+    measured = {
+        "groundBaseline": contract["groundBaseline"],
+        "centerAnchor": contract["centerAnchor"],
+        "canvas": canvas,
+    }
+
+    # The expected geometry comes from the pack's own contract, and the frames are
+    # checked against it. It used to be the other way round - the manifest's
+    # baseline and centre were the mean of the frames being measured - which meant
+    # a pack whose frames had all drifted together would agree with itself and
+    # certify the drift. Measuring output, defining the expectation from that same
+    # output, and then verifying output against itself is not a check.
+    contract = load_contract(companion)
+    problems = check_geometry(measured=measured, contract=contract)
+    if problems:
+        raise ValueError(
+            "geometry does not match the pack contract for "
+            f"{companion}: " + "; ".join(problems)
+        )
+
     manifest = {
         "companionId": companion,
         "posePack": {"dog": "mochi", "cat": "cat", "rabbit": "rabbit"}[companion],
@@ -114,7 +179,6 @@ def build(companion):
         "centerAnchor": int(round(sum(centers) / len(centers))) if centers else 511,
         "actions": actions,
         "semanticFallback": SEMANTIC_FALLBACK,
-        "drawAliases": DRAW_ALIASES,
         "drawAliases": DRAW_ALIASES,
         "generatedFrom": f"production_report_{companion}.json",
     }
