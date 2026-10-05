@@ -4,10 +4,10 @@
   "branch": "recovery/v4.2.1-rebuild",
   "updated_at_slice": "P32A archive reader",
   "phase": "P32",
-  "slice": "P32E_runtime_refresh",
+  "slice": "P32E_runtime_refresh (1 of N: the revision signal)",
   "start_sha": "0a116e2",
-  "latest_sha": "871fd1d",
-  "remote_sha": "871fd1d",
+  "latest_sha": "b376e4c",
+  "remote_sha": "b376e4c",
   "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
@@ -31,7 +31,7 @@
     "P32D frame source: CompanionFrameSource, one player for asset and file frames (27d78f7)"
   ],
   "test_counts": {
-    "full_suite": "1349/1349",
+    "full_suite": "1356/1356",
     "pack_suite": "96",
     "format": "PASS (287 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
@@ -68,7 +68,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P32E. Audit the exact current implementation of companionCatalogProvider, companionVisualRegistryProvider, CompanionSelection._isKnown, CompanionAvatar init caching and CompanionBehaviorDirector availability caching; then add one revision signal and make those observe it. Do NOT create a second director, player or provider-per-pet.",
+  "next_action": "P32E continues: make companionCatalogProvider and companionVisualRegistryProvider watch installedPacksProvider; change CompanionSelection._isKnown to query selectableIds; add PackBackedCompanionVisualProvider from an installed manifest; make CompanionAvatar observe the revision. Then the hot-install integration test and its negative proof.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git rev-parse origin/recovery/v4.2.1-rebuild; git status --short",
     "read this file",
@@ -91,17 +91,20 @@
   },
   "p32_remaining": {
     "P32E_runtime_refresh": [
-      "one observable registry revision signal",
-      "companionCatalogProvider watches it",
-      "companionVisualRegistryProvider watches it",
-      "CompanionSelection._isKnown queries the live valid id set, not static profiles",
-      "PackBackedCompanionVisualProvider instantiated from installed manifest data",
-      "CompanionAvatar observes the revision instead of caching registry/director at init",
-      "director availability cache refreshes from the live catalog (no second director)"
+      "companionCatalogProvider watches the revision and rebuilds from installed manifests",
+      "companionVisualRegistryProvider watches the revision",
+      "CompanionSelection._isKnown queries the live valid id set (selectableIds), not static profiles",
+      "PackBackedCompanionVisualProvider instantiated from an installed manifest, registered via CompanionVisualRegistry.register",
+      "CompanionAvatar observes the revision instead of caching registry/director at init (companion_avatar.dart:161-162,189-197,409-415,433-459)",
+      "CompanionBehaviorDirector availability refreshes from the live catalog without a second director",
+      "integration test: install with no restart -> selectable -> renders file frames -> missing actions never scheduled; must fail if revision observation is removed"
     ],
     "P32F": "export as .cozy_pet",
     "P32G": "delete + selected-delete fallback + offline + export/delete/re-import",
     "P32_tests": "integration test proving hot install with no restart, failing if revision observation is removed",
     "P32_device": "the emulator flow in the program brief"
-  }
+  },
+  "p32_done": [
+    "installedPacksProvider: the single observable revision signal, plus selectableIds as the one answer to 'what companions exist' (b376e4c)"
+  ]
 }
