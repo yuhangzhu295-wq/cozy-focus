@@ -22,6 +22,7 @@
 /// from "make it happen".
 library;
 
+import '../runtime/companion_action_availability.dart';
 import '../runtime/companion_id.dart';
 import '../runtime/daily_routine.dart';
 import '../time_of_day.dart';
@@ -141,6 +142,16 @@ class RoomDecisionInput {
   /// decision function's signature does not have to change when it is used.
   final CompanionId companionId;
 
+  /// What this companion can actually be asked to do.
+  ///
+  /// Required, and deliberately so. Every decision below names a semantic
+  /// companion action, and the manifest is the only thing that knows whether
+  /// this companion ships it. A caller that cannot say has no business
+  /// committing an action: the effect of an interaction the companion cannot
+  /// perform would be applied while nothing appeared on screen, which is the
+  /// presentation claiming something that did not happen.
+  final CompanionActionAvailability availability;
+
   /// The daily routine to consult, defaulting to the shipped one.
   ///
   /// Injected rather than read statically so a test can state the day it wants
@@ -152,6 +163,7 @@ class RoomDecisionInput {
     required this.vitals,
     required this.timeOfDay,
     required this.unlockedItemIds,
+    required this.availability,
     this.focusRunning = false,
     this.focusPaused = false,
     this.request,
@@ -259,11 +271,19 @@ abstract final class FurnitureActionResolver {
     final action = entity?.actionById(request.actionId);
     if (entity == null || action == null) return null;
 
-    return _decisionFor(
+    final decision = _decisionFor(
       cause: RoomDecisionCause.playerRequest,
       anchor: anchor,
       action: action,
+      availability: input.availability,
     );
+    // Null when this companion cannot perform the requested action. The request
+    // is then not honoured and the decision falls through to the ordinary
+    // causes, which means the companion carries on rather than performing
+    // something the player did not ask for. The panel does not offer an action
+    // the companion cannot draw, so reaching here means the capability changed
+    // between the tap and the decision.
+    return decision;
   }
 
   /// `IF focus mode: desk + write`.
@@ -278,11 +298,13 @@ abstract final class FurnitureActionResolver {
         unlocked: true,
       );
       if (action == null) continue;
-      return _decisionFor(
+      final decision = _decisionFor(
         cause: RoomDecisionCause.focus,
         anchor: anchor,
         action: action,
+        availability: input.availability,
       );
+      if (decision != null) return decision;
     }
     return null;
   }
@@ -296,11 +318,13 @@ abstract final class FurnitureActionResolver {
       if (!input.unlockedItemIds.contains(anchor.itemId)) continue;
       final action = entity.actionById('rest') ?? entity.actionById('sit');
       if (action == null) continue;
-      return _decisionFor(
+      final decision = _decisionFor(
         cause: RoomDecisionCause.tired,
         anchor: anchor,
         action: action,
+        availability: input.availability,
       );
+      if (decision != null) return decision;
     }
     return null;
   }
@@ -322,11 +346,13 @@ abstract final class FurnitureActionResolver {
         unlocked: true,
       );
       if (action == null) continue;
-      return _decisionFor(
+      final decision = _decisionFor(
         cause: isNight ? RoomDecisionCause.night : RoomDecisionCause.tired,
         anchor: anchor,
         action: action,
+        availability: input.availability,
       );
+      if (decision != null) return decision;
     }
 
     // No bed. Take the most restorative seat action instead, so a tired
@@ -340,6 +366,11 @@ abstract final class FurnitureActionResolver {
       if (entity == null) continue;
       for (final action in entity.actions) {
         if (action.effect.energy <= 0) continue;
+        // Only what this companion can actually perform. Filtering here rather
+        // than after the choice matters: a companion that cannot sit should rest
+        // on the next-best seat, not be handed the sofa and then have the whole
+        // decision thrown away.
+        if (!input.availability.canPerform(action.companionAction)) continue;
         if (best == null || action.effect.energy > best.effect.energy) {
           best = action;
           bestAnchor = anchor;
@@ -351,6 +382,7 @@ abstract final class FurnitureActionResolver {
         cause: isNight ? RoomDecisionCause.night : RoomDecisionCause.tired,
         anchor: bestAnchor,
         action: best,
+        availability: input.availability,
       );
     }
     return null;
@@ -380,11 +412,13 @@ abstract final class FurnitureActionResolver {
         final action = entity?.actionById(step.action);
         if (action == null) continue;
         if (!action.isAvailableOn(FurnitureTrigger.routine)) continue;
-        return _decisionFor(
+        final decision = _decisionFor(
           cause: RoomDecisionCause.routine,
           anchor: anchor,
           action: action,
+          availability: input.availability,
         );
+        if (decision != null) return decision;
       }
     }
     return null;
@@ -415,11 +449,13 @@ abstract final class FurnitureActionResolver {
         unlocked: true,
       );
       if (action == null) continue;
-      return _decisionFor(
+      final decision = _decisionFor(
         cause: RoomDecisionCause.idle,
         anchor: anchor,
         action: action,
+        availability: input.availability,
       );
+      if (decision != null) return decision;
     }
     return RoomDecision(
       cause: RoomDecisionCause.idle,
@@ -430,19 +466,40 @@ abstract final class FurnitureActionResolver {
     );
   }
 
-  static RoomDecision _decisionFor({
+  /// The decision for [action] at [anchor], or null when this companion cannot
+  /// perform it.
+  ///
+  /// Null rather than a decision with the action stripped: a companion that
+  /// cannot sit should not travel to the sofa and stand there, and it must not
+  /// receive the effect of a rest it never took. Returning null lets the branch
+  /// try the next anchor — a pack with no `room_sit` may still be able to rest on
+  /// a rug — and, failing that, fall through to the next cause.
+  static RoomDecision? _decisionFor({
     required RoomDecisionCause cause,
     required AnchorPoint anchor,
     required FurnitureAction action,
-  }) =>
-      RoomDecision(
-        cause: cause,
-        itemId: anchor.itemId,
-        roomItemId: anchor.roomItemId,
-        anchorId: anchor.id,
-        actionId: action.id,
-        companionAction: action.companionAction,
-        effect: action.effect,
-        dwell: action.minDwell,
-      );
+    required CompanionActionAvailability availability,
+  }) {
+    // `canPerform`, not `canShow`. The two answer different questions and the
+    // room needs the first one: *can the companion be asked to do this at all?*
+    // A declared fallback says yes — the pack named the action and said what to
+    // draw instead — and the panel is where the stricter "can it be seen doing
+    // it" belongs, because a chip promises a specific visible action.
+    //
+    // Using `canShow` here would refuse the dog its own sofa: `room_sit` is
+    // declared as a fallback rather than shipped as frames, so the dog can be
+    // asked for it and draws idle. That is a decided behaviour with its own
+    // tests, not something to overturn from here.
+    if (!availability.canPerform(action.companionAction)) return null;
+    return RoomDecision(
+      cause: cause,
+      itemId: anchor.itemId,
+      roomItemId: anchor.roomItemId,
+      anchorId: anchor.id,
+      actionId: action.id,
+      companionAction: action.companionAction,
+      effect: action.effect,
+      dwell: action.minDwell,
+    );
+  }
 }

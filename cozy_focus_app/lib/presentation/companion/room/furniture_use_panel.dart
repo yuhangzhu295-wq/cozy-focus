@@ -8,7 +8,6 @@ import 'furniture_action_resolver.dart';
 import '../companion_selection.dart';
 import '../pack/companion_availability_provider.dart';
 import '../runtime/companion_action_availability.dart';
-import '../runtime/companion_context.dart';
 import '../room/furniture_catalog.dart';
 import '../room/furniture_entity.dart';
 import '../room/room_simulation.dart';
@@ -187,12 +186,13 @@ class FurnitureUsePanel extends ConsumerWidget {
     // declared to cause is not a player choice.
     if (!action.triggers.contains(FurnitureTrigger.playerTap)) return false;
 
-    final macro = CompanionMacroBehavior.fromId(action.companionAction);
-    if (macro == null) return false;
-    // `canSchedule` first: `hasOwnDrawing` only checks the fallback set, so on
-    // its own it answers `true` for a pose the pack has never heard of.
-    return availability.canSchedule(macro.pose) &&
-        availability.hasOwnDrawing(macro.pose);
+    // One question, asked in one place. `canShow` is `canSchedule` and
+    // `hasOwnDrawing` together, and it is the same test the room's decision loop
+    // applies before committing an action — so the chip a player can tap and the
+    // action the companion may perform cannot drift apart. An action id that is
+    // not a companion action at all is `false`, which is what the old macro
+    // lookup was for.
+    return availability.canShow(action.companionAction);
   }
 
   /// Renders an effect in the player's terms, or an empty string when neutral.

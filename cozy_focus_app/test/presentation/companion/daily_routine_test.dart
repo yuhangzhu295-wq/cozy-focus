@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cozy_focus_app/domain/models/craft_models.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_availability.dart';
 import 'package:cozy_focus_app/presentation/companion/room/anchor_point.dart';
 import 'package:cozy_focus_app/presentation/companion/room/companion_vitals.dart';
 import 'package:cozy_focus_app/presentation/companion/room/furniture_action_resolver.dart';
@@ -51,6 +52,7 @@ RoomDecision decide({
   PlayerRequest? request,
 }) =>
     FurnitureActionResolver.decide(RoomDecisionInput(
+      availability: _everything,
       anchors: anchorsFor(furniture),
       vitals: vitals,
       timeOfDay: band,
@@ -59,6 +61,15 @@ RoomDecision decide({
       focusPaused: focusPaused,
       request: request,
     ));
+
+/// A companion that ships every action.
+///
+/// The subject of these tests is the room's *decision logic* — night puts it to
+/// bed, a break sends it to a seat, the routine fills the empty hours — and that
+/// logic is the same whichever companion is present. Stating "a companion that
+/// can do all of it" keeps the capability gate out of the way here; the gate
+/// itself is what `room_capability_test.dart` is about.
+final _everything = CompanionActionAvailabilityResolver.resolve('dog');
 
 void main() {
   group('the day has a shape', () {
@@ -257,6 +268,7 @@ void main() {
         ],
       });
       final decision = FurnitureActionResolver.decide(RoomDecisionInput(
+        availability: _everything,
         anchors: anchorsFor([placed('sofa')]),
         vitals: const CompanionVitals(),
         timeOfDay: TimeOfDayBand.morning,
@@ -270,6 +282,7 @@ void main() {
     test('a band with no routine at all is simply absent', () {
       const empty = DailyRoutine({});
       final decision = FurnitureActionResolver.decide(RoomDecisionInput(
+        availability: _everything,
         anchors: anchorsFor([placed('bookshelf')]),
         vitals: const CompanionVitals(),
         timeOfDay: TimeOfDayBand.morning,

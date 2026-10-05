@@ -170,6 +170,15 @@ abstract final class FurnitureCatalog {
       FurnitureAction(
         id: 'search',
         label: '找一本书',
+        // The same companion action as the desk's `study`, deliberately.
+        //
+        // The two labels describe what the *player* is asking for — search this
+        // shelf, study at that desk — and both are the companion thinking. There
+        // is one `focus_think` animation and no second one is going to be invented
+        // for the difference, so the honest position is that these are two
+        // affordances with one visible behaviour, not two behaviours that happen
+        // to look alike. A test pins the shared set to exactly this pair, so a
+        // future collision has to be a decision rather than an accident.
         companionAction: 'focus_think',
         // The afternoon routine goes looking for something to read.
         triggers: [

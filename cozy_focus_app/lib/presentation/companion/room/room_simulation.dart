@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../companion_selection.dart';
+import '../pack/companion_availability_provider.dart';
 import '../runtime/companion_id.dart';
 import '../time_of_day.dart';
 import '../../controllers/craft_controller.dart';
@@ -451,6 +452,13 @@ class RoomSimulationController extends StateNotifier<RoomSimulationState> {
         unlockedItemIds: _unlockedItemIds(craft),
         request: state.request,
         companionId: companionId,
+        // What this companion can actually perform. Through the provider rather
+        // than the resolver directly, so an installed pack is answered from its
+        // own manifest: the resolver knows the shipped three and would hand a
+        // user's pack the dog's capabilities, and the room would then commit the
+        // effect of an action the pack has no art for.
+        availability:
+            _ref.read(companionAvailabilityProvider)(companionId.value),
       ),
     );
 

@@ -64,6 +64,34 @@ class CompanionActionAvailability {
   /// Whether [pose] may be selected for this companion.
   bool canSchedule(CompanionPose pose) => schedulable.contains(pose.id);
 
+  /// Whether the companion can perform [actionId].
+  ///
+  /// The action ids the room's furniture recipes carry are semantic companion
+  /// actions — `room_sit`, `room_read`, `focus_read` — and those are the same
+  /// vocabulary this set holds, so the question is a membership test rather than
+  /// a translation. An id that is not in the vocabulary at all is `false`, which
+  /// is the honest answer: nothing can schedule it.
+  ///
+  /// This exists so a caller holding an action *id* rather than a pose does not
+  /// have to reach for the pose enum, and so there is one place that answers it.
+  bool canPerform(String actionId) => schedulable.contains(actionId);
+
+  /// Whether the companion can perform [actionId] **and be seen doing it**.
+  ///
+  /// Stricter than [canPerform], and the difference is the point. A declared
+  /// fallback means the companion can be asked for an action and will draw
+  /// something else — a real behaviour the director may schedule, reported
+  /// through [fallbackOnly] so nothing counts it as a distinct action.
+  ///
+  /// But the room *commits* an action the player then watches. An action that
+  /// draws something else is not the action it claims to be, and committing it
+  /// would show the player a companion using furniture in a way it cannot. So the
+  /// room requires the stricter answer — which is the same one the furniture
+  /// panel already applies when deciding what to offer, and having both ask one
+  /// question in one place is what stops the offer and the decision disagreeing.
+  bool canShow(String actionId) =>
+      schedulable.contains(actionId) && !fallbackOnly.contains(actionId);
+
   /// Whether the pack draws [pose] itself rather than something else.
   ///
   /// `false` for a pose that will be drawn as its fallback. A behaviour chosen
