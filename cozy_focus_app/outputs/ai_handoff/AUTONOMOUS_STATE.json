@@ -2,11 +2,11 @@
   "program": "RESUME_P32_THROUGH_P40",
   "project": "COZY_FOCUS",
   "branch": "recovery/v4.2.1-rebuild",
-  "updated_at_slice": "P33 complete; capability gating from the pack, truthful completeness, declared fallback drawn",
+  "updated_at_slice": "P34 prerequisite: measurement trap removed; productionise finding corrected",
   "phase": "P33",
   "slice": "P33 COMPLETE. Next: P34.",
   "start_sha": "0a116e2",
-  "latest_sha": "036e13b",
+  "latest_sha": "b13e7b1",
   "remote_sha": "3e7fc85",
   "local_equals_remote": false,
   "worktree": "clean",
@@ -49,7 +49,7 @@
   ],
   "open_findings": [
     "P34: cat and rabbit have NO geometry contract (assets/companions/<c>/animation_manifest.json is dog-only), so manifest.py refuses them. Their packs cannot be certified until a contract is written for each.",
-    "tools/productionise.py measure() reads split()[-1] as alpha; on the indexed PNGs the packs ship, that band is the palette index. audit_pack_geometry.py converts to RGBA first. productionise itself was not changed - worth a look before P34, since it writes the production report the manifest is built from.",
+    "CORRECTED at b13e7b1: productionise.measure and asset_pipeline.measure read split()[-1] as alpha, which is the palette index on an indexed PNG - but BOTH call sites already convert to RGBA first, so nothing was broken. The earlier note called it a bug; checking it properly says it was a latent trap. Both functions now convert for themselves and refuse an empty frame, proven by tools/test_measure_alpha.py against 147 real indexed frames (115 of which distinguish the two channels, so the proof is not vacuous).",
     "P32: symlink rejection is NOT verified through the reader, and duplicate-name ZIP entries cannot be built with ZipEncoder. Both rules are covered directly at the policy level only.",
     "P32: the expansion-ratio bomb check is inert on this path; per-entry and total byte caps still apply.",
     "P32: recovery reads every frame of a pack that has no record, to compute its digest. Fine for one pack; revisit if many are dropped in by hand.",
@@ -108,5 +108,9 @@
   "p33_open": [
     "The furniture panel's offer is now gated on the pack's real capabilities, but the room decision loop still records and applies a furniture effect before the director sees the committed action. A room-runtime change, not a gating one; P35.",
     "Two vocabularies overlap and neither contains the other: the contract's 13 actions include walk, sit_down and stand_up, which are animation states rather than poses, so a complete pack reports ten schedulable poses. Pinned by a test with the reason."
+  ],
+  "p34_progress": [
+    "measure()/asset_pipeline.measure() convert to RGBA themselves and refuse an empty frame (b13e7b1), with tools/test_measure_alpha.py as the proof.",
+    "STILL OPEN: cat and rabbit have no geometry contract (assets/companions/<c>/animation_manifest.json is dog-only), so manifest.py refuses them. The frames measure clean against the same 458/255 the dog uses, so writing the contract is a data task - but it must be written from the production intent, not copied from a measurement, or it is the self-certification bug again."
   ]
 }
