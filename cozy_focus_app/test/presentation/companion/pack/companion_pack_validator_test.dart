@@ -11,8 +11,7 @@ void main() {
   /// A pack that passes, used as the base for the single-fault cases below.
   Map<String, dynamic> goodManifest() => {
         'companionId': 'mimi',
-        'canvasWidth': 512,
-        'canvasHeight': 512,
+        'canvas': {'width': 512, 'height': 512},
         'groundBaseline': 458,
         'centerAnchor': 255,
         'actions': {
@@ -67,14 +66,12 @@ void main() {
 
   group('canvas and anchors', () {
     test('a missing canvas is refused rather than defaulted', () {
-      final m = goodManifest()..remove('canvasWidth');
+      final m = goodManifest()..remove('canvas');
       expect(run(m).codes, contains('missing_canvas'));
     });
 
     test('a canvas below the floor is refused', () {
-      final m = goodManifest()
-        ..['canvasWidth'] = 32
-        ..['canvasHeight'] = 32;
+      final m = goodManifest()..['canvas'] = {'width': 32, 'height': 32};
       expect(run(m).codes, contains('canvas_too_small'));
     });
 
@@ -224,7 +221,7 @@ void main() {
   test('every violation is reported, not just the first', () {
     // A pack author needs the whole list to fix the pack in one pass.
     final m = goodManifest()
-      ..remove('canvasWidth')
+      ..remove('canvas')
       ..['groundBaseline'] = 9999;
     (m['actions'] as Map).remove('idle');
     final result = run(m);

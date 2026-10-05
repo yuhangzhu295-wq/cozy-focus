@@ -44,8 +44,7 @@ void main() {
   /// A manifest that passes the strict validator.
   Uint8List goodManifest() => Uint8List.fromList(utf8.encode(jsonEncode({
         'companionId': 'mimi',
-        'canvasWidth': 512,
-        'canvasHeight': 512,
+        'canvas': {'width': 512, 'height': 512},
         'groundBaseline': 458,
         'centerAnchor': 255,
         'actions': {
@@ -153,8 +152,7 @@ void main() {
     // mismatch is only visible against what was written.
     final manifest = Uint8List.fromList(utf8.encode(jsonEncode({
       'companionId': 'mimi',
-      'canvasWidth': 512,
-      'canvasHeight': 512,
+      'canvas': {'width': 512, 'height': 512},
       'groundBaseline': 458,
       'centerAnchor': 255,
       'actions': {

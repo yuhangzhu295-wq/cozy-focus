@@ -84,11 +84,16 @@ abstract final class CompanionPackValidator {
               '"$expectedId"');
     }
 
-    final width = manifest['canvasWidth'];
-    final height = manifest['canvasHeight'];
+    // The nested shape, because it is the one the runtime already parses
+    // (`CompanionActionManifest.fromJson`) and the one the shipped packs use. An
+    // earlier version of this file invented top-level `canvasWidth`/`canvasHeight`
+    // - a parallel format by another name, and exactly what the brief forbids.
+    final canvas = manifest['canvas'];
+    final width = canvas is Map ? canvas['width'] : null;
+    final height = canvas is Map ? canvas['height'] : null;
     if (width is! int || height is! int) {
-      reject(
-          'missing_canvas', 'canvasWidth/canvasHeight must both be integers');
+      reject('missing_canvas',
+          'canvas must be an object with integer width and height');
     } else if (width < minCanvas || height < minCanvas) {
       reject('canvas_too_small', '${width}x$height is below ${minCanvas}px');
     }
