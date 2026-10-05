@@ -4,10 +4,10 @@
   "branch": "recovery/v4.2.1-rebuild",
   "updated_at_slice": "P32A archive reader",
   "phase": "P32",
-  "slice": "P32A_extractor_partial + P34 prerequisite (manifest geometry, measured)",
+  "slice": "P32C atomic installer + P32D frame source done; runtime refresh remains",
   "start_sha": "0a116e2",
-  "latest_sha": "9ba2d5a",
-  "remote_sha": "9ba2d5a",
+  "latest_sha": "27d78f7",
+  "remote_sha": "27d78f7",
   "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
@@ -25,11 +25,14 @@
     "P32D registry: installed packs, revision counter, selection repair (271ca6d)",
     "P32A archive reader: decode + policy, returns bytes not writes (59b5cdd)",
     "P34 prerequisite: manifest.py verifies geometry against the pack contract instead of certifying itself, with the uniform-shift negative proof (65a2a29)",
-    "Geometry measured against the contracts: dog verifies (49 frames, mean 458/255, worst 1px in a 2px tolerance); cat and rabbit have no contract and are now refused clearly (9ba2d5a)"
+    "Geometry measured against the contracts: dog verifies (49 frames, mean 458/255, worst 1px in a 2px tolerance); cat and rabbit have no contract and are now refused clearly (9ba2d5a)",
+    "P32C atomic installer: staging -> re-validate what landed -> rename (f20fd04)",
+    "P32 pack validator reads the nested canvas shape the runtime parses, not the top-level one it invented (53e7dde)",
+    "P32D frame source: CompanionFrameSource, one player for asset and file frames (27d78f7)"
   ],
   "test_counts": {
-    "full_suite": "1333/1333",
-    "pack_suite": "86",
+    "full_suite": "1349/1349",
+    "pack_suite": "96",
     "format": "PASS (287 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
     "geometry_negative_proof": "PASS (uniform 40px shift refused)",
@@ -42,6 +45,8 @@
     "artifacts": "outputs/ai_handoff/android_v1_runtime/"
   },
   "open_findings": [
+    "P32E runtime refresh: NOT DONE. Nothing constructs a directory frame source for an installed pack, and nothing rebuilds the catalog, visual registry, availability cache or avatar on install. The audit named the avatar as the hard one: it caches the registry and director at init (companion_avatar.dart:161-162,189-197) and its build deliberately does not watch them (:409-415,433-459).",
+    "P32: no integration test yet proves an installed pack becomes selectable and renders WITHOUT a restart. The audit said the existing tests cannot show that; it needs a new one.",
     "P34: cat and rabbit have NO geometry contract (assets/companions/<c>/animation_manifest.json is dog-only), so manifest.py now refuses them. Their packs cannot be certified until a contract is written for each. This is a real gap in the shipped asset tooling, not a code bug.",
     "tools/productionise.py measure() reads split()[-1] as alpha; on the indexed PNGs the packs ship, that band is the palette index. audit_pack_geometry.py converts to RGBA first. productionise itself was not changed - worth a look before P34, since it writes the production report the manifest is built from.",
     "P32: symlink rejection is NOT verified through the reader. ZipEncoder drops symbolicLink through a round trip, so isSymbolicLink comes back false. The policy refusal is covered directly; whether the decoder reports a real symlink is unverified.",
@@ -63,7 +68,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P32C: atomic installer. Take CompanionPackReadResult.files, validate the manifest and PNGs against the extracted bytes, write into <app-data>/companion_import_staging/<uuid>/, then rename into <app-data>/companions/<packId>/. No partial install may enter the registry. Before implementing, run the HY4 audit the program requires for the runtime half, because making an installed pack appear without a restart means changing when CompanionAvatar, CompanionBehaviorDirector, the visual registry and the catalog rebuild.",
+  "next_action": "P32E: the runtime refresh. One observable registry revision signal that companionCatalogProvider and companionVisualRegistryProvider watch; CompanionSelection._isKnown querying the live valid id set rather than static profiles; a PackBackedCompanionVisualProvider instantiated from manifest data (the registry's register already accepts instances); and CompanionAvatar observing the revision rather than caching at init. Then P32F export and delete, then the P32 integration test the audit asked for. Do NOT create a second player or a per-pet provider class.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git rev-parse origin/recovery/v4.2.1-rebuild; git status --short",
     "read this file",
