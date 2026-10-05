@@ -2,13 +2,13 @@
   "program": "RESUME_P32_THROUGH_P40",
   "project": "COZY_FOCUS",
   "branch": "recovery/v4.2.1-rebuild",
-  "updated_at_slice": "P34 prerequisite: measurement trap removed; productionise finding corrected",
-  "phase": "P33",
-  "slice": "P33 COMPLETE. Next: P34.",
+  "updated_at_slice": "P34 complete; pack builder built, self-consumed and device-walked",
+  "phase": "P34",
+  "slice": "P34 COMPLETE (builder, both input paths, device-walked). Next: P35.",
   "start_sha": "0a116e2",
-  "latest_sha": "pending",
-  "remote_sha": "3e7fc85",
-  "local_equals_remote": false,
+  "latest_sha": "01b4e86",
+  "remote_sha": "01b4e86",
+  "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
     "P28_action_truth": "PASS",
@@ -16,18 +16,21 @@
     "P30_user_golden_flow": "PASS (device-walked, database-verified)",
     "P31_companion_pack_standard": "PASS",
     "P32_local_import_export": "PASS (device-walked, filesystem-verified)",
-    "P33_partial_pack_capability": "PASS (device-verified)"
+    "P33_partial_pack_capability": "PASS (device-verified)",
+    "P34_local_pack_builder": "PASS (device-walked)"
   },
   "test_counts": {
-    "full_suite": "1446/1446",
+    "full_suite": "1456/1456",
     "pack_suite": "173",
-    "format": "PASS (315 files, 0 changed)",
+    "format": "PASS (316 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
     "geometry_negative_proof": "PASS (uniform 40px shift refused)",
     "pack_geometry_audit": "PASS (dog verified; cat/rabbit have no contract)",
     "avatar_install_negative_proof": "PASS (late final fails both regression tests)",
-    "debug_apk": "PASS (P33 source built and walked)",
-    "release_apk": "PENDING (needs a rebuild after the P32 source changes)"
+    "debug_apk": "PASS (P34 source built and walked)",
+    "release_apk": "PENDING (needs a rebuild after the P32 source changes)",
+    "builder_negative_proofs": "PASS (12 refusals)",
+    "builder_consumption": "PASS (10 tests; real builder -> real importer)"
   },
   "p32_device_flow": {
     "device": "Pixel 7 API 34 emulator",
@@ -69,7 +72,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P34: build the local pack builder. Input is a directory of action videos or sprite frames; output is a .cozy_pet. Reuse video_to_sprite.py, productionise.py, manifest.py and the audit tool rather than duplicating asset QA. The builder must run the same strict validator the importer runs, so a pack it produces is one the app will accept.",
+  "next_action": "P35: custom companion runtime productionization. Audit the room decision/effect path so no furniture effect is committed for an action the companion cannot perform, and make capability truth apply to autonomous routine/idle decisions as well as the player-facing panel. Then verify hot install, cold start, selection, delete, fallback, partial and complete capability with no custom-companion page branch and no per-pet provider class.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git status --short",
     "read this file",
@@ -93,7 +96,9 @@
     "P32_local_import_export": "PASS",
     "P33_to_P40": "NOT_STARTED",
     "P33_partial_pack_capability": "PASS",
-    "P34_to_P40": "NOT_STARTED"
+    "P34_to_P40": "NOT_STARTED",
+    "P34_local_pack_builder": "PASS",
+    "P35_to_P40": "NOT_STARTED"
   },
   "p33_device_flow": {
     "device": "Pixel 7 API 34 emulator",
@@ -110,8 +115,26 @@
     "Two vocabularies overlap and neither contains the other: the contract's 13 actions include walk, sit_down and stand_up, which are animation states rather than poses, so a complete pack reports ten schedulable poses. Pinned by a test with the reason."
   ],
   "p34_progress": [
-    "measure()/asset_pipeline.measure() convert to RGBA themselves and refuse an empty frame (b13e7b1), proven by tools/test_measure_alpha.py against 147 real indexed frames.",
-    "CLOSED: cat and rabbit now have geometry contracts (assets/companions/<c>/animation_manifest.json), declared with the same authored canvas and anchors as the dog, so manifest.py no longer refuses them. All three packs verify: mean baseline 458, mean centre 255, worst deviation 1px inside a 2px tolerance.",
-    "DECIDED: the Dart mirror sprite_animation_manifest_data.dart still carries only the dog. Adding cat and rabbit would mean three identical 13-asset blocks as Dart consts, for a `targets` report nothing reads at runtime - a second copy to keep in step. The JSON contracts are what the tooling reads, and they are the ones that had to exist."
+    "measure()/asset_pipeline.measure() convert to RGBA themselves and refuse an empty frame, proven against 147 real indexed frames.",
+    "cat and rabbit have geometry contracts; all three packs verify against a declared contract.",
+    "tools/cozy_pet_builder/build.py builds a .cozy_pet from clips or frame directories; tools/cozy_pet_builder/test_builder.py holds 12 negative proofs.",
+    "test/presentation/companion/pack/pack_builder_consumption_test.dart runs the real builder and feeds the bytes to the real importer, validator and install rules."
+  ],
+  "p34_results": {
+    "BUILDER": "PASS",
+    "VIDEO_INPUT": "PASS",
+    "FRAME_INPUT": "PASS",
+    "PARTIAL_PACK": "PASS",
+    "FULL_PACK": "PASS",
+    "IMPORTER_ACCEPTS_OUTPUT": "PASS",
+    "GEOMETRY_INDEPENDENT": "PASS",
+    "NEGATIVE_GEOMETRY_PROOF": "PASS",
+    "ROUND_TRIP": "PASS",
+    "DEVICE": "PASS"
+  },
+  "p34_defects_fixed": [
+    "The frame path kept the source frame names, so idle/000.png and walk/000.png collided and the second action overwrote the first - both would have played the same pictures, and the importer accepted it because the validator checks frames within an action, not between them. Frames are now namespaced per action. Found by the self-consumption test.",
+    "video_to_sprite.load_contract and manifest.load_contract read the same file into two different shapes (tolerancePx + tuple canvas vs anchorTolerancePx + list), so handing one to the other raised KeyError. video_to_sprite now delegates to the single reader.",
+    "DUPLICATE_MAX_DISTANCE was 0.005, calibrated on the dog alone; the cat's closest idle pair is 0.0044 and the rabbit's 0.0053, so the video QA refused two thirds of the approved art. Now 0.002, with the measured pairs for all three packs recorded beside it."
   ]
 }
