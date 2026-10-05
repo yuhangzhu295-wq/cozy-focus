@@ -120,6 +120,13 @@ class CompanionSelection extends StateNotifier<CompanionId> {
     _restore();
   }
 
+  /// The companion currently selected.
+  ///
+  /// Public because the removal path has to ask whether the pack it is about to
+  /// delete is the one in use, and `state` is protected to everything outside a
+  /// subclass.
+  CompanionId get selected => state;
+
   Future<void> _restore() async {
     final stored = await _store.read();
     if (stored == null) return;
