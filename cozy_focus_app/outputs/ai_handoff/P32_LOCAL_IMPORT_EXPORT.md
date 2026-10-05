@@ -3,9 +3,29 @@
 Pack-first roadmap (`P31_P40_PACK_FIRST_ROADMAP.md`). Branch
 `recovery/v4.2.1-rebuild`.
 
-**Status: PARTIAL.** The decision layer and the archive reader are complete and
-committed; nothing writes a file yet, and nothing changes how the runtime resolves
-a companion. Latest slice `59b5cdd`, 1333/1333 tests.
+**Status: implementation COMPLETE.** Import, install, runtime refresh, export and
+delete are all in. Latest slice `496fdfa`, 1387/1387 tests. What remains is the
+device flow and the release build.
+
+### What was built after the decision layer
+
+| Slice | What it does |
+|---|---|
+| atomic installer | staging -> re-validate what landed -> rename into place |
+| installed-pack registry + revision | the single observable signal, plus `selectableIds` |
+| `installedPackProfilesProvider` | reads installed manifests once per change, exposes a synchronous map |
+| `CompanionCatalog.withProfiles` | merges installed profiles, sharing every recipe |
+| `CompanionSelection` | consults the live id set, so an installed id is selectable |
+| `PackBackedCompanionVisualProvider` | one generic class per pack, honest about poses it does not ship |
+| visual registry | registers a pack-backed provider per installed pack |
+| `CompanionAvatar` | watches the installed set and refreshes the registry and director |
+| `main()` | resolves the pack root via path_provider |
+| exporter | deterministic `.cozy_pet`, pack files only, round-trips through the reader |
+| removal | selection repaired before the pack goes; metadata before files |
+
+The negative proof for the runtime refresh was run by hand: dropping
+`ref.watch(installedPackProfilesProvider)` from `companionCatalogProvider` fails 2
+of the 4 hot-install tests.
 
 ### The archive reader (`59b5cdd`)
 

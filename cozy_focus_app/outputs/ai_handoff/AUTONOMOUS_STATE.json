@@ -4,10 +4,10 @@
   "branch": "recovery/v4.2.1-rebuild",
   "updated_at_slice": "P32A archive reader",
   "phase": "P32",
-  "slice": "P32F_export (P32E complete)",
+  "slice": "P32 implementation complete; device flow and handoff remain",
   "start_sha": "0a116e2",
-  "latest_sha": "93a1d05",
-  "remote_sha": "93a1d05",
+  "latest_sha": "496fdfa",
+  "remote_sha": "496fdfa",
   "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
@@ -31,8 +31,8 @@
     "P32D frame source: CompanionFrameSource, one player for asset and file frames (27d78f7)"
   ],
   "test_counts": {
-    "full_suite": "1374/1374",
-    "pack_suite": "121",
+    "full_suite": "1387/1387",
+    "pack_suite": "134",
     "format": "PASS (287 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
     "geometry_negative_proof": "PASS (uniform 40px shift refused)",
@@ -68,7 +68,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P32F: export an installed pack as a .cozy_pet using the archive writer. Only the pack's own validated files - no database, no user records, no tokens, no absolute paths, no temp files. Reuse CompanionPackArchivePolicy's vocabulary so export and import agree. Then P32G delete and the selected-delete fallback (CompanionSelectionRepair already exists for it), then the device flow.",
+  "next_action": "P32: build debug and release APKs (production source changed), finish the P32 handoff, then the device flow from the brief. After that P33.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git rev-parse origin/recovery/v4.2.1-rebuild; git status --short",
     "read this file",
@@ -90,10 +90,10 @@
     "P33_to_P40": "NOT_STARTED"
   },
   "p32_remaining": {
-    "P32F": "export an installed pack as a deterministic .cozy_pet",
-    "P32G": "delete + selected-delete fallback + offline + export/delete/re-import",
     "P32_tests": "integration test proving hot install with no restart, failing if revision observation is removed",
-    "P32_device": "the emulator flow in the program brief"
+    "P32_device": "the emulator flow in the program brief",
+    "P32_handoff": "finish outputs/ai_handoff/P32_LOCAL_IMPORT_EXPORT.md",
+    "P32_release_build": "debug and release APK, since production source changed"
   },
   "p32_done": [
     "installedPacksProvider: the single observable revision signal, plus selectableIds as the one answer to 'what companions exist' (b376e4c)",
@@ -103,6 +103,8 @@
     "registry: registers a pack-backed provider per installed pack from its own manifest and directory (dd03397)",
     "P32E avatar: watches the installed set and refreshes the registry and director (419ff5c)",
     "P32E hot-install test: 4 tests, and dropping the catalog watch fails 2 of them (6e0b67b)",
-    "P32E startup: main() resolves the pack root via path_provider (93a1d05)"
+    "P32E startup: main() resolves the pack root via path_provider (93a1d05)",
+    "P32F export: a deterministic .cozy_pet, pack files only, round-trips through the reader (9dcab35)",
+    "P32G removal: selection repaired before the pack goes; metadata before files (496fdfa)"
   ]
 }
