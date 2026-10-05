@@ -301,6 +301,25 @@ void main() {
           .toList();
       expect(insidePack, isNot(contains(InstalledPackRecordStore.fileName)));
     });
+
+    test('is written for what a scan discovered, so the next start is cheap',
+        () {
+      // A pack that was installed by a build that did not write records, or
+      // copied in by hand. Recovery reads it from its own manifest, and writing
+      // the result down means the next launch reads one small JSON file instead
+      // of re-hashing every frame.
+      writePack('handmade', displayName: '手作', species: 'dog');
+      expect(InstalledPackRecordStore.fileFor(packRoot).existsSync(), isFalse);
+
+      final c = launch();
+
+      expect(
+          c.read(installedPacksProvider.notifier).installedIds, {'handmade'});
+      final records = InstalledPackRecordStore.read(packRoot);
+      expect(records, hasLength(1));
+      expect(records.single.displayName, '手作');
+      expect(records.single.species, 'dog');
+    });
   });
 
   group('adopting a recovered set', () {

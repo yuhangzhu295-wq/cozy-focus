@@ -69,10 +69,14 @@ class InstalledPacksController extends StateNotifier<int> {
     if (root == null) return;
     final result = InstalledPackRecovery.scan(root);
     _recovery = result;
-    if (_registry.adoptAll(result.packs)) state = _registry.revision;
-    // A record for a pack that is gone is rewritten away, so the next start does
-    // not have to rediscover that it is stale.
-    if (result.needsRewrite) _persist();
+    final adopted = _registry.adoptAll(result.packs);
+    if (adopted) state = _registry.revision;
+    // Written whenever the records and the directories disagreed — a pack
+    // discovered by the scan, or a record whose pack is gone. Persisting the
+    // discovered set means the next start reads one small JSON file instead of
+    // re-hashing every frame, and it makes the name and species the app derived
+    // durable rather than re-derived each launch.
+    if (adopted || result.needsRewrite) _persist();
   }
 
   /// Installs [pack] and publishes the change.
