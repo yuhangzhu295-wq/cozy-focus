@@ -159,8 +159,16 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
   ProviderSubscription<HomeUIState>? _homeSubscription;
   ProviderSubscription<CraftState>? _craftSubscription;
 
-  late final CompanionBehaviorDirector _director;
-  late final CompanionVisualRegistry _registry;
+  // Deliberately `late` and not `late final`. Both are replaced when the
+  // installed set changes, because the director caches availability per
+  // companion id and the registry is rebuilt per installed pack. Marking them
+  // `final` compiles, reads as immutable, and throws
+  // `LateInitializationError: Field '_registry' has already been initialized`
+  // the first time a pack is installed while an avatar is on screen — which is
+  // exactly the flow the install path exists to support. Found on device, not
+  // by a test, because no test had yet installed a pack under a mounted avatar.
+  late CompanionBehaviorDirector _director;
+  late CompanionVisualRegistry _registry;
 
   /// Turns the director's behaviour into a performance, including the posture
   /// transitions the behaviour layer has no vocabulary for.

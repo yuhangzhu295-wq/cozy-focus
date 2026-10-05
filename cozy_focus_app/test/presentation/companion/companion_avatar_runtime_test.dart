@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +10,11 @@ import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/presentation/companion/animation/animation_state.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
+import 'package:cozy_focus_app/presentation/companion/companion_selection.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_prop.dart';
+import 'package:cozy_focus_app/presentation/companion/pack/installed_pack_profiles.dart';
+import 'package:cozy_focus_app/presentation/companion/pack/installed_pack_registry.dart';
+import 'package:cozy_focus_app/presentation/companion/pack/installed_packs_provider.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_player.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_pose_spec.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
@@ -357,6 +364,128 @@ void main() {
 
       // The explicit override is drawn, not the controller's performance.
       expect(renderedSpriteAction(tester), isNot('stand_up'));
+    });
+  });
+
+  group('an avatar already on screen survives an install', () {
+    // The regression this group exists for: `_registry` and `_director` were
+    // `late final` and the refresh path reassigned them, so installing a pack
+    // while an avatar was mounted threw
+    // `LateInitializationError: Field '_registry' has already been initialized`
+    // — a red error box over every companion on the picker, on device, with
+    // every test still green. The refresh is only reachable from a rebuild, so
+    // only a test that installs *under a mounted avatar* can see it.
+    late Directory root;
+
+    setUp(() {
+      root = Directory.systemTemp.createTempSync('cozy_avatar_install_');
+    });
+
+    tearDown(() {
+      if (root.existsSync()) root.deleteSync(recursive: true);
+    });
+
+    void writePack(String packId) {
+      final dir = Directory('${root.path}/$packId')
+        ..createSync(recursive: true);
+      File('${dir.path}/manifest.json').writeAsStringSync(jsonEncode({
+        'companionId': packId,
+        'posePack': '${packId}_art',
+        'canvas': {'width': 512, 'height': 512},
+        'groundBaseline': 458,
+        'centerAnchor': 255,
+        'actions': {
+          'idle': {
+            'frames': ['idle_000.png', 'idle_001.png'],
+            'fps': 5,
+            'loopMode': 'loop',
+          },
+        },
+      }));
+      final png = <int>[
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, //
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+        0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
+        0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+        0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+        0x42, 0x60, 0x82,
+      ];
+      for (final name in const ['idle_000.png', 'idle_001.png']) {
+        File('${dir.path}/$name').writeAsBytesSync(png);
+      }
+    }
+
+    InstalledCompanionPack record(String packId) => InstalledCompanionPack(
+          packId: packId,
+          displayName: '小豆',
+          species: 'dog',
+          source: 'local_import',
+          formatVersion: 1,
+          checksum: 'abc',
+          relativeDirectory: 'companion_packs/$packId',
+        );
+
+    ProviderContainer mountedContainer() {
+      final c = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          companionSelectionStoreProvider
+              .overrideWithValue(InMemoryCompanionSelectionStore()),
+          homeControllerProvider.overrideWith(
+              (ref) => _PresetHomeController(ref, const HomeUIState())),
+          companionPackRootProvider.overrideWithValue(root.path),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    testWidgets('installing a pack does not tear down the mounted avatar',
+        (tester) async {
+      writePack('mimi');
+      final c = mountedContainer();
+
+      await tester.pumpWidget(appWith(
+        c,
+        const CompanionAvatar(companionId: CompanionId.dog, size: 140),
+      ));
+      await tester.pump();
+
+      // Install while the avatar is mounted. The catalog and the visual registry
+      // both change identity, which is what makes the avatar refresh.
+      c.read(installedPacksProvider.notifier).install(record('mimi'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      expect(tester.takeException(), isNull,
+          reason:
+              'the refresh must replace the registry, not re-initialise it');
+      // And it is still drawing the companion, rather than an error box.
+      expect(find.byType(CompanionAvatar), findsOneWidget);
+    });
+
+    testWidgets('removing a pack does not tear down the mounted avatar either',
+        (tester) async {
+      writePack('mimi');
+      final c = mountedContainer();
+      final packs = c.read(installedPacksProvider.notifier);
+      packs.install(record('mimi'));
+
+      await tester.pumpWidget(appWith(
+        c,
+        const CompanionAvatar(companionId: CompanionId.dog, size: 140),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      packs.remove('mimi');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      expect(tester.takeException(), isNull);
     });
   });
 }
