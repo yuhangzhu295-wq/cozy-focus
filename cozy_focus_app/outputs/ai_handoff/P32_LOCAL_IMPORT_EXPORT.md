@@ -3,9 +3,34 @@
 Pack-first roadmap (`P31_P40_PACK_FIRST_ROADMAP.md`). Branch
 `recovery/v4.2.1-rebuild`.
 
-**Status: PARTIAL.** The decision layer is complete and committed; the
-filesystem layer is not started. Nothing here writes a file, unzips anything, or
-changes how the runtime resolves a companion.
+**Status: PARTIAL.** The decision layer and the archive reader are complete and
+committed; nothing writes a file yet, and nothing changes how the runtime resolves
+a companion. Latest slice `59b5cdd`, 1333/1333 tests.
+
+### The archive reader (`59b5cdd`)
+
+Decodes a `.cozy_pet` and applies the policy, stopping one step short of the disk:
+it returns the files it *would* write. The code that touches the filesystem stays
+separate and small, and everything above it is testable without one — the tests
+build hostile archives in memory (traversal, absolute paths, oversized entries,
+too many entries, disallowed file types, a truncated archive) and assert each is
+refused. A refusal always returns zero files, so a caller cannot write half of a
+bad pack.
+
+**Three limits on this slice, stated rather than papered over:**
+
+1. **Symlink rejection is NOT verified through the reader.** `ZipEncoder` does not
+   carry `symbolicLink` through an encode/decode round trip, so a symlink cannot be
+   built in a test and `isSymbolicLink` comes back false. The policy's
+   `non_regular_entry` refusal is covered directly, but whether the *decoder*
+   reports a real symlink is unverified. Treat `SYMLINKS: REJECTED` as
+   *policy-level only* until a real symlink-bearing archive is tested.
+2. **Duplicate-name entries cannot be built** with this encoder — `Archive`
+   de-duplicates on add. The rule is covered directly in the policy test.
+3. **The expansion-ratio bomb check is inert on this path.** The decoder exposes no
+   trustworthy compressed size, and a fabricated one would make the ratio
+   meaningless, so the reader passes zero ("not known") and the policy skips the
+   ratio while still enforcing the per-entry and total byte caps.
 
 ```
 DECISION_LAYER:  PASS   (3 pure components, 54 tests)
