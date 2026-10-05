@@ -4,10 +4,10 @@
   "branch": "recovery/v4.2.1-rebuild",
   "updated_at_slice": "P32A archive reader",
   "phase": "P32",
-  "slice": "P32E_runtime_refresh (2 of N: revision signal + live selection)",
+  "slice": "P32E_runtime_refresh (4 of N)",
   "start_sha": "0a116e2",
-  "latest_sha": "7357839",
-  "remote_sha": "7357839",
+  "latest_sha": "dd03397",
+  "remote_sha": "dd03397",
   "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
@@ -31,8 +31,8 @@
     "P32D frame source: CompanionFrameSource, one player for asset and file frames (27d78f7)"
   ],
   "test_counts": {
-    "full_suite": "1356/1356",
-    "pack_suite": "96",
+    "full_suite": "1370/1370",
+    "pack_suite": "117",
     "format": "PASS (287 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
     "geometry_negative_proof": "PASS (uniform 40px shift refused)",
@@ -68,7 +68,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P32E continues. The hard one is the catalog: it is synchronous and built from a compiled mirror, while an installed pack needs a manifest read from disk, so companionCatalogProvider needs an async or preloaded path before it can watch the revision. Then the visual registry, the pack-backed provider, and CompanionAvatar observing the revision.",
+  "next_action": "P32E: make CompanionAvatar observe the installed revision instead of ref.read-ing the registry and catalog at init; refresh the director's availability cache from the live catalog; wire companionPackRootProvider at startup; then the hot-install integration test and its negative proof.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git rev-parse origin/recovery/v4.2.1-rebuild; git status --short",
     "read this file",
@@ -91,12 +91,10 @@
   },
   "p32_remaining": {
     "P32E_runtime_refresh": [
-      "companionCatalogProvider watches the revision and rebuilds from installed manifests (needs an async manifest read; the catalog is synchronous today)",
-      "companionVisualRegistryProvider watches the revision",
-      "PackBackedCompanionVisualProvider instantiated from an installed manifest, registered via CompanionVisualRegistry.register",
-      "CompanionAvatar observes the revision instead of caching registry/director at init (companion_avatar.dart:189-197 uses ref.read; :409-415 reads the catalog again)",
-      "CompanionBehaviorDirector availability refreshes from the live catalog without a second director",
-      "integration test: install with no restart -> selectable -> renders file frames -> missing actions never scheduled; must fail if revision observation is removed"
+      "CompanionAvatar observes the revision: it caches the registry and catalog with ref.read at init (companion_avatar.dart:189-197) and build does not watch them",
+      "CompanionBehaviorDirector availability refreshes from the live catalog (caches per id at :71-82,116-120)",
+      "integration test: install with no restart -> selectable -> renders file frames -> missing actions never scheduled; must fail if revision observation is removed",
+      "wire companionPackRootProvider at startup (path_provider); it defaults to null, so nothing is installed until the app resolves the directory"
     ],
     "P32F": "export as .cozy_pet",
     "P32G": "delete + selected-delete fallback + offline + export/delete/re-import",
@@ -105,6 +103,9 @@
   },
   "p32_done": [
     "installedPacksProvider: the single observable revision signal, plus selectableIds as the one answer to 'what companions exist' (b376e4c)",
-    "CompanionSelection._isKnown consults the injected live id set, and companionSelectionProvider watches the revision, so an installed pack is selectable without a restart (7357839)"
+    "CompanionSelection._isKnown consults the injected live id set, and companionSelectionProvider watches the revision, so an installed pack is selectable without a restart (7357839)",
+    "catalog: withProfiles + installedPackProfilesProvider, so an installed pack appears without a restart (17d8464)",
+    "PackBackedCompanionVisualProvider: one generic class per pack, honest about poses it does not ship (6a14647)",
+    "registry: registers a pack-backed provider per installed pack from its own manifest and directory (dd03397)"
   ]
 }
