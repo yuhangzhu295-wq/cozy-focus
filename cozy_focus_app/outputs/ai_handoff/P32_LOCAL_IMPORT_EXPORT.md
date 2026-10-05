@@ -3,177 +3,150 @@
 Pack-first roadmap (`P31_P40_PACK_FIRST_ROADMAP.md`). Branch
 `recovery/v4.2.1-rebuild`.
 
-**Status: implementation COMPLETE.** Import, install, runtime refresh, export and
-delete are all in. Latest slice `496fdfa`, 1387/1387 tests. What remains is the
-device flow and the release build.
+**Status: COMPLETE, and walked on the device.** The engine, the UI, the device
+flow, and the cold-start fix are all in. 1430/1430 tests, format clean, analyze
+clean. Latest slice `a23d7ba`.
 
-### What was built after the decision layer
+## The device flow, as run
 
-| Slice | What it does |
+Pixel 7 API 34 emulator, debug APK, a real `.cozy_pet` built by
+`tools/make_demo_pack.py` (the cat's frames under the id `xiaomao`, name 小豆)
+pushed to `/sdcard/Download/`.
+
+| Step | Result |
 |---|---|
-| atomic installer | staging -> re-validate what landed -> rename into place |
-| installed-pack registry + revision | the single observable signal, plus `selectableIds` |
-| `installedPackProfilesProvider` | reads installed manifests once per change, exposes a synchronous map |
-| `CompanionCatalog.withProfiles` | merges installed profiles, sharing every recipe |
-| `CompanionSelection` | consults the live id set, so an installed id is selectable |
-| `PackBackedCompanionVisualProvider` | one generic class per pack, honest about poses it does not ship |
-| visual registry | registers a pack-backed provider per installed pack |
-| `CompanionAvatar` | watches the installed set and refreshes the registry and director |
-| `main()` | resolves the pack root via path_provider |
-| exporter | deterministic `.cozy_pet`, pack files only, round-trips through the reader |
-| removal | selection repaired before the pack goes; metadata before files |
+| companion picker shows 导入宠物包 | yes |
+| pick a `.cozy_pet` through the system picker | yes — the file was listed and selectable, so the extension + MIME filter works on Android |
+| preview before install | yes — the cat drawn from the pack's own idle frame, `xiaomao`, 动作 13, 帧 49, 画布 512×512, name and species prefilled from the pack |
+| install | yes — 49 frames + `manifest.json` in `app_flutter/companion_packs/xiaomao/`, staging left empty |
+| select without a restart | yes — offered on the success screen and selected immediately |
+| restart | yes — home page reads 和小豆一起专注吧 with the cat, and the growth page names it everywhere |
+| export | yes — the share sheet offers `xiaomao.cozy_pet` |
+| delete | yes — pack gone, record gone, staging empty |
+| fallback | yes — the selection switched to a built-in and said so |
+| re-import | yes — installed again, this time with `source: "local_import"` |
 
-The negative proof for the runtime refresh was run by hand: dropping
-`ref.watch(installedPackProfilesProvider)` from `companionCatalogProvider` fails 2
-of the 4 hot-install tests.
+Checked against the device filesystem, not the screen: `companion_packs/`,
+`installed_packs.json`, `companion_selection.json`, and `logcat` for Flutter
+exceptions (none).
 
-### The archive reader (`59b5cdd`)
+## Three defects the device flow found that no test had
 
-Decodes a `.cozy_pet` and applies the policy, stopping one step short of the disk:
-it returns the files it *would* write. The code that touches the filesystem stays
-separate and small, and everything above it is testable without one — the tests
-build hostile archives in memory (traversal, absolute paths, oversized entries,
-too many entries, disallowed file types, a truncated archive) and assert each is
-refused. A refusal always returns zero files, so a caller cannot write half of a
-bad pack.
+This is the argument for walking it. All three were invisible to a green suite.
 
-**Three limits on this slice, stated rather than papered over:**
+### 1. Installing under a mounted avatar threw (`d4b5f73`)
 
-1. **Symlink rejection is NOT verified through the reader.** `ZipEncoder` does not
-   carry `symbolicLink` through an encode/decode round trip, so a symlink cannot be
-   built in a test and `isSymbolicLink` comes back false. The policy's
-   `non_regular_entry` refusal is covered directly, but whether the *decoder*
-   reports a real symlink is unverified. Treat `SYMLINKS: REJECTED` as
-   *policy-level only* until a real symlink-bearing archive is tested.
-2. **Duplicate-name entries cannot be built** with this encoder — `Archive`
-   de-duplicates on add. The rule is covered directly in the policy test.
-3. **The expansion-ratio bomb check is inert on this path.** The decoder exposes no
-   trustworthy compressed size, and a fabricated one would make the ratio
-   meaningless, so the reader passes zero ("not known") and the policy skips the
-   ratio while still enforcing the per-entry and total byte caps.
+`_registry` and `_director` were `late final` and the refresh path reassigns
+both, so the first install with an avatar on screen raised
+`LateInitializationError: Field '_registry' has already been initialized`, and
+Flutter drew a red error box over every companion on the picker.
 
-```
-DECISION_LAYER:  PASS   (3 pure components, 54 tests)
-INSTALL_LAYER:   NOT_STARTED
-EXPORT:          NOT_STARTED
-```
+The hot-install tests assert the catalog and the visual registry; the avatar
+tests mount an avatar but never install under it. The refresh is only reachable
+from a rebuild, so only a test that installs *while an avatar is mounted* can
+reach it. Two regression tests now do, and restoring `late final` fails both.
 
-## The shape this phase settled on
+### 2. An installed pack did not survive a restart (`c0c92dc`)
 
-Importing a pack is four questions asked in order, and the first three are
-answered by pure code with no disk and no dependency:
+The registry was in memory only. On a cold start it was empty while the pack
+directories were still on disk, so the app offered only the built-in three and
+the persisted selection — which said `xiaomao` and was written correctly — was
+discarded as an unknown id and replaced by the default. On the device that read
+as "the companion I just installed went back to Mochi", with the files still
+there and nothing in the log.
 
-| Order | Question | Component |
-|---|---|---|
-| 1 | Is the archive safe to extract? | `CompanionPackArchivePolicy` |
-| 2 | Is the pack coherent? | `CompanionPackValidator` |
-| 3 | May it be installed, and as what? | `CompanionPackInstallRules` |
-| 4 | Write it. | **not built** |
+Two halves, because neither source is enough alone:
 
-That ordering is the point. Unzipping is the only step where a mistake writes
-outside the sandbox, so everything that could go wrong is decided *before*
-anything is written, and the eventual extractor becomes a thin shell with no
-policy of its own.
+- an **install record** at the pack root, beside the pack directories and never
+  inside one, because a pack directory is exactly what gets exported. It carries
+  what only the user could say — the name they typed, the species they chose, how
+  the pack arrived — none of which is in the pack by design;
+- a **directory scan**, because the directories are the truth about what is
+  really there. A record whose pack is gone is dropped and the records rewritten;
+  a directory the records have never heard of is read from its own manifest.
 
-### 1. `companion_pack_archive_policy.dart` (`83ab5c3`)
+A pack that neither the records nor its own manifest can classify is skipped and
+reported rather than guessed at, because nothing may infer a species from an id.
 
-Refuses the cases that are **well formed and hostile**, which is the class a
-malformed-file check misses: a name that climbs out of the sandbox, an absolute
-path, a drive letter, a null byte; too many entries; a single entry that extracts
-too large; a total over the cap; a **compression bomb** (one entry expanding
-hundreds of times over, which the total cap alone misses because it can stay just
-under the byte limit); a non-regular entry, because a pack needs files and a
-symlink is how an archive reaches somewhere it was not invited; and a duplicate
-name, because then which copy wins is undefined.
+### 3. A pack discovered by scan was never written down (`a23d7ba`)
 
-Limits live in `PackArchiveLimits.standard` and are generous for a real pack,
-tight for a hostile one.
+Recovery read a hand-copied pack from its own manifest and kept nothing, so every
+launch re-hashed every frame and re-derived the name. Found by walking: the pack
+on the emulator had been installed by the *previous* build, so there was no record
+file and the scan path ran for real.
 
-### 2. `companion_pack_validator.dart` (`aa93aec`)
+## What the device flow also settled
 
-The line this file sits on, from P31's audit: `CompanionActionManifest.fromJson`
-is deliberately **lenient** — it defaults a missing canvas, missing anchors and an
-unknown loop mode — because it reads data compiled in by us. That is right there
-and wrong for untrusted input, where *"the parser accepted it"* only means the
-parser did not have to guess quite as much. So validation is a separate, strict
-step that **refuses rather than fills in defaults**.
+- **`file_selector` works on Android.** The `XTypeGroup` with both an extension
+  and MIME types does not grey out a `.cozy_pet`. Worth knowing: the picker takes
+  ~6.5 s to appear on a cold `documentsui`, which reads as a hang if you are
+  watching a screenshot instead of the log.
+- **The imported companion is not a second-class one.** The home header, the
+  growth page, the tab chip and the footer quote all name it, because every one
+  of them reads `companionDisplayNameProvider` rather than writing "Mochi".
+- **The two digests agree.** The checksum the recovery scan computed from the
+  directory equals the one the installer computed at import, which is the
+  cross-check that the digest really is over the contents.
 
-Refuses: a missing or mismatched `companionId`; a missing or undersized canvas;
-anchors outside the canvas; an empty action set; a single-frame action, because a
-still image is not an animation; non-positive fps; an unknown loop mode, rather
-than defaulting one and silently changing how the pack animates; a frame the pack
-does not contain, or one listed twice; absolute paths, drive letters, directory
-escapes and null bytes; a pack with no decodable `idle`; and a
-`semanticFallback` or `drawAliases` entry pointing at an action that does not
-exist.
+## A gap the flow exposed in the validator, now closed
 
-Two deliberate omissions: it does **not** require the production action set (a
-pack with `idle` and `walk` alone is valid — that is P33's premise, and a test
-asserts it so the requirement cannot creep back in), and it adds **no checksum
-field yet**, because a checksum written but never verified is decoration and the
-verifier is what reads it.
+`CompanionPackValidator` judges names and never bytes — deliberately, so it stays
+pure — which means nothing checked that a file called `idle_000.png` is a PNG.
+The policy enforces only the *extension*. So a corrupt or mislabelled frame would
+install cleanly and fail at render time, which is the worst place to find out.
 
-### 3. `companion_pack_install_plan.dart` (`ece716d`)
+`CompanionPackImporter.inspect` now checks the PNG signature of every frame the
+manifest references, before anything is written. The signature only, not a decode:
+a full decode would pull a codec into the install path to answer a question the
+player answers anyway, and the failure this catches is a file that is not a PNG at
+all.
 
-Refuses rather than escapes. The id reaches the filesystem, so it is
-`^[a-z0-9][a-z0-9_-]{0,63}$` — which rejects a separator, a dot, a space and a
-colon, and makes `..` unspeakable. A built-in id is refused, because two
-companions answering to `dog` would make the persisted selection ambiguous. A
-re-install of an existing id is refused rather than shadowing it. Species must be
-one of the three; the name must be non-empty.
+## And a claim that turned out to be false
 
-`CompanionPackSource` (`built_in` / `local_import` / `local_compile` /
-`cloud_generated`) is **recorded and consulted by nothing** — a test asserts all
-four produce the same plan, which is the architecture rule made executable.
+The reader's `unreadable_archive` branch is **effectively unreachable**.
+`ZipDecoder` in archive 4.3.0 does not throw for input it cannot parse — measured,
+not assumed: garbage text, a half-truncated archive and an 8-byte header all come
+back as a zero-file archive, and corrupt bytes in the middle still yield files.
+Malformed input therefore arrives as `empty_archive` or as a pack that fails
+manifest validation. The safety conclusion is unchanged — it is refused either
+way, and a refusal always carries zero files — but the comment claiming "the
+reader turns a decode failure into a refusal" described a path nothing can reach.
+The test now asserts what actually happens.
 
-## What is not built, and what it has to solve
+## Carried forward, still open
 
-**The extractor.** A shell around `CompanionPackArchivePolicy`, writing only
-inside the sandbox. Needs an archive dependency the project does not have —
-**this is the only new dependency P32 introduces and it is the decision to make
-first**, because it changes the build.
-
-**The install path.** Sandbox → validate → install into app-private storage →
-register → select. The hard part is not the writing, it is that the runtime
-resolves companions *statically* today:
-
-- the action manifest is a **Dart const mirror compiled into the binary**
-  (`companion_action_manifest_data.dart`), not read from disk;
-- frames are read by `AssetImage` / `Image.asset`, so a directory cannot simply
-  be handed to the existing player;
-- `CompanionActionAvailabilityResolver` reads that mirror and the director caches
-  the result (`companion_behavior_director.dart:71-82`);
-- `CompanionAvatar` reads the catalog and registry **once at init**
-  (`companion_avatar.dart:189-197, 433-438`), so a newly installed pack would not
-  appear until restart.
-
-So installing a pack is not only a write; it is a decision about when those
-caches are rebuilt, and that decision belongs to P35 (the generic runtime) as much
-as to P32. It is also what `FileCompanionSelectionStore` does *not* solve — it
-stores the selected id and nothing else, and `companionSelectionProvider` only
-accepts an id present in the static `CompanionManifestData.profiles`.
-
-**Export.** An installed pack written back out as `.cozy_pet`. The entry list it
-would produce is exactly what `CompanionPackArchivePolicy` already knows how to
-judge, so export and import can share one vocabulary.
-
-## Carried forward from P31, still open
-
-- **`manifest.py` certifies itself**: it derives `groundBaseline` and
-  `centerAnchor` from the mean of the *output frames' own* `bottomY` / `centerX`,
-  so a uniformly drifted set would have its manifest and its images agree with
-  each other while both are wrong. Anchors must be validated against an
-  independently declared contract.
-- **`docs/companion_assets.md` is stale**: it claims a 1024×1024 canvas with
-  919/511 anchors and that every pack must be added to `pubspec.yaml`, while the
-  real JSON is 512×512 with ~458/255.
+- **`manifest.py` certifies itself** — fixed in `65a2a29`; the contract is the
+  source and the frames are checked against it.
+- **`docs/companion_assets.md` is stale**: claims 1024×1024 with 919/511 anchors;
+  the real JSON is 512×512 with ~458/255.
 - **P33's test scoping**: `multi_companion_parity_test.dart` forces every profile
-  to the dog's thirteen actions. Right for the built-in packs, wrong as an
-  admission requirement for a user's partial pack.
+  to the dog's thirteen actions. Right for the built-ins, wrong as an admission
+  requirement for a user's partial pack.
+- **Symlinks and duplicate-name ZIP entries** are covered at the policy level but
+  cannot be built with this encoder, so they are unverified through the reader.
+- **The expansion-ratio bomb check is inert** on this path: the decoder exposes no
+  trustworthy compressed size, so the reader passes zero and the policy skips the
+  ratio while still enforcing the byte caps.
+- **Recovery reads the whole pack** for a pack with no record, to compute its
+  digest. Fine for one pack; a limit worth revisiting if someone drops in twenty.
 
-## Process note
+## Process notes
 
-Three times in this session a shell heredoc silently truncated file content — a
-commit message and two file writes. Every file in this phase was written with the
-file tool and landed first time, through two rounds of lint fixes. **No file
-content through a heredoc in this shell.**
+- **Never write file content through a shell heredoc in this environment.** It has
+  silently truncated content three times (one commit message, two file writes).
+- **Prefer rewriting a file whole over matching long anchors**: `dart format`
+  rewraps and breaks anchors silently.
+- **The screen is not evidence for state.** Two of this session's corrections came
+  from the device filesystem and the instrumented trace, both times contradicting
+  what a screenshot appeared to show.
+- **A widget test that triggers real file IO must make its tap inside
+  `runAsync`.** A future chain created under the fake test clock parks its
+  continuations there, and waiting on the widget tree deadlocks, because the tree
+  only updates when the clock is pumped.
+- **`adb shell input tap` does not reach Flutter gesture detectors** — it arrives
+  as a pan. Use real-pointer clicks. Also: the first click after the emulator
+  window loses focus is consumed by the focus change, so a single click that
+  appears to do nothing usually needs repeating once.
+- **`am start` resolves to whatever is top-most.** After the file picker has been
+  used, `am force-stop` the app and launch it with `monkey -p <pkg> -c
+  android.intent.category.LAUNCHER 1`, or the picker swallows the intent.
