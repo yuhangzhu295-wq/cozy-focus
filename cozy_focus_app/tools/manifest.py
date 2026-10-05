@@ -89,6 +89,18 @@ def load_contract(companion):
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "assets", "companions", companion, "animation_manifest.json",
     )
+    if not os.path.exists(path):
+        # Refused rather than defaulted. A pack with no contract has no
+        # independent statement of what its geometry should be, so there is
+        # nothing to verify against - and inventing one from the frames is the
+        # self-certification this whole change removes. `cat` and `rabbit` are in
+        # exactly this position today: only `dog` has a production contract.
+        raise ValueError(
+            f"{companion} has no geometry contract at "
+            f"assets/companions/{companion}/animation_manifest.json, so its pack "
+            "cannot be certified. Write the contract first; do not derive it "
+            "from the frames being measured."
+        )
     with open(path, encoding="utf-8") as fh:
         raw = json.load(fh)
     canvas = raw.get("canvas") or {}
