@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'companion_frame_source.dart';
 
 import 'companion_action_manifest.dart';
 import 'companion_action_manifest_data.dart';
@@ -103,11 +104,19 @@ class CompanionSpriteAvatar extends StatelessWidget {
   final CompanionPresentationIntent intent;
   final CompanionVisualOptions options;
 
+  /// Where the frames' bytes come from.
+  ///
+  /// Bundled assets by default, which is every built-in pack. A pack-backed
+  /// provider passes the installed pack's directory. The widget, the player and
+  /// everything below them are unchanged either way.
+  final CompanionFrameSource frameSource;
+
   const CompanionSpriteAvatar({
     super.key,
     required this.spec,
     required this.intent,
     required this.options,
+    this.frameSource = const CompanionFrameSource.assets(),
   });
 
   @override
@@ -121,6 +130,7 @@ class CompanionSpriteAvatar extends StatelessWidget {
       size: options.size,
       reducedMotion: intent.reducedMotion,
       semanticLabel: '$name $state',
+      frameSource: frameSource,
     );
 
     return Column(
