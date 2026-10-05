@@ -4,10 +4,10 @@
   "branch": "recovery/v4.2.1-rebuild",
   "updated_at_slice": "P32A archive reader",
   "phase": "P32",
-  "slice": "P32C atomic installer + P32D frame source done; runtime refresh remains",
+  "slice": "P32E_runtime_refresh",
   "start_sha": "0a116e2",
-  "latest_sha": "27d78f7",
-  "remote_sha": "27d78f7",
+  "latest_sha": "871fd1d",
+  "remote_sha": "871fd1d",
   "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
@@ -68,7 +68,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P32E: the runtime refresh. One observable registry revision signal that companionCatalogProvider and companionVisualRegistryProvider watch; CompanionSelection._isKnown querying the live valid id set rather than static profiles; a PackBackedCompanionVisualProvider instantiated from manifest data (the registry's register already accepts instances); and CompanionAvatar observing the revision rather than caching at init. Then P32F export and delete, then the P32 integration test the audit asked for. Do NOT create a second player or a per-pet provider class.",
+  "next_action": "P32E. Audit the exact current implementation of companionCatalogProvider, companionVisualRegistryProvider, CompanionSelection._isKnown, CompanionAvatar init caching and CompanionBehaviorDirector availability caching; then add one revision signal and make those observe it. Do NOT create a second director, player or provider-per-pet.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git rev-parse origin/recovery/v4.2.1-rebuild; git status --short",
     "read this file",
@@ -79,5 +79,29 @@
     "Never write file content through a shell heredoc in this environment: it has silently truncated content three times (one commit message, two file writes). Use the file tool and verify after writing.",
     "Prefer patching by rewriting a file whole over matching long anchors: dart format rewraps and breaks anchors silently.",
     "The screen is not evidence for state. Two of this session's corrections came from the device database and the instrumented decision trace, both times contradicting what a screenshot appeared to show."
-  ]
+  ],
+  "_note": "Compact resumable state; history belongs in the phase handoff docs. latest_sha names the revision this file describes - the commit that writes it advances one past that, which is unavoidable and is not staleness.",
+  "phases": {
+    "P28_action_truth": "PASS",
+    "P29_acquisition_ux": "PASS",
+    "P30_user_golden_flow": "PASS",
+    "P31_pack_standard": "PASS",
+    "P32": "IN_PROGRESS",
+    "P33_to_P40": "NOT_STARTED"
+  },
+  "p32_remaining": {
+    "P32E_runtime_refresh": [
+      "one observable registry revision signal",
+      "companionCatalogProvider watches it",
+      "companionVisualRegistryProvider watches it",
+      "CompanionSelection._isKnown queries the live valid id set, not static profiles",
+      "PackBackedCompanionVisualProvider instantiated from installed manifest data",
+      "CompanionAvatar observes the revision instead of caching registry/director at init",
+      "director availability cache refreshes from the live catalog (no second director)"
+    ],
+    "P32F": "export as .cozy_pet",
+    "P32G": "delete + selected-delete fallback + offline + export/delete/re-import",
+    "P32_tests": "integration test proving hot install with no restart, failing if revision observation is removed",
+    "P32_device": "the emulator flow in the program brief"
+  }
 }
