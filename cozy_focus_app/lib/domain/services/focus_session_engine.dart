@@ -44,23 +44,37 @@ class FocusSessionEngine {
 
   // ── start ──────────────────────────────────────────────────────────────────
 
+  /// Starts a session.
+  ///
+  /// [timingMode] decides whether [plannedSeconds] is a target at all: a
+  /// countdown needs one and is refused without, and the open-ended modes store
+  /// 0 so that no later reader can mistake a flow session for a timed one. The
+  /// two are normalised here rather than at each call site, so there is one place
+  /// where "a session with no target has no length" is true.
   Future<FocusSession> start({
     required String userId,
     required int plannedSeconds,
     required FocusMode mode,
+    FocusTimingMode timingMode = FocusTimingMode.countdown,
     String? categoryId,
     String? taskName,
     String? taskId,
   }) async {
     _assertIdle();
+    if (timingMode.hasTarget && plannedSeconds <= 0) {
+      throw ArgumentError(
+        'A countdown session needs a target length, got $plannedSeconds',
+      );
+    }
     final session = FocusSession(
       id: _uuid.v4(),
       userId: userId,
       categoryId: categoryId,
       taskName: taskName,
       taskId: taskId,
-      plannedSeconds: plannedSeconds,
+      plannedSeconds: timingMode.hasTarget ? plannedSeconds : 0,
       mode: mode,
+      timingMode: timingMode,
       startAt: _clock.now(),
       pauseIntervals: const [],
       status: FocusSessionStatus.running,
@@ -71,6 +85,61 @@ class FocusSessionEngine {
     return session;
   }
 
+  // ── timing mode ────────────────────────────────────────────────────────────
+
+  /// Switches how the running session counts.
+  ///
+  /// A real change to the session, not a display preference, so it is written
+  /// back and survives a restart. Three rules, each because the alternative is a
+  /// session that contradicts itself:
+  ///
+  /// * Switching **to** a countdown needs a target. A session that already has
+  ///   one keeps it; a flow session gets the default. If the elapsed time is
+  ///   already past that target the switch is refused rather than accepted and
+  ///   immediately completed — a session that ended because the user changed a
+  ///   setting is not a session the user ended.
+  /// * Switching **away** from a countdown drops the target, so nothing
+  ///   downstream can count down from a length the mode says is not there.
+  /// * Switching to [FocusTimingMode.deepFocus] while paused is refused: deep
+  ///   focus does not pause, and accepting it would leave a paused session that
+  ///   claims it cannot be paused.
+  Future<FocusSession> setTimingMode(FocusTimingMode timingMode) async {
+    final session = _requireSession();
+    if (!session.status.isResumable) {
+      throw StateError('Cannot change the timing mode of a session in status '
+          '${session.status}');
+    }
+    if (session.timingMode == timingMode) return session;
+
+    final elapsed = session.elapsedSecondsAt(_clock.now());
+    final isPaused = session.pauseIntervals.isNotEmpty &&
+        session.pauseIntervals.last.pauseEnd == null;
+
+    if (timingMode == FocusTimingMode.deepFocus && isPaused) {
+      throw StateError('Resume the session before switching to deep focus');
+    }
+
+    var planned = session.plannedSeconds;
+    if (timingMode.hasTarget) {
+      if (planned <= 0) planned = FocusTimingMode.defaultTargetSeconds;
+      if (elapsed >= planned) {
+        throw StateError(
+          'Elapsed $elapsed already reaches the $planned second target',
+        );
+      }
+    } else {
+      planned = 0;
+    }
+
+    final updated = session.copyWith(
+      timingMode: timingMode,
+      plannedSeconds: planned,
+    );
+    await _sessionRepo.update(updated);
+    _currentSession = updated;
+    return updated;
+  }
+
   // ── pause ──────────────────────────────────────────────────────────────────
 
   Future<FocusSession> pause() async {
@@ -79,6 +148,12 @@ class FocusSessionEngine {
         session.status != FocusSessionStatus.restored) {
       throw StateError(
           'Expected session status running but got ${session.status}');
+    }
+    // Deep focus is the mode whose promise is that it will not be interrupted.
+    // Refused here rather than only hidden in the UI, because a hidden button is
+    // not a rule and this session can also be reached by a restore.
+    if (!session.timingMode.allowsPause) {
+      throw StateError('A ${session.timingMode.id} session cannot be paused');
     }
     final updated = session.copyWith(
       pauseIntervals: [
@@ -229,6 +304,9 @@ class FocusSessionEngine {
           // is no path that writes a record against the wrong task.
           taskId: session.taskId,
           mood: mood,
+          // From the session, like taskId: how the timer counted is decided when
+          // the session runs and cannot be edited on the save page.
+          timingMode: session.timingMode,
           durationSeconds: elapsed,
           startAt: session.startAt,
           endAt: endAt,

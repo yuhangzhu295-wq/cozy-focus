@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import '../../../domain/models/enums.dart';
 import '../../../domain/models/focus_record.dart' as domain;
 import '../tables/focus_records_table.dart';
 import '../app_database.dart' hide FocusRecord;
@@ -20,6 +21,7 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
         taskName: Value(record.taskName),
         taskId: Value(record.taskId),
         mood: Value(record.mood),
+        timingMode: Value(record.timingMode.id),
         durationSeconds: Value(record.durationSeconds),
         startAt: Value(record.startAt),
         endAt: Value(record.endAt),
@@ -51,6 +53,7 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
         taskName: Value(record.taskName),
         taskId: Value(record.taskId),
         mood: Value(record.mood),
+        timingMode: Value(record.timingMode.id),
         note: Value(record.note),
       ),
     );
@@ -105,6 +108,7 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
       taskName: row.taskName as String?,
       taskId: row.taskId as String?,
       mood: row.mood as String?,
+      timingMode: FocusTimingMode.fromId(row.timingMode as String?),
       durationSeconds: row.durationSeconds as int,
       startAt: row.startAt as DateTime,
       endAt: row.endAt as DateTime,

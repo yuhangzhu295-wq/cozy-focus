@@ -61,7 +61,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -140,6 +140,25 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(
             'CREATE UNIQUE INDEX IF NOT EXISTS idx_task_schedules_task_day '
             'ON task_schedules(task_id, date);',
+          );
+        }
+        // v6 -> v7: how the timer counted, on the session and on the record it
+        // writes.
+        if (from < 7) {
+          await m.addColumn(focusSessions, focusSessions.timingMode);
+          await m.addColumn(focusRecords, focusRecords.timingMode);
+          // Backfill from what the old rows already said. A session with no
+          // length was a flow session, which is 正计时; everything else counted
+          // down. The records follow their session, because a record carries no
+          // length of its own — and a record whose session row is gone keeps the
+          // column default, since by then there is nothing left to tell from.
+          await customStatement(
+            "UPDATE focus_sessions SET timing_mode = 'countUp' "
+            'WHERE planned_seconds <= 0',
+          );
+          await customStatement(
+            "UPDATE focus_records SET timing_mode = 'countUp' WHERE session_id "
+            'IN (SELECT id FROM focus_sessions WHERE planned_seconds <= 0)',
           );
         }
       },

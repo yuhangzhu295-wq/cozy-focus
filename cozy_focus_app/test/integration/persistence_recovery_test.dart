@@ -559,8 +559,9 @@ void main() {
           reason: 'the recorded duration is untouched');
       // The current schema version. It moves when a migration is added, and
       // these assertions are here to prove the chain *reached* the head rather
-      // than stopping part way. It went to 6 with P2's plan table.
-      expect((await rows(db, 'PRAGMA user_version')).first['user_version'], 6);
+      // than stopping part way. It went to 6 with P2's plan table and to 7 with
+      // P3's timing mode.
+      expect((await rows(db, 'PRAGMA user_version')).first['user_version'], 7);
     });
 
     test(
@@ -611,7 +612,7 @@ void main() {
           "and name = 'idx_focus_records_session_id'");
       expect(indexes, hasLength(1));
 
-      expect((await rows(db, 'PRAGMA user_version')).first['user_version'], 6);
+      expect((await rows(db, 'PRAGMA user_version')).first['user_version'], 7);
 
       // The chain has to reach the whole head, not stop at the task domain: a
       // v4 database that opened without the plan table would look migrated and
@@ -704,7 +705,7 @@ void main() {
       final again = openDb();
       addTearDown(again.close);
       expect(
-          (await rows(again, 'PRAGMA user_version')).first['user_version'], 6);
+          (await rows(again, 'PRAGMA user_version')).first['user_version'], 7);
       // Seeded once, not twice.
       expect(await rows(again, 'select * from craft_recipes'), hasLength(8));
     });

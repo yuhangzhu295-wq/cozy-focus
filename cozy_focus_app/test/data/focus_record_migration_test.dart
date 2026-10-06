@@ -64,7 +64,7 @@ void main() {
         final version =
             await db.customSelect('PRAGMA user_version').getSingle();
         // The head of the chain, which moves when a migration is added.
-        expect(version.read<int>('user_version'), 6);
+        expect(version.read<int>('user_version'), 7);
         final indexes = await db
             .customSelect(
               "SELECT name FROM sqlite_master WHERE type = 'index' "

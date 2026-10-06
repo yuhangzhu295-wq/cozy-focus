@@ -17,6 +17,12 @@ class FocusSessionUIState {
   final String? categoryName;
   final String? categoryId;
 
+  /// How the running session counts.
+  ///
+  /// Mirrored from the session so the page can build its segmented control and
+  /// its timer without reaching into the session and re-deriving the mode.
+  final FocusTimingMode timingMode;
+
   const FocusSessionUIState({
     this.session,
     this.elapsedSeconds = 0,
@@ -26,7 +32,14 @@ class FocusSessionUIState {
     this.taskName,
     this.categoryName,
     this.categoryId,
+    this.timingMode = FocusTimingMode.countdown,
   });
+
+  /// Whether the timer is counting up rather than down.
+  ///
+  /// The page asks this rather than comparing `plannedSeconds` to zero, so the
+  /// mode is the authority in the UI too.
+  bool get isCountingUp => !timingMode.hasTarget;
 
   FocusSessionUIState copyWith({
     FocusSession? session,
@@ -37,6 +50,7 @@ class FocusSessionUIState {
     String? taskName,
     String? categoryName,
     String? categoryId,
+    FocusTimingMode? timingMode,
   }) {
     return FocusSessionUIState(
       session: session ?? this.session,
@@ -47,6 +61,7 @@ class FocusSessionUIState {
       taskName: taskName ?? this.taskName,
       categoryName: categoryName ?? this.categoryName,
       categoryId: categoryId ?? this.categoryId,
+      timingMode: timingMode ?? this.timingMode,
     );
   }
 }
@@ -79,7 +94,9 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
     final now = _clock.now();
     final elapsed = _computeElapsed(session, now);
     final planned = session.plannedSeconds;
-    final remaining = (planned > 0) ? (planned - elapsed).clamp(0, planned) : 0;
+    final remaining = session.timingMode.hasTarget
+        ? (planned - elapsed).clamp(0, planned)
+        : 0;
 
     PetVisualState petState;
     switch (session.status) {
@@ -109,6 +126,7 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
       isCompleted: (session.status == FocusSessionStatus.finishing ||
           session.status == FocusSessionStatus.completed),
       petState: petState,
+      timingMode: session.timingMode,
     );
 
     final isRunning = session.status == FocusSessionStatus.running ||
@@ -142,11 +160,13 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
       final now = _clock.now();
       final elapsed = _computeElapsed(session, now);
       final planned = session.plannedSeconds;
-      final remaining =
-          (planned > 0) ? (planned - elapsed).clamp(0, planned) : 0;
+      final remaining = session.timingMode.hasTarget
+          ? (planned - elapsed).clamp(0, planned)
+          : 0;
 
-      // If countdown reached 0 in Pomodoro/Custom mode, auto complete
-      if (planned > 0 && remaining <= 0) {
+      // Only a countdown ends itself. 正计时 and 深度专注 have no target to reach,
+      // so the ticker is a display refresh and nothing else.
+      if (session.timingMode.autoCompletesAtTarget && remaining <= 0) {
         _ticker?.cancel();
         completeSession();
         return;
@@ -164,6 +184,7 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
     required String userId,
     required int plannedSeconds,
     required FocusMode mode,
+    FocusTimingMode timingMode = FocusTimingMode.countdown,
     String? categoryId,
     String? taskName,
     String? categoryName,
@@ -173,6 +194,7 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
       userId: userId,
       plannedSeconds: plannedSeconds,
       mode: mode,
+      timingMode: timingMode,
       categoryId: categoryId,
       taskName: taskName,
       taskId: taskId,
@@ -195,6 +217,16 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
   /// Resume current session
   Future<void> resumeSession() async {
     await _engine.resume();
+    _syncFromEngine();
+  }
+
+  /// Switches how the running session counts.
+  ///
+  /// Rethrows the engine's refusals rather than swallowing them, so the page can
+  /// tell the user why — "already past 25 minutes", "resume first" — instead of
+  /// leaving a control that appeared to do nothing.
+  Future<void> setTimingMode(FocusTimingMode timingMode) async {
+    await _engine.setTimingMode(timingMode);
     _syncFromEngine();
   }
 
@@ -248,7 +280,8 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
     final restored = await _engine.restore(userId);
     if (restored != null) {
       _syncFromEngine();
-      if (restored.plannedSeconds > 0 && state.remainingSeconds <= 0) {
+      if (restored.timingMode.autoCompletesAtTarget &&
+          state.remainingSeconds <= 0) {
         // An expired countdown still needs the established completion flow;
         // it must not be presented as a runnable session after restoration.
         final completed = await _engine.complete();

@@ -16,6 +16,16 @@ class FocusSessions extends Table {
   TextColumn get taskId => text().nullable()();
   IntColumn get plannedSeconds => integer()();
   TextColumn get mode => text()(); // "focus" | "shortBreak" | "longBreak"
+
+  /// "countdown" | "countUp" | "deepFocus" — how the timer counted.
+  ///
+  /// Defaulted rather than nullable: every session written before this column
+  /// existed was a countdown or a flow session, and
+  /// [FocusTimingMode.fromLegacyPlannedSeconds] recovers which from
+  /// `planned_seconds`. The migration backfills it; the default covers rows a
+  /// hand-written insert might miss.
+  TextColumn get timingMode =>
+      text().withDefault(const Constant('countdown'))();
   DateTimeColumn get startAt => dateTime()();
   TextColumn get pauseIntervalsJson =>
       text().withDefault(const Constant('[]'))();

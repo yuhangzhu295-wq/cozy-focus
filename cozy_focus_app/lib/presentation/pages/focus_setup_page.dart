@@ -8,6 +8,7 @@ import '../controllers/providers.dart';
 import '../theme/app_theme.dart';
 import '../companion/companion_avatar.dart';
 import '../widgets/app_bottom_nav.dart';
+import '../widgets/custom_minutes_dialog.dart';
 
 /// Screen 02: Focus Setup — V4.1 visual redesign
 /// Design ref: docs/cozy_focus_v4_1/designs/pages_ascii/02_focus_setup.png
@@ -30,6 +31,11 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
   int _selectedMinutes = 25;
   bool _reminderOn = true;
 
+  /// How this session will count. Chosen here rather than on the running screen
+  /// because it is a decision about the session, and the running screen's
+  /// segmented control exists to change a decision already made.
+  FocusTimingMode _timingMode = FocusTimingMode.countdown;
+
   static const List<int> _quickDurations = [5, 25, 50, 90];
 
   @override
@@ -38,8 +44,24 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
     super.dispose();
   }
 
-  int get _plannedSeconds => _selectedMinutes * 60;
+  /// The target length, or 0 for the modes that have none.
+  ///
+  /// Zero rather than the last-chosen minutes: a session in 正计时 has no length,
+  /// and carrying one anyway is how a flow session ends up showing a countdown
+  /// somewhere downstream.
+  int get _plannedSeconds => _timingMode.hasTarget ? _selectedMinutes * 60 : 0;
+
   FocusMode get _focusMode => FocusMode.focus;
+
+  Future<void> _pickCustomMinutes() async {
+    final minutes = await showCustomMinutesDialog(
+      context,
+      initialMinutes: _selectedMinutes,
+      outOfRangeMessage: '时长需要在 1 到 600 分钟之间。',
+    );
+    if (minutes == null || !mounted) return;
+    setState(() => _selectedMinutes = minutes);
+  }
 
   Future<void> _startFocus() async {
     final taskName = _taskController.text.trim().isEmpty
@@ -51,6 +73,7 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
             userId: userId,
             plannedSeconds: _plannedSeconds,
             mode: _focusMode,
+            timingMode: _timingMode,
             taskName: taskName,
             taskId: widget.taskId,
           );
@@ -201,91 +224,122 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Duration header
-                    Row(
+                    // Mode header
+                    const Row(
                       children: [
-                        const Text('🌱 ', style: TextStyle(fontSize: 16)),
-                        const Text(
-                          '选择专注时长',
+                        Text('🌱 ', style: TextStyle(fontSize: 16)),
+                        Text(
+                          '专注模式',
                           style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary),
                         ),
-                        const Spacer(),
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.primarySage,
-                            padding: EdgeInsets.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          onPressed: null,
-                          child: const Text('自定义 >',
-                              style: TextStyle(fontSize: 13)),
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    // Quick duration chips
-                    Row(
-                      children: _quickDurations.asMap().entries.map((entry) {
-                        final mins = entry.value;
-                        final isLast = entry.key == _quickDurations.length - 1;
-                        final isSelected = _selectedMinutes == mins;
-                        return Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(right: isLast ? 0 : 8),
-                            child: GestureDetector(
-                              onTap: () =>
-                                  setState(() => _selectedMinutes = mins),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.primaryLight
-                                      : AppColors.background,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.sm),
-                                  border: Border.all(
+                    const SizedBox(height: 10),
+                    _ModeSegments(
+                      mode: _timingMode,
+                      onChanged: (mode) => setState(() => _timingMode = mode),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _modeExplanation(_timingMode),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          height: 1.4),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Duration header
+                    if (_timingMode.hasTarget) ...[
+                      Row(
+                        children: [
+                          const Text('🌱 ', style: TextStyle(fontSize: 16)),
+                          const Text(
+                            '选择专注时长',
+                            style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary),
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primarySage,
+                              padding: EdgeInsets.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: _pickCustomMinutes,
+                            child: const Text('自定义 >',
+                                style: TextStyle(fontSize: 13)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Quick duration chips
+                      Row(
+                        children: _quickDurations.asMap().entries.map((entry) {
+                          final mins = entry.value;
+                          final isLast =
+                              entry.key == _quickDurations.length - 1;
+                          final isSelected = _selectedMinutes == mins;
+                          return Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(right: isLast ? 0 : 8),
+                              child: GestureDetector(
+                                onTap: () =>
+                                    setState(() => _selectedMinutes = mins),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  decoration: BoxDecoration(
                                     color: isSelected
-                                        ? AppColors.primarySage
-                                        : AppColors.border,
-                                    width: isSelected ? 1.5 : 1,
+                                        ? AppColors.primaryLight
+                                        : AppColors.background,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.sm),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? AppColors.primarySage
+                                          : AppColors.border,
+                                      width: isSelected ? 1.5 : 1,
+                                    ),
                                   ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      '$mins',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: isSelected
-                                            ? AppColors.primaryDark
-                                            : AppColors.textPrimary,
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        '$mins',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: isSelected
+                                              ? AppColors.primaryDark
+                                              : AppColors.textPrimary,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '分钟',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: isSelected
-                                            ? AppColors.primarySage
-                                            : AppColors.textSecondary,
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '分钟',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isSelected
+                                              ? AppColors.primarySage
+                                              : AppColors.textSecondary,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Task input
                     const Row(
@@ -404,6 +458,79 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
 
       // ── Bottom nav (3 tabs) ────────────────────────────────────
       bottomNavigationBar: const AppBottomNav(currentIndex: 2),
+    );
+  }
+}
+
+/// What each mode does, in one sentence, under the control that picks it.
+///
+/// The modes differ in behaviour rather than in mood, and a segmented control
+/// with no explanation would leave the user to find out by losing a session.
+String _modeExplanation(FocusTimingMode mode) => switch (mode) {
+      FocusTimingMode.countdown => '设定一个时长，倒计时结束时自动完成这一次专注。',
+      FocusTimingMode.countUp => '不设时长，想专注多久就多久，结束时由你自己收尾。',
+      FocusTimingMode.deepFocus => '不设时长，也不能暂停 —— 这一段就是专心不被打断。',
+    };
+
+/// 番茄钟 / 正计时 / 深度专注.
+class _ModeSegments extends StatelessWidget {
+  final FocusTimingMode mode;
+  final ValueChanged<FocusTimingMode> onChanged;
+
+  const _ModeSegments({required this.mode, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          for (final option in FocusTimingMode.values)
+            Expanded(
+              child: Semantics(
+                key: ValueKey('setup_mode_${option.id}'),
+                button: true,
+                selected: option == mode,
+                label: option.label,
+                child: GestureDetector(
+                  onTap: () => onChanged(option),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: option == mode
+                          ? AppColors.primaryLight
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(
+                        color: option == mode
+                            ? AppColors.primarySage
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Text(
+                      option.label,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight:
+                            option == mode ? FontWeight.w700 : FontWeight.w500,
+                        color: option == mode
+                            ? AppColors.primaryDark
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

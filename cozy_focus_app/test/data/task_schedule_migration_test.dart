@@ -24,12 +24,25 @@ void main() {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   });
 
-  test('v5 opens as v6 with the plan table added and nothing lost', () async {
+  test('v5 opens at the head with the plan table added and nothing lost',
+      () async {
     final dir = Directory.systemTemp.createTempSync('cozy_p2_migration_');
     final file = File('${dir.path}${Platform.pathSeparator}cozy_focus.sqlite');
     try {
       final raw = sqlite3.open(file.path);
       try {
+        // focus_sessions as well, because a real v5 database had it and the
+        // chain now runs on to v7, which adds a column to it. A fixture without
+        // it would be a database that never existed — and it fails, which is how
+        // this was found.
+        raw.execute('CREATE TABLE focus_sessions ('
+            'id TEXT NOT NULL PRIMARY KEY, user_id TEXT NOT NULL, '
+            'category_id TEXT, task_name TEXT, task_id TEXT, '
+            'planned_seconds INTEGER NOT NULL, mode TEXT NOT NULL, '
+            'start_at INTEGER NOT NULL, '
+            "pause_intervals_json TEXT NOT NULL DEFAULT '[]', "
+            'end_at INTEGER, status TEXT NOT NULL, '
+            'timezone_offset_minutes INTEGER NOT NULL)');
         raw.execute('CREATE TABLE tasks ('
             'id TEXT NOT NULL PRIMARY KEY, user_id TEXT NOT NULL, '
             'title TEXT NOT NULL, category_id TEXT, '
@@ -77,7 +90,7 @@ void main() {
 
         final version =
             await db.customSelect('PRAGMA user_version').getSingle();
-        expect(version.read<int>('user_version'), 6);
+        expect(version.read<int>('user_version'), 7);
 
         // The unique index that stops a task being on one day twice.
         final indexes = await db

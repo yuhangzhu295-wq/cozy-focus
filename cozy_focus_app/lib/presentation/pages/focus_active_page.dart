@@ -201,6 +201,25 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
     return '$m:$s';
   }
 
+  /// Switches the running session's timing mode.
+  ///
+  /// The engine refuses two cases — a countdown target already in the past, and
+  /// deep focus while paused — and both are explained rather than swallowed: a
+  /// control that appears to do nothing is worse than one that says why.
+  Future<void> _handleTimingModeChange(FocusTimingMode mode) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(focusSessionControllerProvider.notifier)
+          .setTimingMode(mode);
+    } on StateError catch (error) {
+      final reason = '$error'.contains('deep focus')
+          ? '深度专注不能暂停，先继续这一段再切换。'
+          : '已经超过这个时长了，换一个更长的模式，或者直接收尾。';
+      messenger.showSnackBar(SnackBar(content: Text(reason)));
+    }
+  }
+
   Future<void> _handlePauseResume(bool isPaused) async {
     final notifier = ref.read(focusSessionControllerProvider.notifier);
     if (isPaused) {
@@ -529,7 +548,10 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
     final isPaused = _isPausedSession(session);
     final isRestored =
         session.status == FocusSessionStatus.restored && _showRestoreOverlay;
-    final isFlow = session.plannedSeconds == 0;
+    // Asks the mode, not the length: a session in 正计时 or 深度专注 has no target
+    // and shows elapsed, and one in 番茄钟 shows what is left.
+    final isFlow = sessionState.isCountingUp;
+    final allowsPause = sessionState.timingMode.allowsPause;
 
     final displayTime = isFlow
         ? _formatDuration(sessionState.elapsedSeconds)
@@ -677,6 +699,14 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                       child: IntrinsicHeight(
                         child: Column(
                           children: [
+                            // Mode, above the timer: it is the setting that
+                            // decides what the number below it means, and the
+                            // switch is real — it writes the session.
+                            _TimingModeSwitch(
+                              mode: sessionState.timingMode,
+                              onChanged: _handleTimingModeChange,
+                            ),
+                            const SizedBox(height: 16),
                             // Timer
                             Semantics(
                               readOnly: true,
@@ -794,12 +824,19 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                                       child: ElevatedButton.icon(
                                         icon: const Icon(Icons.pause_rounded,
                                             size: 22),
-                                        label: const Text('暂停',
-                                            style: TextStyle(
+                                        // Deep focus does not pause, so the
+                                        // button says so and is disabled rather
+                                        // than being live and refused. The
+                                        // engine refuses it too — this is the
+                                        // visible half of one rule.
+                                        label: Text(
+                                            allowsPause ? '暂停' : '深度专注中',
+                                            style: const TextStyle(
                                                 fontSize: 15,
                                                 fontWeight: FontWeight.bold)),
-                                        onPressed: () =>
-                                            _handlePauseResume(false),
+                                        onPressed: allowsPause
+                                            ? () => _handlePauseResume(false)
+                                            : null,
                                       ),
                                     ),
                                   ),
@@ -895,6 +932,72 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
               color: AppColors.textSecondary,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 番茄钟 / 正计时 / 深度专注, on the running screen.
+///
+/// Switching is a real write to the session — the mode is what the timer means,
+/// so it cannot be a display-only toggle. The three cases the engine can refuse
+/// are surfaced by the caller rather than hidden here.
+class _TimingModeSwitch extends StatelessWidget {
+  final FocusTimingMode mode;
+  final ValueChanged<FocusTimingMode> onChanged;
+
+  const _TimingModeSwitch({required this.mode, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          for (final option in FocusTimingMode.values)
+            Expanded(
+              child: Semantics(
+                key: ValueKey('focus_mode_${option.id}'),
+                button: true,
+                selected: option == mode,
+                label: option.label,
+                child: GestureDetector(
+                  onTap: option == mode ? null : () => onChanged(option),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: option == mode
+                          ? AppColors.primaryLight
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(
+                        color: option == mode
+                            ? AppColors.primarySage
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Text(
+                      option.label,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight:
+                            option == mode ? FontWeight.w700 : FontWeight.w500,
+                        color: option == mode
+                            ? AppColors.primaryDark
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

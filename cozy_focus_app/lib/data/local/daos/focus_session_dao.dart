@@ -22,6 +22,7 @@ class FocusSessionDao extends DatabaseAccessor<AppDatabase>
         taskId: Value(session.taskId),
         plannedSeconds: Value(session.plannedSeconds),
         mode: Value(session.mode.name),
+        timingMode: Value(session.timingMode.id),
         startAt: Value(session.startAt),
         pauseIntervalsJson: Value(_encodePauses(session.pauseIntervals)),
         endAt: Value(session.endAt),
@@ -83,6 +84,10 @@ class FocusSessionDao extends DatabaseAccessor<AppDatabase>
       taskId: row.taskId as String?,
       plannedSeconds: row.plannedSeconds as int,
       mode: FocusMode.values.firstWhere((e) => e.name == row.mode),
+      // `fromId` rather than a lookup that throws: a row from before the column
+      // existed has the default, and a session that cannot be read is worse than
+      // one read as a countdown.
+      timingMode: FocusTimingMode.fromId(row.timingMode as String?),
       startAt: row.startAt as DateTime,
       pauseIntervals: _decodePauses(row.pauseIntervalsJson as String),
       endAt: row.endAt as DateTime?,

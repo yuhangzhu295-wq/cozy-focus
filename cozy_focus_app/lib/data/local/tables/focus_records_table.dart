@@ -15,6 +15,11 @@ class FocusRecords extends Table {
   /// `taskName` and simply stops counting towards a task's total.
   TextColumn get taskId => text().nullable()();
   TextColumn get mood => text().nullable()();
+
+  /// "countdown" | "countUp" | "deepFocus" — how the session that wrote this
+  /// record counted. See the note on [FocusSessions.timingMode].
+  TextColumn get timingMode =>
+      text().withDefault(const Constant('countdown'))();
   IntColumn get durationSeconds => integer()();
   DateTimeColumn get startAt => dateTime()();
   DateTimeColumn get endAt => dateTime()();

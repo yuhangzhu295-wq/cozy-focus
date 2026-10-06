@@ -13,8 +13,19 @@ class FocusSession {
 
   /// The task this session is for, when it was started from one.
   final String? taskId;
-  final int plannedSeconds; // user-chosen duration
+
+  /// The target length for a [FocusTimingMode.countdown] session, and 0 for the
+  /// modes that have no target.
+  ///
+  /// Kept as the target rather than as "whatever the user typed" so that the one
+  /// question the timer asks — is there a length to count down from — has one
+  /// answer, [timingMode].[FocusTimingMode.hasTarget].
+  final int plannedSeconds;
+
   final FocusMode mode;
+
+  /// How the timer counts. See [FocusTimingMode] for why this is not [mode].
+  final FocusTimingMode timingMode;
 
   final DateTime startAt; // monotonic-safe local timestamp
 
@@ -36,6 +47,7 @@ class FocusSession {
     this.taskId,
     required this.plannedSeconds,
     required this.mode,
+    this.timingMode = FocusTimingMode.countdown,
     required this.startAt,
     required this.pauseIntervals,
     this.endAt,
@@ -80,6 +92,8 @@ class FocusSession {
     String? categoryId,
     String? taskName,
     String? taskId,
+    int? plannedSeconds,
+    FocusTimingMode? timingMode,
     List<PauseInterval>? pauseIntervals,
     DateTime? endAt,
     FocusSessionStatus? status,
@@ -90,8 +104,9 @@ class FocusSession {
       categoryId: categoryId ?? this.categoryId,
       taskName: taskName ?? this.taskName,
       taskId: taskId ?? this.taskId,
-      plannedSeconds: plannedSeconds,
+      plannedSeconds: plannedSeconds ?? this.plannedSeconds,
       mode: mode,
+      timingMode: timingMode ?? this.timingMode,
       startAt: startAt,
       pauseIntervals: pauseIntervals ?? this.pauseIntervals,
       endAt: endAt ?? this.endAt,

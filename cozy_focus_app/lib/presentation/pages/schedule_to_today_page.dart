@@ -7,6 +7,7 @@ import '../../domain/services/today_planner.dart';
 import '../controllers/providers.dart';
 import '../controllers/today_plan_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/custom_minutes_dialog.dart';
 import '../widgets/task_category_chip.dart';
 import '../widgets/task_duration.dart';
 
@@ -244,17 +245,14 @@ class _FormState extends ConsumerState<_Form> {
   }
 
   Future<void> _pickCustomDuration() async {
-    final minutes = await showDialog<int>(
-      context: context,
-      builder: (_) => _CustomDurationDialog(minutes: _seconds ~/ 60),
+    // The dialog refuses an out-of-range number itself and keeps itself open, so
+    // reaching here means the value is usable.
+    final minutes = await showCustomMinutesDialog(
+      context,
+      initialMinutes: _seconds ~/ 60,
+      outOfRangeMessage: '时长需要在 1 到 600 分钟之间。',
     );
     if (minutes == null || !mounted) return;
-    // Refused rather than clamped: silently turning "0" into 1 minute, or "9999"
-    // into 600, would save a plan the user did not ask for.
-    if (minutes < 1 || minutes > 600) {
-      setState(() => _error = '时长需要在 1 到 600 分钟之间。');
-      return;
-    }
     setState(() {
       _error = null;
       _seconds = minutes * 60;
@@ -282,59 +280,6 @@ class _FormState extends ConsumerState<_Form> {
         _error = '没能保存这个安排：$error';
       });
     }
-  }
-}
-
-/// The 自定义 duration dialog.
-///
-/// A widget rather than an inline `AlertDialog` so the text controller's lifetime
-/// is the dialog's: disposing it in the caller as soon as `showDialog` returns
-/// leaves the field listening to a disposed controller while the dialog is still
-/// animating out, which throws.
-class _CustomDurationDialog extends StatefulWidget {
-  final int minutes;
-
-  const _CustomDurationDialog({required this.minutes});
-
-  @override
-  State<_CustomDurationDialog> createState() => _CustomDurationDialogState();
-}
-
-class _CustomDurationDialogState extends State<_CustomDurationDialog> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.minutes.toString());
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('自定义时长'),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        keyboardType: TextInputType.number,
-        decoration: const InputDecoration(
-          labelText: '分钟',
-          helperText: '1 到 600 分钟',
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
-        ),
-        TextButton(
-          onPressed: () =>
-              Navigator.of(context).pop(int.tryParse(_controller.text.trim())),
-          child: const Text('确定'),
-        ),
-      ],
-    );
   }
 }
 

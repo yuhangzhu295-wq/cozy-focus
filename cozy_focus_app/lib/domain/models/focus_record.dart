@@ -1,3 +1,5 @@
+import 'enums.dart';
+
 /// Immutable record written once a session is completed and saved.
 /// This is the fact source for all statistics aggregation.
 class FocusRecord {
@@ -12,6 +14,14 @@ class FocusRecord {
   /// started without a task, which stays a first-class way to focus.
   final String? taskId;
   final String? mood; // emoji string, e.g. "😊"
+
+  /// How the session that produced this record counted.
+  ///
+  /// Carried onto the record so history can say "25 minutes of 番茄钟" without
+  /// joining back to a session that may since have been pruned, and so the
+  /// timeline and the analytics can tell a timed block from an open one.
+  final FocusTimingMode timingMode;
+
   final int durationSeconds; // actual elapsed, never planned
   final DateTime startAt;
   final DateTime endAt;
@@ -27,6 +37,7 @@ class FocusRecord {
     this.taskName,
     this.taskId,
     this.mood,
+    this.timingMode = FocusTimingMode.countdown,
     required this.durationSeconds,
     required this.startAt,
     required this.endAt,
@@ -43,6 +54,7 @@ class FocusRecord {
     String? taskName,
     String? taskId,
     String? mood,
+    FocusTimingMode? timingMode,
     int? durationSeconds,
     DateTime? startAt,
     DateTime? endAt,
@@ -58,6 +70,7 @@ class FocusRecord {
       taskName: taskName ?? this.taskName,
       taskId: taskId ?? this.taskId,
       mood: mood ?? this.mood,
+      timingMode: timingMode ?? this.timingMode,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       startAt: startAt ?? this.startAt,
       endAt: endAt ?? this.endAt,
