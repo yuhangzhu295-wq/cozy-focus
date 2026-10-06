@@ -2,12 +2,12 @@
   "program": "RESUME_P32_THROUGH_P40",
   "project": "COZY_FOCUS",
   "branch": "recovery/v4.2.1-rebuild",
-  "updated_at_slice": "P35 complete; the room commits nothing the companion cannot perform",
-  "phase": "P35",
-  "slice": "P35 COMPLETE. Next: P36 (offline local custom pet golden flow).",
+  "updated_at_slice": "P36 complete; the offline local custom pet golden flow was walked end to end on the device",
+  "phase": "P36",
+  "slice": "P36 COMPLETE. Next: P37 (AI spike; VERTEX_AI is BLOCKED_EXTERNAL).",
   "start_sha": "0a116e2",
-  "latest_sha": "4c3bc4d",
-  "remote_sha": "4c3bc4d",
+  "latest_sha": "45b1398",
+  "remote_sha": "45b1398",
   "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
@@ -18,7 +18,8 @@
     "P32_local_import_export": "PASS (device-walked, filesystem-verified)",
     "P33_partial_pack_capability": "PASS (device-verified)",
     "P34_local_pack_builder": "PASS (device-walked)",
-    "P35_custom_companion_runtime": "PASS"
+    "P35_custom_companion_runtime": "PASS",
+    "P36_local_custom_pet_golden_flow": "PASS (device-walked, offline)"
   },
   "test_counts": {
     "full_suite": "1473/1473",
@@ -73,7 +74,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P36: the local custom pet golden flow, offline. Build a .cozy_pet with the CLI, import it through the real picker, preview, install, select, then Home -> Focus -> Pause -> Resume -> Complete -> Room -> Walk -> furniture action if the capability exists -> restart -> still selected -> export -> delete -> safe fallback -> re-import -> works again. No SQLite result seeding, no hidden developer UI, no network. Verify every state claim against the registry, the filesystem and runtime diagnostics, not screenshots.",
+  "next_action": "P37: the AI generation spike. VERTEX_AI is BLOCKED_EXTERNAL (no credentials, no project, no gcloud), so complete everything that does not need them - provider abstraction, request/response contract, prompt templates, pack-output contract, a deterministic local harness, cost and retry policy, technical tests - and classify REAL_PROVIDER_GENERATION = BLOCKED_EXTERNAL. Do not fake API success.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git status --short",
     "read this file",
@@ -83,9 +84,11 @@
   "process_notes": [
     "Never write file content through a shell heredoc in this environment: it has silently truncated content three times. Use the file tool and verify after writing.",
     "Prefer patching by rewriting a file whole over matching long anchors: dart format rewraps and breaks anchors silently.",
-    "The screen is not evidence for state. Verify against the device filesystem, the database, or an instrumented trace.",
-    "A widget test that triggers real file IO must make its tap inside runAsync; a future chain created under the fake clock parks its continuations there.",
-    "adb shell input tap does not reach Flutter gesture detectors. Use real-pointer clicks, and repeat the first click after the emulator window loses focus.",
+    "The screen is not evidence for state. Verify against the device filesystem, the database, or an instrumented trace. The device SQLite holds its rows in the -wal file: pull the .sqlite, -wal and -shm together or the tables read as empty.",
+    "The emulator window can be minimised, and a minimised window reports bounds at -32000. Clicks then go nowhere with no error; getScreenshot restores it on Windows.",
+    "Neither tap method is universal: adb input tap at scaled device coordinates reached the install button CUA missed, and CUA reached the import bar and the ... menu that adb taps missed. Try the other before concluding a control is broken.",
+    "The device screen is 1080x2400 and the CUA raster 561x1280, so the scale is about 1.925.",
+    "A soft keyboard covers the bottom of the screen and eats taps meant for a button below the field. Dismiss it at the Android level (input keyevent 4) rather than by tapping, which can land in the field and type.",
     "After the file picker has been used, am start resolves to it. force-stop the app and launch with monkey -p <pkg> -c android.intent.category.LAUNCHER 1."
   ],
   "_note": "Compact resumable state; history belongs in the phase handoff docs. latest_sha names the revision this file describes - the commit that writes it advances one past that, which is unavoidable and is not staleness.",
@@ -101,7 +104,9 @@
     "P34_local_pack_builder": "PASS",
     "P35_to_P40": "NOT_STARTED",
     "P35_custom_companion_runtime": "PASS",
-    "P36_to_P40": "NOT_STARTED"
+    "P36_to_P40": "NOT_STARTED",
+    "P36_local_custom_pet_golden_flow": "PASS",
+    "P37_to_P40": "NOT_STARTED"
   },
   "p33_device_flow": {
     "device": "Pixel 7 API 34 emulator",
@@ -155,5 +160,16 @@
   "p35_open": [
     "room_sit still has no frames of its own. The panel does not offer it; give it frames or a drawAliases entry and the chip returns with no code change.",
     "The animation-state path (travel, posture transitions) is still a separate selection path from the director."
-  ]
+  ],
+  "p36_results": {
+    "LOCAL_CUSTOM_PET_GOLDEN_FLOW": "PASS",
+    "OFFLINE": "PASS (no network, no backend, no seeded rows, no developer UI)",
+    "VERIFIED_AGAINST": "filesystem, install record, selection file, SQLite"
+  },
+  "p36_findings": [
+    "The session arithmetic reconciles exactly: 251s wall clock minus a 122s pause interval = 129s = the 2:09 displayed, with total_focus_minutes 2 and experience_points 10 matching the +10 XP shown. This narrows the open P32 31A question (a displayed 30:00 settling at 29:55): the discrepancy is not a general drift in elapsed-time computation.",
+    "The pack digest survives the whole round trip: mimi imports at e5bab2f4, exports, is deleted, and re-imports at e5bab2f4. The digest is over contents, not archive bytes or timestamps.",
+    "Deleting and re-importing a companion does not touch the player progress: the growth page still reads 10 XP and 2 minutes afterwards. The shared-growth rule holds under the harshest version of the test."
+  ],
+  "p36_limitation": "The furniture-action leg was NOT exercised on this device walk: a freshly cleared app owns no furniture and the 2-minute session earned no materials, so the room honestly said it was empty. That path is covered by room_capability_wiring_test.dart, which drives the real RoomSimulationController with a real installed pack and a real sofa in the database. It is the one leg where a test stands in for a device walk."
 }
