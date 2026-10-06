@@ -78,6 +78,12 @@ class DriftTaskRepository implements ITaskRepository {
   Future<domain.Task?> findById(String id) => _dao.findById(id);
 
   @override
+  Future<Map<String, domain.Task>> findByIds(List<String> ids) async {
+    final found = await _dao.findByIds(ids);
+    return {for (final task in found) task.id: task};
+  }
+
+  @override
   Future<domain.TaskWithProgress?> findWithProgress(String id) async {
     final task = await _dao.findById(id);
     if (task == null) return null;

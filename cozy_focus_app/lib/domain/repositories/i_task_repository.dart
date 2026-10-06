@@ -28,6 +28,13 @@ abstract interface class ITaskRepository {
   /// One task, or null.
   Future<Task?> findById(String id);
 
+  /// The tasks with these ids, keyed by id. Missing ids are simply absent.
+  ///
+  /// One query for a whole screen's worth of rows: the statistics view resolves
+  /// the title of every task it shows, and a lookup per row is N queries for one
+  /// page.
+  Future<Map<String, Task>> findByIds(List<String> ids);
+
   /// A task with its subtasks and its focus totals.
   ///
   /// The detail screen's shape. Returns null for an unknown id rather than

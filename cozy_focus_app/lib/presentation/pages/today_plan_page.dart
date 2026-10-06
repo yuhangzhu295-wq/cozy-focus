@@ -6,9 +6,11 @@ import '../../domain/models/task.dart';
 import '../../domain/models/task_schedule.dart';
 import '../../domain/models/timeline_entry.dart';
 import '../controllers/focus_session_controller.dart';
+import '../controllers/analytics_controller.dart';
 import '../controllers/timeline_controller.dart';
 import '../controllers/today_plan_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/statistics_view.dart';
 import '../widgets/task_category_chip.dart';
 import '../widgets/task_duration.dart';
 
@@ -34,7 +36,12 @@ class TodayPlanPage extends ConsumerStatefulWidget {
 }
 
 class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
-  bool _timeline = false;
+  /// Which of the three views the screen is showing.
+  ///
+  /// One enum rather than two booleans: with two, a third view is a combination
+  /// that can be true at the same time as another, which is a state the screen
+  /// would have to defend against on every read.
+  _DayView _view = _DayView.plan;
 
   @override
   void initState() {
@@ -42,9 +49,7 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
     // The controller may already exist — the records tab watches it for its
     // count — and its state would then be from whenever that tab was built. A
     // plan screen that opens on a stale day is worse than one that costs a query.
-    Future.microtask(
-      () => ref.read(todayPlanControllerProvider.notifier).load(),
-    );
+    Future.microtask(_refreshAll);
   }
 
   @override
@@ -93,8 +98,8 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
       body: Column(
         children: [
           _Segments(
-            timeline: _timeline,
-            onChanged: (value) => setState(() => _timeline = value),
+            view: _view,
+            onChanged: (value) => setState(() => _view = value),
           ),
           Expanded(
             child: switch (state) {
@@ -112,22 +117,27 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
               // placements showed the plan's empty state and the timeline tab
               // was unreachable.
               TodayPlanState(placements: final List<PlannedTask> placements)
-                  when placements.isEmpty && !_timeline =>
+                  when placements.isEmpty && _view == _DayView.plan =>
                 const _EmptyState(),
               _ => RefreshIndicator(
-                  onRefresh: controller.load,
+                  onRefresh: _refreshAll,
                   child: ListView(
+                    // Keyed by the view, so switching between the three keeps
+                    // each one's scroll position instead of sharing one.
+                    key: ValueKey('day_view_${_view.name}'),
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
                     children: [
                       // The card belongs to the plan view. The timeline is a
                       // record of the day rather than a prompt about it, and the
                       // design puts no 下一个任务 on it — the running session is
                       // the row it highlights instead.
-                      if (_timeline)
+                      if (_view == _DayView.timeline)
                         _DayTimeline(
                           day: state.day,
                           onStopRunning: _stopRunningSession,
                         )
+                      else if (_view == _DayView.statistics)
+                        StatisticsView(day: state.day)
                       else ...[
                         if (state.next case final PlannedTask next) ...[
                           _NextTaskCard(
@@ -156,6 +166,18 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
     );
   }
 
+  /// Reloads everything the screen shows.
+  ///
+  /// The plan has a controller to reload; the timeline and the statistics are
+  /// projections, so they are invalidated and rebuilt from the tables. Pull to
+  /// refresh has to mean all three, or a user who pulled because a number looked
+  /// wrong would watch the number not change.
+  Future<void> _refreshAll() async {
+    ref.invalidate(analyticsSummaryProvider);
+    ref.invalidate(dayTimelineProvider);
+    await ref.read(todayPlanControllerProvider.notifier).load();
+  }
+
   Future<void> _pickDay(BuildContext context, DateTime current) async {
     final picked = await showDatePicker(
       context: context,
@@ -174,7 +196,7 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
   /// engine, one place the session is created.
   Future<void> _start(BuildContext context, PlannedTask placement) async {
     await context.push('/focus/setup?taskId=${placement.schedule.taskId}');
-    await ref.read(todayPlanControllerProvider.notifier).load();
+    await _refreshAll();
   }
 
   /// Ends the session that is running, from its timeline row.
@@ -184,13 +206,13 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
   /// write them.
   Future<void> _stopRunningSession(String sessionId) async {
     await ref.read(focusSessionControllerProvider.notifier).completeSession();
-    await ref.read(todayPlanControllerProvider.notifier).load();
+    await _refreshAll();
     if (mounted) context.go('/focus/complete');
   }
 
   Future<void> _open(BuildContext context, PlannedTask placement) async {
     await context.push('/records/tasks/${placement.schedule.taskId}');
-    await ref.read(todayPlanControllerProvider.notifier).load();
+    await _refreshAll();
   }
 
   /// What a long press on a placement offers: finish it, or take it off the day.
@@ -273,11 +295,26 @@ String _dayLabel(DateTime day) {
 String _timeLabel(DateTime at) =>
     '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}';
 
-class _Segments extends StatelessWidget {
-  final bool timeline;
-  final ValueChanged<bool> onChanged;
+/// 计划 / 时间线 / 统计, the design's three views of one day.
+enum _DayView { plan, timeline, statistics }
 
-  const _Segments({required this.timeline, required this.onChanged});
+class _Segments extends StatelessWidget {
+  final _DayView view;
+  final ValueChanged<_DayView> onChanged;
+
+  const _Segments({required this.view, required this.onChanged});
+
+  static const Map<_DayView, String> _labels = {
+    _DayView.plan: '计划',
+    _DayView.timeline: '时间线',
+    _DayView.statistics: '统计',
+  };
+
+  static const Map<_DayView, String> _keys = {
+    _DayView.plan: 'plan_view_list',
+    _DayView.timeline: 'plan_view_timeline',
+    _DayView.statistics: 'plan_view_stats',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -291,9 +328,13 @@ class _Segments extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _segment('计划', !timeline, () => onChanged(false), 'plan_view_list'),
-            _segment(
-                '时间线', timeline, () => onChanged(true), 'plan_view_timeline'),
+            for (final option in _DayView.values)
+              _segment(
+                _labels[option]!,
+                option == view,
+                () => onChanged(option),
+                _keys[option]!,
+              ),
           ],
         ),
       ),
