@@ -1,4 +1,5 @@
 import 'enums.dart';
+import 'focus_review.dart';
 
 /// Immutable record written once a session is completed and saved.
 /// This is the fact source for all statistics aggregation.
@@ -13,7 +14,15 @@ class FocusRecord {
   /// The task this focus was for, when it came from one. Null for a session
   /// started without a task, which stays a first-class way to focus.
   final String? taskId;
-  final String? mood; // emoji string, e.g. "😊"
+
+  /// A [FocusMood] id, or a legacy emoji from before that vocabulary existed.
+  final String? mood;
+
+  /// The chosen [FocusGain] ids, comma separated. Null when none were chosen.
+  final String? gains;
+
+  /// What the user wants to try next time.
+  final String? nextIntention;
 
   /// How the session that produced this record counted.
   ///
@@ -21,6 +30,16 @@ class FocusRecord {
   /// joining back to a session that may since have been pruned, and so the
   /// timeline and the analytics can tell a timed block from an open one.
   final FocusTimingMode timingMode;
+
+  /// The mood as the app knows it, or null.
+  ///
+  /// Null covers both "no mood was chosen" and "the stored value is from the old
+  /// emoji vocabulary and was not recognised", which the screen shows the same
+  /// way: nothing selected.
+  FocusMood? get moodValue => FocusMood.fromId(mood);
+
+  /// The gains chosen, ignoring anything unrecognised.
+  List<FocusGain> get gainValues => FocusReview.decodeGains(gains);
 
   final int durationSeconds; // actual elapsed, never planned
   final DateTime startAt;
@@ -37,6 +56,8 @@ class FocusRecord {
     this.taskName,
     this.taskId,
     this.mood,
+    this.gains,
+    this.nextIntention,
     this.timingMode = FocusTimingMode.countdown,
     required this.durationSeconds,
     required this.startAt,
@@ -54,6 +75,8 @@ class FocusRecord {
     String? taskName,
     String? taskId,
     String? mood,
+    String? gains,
+    String? nextIntention,
     FocusTimingMode? timingMode,
     int? durationSeconds,
     DateTime? startAt,
@@ -70,6 +93,8 @@ class FocusRecord {
       taskName: taskName ?? this.taskName,
       taskId: taskId ?? this.taskId,
       mood: mood ?? this.mood,
+      gains: gains ?? this.gains,
+      nextIntention: nextIntention ?? this.nextIntention,
       timingMode: timingMode ?? this.timingMode,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       startAt: startAt ?? this.startAt,

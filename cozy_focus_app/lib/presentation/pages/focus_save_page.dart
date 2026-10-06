@@ -2,19 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
+import '../../domain/models/focus_review.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/home_controller.dart';
 import '../companion/companion_avatar.dart';
 import '../theme/app_theme.dart';
 
-/// Screen 04A: Save Focus Record (04A 保存专注记录)
-/// Allows user to review and customize:
-/// - Task Name
-/// - Category (学习 / 工作 / 阅读 / 生活 / 其他)
-/// - Mood (emoji picker — stored as a structured field, NOT concatenated into note)
-/// - Notes / Reflections (up to 200 chars)
-/// On save: calls FocusSessionEngine.save() with taskName, categoryId, mood, note
-/// -> writes immutable FocusRecord -> settles RewardLedger -> routes to 04B.
+/// Screen 06: 专注复盘 — the few seconds after a session ends.
+///
+/// ## What it collects, and what it refuses to invent
+///
+/// The mood is a four-value picker with **no default selected**. The screen it
+/// replaced pre-selected the middle emoji, which recorded an answer the user
+/// never gave; 分心较多 / 一般 / 不错 / 心流 is a judgement, and a judgement with a
+/// default is a judgement the app made. Saving without choosing one stores null,
+/// which is the truth.
+///
+/// The gains are optional and multiple, because a session that produced nothing
+/// in particular is a normal session. 下次继续 is optional too.
+///
+/// The task name and category stay editable here: this is the last screen before
+/// the record is written, and it was the only place they could be corrected.
 class FocusSavePage extends ConsumerStatefulWidget {
   const FocusSavePage({super.key});
 
@@ -27,7 +35,11 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
   final TextEditingController _noteController = TextEditingController();
   String _selectedCategory = '学习';
   String _selectedCategoryId = 'study';
-  int _selectedMoodIndex = 2;
+
+  /// Nothing is chosen to begin with. See the note on this class.
+  FocusMood? _mood;
+  final Set<FocusGain> _gains = {};
+  final TextEditingController _nextController = TextEditingController();
   bool _isSaving = false;
 
   final List<Map<String, dynamic>> _categories = [
@@ -37,8 +49,6 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
     {'name': '生活', 'id': 'life', 'color': AppColors.catLife},
     {'name': '其他', 'id': 'other', 'color': AppColors.catOther},
   ];
-
-  final List<String> _moods = ['😆', '🙂', '😊', '😐', '🥺', '🥰'];
 
   @override
   void initState() {
@@ -58,6 +68,7 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
   void dispose() {
     _taskController.dispose();
     _noteController.dispose();
+    _nextController.dispose();
     super.dispose();
   }
 
@@ -79,20 +90,25 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
 
     try {
       final notifier = ref.read(focusSessionControllerProvider.notifier);
-      final mood = _moods[_selectedMoodIndex];
-      final noteText = _noteController.text.trim().isEmpty
-          ? null
-          : _noteController.text.trim();
+      String? trimmed(TextEditingController controller) {
+        final text = controller.text.trim();
+        return text.isEmpty ? null : text;
+      }
 
-      // All user-edited fields are passed as structured parameters.
-      // mood is stored as its own field, NOT concatenated into note.
+      // All user-edited fields are passed as structured parameters. Each is
+      // stored as its own column, never concatenated into the note.
       final saved = await notifier.saveSession(
         taskName: _taskController.text.trim().isEmpty
             ? '专注任务'
             : _taskController.text.trim(),
         categoryId: _selectedCategoryId,
-        mood: mood,
-        note: noteText,
+        // Null when the user did not choose, which is what the column means.
+        mood: _mood?.id,
+        note: trimmed(_noteController),
+        gains: FocusReview.encodeGains(
+          FocusGain.values.where(_gains.contains).toList(),
+        ),
+        nextIntention: trimmed(_nextController),
       );
 
       // Refresh home data so today focus reflects immediately
@@ -250,51 +266,73 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Mood Selector
-                    _buildSectionHeader('心情'),
+                    // 这次感觉怎么样? — four answers, none chosen to begin with.
+                    _buildSectionHeader('这次感觉怎么样？'),
                     const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: List.generate(_moods.length, (idx) {
-                          final isSelected = _selectedMoodIndex == idx;
-                          return InkWell(
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            onTap: () =>
-                                setState(() => _selectedMoodIndex = idx),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primaryLight
-                                    : Colors.transparent,
-                                shape: BoxShape.circle,
-                                border: isSelected
-                                    ? Border.all(
-                                        color: AppColors.primarySage, width: 2)
-                                    : null,
+                    Row(
+                      children: [
+                        for (final mood in FocusMood.values)
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                right: mood == FocusMood.values.last ? 0 : 8,
                               ),
-                              child: Text(
-                                _moods[idx],
-                                style: const TextStyle(fontSize: 26),
+                              child: Semantics(
+                                key: ValueKey('review_mood_${mood.id}'),
+                                button: true,
+                                selected: _mood == mood,
+                                label: mood.label,
+                                child: GestureDetector(
+                                  onTap: () => setState(
+                                    () => _mood = _mood == mood ? null : mood,
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: _mood == mood
+                                          ? AppColors.primaryLight
+                                          : AppColors.surface,
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.sm),
+                                      border: Border.all(
+                                        color: _mood == mood
+                                            ? AppColors.primarySage
+                                            : AppColors.border,
+                                        width: _mood == mood ? 1.5 : 1,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(mood.face,
+                                            style:
+                                                const TextStyle(fontSize: 22)),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          mood.label,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: _mood == mood
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                            color: _mood == mood
+                                                ? AppColors.primaryDark
+                                                : AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                          );
-                        }),
-                      ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 16),
 
-                    // Notes / Thoughts
-                    _buildSectionHeader('备注'),
+                    // 这次做了什么？(可选)
+                    _buildSectionHeader('这次做了什么？（可选）'),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -307,10 +345,10 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                         children: [
                           TextField(
                             controller: _noteController,
-                            maxLines: 3,
-                            maxLength: 200,
+                            maxLines: 2,
+                            maxLength: FocusReview.maxWhatLength,
                             decoration: const InputDecoration(
-                              hintText: '记录这一刻的心情、感悟或收获...',
+                              hintText: '例如：写产品方案、阅读资料、整理笔记…',
                               border: InputBorder.none,
                               counterText: '',
                             ),
@@ -319,7 +357,96 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                           Align(
                             alignment: Alignment.bottomRight,
                             child: Text(
-                              '${_noteController.text.length}/200',
+                              '${_noteController.text.characters.length}'
+                              '/${FocusReview.maxWhatLength}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 本次收获 (可选)
+                    _buildSectionHeader('本次收获（可选）'),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final gain in FocusGain.values)
+                          Semantics(
+                            key: ValueKey('review_gain_${gain.id}'),
+                            button: true,
+                            selected: _gains.contains(gain),
+                            label: gain.label,
+                            child: GestureDetector(
+                              onTap: () => setState(() {
+                                if (!_gains.remove(gain)) _gains.add(gain);
+                              }),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 7),
+                                decoration: BoxDecoration(
+                                  color: _gains.contains(gain)
+                                      ? AppColors.primaryLight
+                                      : AppColors.surface,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.pill),
+                                  border: Border.all(
+                                    color: _gains.contains(gain)
+                                        ? AppColors.primarySage
+                                        : AppColors.border,
+                                  ),
+                                ),
+                                child: Text(
+                                  gain.label,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: _gains.contains(gain)
+                                        ? AppColors.primaryDark
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 下次继续 (可选)
+                    _buildSectionHeader('下次继续（可选）'),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _nextController,
+                            maxLines: 1,
+                            maxLength: FocusReview.maxNextIntentionLength,
+                            decoration: const InputDecoration(
+                              hintText: '下次我想试试……',
+                              border: InputBorder.none,
+                              counterText: '',
+                            ),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Text(
+                              '${_nextController.text.characters.length}'
+                              '/${FocusReview.maxNextIntentionLength}',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textTertiary,

@@ -252,12 +252,16 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
     String? taskName,
     String? categoryId,
     String? mood,
+    String? gains,
+    String? nextIntention,
   }) async {
     final result = await _engine.save(
       note: note,
       taskName: taskName ?? state.taskName,
       categoryId: categoryId ?? state.categoryId,
       mood: mood,
+      gains: gains,
+      nextIntention: nextIntention,
     );
     _syncFromEngine();
     return result;

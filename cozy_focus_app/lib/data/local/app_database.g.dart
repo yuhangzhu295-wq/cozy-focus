@@ -712,6 +712,17 @@ class $FocusRecordsTable extends FocusRecords
   late final GeneratedColumn<String> mood = GeneratedColumn<String>(
       'mood', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _gainsMeta = const VerificationMeta('gains');
+  @override
+  late final GeneratedColumn<String> gains = GeneratedColumn<String>(
+      'gains', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _nextIntentionMeta =
+      const VerificationMeta('nextIntention');
+  @override
+  late final GeneratedColumn<String> nextIntention = GeneratedColumn<String>(
+      'next_intention', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _timingModeMeta =
       const VerificationMeta('timingMode');
   @override
@@ -767,6 +778,8 @@ class $FocusRecordsTable extends FocusRecords
         taskName,
         taskId,
         mood,
+        gains,
+        nextIntention,
         timingMode,
         durationSeconds,
         startAt,
@@ -819,6 +832,16 @@ class $FocusRecordsTable extends FocusRecords
     if (data.containsKey('mood')) {
       context.handle(
           _moodMeta, mood.isAcceptableOrUnknown(data['mood']!, _moodMeta));
+    }
+    if (data.containsKey('gains')) {
+      context.handle(
+          _gainsMeta, gains.isAcceptableOrUnknown(data['gains']!, _gainsMeta));
+    }
+    if (data.containsKey('next_intention')) {
+      context.handle(
+          _nextIntentionMeta,
+          nextIntention.isAcceptableOrUnknown(
+              data['next_intention']!, _nextIntentionMeta));
     }
     if (data.containsKey('timing_mode')) {
       context.handle(
@@ -891,6 +914,10 @@ class $FocusRecordsTable extends FocusRecords
           .read(DriftSqlType.string, data['${effectivePrefix}task_id']),
       mood: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}mood']),
+      gains: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}gains']),
+      nextIntention: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}next_intention']),
       timingMode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}timing_mode'])!,
       durationSeconds: attachedDatabase.typeMapping
@@ -928,7 +955,19 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
   /// must not delete the history. A record whose task is gone keeps its
   /// `taskName` and simply stops counting towards a task's total.
   final String? taskId;
+
+  /// A [FocusMood] id, or a legacy emoji from before that vocabulary existed.
+  ///
+  /// Free text rather than an enum column: the migration reads the old emoji and
+  /// leaves anything it does not recognise alone, and a CHECK constraint would
+  /// turn a legacy row into an unreadable one.
   final String? mood;
+
+  /// The chosen [FocusGain] ids, comma separated. Null when none were chosen.
+  final String? gains;
+
+  /// What the user wants to try next time.
+  final String? nextIntention;
 
   /// "countdown" | "countUp" | "deepFocus" — how the session that wrote this
   /// record counted. See the note on [FocusSessions.timingMode].
@@ -947,6 +986,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
       this.taskName,
       this.taskId,
       this.mood,
+      this.gains,
+      this.nextIntention,
       required this.timingMode,
       required this.durationSeconds,
       required this.startAt,
@@ -971,6 +1012,12 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
     }
     if (!nullToAbsent || mood != null) {
       map['mood'] = Variable<String>(mood);
+    }
+    if (!nullToAbsent || gains != null) {
+      map['gains'] = Variable<String>(gains);
+    }
+    if (!nullToAbsent || nextIntention != null) {
+      map['next_intention'] = Variable<String>(nextIntention);
     }
     map['timing_mode'] = Variable<String>(timingMode);
     map['duration_seconds'] = Variable<int>(durationSeconds);
@@ -998,6 +1045,11 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
       taskId:
           taskId == null && nullToAbsent ? const Value.absent() : Value(taskId),
       mood: mood == null && nullToAbsent ? const Value.absent() : Value(mood),
+      gains:
+          gains == null && nullToAbsent ? const Value.absent() : Value(gains),
+      nextIntention: nextIntention == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextIntention),
       timingMode: Value(timingMode),
       durationSeconds: Value(durationSeconds),
       startAt: Value(startAt),
@@ -1019,6 +1071,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
       taskName: serializer.fromJson<String?>(json['taskName']),
       taskId: serializer.fromJson<String?>(json['taskId']),
       mood: serializer.fromJson<String?>(json['mood']),
+      gains: serializer.fromJson<String?>(json['gains']),
+      nextIntention: serializer.fromJson<String?>(json['nextIntention']),
       timingMode: serializer.fromJson<String>(json['timingMode']),
       durationSeconds: serializer.fromJson<int>(json['durationSeconds']),
       startAt: serializer.fromJson<DateTime>(json['startAt']),
@@ -1039,6 +1093,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
       'taskName': serializer.toJson<String?>(taskName),
       'taskId': serializer.toJson<String?>(taskId),
       'mood': serializer.toJson<String?>(mood),
+      'gains': serializer.toJson<String?>(gains),
+      'nextIntention': serializer.toJson<String?>(nextIntention),
       'timingMode': serializer.toJson<String>(timingMode),
       'durationSeconds': serializer.toJson<int>(durationSeconds),
       'startAt': serializer.toJson<DateTime>(startAt),
@@ -1057,6 +1113,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
           Value<String?> taskName = const Value.absent(),
           Value<String?> taskId = const Value.absent(),
           Value<String?> mood = const Value.absent(),
+          Value<String?> gains = const Value.absent(),
+          Value<String?> nextIntention = const Value.absent(),
           String? timingMode,
           int? durationSeconds,
           DateTime? startAt,
@@ -1072,6 +1130,9 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
         taskName: taskName.present ? taskName.value : this.taskName,
         taskId: taskId.present ? taskId.value : this.taskId,
         mood: mood.present ? mood.value : this.mood,
+        gains: gains.present ? gains.value : this.gains,
+        nextIntention:
+            nextIntention.present ? nextIntention.value : this.nextIntention,
         timingMode: timingMode ?? this.timingMode,
         durationSeconds: durationSeconds ?? this.durationSeconds,
         startAt: startAt ?? this.startAt,
@@ -1090,6 +1151,10 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
       taskName: data.taskName.present ? data.taskName.value : this.taskName,
       taskId: data.taskId.present ? data.taskId.value : this.taskId,
       mood: data.mood.present ? data.mood.value : this.mood,
+      gains: data.gains.present ? data.gains.value : this.gains,
+      nextIntention: data.nextIntention.present
+          ? data.nextIntention.value
+          : this.nextIntention,
       timingMode:
           data.timingMode.present ? data.timingMode.value : this.timingMode,
       durationSeconds: data.durationSeconds.present
@@ -1116,6 +1181,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
           ..write('taskName: $taskName, ')
           ..write('taskId: $taskId, ')
           ..write('mood: $mood, ')
+          ..write('gains: $gains, ')
+          ..write('nextIntention: $nextIntention, ')
           ..write('timingMode: $timingMode, ')
           ..write('durationSeconds: $durationSeconds, ')
           ..write('startAt: $startAt, ')
@@ -1136,6 +1203,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
       taskName,
       taskId,
       mood,
+      gains,
+      nextIntention,
       timingMode,
       durationSeconds,
       startAt,
@@ -1154,6 +1223,8 @@ class FocusRecord extends DataClass implements Insertable<FocusRecord> {
           other.taskName == this.taskName &&
           other.taskId == this.taskId &&
           other.mood == this.mood &&
+          other.gains == this.gains &&
+          other.nextIntention == this.nextIntention &&
           other.timingMode == this.timingMode &&
           other.durationSeconds == this.durationSeconds &&
           other.startAt == this.startAt &&
@@ -1171,6 +1242,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
   final Value<String?> taskName;
   final Value<String?> taskId;
   final Value<String?> mood;
+  final Value<String?> gains;
+  final Value<String?> nextIntention;
   final Value<String> timingMode;
   final Value<int> durationSeconds;
   final Value<DateTime> startAt;
@@ -1187,6 +1260,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
     this.taskName = const Value.absent(),
     this.taskId = const Value.absent(),
     this.mood = const Value.absent(),
+    this.gains = const Value.absent(),
+    this.nextIntention = const Value.absent(),
     this.timingMode = const Value.absent(),
     this.durationSeconds = const Value.absent(),
     this.startAt = const Value.absent(),
@@ -1204,6 +1279,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
     this.taskName = const Value.absent(),
     this.taskId = const Value.absent(),
     this.mood = const Value.absent(),
+    this.gains = const Value.absent(),
+    this.nextIntention = const Value.absent(),
     this.timingMode = const Value.absent(),
     required int durationSeconds,
     required DateTime startAt,
@@ -1227,6 +1304,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
     Expression<String>? taskName,
     Expression<String>? taskId,
     Expression<String>? mood,
+    Expression<String>? gains,
+    Expression<String>? nextIntention,
     Expression<String>? timingMode,
     Expression<int>? durationSeconds,
     Expression<DateTime>? startAt,
@@ -1244,6 +1323,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
       if (taskName != null) 'task_name': taskName,
       if (taskId != null) 'task_id': taskId,
       if (mood != null) 'mood': mood,
+      if (gains != null) 'gains': gains,
+      if (nextIntention != null) 'next_intention': nextIntention,
       if (timingMode != null) 'timing_mode': timingMode,
       if (durationSeconds != null) 'duration_seconds': durationSeconds,
       if (startAt != null) 'start_at': startAt,
@@ -1264,6 +1345,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
       Value<String?>? taskName,
       Value<String?>? taskId,
       Value<String?>? mood,
+      Value<String?>? gains,
+      Value<String?>? nextIntention,
       Value<String>? timingMode,
       Value<int>? durationSeconds,
       Value<DateTime>? startAt,
@@ -1280,6 +1363,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
       taskName: taskName ?? this.taskName,
       taskId: taskId ?? this.taskId,
       mood: mood ?? this.mood,
+      gains: gains ?? this.gains,
+      nextIntention: nextIntention ?? this.nextIntention,
       timingMode: timingMode ?? this.timingMode,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       startAt: startAt ?? this.startAt,
@@ -1314,6 +1399,12 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
     }
     if (mood.present) {
       map['mood'] = Variable<String>(mood.value);
+    }
+    if (gains.present) {
+      map['gains'] = Variable<String>(gains.value);
+    }
+    if (nextIntention.present) {
+      map['next_intention'] = Variable<String>(nextIntention.value);
     }
     if (timingMode.present) {
       map['timing_mode'] = Variable<String>(timingMode.value);
@@ -1352,6 +1443,8 @@ class FocusRecordsCompanion extends UpdateCompanion<FocusRecord> {
           ..write('taskName: $taskName, ')
           ..write('taskId: $taskId, ')
           ..write('mood: $mood, ')
+          ..write('gains: $gains, ')
+          ..write('nextIntention: $nextIntention, ')
           ..write('timingMode: $timingMode, ')
           ..write('durationSeconds: $durationSeconds, ')
           ..write('startAt: $startAt, ')
@@ -8168,6 +8261,8 @@ typedef $$FocusRecordsTableCreateCompanionBuilder = FocusRecordsCompanion
   Value<String?> taskName,
   Value<String?> taskId,
   Value<String?> mood,
+  Value<String?> gains,
+  Value<String?> nextIntention,
   Value<String> timingMode,
   required int durationSeconds,
   required DateTime startAt,
@@ -8186,6 +8281,8 @@ typedef $$FocusRecordsTableUpdateCompanionBuilder = FocusRecordsCompanion
   Value<String?> taskName,
   Value<String?> taskId,
   Value<String?> mood,
+  Value<String?> gains,
+  Value<String?> nextIntention,
   Value<String> timingMode,
   Value<int> durationSeconds,
   Value<DateTime> startAt,
@@ -8225,6 +8322,12 @@ class $$FocusRecordsTableFilterComposer
 
   ColumnFilters<String> get mood => $composableBuilder(
       column: $table.mood, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get gains => $composableBuilder(
+      column: $table.gains, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get nextIntention => $composableBuilder(
+      column: $table.nextIntention, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get timingMode => $composableBuilder(
       column: $table.timingMode, builder: (column) => ColumnFilters(column));
@@ -8280,6 +8383,13 @@ class $$FocusRecordsTableOrderingComposer
   ColumnOrderings<String> get mood => $composableBuilder(
       column: $table.mood, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get gains => $composableBuilder(
+      column: $table.gains, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get nextIntention => $composableBuilder(
+      column: $table.nextIntention,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get timingMode => $composableBuilder(
       column: $table.timingMode, builder: (column) => ColumnOrderings(column));
 
@@ -8333,6 +8443,12 @@ class $$FocusRecordsTableAnnotationComposer
 
   GeneratedColumn<String> get mood =>
       $composableBuilder(column: $table.mood, builder: (column) => column);
+
+  GeneratedColumn<String> get gains =>
+      $composableBuilder(column: $table.gains, builder: (column) => column);
+
+  GeneratedColumn<String> get nextIntention => $composableBuilder(
+      column: $table.nextIntention, builder: (column) => column);
 
   GeneratedColumn<String> get timingMode => $composableBuilder(
       column: $table.timingMode, builder: (column) => column);
@@ -8389,6 +8505,8 @@ class $$FocusRecordsTableTableManager extends RootTableManager<
             Value<String?> taskName = const Value.absent(),
             Value<String?> taskId = const Value.absent(),
             Value<String?> mood = const Value.absent(),
+            Value<String?> gains = const Value.absent(),
+            Value<String?> nextIntention = const Value.absent(),
             Value<String> timingMode = const Value.absent(),
             Value<int> durationSeconds = const Value.absent(),
             Value<DateTime> startAt = const Value.absent(),
@@ -8406,6 +8524,8 @@ class $$FocusRecordsTableTableManager extends RootTableManager<
             taskName: taskName,
             taskId: taskId,
             mood: mood,
+            gains: gains,
+            nextIntention: nextIntention,
             timingMode: timingMode,
             durationSeconds: durationSeconds,
             startAt: startAt,
@@ -8423,6 +8543,8 @@ class $$FocusRecordsTableTableManager extends RootTableManager<
             Value<String?> taskName = const Value.absent(),
             Value<String?> taskId = const Value.absent(),
             Value<String?> mood = const Value.absent(),
+            Value<String?> gains = const Value.absent(),
+            Value<String?> nextIntention = const Value.absent(),
             Value<String> timingMode = const Value.absent(),
             required int durationSeconds,
             required DateTime startAt,
@@ -8440,6 +8562,8 @@ class $$FocusRecordsTableTableManager extends RootTableManager<
             taskName: taskName,
             taskId: taskId,
             mood: mood,
+            gains: gains,
+            nextIntention: nextIntention,
             timingMode: timingMode,
             durationSeconds: durationSeconds,
             startAt: startAt,

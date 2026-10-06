@@ -477,15 +477,21 @@ void main() {
       expect(record.taskName, '写作练习');
     });
 
-    testWidgets('Screen 04A: FocusSavePage allows mood selection & save',
+    testWidgets('Screen 06: the review screen offers every part of the review',
         (tester) async {
       await tester.pumpWidget(createTestApp(container, const FocusSavePage()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('保存本次记录'), findsOneWidget);
-      expect(find.text('心情'), findsOneWidget);
-      expect(find.text('记录这一刻的心情、感悟或收获...'), findsOneWidget);
+      // The four moods, the gains, and the two optional fields. P5's own tests
+      // cover what saving them writes; this only pins that the screen is here.
+      expect(find.text('这次感觉怎么样？'), findsOneWidget);
+      expect(find.text('这次做了什么？（可选）'), findsOneWidget);
+      expect(find.text('本次收获（可选）'), findsOneWidget);
+      expect(find.text('下次继续（可选）'), findsOneWidget);
+      for (final label in const ['分心较多', '一般', '不错', '心流']) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
       expect(find.text('保存记录'), findsOneWidget);
     });
 

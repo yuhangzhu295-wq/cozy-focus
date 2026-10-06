@@ -14,7 +14,19 @@ class FocusRecords extends Table {
   /// must not delete the history. A record whose task is gone keeps its
   /// `taskName` and simply stops counting towards a task's total.
   TextColumn get taskId => text().nullable()();
+
+  /// A [FocusMood] id, or a legacy emoji from before that vocabulary existed.
+  ///
+  /// Free text rather than an enum column: the migration reads the old emoji and
+  /// leaves anything it does not recognise alone, and a CHECK constraint would
+  /// turn a legacy row into an unreadable one.
   TextColumn get mood => text().nullable()();
+
+  /// The chosen [FocusGain] ids, comma separated. Null when none were chosen.
+  TextColumn get gains => text().nullable()();
+
+  /// What the user wants to try next time.
+  TextColumn get nextIntention => text().nullable()();
 
   /// "countdown" | "countUp" | "deepFocus" — how the session that wrote this
   /// record counted. See the note on [FocusSessions.timingMode].

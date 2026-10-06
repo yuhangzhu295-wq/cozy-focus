@@ -221,6 +221,8 @@ class FocusSessionEngine {
     String? taskName,
     String? categoryId,
     String? mood,
+    String? gains,
+    String? nextIntention,
   }) async {
     final session = _requireSession();
     _assertStatus(session, FocusSessionStatus.finishing);
@@ -231,6 +233,8 @@ class FocusSessionEngine {
       taskName: taskName,
       categoryId: categoryId,
       mood: mood,
+      gains: gains,
+      nextIntention: nextIntention,
     );
     _currentSession = null;
     return completed.copyWith(status: FocusSessionStatus.saved);
@@ -278,6 +282,8 @@ class FocusSessionEngine {
     String? taskName,
     String? categoryId,
     String? mood,
+    String? gains,
+    String? nextIntention,
   }) async {
     final endAt = session.endAt;
     if (endAt == null) {
@@ -304,6 +310,8 @@ class FocusSessionEngine {
           // is no path that writes a record against the wrong task.
           taskId: session.taskId,
           mood: mood,
+          gains: gains,
+          nextIntention: nextIntention,
           // From the session, like taskId: how the timer counted is decided when
           // the session runs and cannot be edited on the save page.
           timingMode: session.timingMode,

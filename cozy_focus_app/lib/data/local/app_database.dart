@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
+import '../../domain/models/focus_review.dart';
 import 'tables/focus_sessions_table.dart';
 import 'tables/focus_records_table.dart';
 import 'tables/focus_categories_table.dart';
@@ -65,7 +66,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -170,6 +171,25 @@ class AppDatabase extends _$AppDatabase {
         // phase simply has no captured thoughts yet.
         if (from < 8) {
           await m.createTable(distractionNotes);
+        }
+        // v8 -> v9: the review's two extra answers, and the mood vocabulary.
+        if (from < 9) {
+          await m.addColumn(focusRecords, focusRecords.gains);
+          await m.addColumn(focusRecords, focusRecords.nextIntention);
+          // The save screen used to offer six emoji and store the character. The
+          // four named moods replace them, so the old values are translated
+          // rather than left as a second vocabulary the statistics would count
+          // separately. The mapping lives on FocusMood, where it can be read as
+          // the decision it is, and anything it does not cover is left untouched:
+          // guessing at a mood the user never picked would be worse than leaving
+          // a value the review screen shows as nothing chosen.
+          for (final emoji in FocusMood.legacyEmoji) {
+            final mood = FocusMood.fromLegacyEmoji(emoji);
+            if (mood == null) continue;
+            await customStatement(
+              "UPDATE focus_records SET mood = '${mood.id}' WHERE mood = '$emoji'",
+            );
+          }
         }
       },
       beforeOpen: (details) async {
