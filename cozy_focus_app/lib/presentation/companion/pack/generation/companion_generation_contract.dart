@@ -151,7 +151,13 @@ class CompanionGenerationResult {
     this.detail,
     this.attempts = 0,
     this.costUsd,
-  });
+  }) : assert(
+          status == CompanionGenerationStatus.generated || packBytes == null,
+          'only a generated result may carry a pack. A caller that reads the '
+          'bytes without checking the status would otherwise install something '
+          'from a refusal, which is the fake success this contract exists to '
+          'make impossible.',
+        );
 
   bool get ok => status == CompanionGenerationStatus.generated;
 

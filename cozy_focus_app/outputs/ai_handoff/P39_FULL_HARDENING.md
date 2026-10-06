@@ -27,10 +27,13 @@ The list is worth recording because "we ran the hardening phase" is not evidence
   preserves every row" and "an already-current database is left alone".
 - **leaks and performance** — `companion_lifecycle_leak_test` and
   `performance_lifecycle_budget_test`.
-- **reduced motion** — honoured for a custom companion *by construction*: it is
-  the same director and the same context, with no per-companion branch, which
-  `custom_companion_first_class_test` asserts. No new test could add anything a
-  branch-free design does not already give.
+- **reduced motion** — honoured for a custom companion *by construction*: the
+  same director receives the same context, and the first-class guard asserts there
+  is no per-companion branch. **Stated precisely:** that is an argument from the
+  design, not a test of reduced-motion playback. The guard inspects provider names
+  and source tokens; nothing asserts that a custom companion's animation actually
+  slows under the platform setting. An earlier version of this document claimed
+  the guard established it, which it does not.
 - **both golden flows** — the built-in one in `golden_flow_test`, the local custom
   pet one walked on the device in P36.
 
@@ -49,6 +52,19 @@ named in the refusal. 64 is generous rather than tight — the shipped packs use
 between two and six frames per action, and at 8fps that is an eight-second
 animation. One test asserts over-the-bound is refused; another asserts
 at-the-bound is accepted, so the cap cannot refuse the thing it exists to allow.
+
+**That bound was incomplete, and the P40 gate caught it.** It bounds the frame
+*count*, and the memory a pack costs is *canvas pixels × frames* — a pack could
+declare a 512×512 canvas and ship 8000×8000 frames, which the manifest check
+cannot see because it reads the declaration rather than the images. So the
+importer now reads each referenced PNG's IHDR dimensions and refuses a frame
+larger than the declared canvas. That is a header read rather than a decode: the
+width and height are four bytes each at a fixed offset. Two tests, one over the
+canvas and one at it.
+
+What is still not bounded: nothing verifies that a frame *decodes*, only that it
+declares a sane size. A well-formed header over corrupt image data remains a
+render-time failure, which the player turns into a blank rather than a crash.
 
 ### A finding I had to withdraw
 

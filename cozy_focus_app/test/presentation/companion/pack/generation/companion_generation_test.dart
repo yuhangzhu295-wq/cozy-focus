@@ -113,6 +113,35 @@ void main() {
       expect(container.read(companionGenerationAvailableProvider), isFalse);
     });
 
+    test('a result cannot carry a pack unless it was generated', () {
+      // The invariant P37's document claimed. An assertion rather than only a
+      // doc comment, because a caller that reads the bytes without checking the
+      // status is exactly the mistake the contract exists to prevent - and a
+      // comment does not stop it.
+      expect(
+        () => CompanionGenerationResult(
+          status: CompanionGenerationStatus.failed,
+          packBytes: Uint8List.fromList([1, 2, 3]),
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+      expect(
+        () => CompanionGenerationResult(
+          status: CompanionGenerationStatus.blockedExternal,
+          packBytes: Uint8List.fromList([1, 2, 3]),
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+      // And a generated result may, which is the other half.
+      expect(
+        CompanionGenerationResult(
+          status: CompanionGenerationStatus.generated,
+          packBytes: Uint8List.fromList([1, 2, 3]),
+        ).ok,
+        isTrue,
+      );
+    });
+
     test('a request that is refused never reaches the provider', () async {
       final probe = _CountingProvider();
       final result = await CompanionGenerationRunner(provider: probe)

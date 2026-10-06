@@ -225,6 +225,14 @@ abstract final class CompanionPackImporter {
       }
     }
 
+    // The canvas the frames are supposed to sit on, read once and used both to
+    // describe the pack and to bound what its frames may cost.
+    final declaredWidth =
+        canvas is Map && canvas['width'] is int ? canvas['width'] as int : null;
+    final declaredHeight = canvas is Map && canvas['height'] is int
+        ? canvas['height'] as int
+        : null;
+
     // Names first, then contents. The validator deliberately never sees bytes -
     // it judges paths and structure - so the one thing it cannot check is whether
     // a file called `idle_000.png` is a PNG. That gap matters: the pack format
@@ -233,7 +241,12 @@ abstract final class CompanionPackImporter {
     // time, which is the worst place to find out.
     final validation = PackValidationResult([
       ...nameValidation.violations,
-      ..._frameContentViolations(read, frames),
+      ..._frameContentViolations(
+        read,
+        frames,
+        canvasWidth: declaredWidth,
+        canvasHeight: declaredHeight,
+      ),
     ]);
 
     return CompanionPackPreview(
@@ -248,12 +261,8 @@ abstract final class CompanionPackImporter {
           : null,
       declaredSpecies:
           manifest['species'] is String ? manifest['species'] as String : null,
-      canvasWidth: canvas is Map && canvas['width'] is int
-          ? canvas['width'] as int
-          : null,
-      canvasHeight: canvas is Map && canvas['height'] is int
-          ? canvas['height'] as int
-          : null,
+      canvasWidth: declaredWidth,
+      canvasHeight: declaredHeight,
       actionIds: actionIds,
       frameCount: frames.length,
       idleFrame: _firstIdleFrame(read, actions),
@@ -412,15 +421,26 @@ abstract final class CompanionPackImporter {
     0x0A
   ];
 
-  /// Frames whose bytes are not a PNG.
+  /// Frames whose bytes are not a PNG, or whose pixels do not fit the canvas.
   ///
   /// Only frames the manifest actually references are checked: an unreferenced
   /// file in the archive is dead weight the pack never plays, and the policy
   /// already restricts what may travel with a pack.
+  ///
+  /// The dimensions matter as much as the signature. The player precaches the
+  /// active sequence in full, so what a pack costs in memory is *canvas pixels
+  /// times frames*, and a frame count bound alone does not bound that: a pack may
+  /// declare a 512x512 canvas and ship 8000x8000 frames, which the manifest check
+  /// would never see because it reads the declaration, not the images. Reading
+  /// the PNG header is cheap and needs no decode — the width and height are four
+  /// bytes each at a fixed offset — and it turns "frames are bounded" into a
+  /// statement about memory rather than about a list length.
   static List<PackViolation> _frameContentViolations(
     CompanionPackReadResult read,
-    Set<String> referencedFrames,
-  ) {
+    Set<String> referencedFrames, {
+    int? canvasWidth,
+    int? canvasHeight,
+  }) {
     final violations = <PackViolation>[];
     for (final file in read.files) {
       if (!referencedFrames.contains(file.name)) continue;
@@ -433,8 +453,54 @@ abstract final class CompanionPackImporter {
           'frame_not_a_png',
           '"${file.name}" is used as a frame but its bytes are not a PNG',
         ));
+        continue;
+      }
+
+      final size = _pngSize(bytes);
+      if (size == null) {
+        violations.add(PackViolation(
+          'frame_header_unreadable',
+          '"${file.name}" has a PNG signature but no readable header',
+        ));
+        continue;
+      }
+      if (canvasWidth != null &&
+          canvasHeight != null &&
+          (size.width > canvasWidth || size.height > canvasHeight)) {
+        violations.add(PackViolation(
+          'frame_larger_than_canvas',
+          '"${file.name}" is ${size.width}x${size.height}, larger than the '
+              'declared ${canvasWidth}x$canvasHeight canvas; the player holds a '
+              'whole sequence in memory, so a frame bigger than the canvas it '
+              'is drawn on is a memory cost the pack does not declare',
+        ));
       }
     }
     return violations;
+  }
+
+  /// The pixel size from a PNG's IHDR, or null when the header is not there.
+  ///
+  /// The layout is fixed: eight signature bytes, then the IHDR chunk's four-byte
+  /// length, four-byte type, then width and height as big-endian 32-bit integers.
+  /// So the two numbers sit at offsets 16 and 20 and reading them needs no codec.
+  static ({int width, int height})? _pngSize(List<int> bytes) {
+    if (bytes.length < 24) return null;
+    // "IHDR" must be where the format says it is, or these are not dimensions.
+    if (bytes[12] != 0x49 ||
+        bytes[13] != 0x48 ||
+        bytes[14] != 0x44 ||
+        bytes[15] != 0x52) {
+      return null;
+    }
+    int read32(int at) =>
+        (bytes[at] << 24) |
+        (bytes[at + 1] << 16) |
+        (bytes[at + 2] << 8) |
+        bytes[at + 3];
+    final width = read32(16);
+    final height = read32(20);
+    if (width <= 0 || height <= 0) return null;
+    return (width: width, height: height);
   }
 }

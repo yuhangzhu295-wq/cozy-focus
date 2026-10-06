@@ -52,6 +52,25 @@ void main() {
     0x42, 0x60, 0x82,
   ]);
 
+  /// The same 1x1 PNG with its IHDR dimensions rewritten.
+  ///
+  /// The check reads the header rather than decoding, so this is enough to stand
+  /// in for a frame that really is that big: the question is what the pack
+  /// *declares* its frames to be, and the header is where it says so.
+  Uint8List pngDeclaringSize(int width, int height) {
+    final bytes = Uint8List.fromList(png);
+    void write32(int at, int value) {
+      bytes[at] = (value >> 24) & 0xFF;
+      bytes[at + 1] = (value >> 16) & 0xFF;
+      bytes[at + 2] = (value >> 8) & 0xFF;
+      bytes[at + 3] = value & 0xFF;
+    }
+
+    write32(16, width);
+    write32(20, height);
+    return bytes;
+  }
+
   /// A pack manifest that passes strict validation.
   Map<String, dynamic> manifestFor(
     String id, {
@@ -251,6 +270,48 @@ void main() {
 
       expect(preview.ok, isFalse);
       expect(preview.validation.codes, contains('no_actions'));
+    });
+
+    test('refuses a frame larger than the canvas it is drawn on', () {
+      // The memory bound that a frame *count* does not give. The player precaches
+      // the active sequence in full, so what a pack costs is canvas pixels times
+      // frames - and a pack may declare a 512x512 canvas while shipping frames
+      // far larger, which the manifest check cannot see because it reads the
+      // declaration rather than the images.
+      final archive = Archive();
+      archive.addFile(ArchiveFile.typedData(
+        'manifest.json',
+        utf8.encode(jsonEncode(manifestFor('mimi'))),
+      ));
+      archive.addFile(ArchiveFile.typedData('idle_000.png', png));
+      archive.addFile(
+          ArchiveFile.typedData('idle_001.png', pngDeclaringSize(8000, 8000)));
+
+      final preview = CompanionPackImporter.inspect(
+        Uint8List.fromList(ZipEncoder().encode(archive)),
+      );
+
+      expect(preview.ok, isFalse);
+      expect(preview.validation.codes, contains('frame_larger_than_canvas'));
+    });
+
+    test('accepts a frame at the declared canvas size', () {
+      // The guard against a bound that refuses the thing it exists to allow.
+      final archive = Archive();
+      archive.addFile(ArchiveFile.typedData(
+        'manifest.json',
+        utf8.encode(jsonEncode(manifestFor('mimi'))),
+      ));
+      archive.addFile(ArchiveFile.typedData('idle_000.png', png));
+      archive.addFile(
+          ArchiveFile.typedData('idle_001.png', pngDeclaringSize(512, 512)));
+
+      final preview = CompanionPackImporter.inspect(
+        Uint8List.fromList(ZipEncoder().encode(archive)),
+      );
+
+      expect(preview.validation.codes,
+          isNot(contains('frame_larger_than_canvas')));
     });
 
     test('refuses a single-frame action, because a still is not an animation',

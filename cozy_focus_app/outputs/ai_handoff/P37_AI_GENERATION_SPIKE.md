@@ -40,6 +40,12 @@ nothing to install.
 without calling the provider at all: there is nothing to attempt, and a failure
 would misdescribe a missing capability as a broken one.
 
+**Enforced, not merely documented.** The P40 gate pointed out that the general
+constructor permitted any status together with `packBytes`, so the invariant held
+only for the two named constructors. It is now an assertion on the constructor,
+with a test that a failed or blocked result cannot carry a pack and a generated
+one can.
+
 **Nothing in this phase fabricates a generation.** The deterministic harness that
 builds a real `.cozy_pet` lives in the test file, named as a harness, and cannot be
 reached from the app. Wiring it in would make a companion appear and convince

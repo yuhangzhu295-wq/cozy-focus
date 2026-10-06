@@ -2,9 +2,9 @@
   "program": "RESUME_P32_THROUGH_P40",
   "project": "COZY_FOCUS",
   "branch": "recovery/v4.2.1-rebuild",
-  "updated_at_slice": "P39 complete and P38 classified BLOCKED_EXTERNAL with its reasoning written down",
+  "updated_at_slice": "P40 gate run by the final-gate reviewer; the memory gap it found is fixed and the overstated claims are corrected",
   "phase": "P40",
-  "slice": "P39 COMPLETE, P38 = BLOCKED_EXTERNAL. Next: P40, which needs the owner.",
+  "slice": "P40 gate RUN. READY_FOR_STORE = NO. Feature work complete; two blockers need the owner and one is now fixed.",
   "start_sha": "0a116e2",
   "latest_sha": "45b1398",
   "remote_sha": "45b1398",
@@ -22,10 +22,11 @@
     "P36_local_custom_pet_golden_flow": "PASS (device-walked, offline)",
     "P37_ai_generation_spike": "COMPLETE (REAL_PROVIDER_GENERATION = BLOCKED_EXTERNAL)",
     "P38_optional_cloud_backend": "BLOCKED_EXTERNAL (provider-neutral architecture delivered in P37)",
-    "P39_full_hardening": "COMPLETE"
+    "P39_full_hardening": "COMPLETE",
+    "P40_release_candidate": "GATE RUN, READY_FOR_STORE = NO (2 owner blockers + 1 gap, now fixed)"
   },
   "test_counts": {
-    "full_suite": "1510/1510",
+    "full_suite": "1513/1513",
     "pack_suite": "173",
     "format": "PASS (325 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
@@ -33,10 +34,10 @@
     "pack_geometry_audit": "PASS (dog verified; cat/rabbit have no contract)",
     "avatar_install_negative_proof": "PASS (late final fails both regression tests)",
     "debug_apk": "PASS (P34 source built and walked)",
-    "release_apk": "PASS (30.1 MB)",
+    "release_apk": "BUILDS (30.1 MB) but is DEBUG-SIGNED - not a store-signing pass",
     "builder_negative_proofs": "PASS (12 refusals)",
     "builder_consumption": "PASS (10 tests; real builder -> real importer)",
-    "release_aab": "PASS (48.6 MB)",
+    "release_aab": "BUILDS (48.6 MB) but is DEBUG-SIGNED; artifact inspection clean",
     "shipped_asset_integrity": "PASS (3 packs, 147 frames, 0 missing, 0 unreferenced, all contracted)"
   },
   "p32_device_flow": {
@@ -79,7 +80,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P40: the release candidate. Feature freeze, resolve only reproduced blockers, run the full gate. Two things it needs from the owner and cannot get from here: OWNER_VISUAL_GATE (nobody has looked at the custom companion screens and said they are right) and RELEASE_SIGNING (android/key.properties is absent and no keystore may be invented). LAUNCHER_ICON is blocked on approved artwork. Until those arrive the honest result is READY_FOR_STORE = NO.",
+  "next_action": "Two things, in order: (1) the crafted-archive memory test, which needs work rather than a person - the picker reads the whole file and the reader decodes before the policy sees sizes, so the limits bound what is written and not what is read; (2) the owner items - store signing, launcher artwork, and a visual judgement of the companion screens. Until the last of those arrives, READY_FOR_STORE stays NO.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git status --short",
     "read this file",
@@ -118,7 +119,7 @@
     "P39_hardening": "IN_PROGRESS",
     "P38_optional_cloud_backend": "BLOCKED_EXTERNAL",
     "P39_full_hardening": "COMPLETE",
-    "P40_release_candidate": "NOT_STARTED (needs owner visual gate + signing)"
+    "P40_release_candidate": "GATE RUN, READY_FOR_STORE = NO"
   },
   "p33_device_flow": {
     "device": "Pixel 7 API 34 emulator",
@@ -221,5 +222,24 @@
     "observed": "the record file was removed (recovery dropped the pack and rewrote the records), the home page came up on Mochi with the dog sprite, the player 2 minutes and 1 day streak were untouched, and logcat had no exceptions",
     "result": "PASS - the app degrades to a built-in, cleans up after itself, and loses none of the player data",
     "note": "the selection FILE still reads mimi afterwards. That is harmless: an unknown stored id is ignored on read and the file is rewritten on the next select. Recorded because it is the kind of thing that looks alarming in a file dump."
+  },
+  "p40_gate": {
+    "analyze": "PASS (0 issues)",
+    "tests": "PASS (1513/1513)",
+    "format": "PASS (325 files, 0 changed)",
+    "tooling_proofs": "PASS (5)",
+    "artifact_inspection": "PASS (no keystore, key file, env, python tooling, test tree, handoff docs or credentials)",
+    "git": "PASS (clean, local == remote)",
+    "reviewer_verdict": "READY_FOR_STORE: NO"
+  },
+  "p40_fixed_in_response": [
+    "Frames were bounded by count, not by pixels. The importer now reads each referenced PNG IHDR and refuses a frame larger than the declared canvas, which turns \"frames are bounded\" into a statement about memory. Two tests, over the canvas and at it.",
+    "The P37 invariant that a result carries no bytes unless it was generated was true only of the named constructors. It is now an assertion on the constructor, with a test.",
+    "Two claims in the P39 handoff were stronger than their evidence and are corrected: the memory bound bounded a list length, and reduced motion is an argument from the design rather than a test of playback."
+  ],
+  "p40_blockers": {
+    "release_signing": "The release build SUCCEEDS AND PRODUCES A DEBUG-SIGNED BUNDLE when android/key.properties is absent, because build.gradle.kts falls back to the debug signing config. The artifact certificate reads CN=Android Debug. A successful release build is not a store-signing pass. NOT_RECOVERED.",
+    "hostile_pack_memory": "The picker reads the whole file into memory and the reader decodes before the policy sees sizes, so the limits bound what is written and not what is read. Verified as an ordering fact; whether a crafted archive exhausts a device needs a crafted-archive device test.",
+    "owner_visual_gate": "Nobody has looked at the custom companion screens and said they are right."
   }
 }
