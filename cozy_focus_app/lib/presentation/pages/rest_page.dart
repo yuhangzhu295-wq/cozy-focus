@@ -169,63 +169,26 @@ class _Chooser extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          alignment: WrapAlignment.center,
-          children: [
-            for (final option in RestSession.presets)
-              Semantics(
-                key: ValueKey('rest_preset_$option'),
-                button: true,
-                selected: option == minutes,
-                label: '$option 分钟',
-                child: GestureDetector(
-                  onTap: () => onPick(option),
-                  child: Container(
-                    width: 92,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: option == minutes
-                          ? AppColors.primaryLight
-                          : AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(
-                        color: option == minutes
-                            ? AppColors.primarySage
-                            : AppColors.border,
-                        width: option == minutes ? 1.5 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          '$option',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: option == minutes
-                                ? AppColors.primaryDark
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '分钟',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: option == minutes
-                                ? AppColors.primarySage
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
+        // Two rows of two, as the design draws it. A `Wrap` put three on the
+        // first row and left 30 alone on the second, which reads as a list with
+        // an afterthought rather than as four equal choices.
+        for (var row = 0; row < RestSession.presets.length; row += 2) ...[
+          Row(
+            children: [
+              for (var column = 0; column < 2; column++) ...[
+                if (column == 1) const SizedBox(width: 12),
+                Expanded(
+                  child: _PresetTile(
+                    minutes: RestSession.presets[row + column],
+                    selected: minutes == RestSession.presets[row + column],
+                    onPick: onPick,
                   ),
                 ),
-              ),
-          ],
-        ),
+              ],
+            ],
+          ),
+          if (row + 2 < RestSession.presets.length) const SizedBox(height: 12),
+        ],
         const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
@@ -252,6 +215,66 @@ class _Chooser extends StatelessWidget {
           style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
         ),
       ],
+    );
+  }
+}
+
+/// One of the four lengths.
+class _PresetTile extends StatelessWidget {
+  final int minutes;
+  final bool selected;
+  final ValueChanged<int> onPick;
+
+  const _PresetTile({
+    required this.minutes,
+    required this.selected,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      key: ValueKey('rest_preset_$minutes'),
+      button: true,
+      selected: selected,
+      label: '$minutes 分钟',
+      child: GestureDetector(
+        onTap: () => onPick(minutes),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primaryLight : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: selected ? AppColors.primarySage : AppColors.border,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                '$minutes',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color:
+                      selected ? AppColors.primaryDark : AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '分钟',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: selected
+                      ? AppColors.primarySage
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

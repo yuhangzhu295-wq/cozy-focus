@@ -210,8 +210,21 @@ final distractionInboxControllerProvider =
 );
 
 /// How many thoughts are waiting, for the records tab's entry.
-final openDistractionCountProvider = FutureProvider<int>((ref) async {
-  return ref.watch(distractionRepositoryProvider).countOpen(
-        ref.watch(currentUserIdProvider),
-      );
+///
+/// ## Why this is derived rather than fetched
+///
+/// It used to be a `FutureProvider` that queried the count itself, which meant it
+/// cached its answer for as long as it was alive: the records tab said 还没有记录
+/// after a capture, because the count had been read before the note existed and
+/// was never asked again. Found by walking the app on a device.
+///
+/// Invalidating it on every inbox change fixed that and broke two controller-level
+/// tests, because invalidation schedules a Riverpod task that a test ending on the
+/// same tick leaves pending. Deriving it from the inbox controller's own state
+/// avoids both: the controller already reloads `openCounts` on every mutation, so
+/// there is one source of truth, no scheduled work, and no second query.
+final openDistractionCountProvider = Provider<int>((ref) {
+  return ref.watch(
+    distractionInboxControllerProvider.select((state) => state.openTotal),
+  );
 });

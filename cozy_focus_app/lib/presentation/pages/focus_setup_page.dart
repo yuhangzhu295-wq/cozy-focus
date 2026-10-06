@@ -457,7 +457,12 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
       ),
 
       // ── Bottom nav (3 tabs) ────────────────────────────────────
-      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
+      // 首页, not 成长. The focus flow is entered from the home screen and the
+      // completion page in the same flow already says 首页; this page said 成长,
+      // so the bar claimed the user was in a tab they had never opened. Found by
+      // walking the app on a device — every test passed either way, because
+      // nothing asserted which tab the bar marks.
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
     );
   }
 }

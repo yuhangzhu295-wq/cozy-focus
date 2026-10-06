@@ -375,7 +375,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
   /// Below 任务 rather than above it: a captured thought is dealt with after the
   /// work, and the count is a nudge rather than something to act on first.
   Widget _buildInboxEntry(BuildContext context) {
-    final open = ref.watch(openDistractionCountProvider).valueOrNull ?? 0;
+    final open = ref.watch(openDistractionCountProvider);
     return _navEntry(
       context: context,
       icon: Icons.inbox_rounded,
