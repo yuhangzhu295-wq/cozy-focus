@@ -72,6 +72,22 @@ abstract final class CompanionPackArchiveReader {
     List<int> bytes, {
     PackArchiveLimits limits = PackArchiveLimits.standard,
   }) {
+    // Before the decoder, not after. The policy judges entries, and entries can
+    // only be judged once the archive has been decoded - so the limits below
+    // bound what is written while this bounds what is read. Without it, the
+    // decoder is handed an arbitrary file first and asked questions later.
+    if (bytes.length > PackArchiveLimits.maxInputBytes) {
+      return CompanionPackReadResult(
+        const [],
+        PackValidationResult([
+          PackViolation(
+              'input_too_large',
+              'the file is ${bytes.length} bytes, above the '
+                  '${PackArchiveLimits.maxInputBytes} a pack may be'),
+        ]),
+      );
+    }
+
     final Archive archive;
     try {
       archive = ZipDecoder().decodeBytes(bytes);

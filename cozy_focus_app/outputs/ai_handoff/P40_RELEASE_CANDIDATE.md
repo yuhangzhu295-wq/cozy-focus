@@ -39,21 +39,32 @@ store-signing pass**, and my earlier reporting of the AAB as a PASS was about
 building rather than about readiness. That distinction is now stated wherever the
 artifact is mentioned.
 
-### 2. A hostile pack can cost memory before it is refused
+### 2. A hostile pack can cost memory before it is refused — **partly closed**
 
 The picker reads the whole selected file into memory, and the reader decodes the
 ZIP and accesses entry content *before* the policy sees the sizes. The policy
 enforces 4096 entries, 8 MiB per entry and 128 MiB total — but those limits bound
-what is **written**, not what is read. A crafted archive can therefore cost memory
-before it is refused.
+what is **written**, not what is read.
 
-The expansion-ratio check is also inert on this path, which P32 already recorded
-honestly: the decoder exposes no trustworthy compressed size, so the reader passes
-zero and the policy skips the ratio.
+**What is now closed.** `PackArchiveLimits.maxInputBytes = 64 MB` is applied in two
+places, both *before* the decoder: the picker refuses an oversized file by its
+declared length without reading it, and the reader refuses an oversized buffer
+before decoding. That is the only place a limit can bound what is *read* rather
+than what is written, and it keeps the decoder away from a file chosen by accident
+or by malice. A real pack is about a megabyte, so nothing a person builds is
+refused.
 
-**Verified:** the ordering and the missing ratio measurement. **Not verified:**
-whether a particular crafted archive actually exhausts a device — that needs a
-crafted archive and a device test, which is the next thing to build.
+**What is not closed, and why it cannot be from here.** A *small* archive that
+expands hugely is still decoded before any entry can be measured, because the
+`archive` package exposes no way to read a ZIP's central directory on its own —
+`decodeBytes` and `decodeStream` both decompress. The expansion-ratio rule is inert
+on this path for the same reason, which P32 recorded honestly. Bounding the input
+is the lever this API gives, and saying so is better than implying the bomb vector
+is handled.
+
+**Verified:** the ordering, the missing ratio measurement, and that both size
+checks refuse before the decoder. **Not verified:** whether a particular crafted
+archive exhausts a device — that needs a crafted archive and a device run.
 
 ### 3. Frames were bounded by count, not by pixels — fixed here
 

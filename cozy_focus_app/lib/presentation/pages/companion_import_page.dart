@@ -91,6 +91,19 @@ class _CompanionImportPageState extends ConsumerState<CompanionImportPage> {
         return;
       }
 
+      if (!picked.wasRead) {
+        // Refused by size before being opened, so there are no bytes to inspect
+        // and nothing was read. Reported the same way a bad pack is.
+        setState(() {
+          _busy = false;
+          _stage = _Stage.refused;
+          _refusals = PackValidationResult([
+            PackViolation('input_too_large', picked.refusal!),
+          ]);
+        });
+        return;
+      }
+
       final preview = CompanionPackImporter.inspect(picked.bytes);
       if (!mounted) return;
 
@@ -796,6 +809,8 @@ String describePackRefusal(PackViolation violation) {
   switch (violation.code) {
     case 'unreadable_archive':
       return '这个文件打不开，可能不是宠物包，或者文件在传输时损坏了。';
+    case 'input_too_large':
+      return '这个文件太大了，不像是一个宠物包，没有读取它。';
     case 'empty_archive':
       return '这个包是空的，里面什么都没有。';
     case 'no_manifest':

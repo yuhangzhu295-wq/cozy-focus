@@ -39,6 +39,31 @@ void main() {
   CompanionPackReadResult read(List<ArchiveFile> files) =>
       CompanionPackArchiveReader.read(zip(files));
 
+  test('refuses a file larger than a pack may be, before decoding it', () {
+    // The limit that is applied *before* the decoder, which is the only place
+    // a limit can bound what is read rather than what is written. The policy's
+    // entry limits can only run once the archive has been decoded, so without
+    // this the decoder is handed an arbitrary file first and asked questions
+    // afterwards.
+    final oversized = List<int>.filled(PackArchiveLimits.maxInputBytes + 1, 0);
+    final result = CompanionPackArchiveReader.read(oversized);
+
+    expect(result.ok, isFalse);
+    expect(result.files, isEmpty,
+        reason: 'a refusal must never hand a caller files to write');
+    expect(result.validation.codes, contains('input_too_large'));
+  });
+
+  test('a file at the limit is still decoded', () {
+    // The guard against a bound that refuses the thing it exists to allow. A
+    // buffer of the maximum size that is not a ZIP is refused for *that*
+    // reason, not for its size.
+    final atLimit = List<int>.filled(PackArchiveLimits.maxInputBytes, 0);
+    final result = CompanionPackArchiveReader.read(atLimit);
+
+    expect(result.validation.codes, isNot(contains('input_too_large')));
+  });
+
   test('a well-formed pack reads back its files and their bytes', () {
     final result = read([
       manifestEntry(),

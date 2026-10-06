@@ -26,7 +26,7 @@
     "P40_release_candidate": "GATE RUN, READY_FOR_STORE = NO (2 owner blockers + 1 gap, now fixed)"
   },
   "test_counts": {
-    "full_suite": "1513/1513",
+    "full_suite": "1516/1516",
     "pack_suite": "173",
     "format": "PASS (325 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
@@ -80,7 +80,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "Two things, in order: (1) the crafted-archive memory test, which needs work rather than a person - the picker reads the whole file and the reader decodes before the policy sees sizes, so the limits bound what is written and not what is read; (2) the owner items - store signing, launcher artwork, and a visual judgement of the companion screens. Until the last of those arrives, READY_FOR_STORE stays NO.",
+  "next_action": "Nothing further can be closed without a person. The remaining items are: the owner visual gate on the companion screens, the signing key (the release artifacts are debug-signed because key.properties is absent), approved launcher artwork, a TalkBack listening pass, a sustained multi-pack device run, and - if anyone wants the bomb vector closed - replacing the archive package with one that can read a central directory, or writing a bounded ZIP reader.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git status --short",
     "read this file",
@@ -235,11 +235,12 @@
   "p40_fixed_in_response": [
     "Frames were bounded by count, not by pixels. The importer now reads each referenced PNG IHDR and refuses a frame larger than the declared canvas, which turns \"frames are bounded\" into a statement about memory. Two tests, over the canvas and at it.",
     "The P37 invariant that a result carries no bytes unless it was generated was true only of the named constructors. It is now an assertion on the constructor, with a test.",
-    "Two claims in the P39 handoff were stronger than their evidence and are corrected: the memory bound bounded a list length, and reduced motion is an argument from the design rather than a test of playback."
+    "Two claims in the P39 handoff were stronger than their evidence and are corrected: the memory bound bounded a list length, and reduced motion is an argument from the design rather than a test of playback.",
+    "The read-side memory bound: PackArchiveLimits.maxInputBytes = 64 MB, applied in the picker (by declared length, without reading) and in the reader (before decoding). That is the only place a limit can bound what is read rather than what is written."
   ],
   "p40_blockers": {
     "release_signing": "The release build SUCCEEDS AND PRODUCES A DEBUG-SIGNED BUNDLE when android/key.properties is absent, because build.gradle.kts falls back to the debug signing config. The artifact certificate reads CN=Android Debug. A successful release build is not a store-signing pass. NOT_RECOVERED.",
-    "hostile_pack_memory": "The picker reads the whole file into memory and the reader decodes before the policy sees sizes, so the limits bound what is written and not what is read. Verified as an ordering fact; whether a crafted archive exhausts a device needs a crafted-archive device test.",
+    "hostile_pack_memory": "PARTLY CLOSED. The read-side bound is in (64 MB, checked by the picker without reading and by the reader before decoding). What remains is the small-archive-expanding-hugely vector: the archive package exposes no way to read a ZIP central directory on its own, so decodeBytes and decodeStream both decompress before any entry can be measured, and the expansion-ratio rule is inert for the same reason. Bounding the input is the lever this API gives.",
     "owner_visual_gate": "Nobody has looked at the custom companion screens and said they are right."
   }
 }

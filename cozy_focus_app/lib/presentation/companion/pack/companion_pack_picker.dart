@@ -16,6 +16,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'companion_pack_archive_policy.dart';
 import 'companion_pack_exporter.dart';
 
 /// A file the user chose, already read into memory.
@@ -27,12 +28,29 @@ class PickedCompanionPack {
   /// The name the file had, for error messages and for the export round trip.
   final String fileName;
 
+  /// The bytes, or empty when [refusal] is set.
   final Uint8List bytes;
 
-  const PickedCompanionPack(this.fileName, this.bytes);
+  /// Why the file was not read, when it was refused before being opened.
+  ///
+  /// A file that is too large to be a pack is refused by its *size*, before a
+  /// byte is read. Reading it first and refusing it afterwards would cost exactly
+  /// the memory the limit exists to protect — so the refusal travels instead of
+  /// the contents, and the caller reports it the same way it reports a bad pack.
+  final String? refusal;
+
+  const PickedCompanionPack(this.fileName, this.bytes, {this.refusal});
+
+  /// A file that was not read.
+  PickedCompanionPack.refused(this.fileName, String this.refusal)
+      : bytes = Uint8List(0);
+
+  bool get wasRead => refusal == null;
 
   @override
-  String toString() => 'PickedCompanionPack($fileName, ${bytes.length} bytes)';
+  String toString() => refusal != null
+      ? 'PickedCompanionPack($fileName, refused: $refusal)'
+      : 'PickedCompanionPack($fileName, ${bytes.length} bytes)';
 }
 
 /// Asks the user for a pack file. Returns null when they cancel.
@@ -71,6 +89,20 @@ class FileSelectorCompanionPackPicker implements CompanionPackPicker {
   Future<PickedCompanionPack?> pick() async {
     final file = await openFile(acceptedTypeGroups: const [packTypeGroup]);
     if (file == null) return null;
+
+    // By size, before reading. The reader refuses an oversized archive too, but
+    // it can only do that once the bytes are in memory - which is the cost this
+    // avoids. A real pack is about a megabyte, so nothing a person builds is
+    // refused here.
+    final length = await file.length();
+    if (length > PackArchiveLimits.maxInputBytes) {
+      return PickedCompanionPack.refused(
+        file.name,
+        '这个文件有 ${(length / 1024 / 1024).toStringAsFixed(1)} MB，'
+        '远大于一个宠物包该有的大小，没有读取它。',
+      );
+    }
+
     return PickedCompanionPack(file.name, await file.readAsBytes());
   }
 }

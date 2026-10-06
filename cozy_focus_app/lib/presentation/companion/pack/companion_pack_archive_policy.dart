@@ -86,6 +86,27 @@ class PackArchiveLimits {
     maxTotalBytes: 128 * 1024 * 1024,
     maxExpansionRatio: 200,
   );
+
+  /// The most a `.cozy_pet` file may be *before it is opened*.
+  ///
+  /// A different kind of limit from the four above, and it exists because of
+  /// where those are applied: they judge entries, and entries can only be judged
+  /// after the archive has been decoded — which means the decoder has already
+  /// expanded the whole thing in memory by the time they run. So they bound what
+  /// is *written*, and this bounds what is *read*.
+  ///
+  /// It is a coarse bound and it is deliberately generous: a real pack is about a
+  /// megabyte (the demo packs are 0.25 to 1.2 MB), so 64 MB refuses nothing a
+  /// person would legitimately build while keeping the decoder away from a file
+  /// chosen by accident or by malice.
+  ///
+  /// **What it does not do, stated rather than implied:** it does not stop a
+  /// small archive that expands hugely, because the decoder decompresses before
+  /// any entry can be measured and the package exposes no way to read a ZIP's
+  /// central directory on its own. The expansion-ratio rule above is inert on
+  /// this path for the same reason. Bounding the input is the lever this API
+  /// gives, and pretending otherwise would be worse than the gap.
+  static const int maxInputBytes = 64 * 1024 * 1024;
 }
 
 /// Decides whether an archive may be extracted.

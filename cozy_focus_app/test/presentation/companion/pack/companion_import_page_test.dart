@@ -247,6 +247,25 @@ void main() {
     expect(find.text('选择宠物包文件'), findsOneWidget);
     expect(find.text('这个文件装不了'), findsNothing);
   });
+  testWidgets('a file refused for its size is explained, and not read',
+      (tester) async {
+    useTallSurface(tester);
+    // The picker refuses an oversized file before opening it, so there are no
+    // bytes to inspect. The screen must say so rather than showing an empty
+    // preview or a generic failure.
+    final c = containerWith(_FakePicker(
+      PickedCompanionPack.refused(
+          'huge.cozy_pet', '这个文件有 900.0 MB，远大于一个宠物包该有的大小，没有读取它。'),
+    ));
+    await tester.pumpWidget(app(c));
+    await tester.tap(find.text('选择宠物包文件'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('这个文件装不了'), findsOneWidget);
+    expect(find.text('这个文件太大了，不像是一个宠物包，没有读取它。'), findsOneWidget);
+  });
+
   // ────────────────────────── accessibility (P39) ───────────────────────────
 
   group('a screen reader can complete the import', () {
