@@ -7,6 +7,7 @@ import 'package:sqlite3/sqlite3.dart';
 
 import 'package:cozy_focus_app/data/local/app_database.dart'
     hide FocusSession, Pet, CraftJob, CraftRecipe, InventoryItem, RoomItem;
+import '../support/schema_head.dart';
 
 void main() {
   test('v3 upgrade deduplicates sessions and preserves entered details',
@@ -64,7 +65,7 @@ void main() {
         final version =
             await db.customSelect('PRAGMA user_version').getSingle();
         // The head of the chain, which moves when a migration is added.
-        expect(version.read<int>('user_version'), 7);
+        expect(version.read<int>('user_version'), kSchemaHead);
         final indexes = await db
             .customSelect(
               "SELECT name FROM sqlite_master WHERE type = 'index' "

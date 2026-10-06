@@ -7302,6 +7302,501 @@ class TaskSchedulesCompanion extends UpdateCompanion<TaskSchedule> {
   }
 }
 
+class $DistractionNotesTable extends DistractionNotes
+    with TableInfo<$DistractionNotesTable, DistractionNote> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DistractionNotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+      'user_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _text_Meta = const VerificationMeta('text_');
+  @override
+  late final GeneratedColumn<String> text_ = GeneratedColumn<String>(
+      'text', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _categoryIdMeta =
+      const VerificationMeta('categoryId');
+  @override
+  late final GeneratedColumn<String> categoryId = GeneratedColumn<String>(
+      'category_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('open'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _handledAtMeta =
+      const VerificationMeta('handledAt');
+  @override
+  late final GeneratedColumn<DateTime> handledAt = GeneratedColumn<DateTime>(
+      'handled_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _convertedTaskIdMeta =
+      const VerificationMeta('convertedTaskId');
+  @override
+  late final GeneratedColumn<String> convertedTaskId = GeneratedColumn<String>(
+      'converted_task_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sessionIdMeta =
+      const VerificationMeta('sessionId');
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+      'session_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        userId,
+        text_,
+        categoryId,
+        status,
+        createdAt,
+        handledAt,
+        convertedTaskId,
+        sessionId
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'distraction_notes';
+  @override
+  VerificationContext validateIntegrity(Insertable<DistractionNote> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('text')) {
+      context.handle(
+          _text_Meta, text_.isAcceptableOrUnknown(data['text']!, _text_Meta));
+    } else if (isInserting) {
+      context.missing(_text_Meta);
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+          _categoryIdMeta,
+          categoryId.isAcceptableOrUnknown(
+              data['category_id']!, _categoryIdMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('handled_at')) {
+      context.handle(_handledAtMeta,
+          handledAt.isAcceptableOrUnknown(data['handled_at']!, _handledAtMeta));
+    }
+    if (data.containsKey('converted_task_id')) {
+      context.handle(
+          _convertedTaskIdMeta,
+          convertedTaskId.isAcceptableOrUnknown(
+              data['converted_task_id']!, _convertedTaskIdMeta));
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(_sessionIdMeta,
+          sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DistractionNote map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DistractionNote(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      userId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
+      text_: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}text'])!,
+      categoryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category_id']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      handledAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}handled_at']),
+      convertedTaskId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}converted_task_id']),
+      sessionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}session_id']),
+    );
+  }
+
+  @override
+  $DistractionNotesTable createAlias(String alias) {
+    return $DistractionNotesTable(attachedDatabase, alias);
+  }
+}
+
+class DistractionNote extends DataClass implements Insertable<DistractionNote> {
+  final String id;
+  final String userId;
+
+  /// What the user typed, trimmed. Never empty — see the repository.
+  final String text_;
+
+  /// One of the shipped category ids, or null. The design calls it an optional
+  /// tag, and an optional tag that defaults to 其他 is not optional.
+  final String? categoryId;
+
+  /// `open` or `handled`.
+  ///
+  /// `open` is the inbox: what the user still has to decide about. A note leaves
+  /// it by being converted into a task, placed on a day, or deleted — and the
+  /// ones that were converted or placed are kept as `handled` rather than
+  /// deleted, because "this thought became that task" is worth being able to see.
+  final String status;
+  final DateTime createdAt;
+  final DateTime? handledAt;
+
+  /// The task this note became, when it was converted.
+  ///
+  /// Not a foreign key for the same reason as `session_id`: deleting the task
+  /// later must not resurrect the note into the inbox.
+  final String? convertedTaskId;
+
+  /// The focus session the thought arrived during, when there was one.
+  final String? sessionId;
+  const DistractionNote(
+      {required this.id,
+      required this.userId,
+      required this.text_,
+      this.categoryId,
+      required this.status,
+      required this.createdAt,
+      this.handledAt,
+      this.convertedTaskId,
+      this.sessionId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['text'] = Variable<String>(text_);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<String>(categoryId);
+    }
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || handledAt != null) {
+      map['handled_at'] = Variable<DateTime>(handledAt);
+    }
+    if (!nullToAbsent || convertedTaskId != null) {
+      map['converted_task_id'] = Variable<String>(convertedTaskId);
+    }
+    if (!nullToAbsent || sessionId != null) {
+      map['session_id'] = Variable<String>(sessionId);
+    }
+    return map;
+  }
+
+  DistractionNotesCompanion toCompanion(bool nullToAbsent) {
+    return DistractionNotesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      text_: Value(text_),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      status: Value(status),
+      createdAt: Value(createdAt),
+      handledAt: handledAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(handledAt),
+      convertedTaskId: convertedTaskId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(convertedTaskId),
+      sessionId: sessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionId),
+    );
+  }
+
+  factory DistractionNote.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DistractionNote(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      text_: serializer.fromJson<String>(json['text_']),
+      categoryId: serializer.fromJson<String?>(json['categoryId']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      handledAt: serializer.fromJson<DateTime?>(json['handledAt']),
+      convertedTaskId: serializer.fromJson<String?>(json['convertedTaskId']),
+      sessionId: serializer.fromJson<String?>(json['sessionId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'text_': serializer.toJson<String>(text_),
+      'categoryId': serializer.toJson<String?>(categoryId),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'handledAt': serializer.toJson<DateTime?>(handledAt),
+      'convertedTaskId': serializer.toJson<String?>(convertedTaskId),
+      'sessionId': serializer.toJson<String?>(sessionId),
+    };
+  }
+
+  DistractionNote copyWith(
+          {String? id,
+          String? userId,
+          String? text_,
+          Value<String?> categoryId = const Value.absent(),
+          String? status,
+          DateTime? createdAt,
+          Value<DateTime?> handledAt = const Value.absent(),
+          Value<String?> convertedTaskId = const Value.absent(),
+          Value<String?> sessionId = const Value.absent()}) =>
+      DistractionNote(
+        id: id ?? this.id,
+        userId: userId ?? this.userId,
+        text_: text_ ?? this.text_,
+        categoryId: categoryId.present ? categoryId.value : this.categoryId,
+        status: status ?? this.status,
+        createdAt: createdAt ?? this.createdAt,
+        handledAt: handledAt.present ? handledAt.value : this.handledAt,
+        convertedTaskId: convertedTaskId.present
+            ? convertedTaskId.value
+            : this.convertedTaskId,
+        sessionId: sessionId.present ? sessionId.value : this.sessionId,
+      );
+  DistractionNote copyWithCompanion(DistractionNotesCompanion data) {
+    return DistractionNote(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      text_: data.text_.present ? data.text_.value : this.text_,
+      categoryId:
+          data.categoryId.present ? data.categoryId.value : this.categoryId,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      handledAt: data.handledAt.present ? data.handledAt.value : this.handledAt,
+      convertedTaskId: data.convertedTaskId.present
+          ? data.convertedTaskId.value
+          : this.convertedTaskId,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DistractionNote(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('text_: $text_, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('handledAt: $handledAt, ')
+          ..write('convertedTaskId: $convertedTaskId, ')
+          ..write('sessionId: $sessionId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, userId, text_, categoryId, status,
+      createdAt, handledAt, convertedTaskId, sessionId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DistractionNote &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.text_ == this.text_ &&
+          other.categoryId == this.categoryId &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt &&
+          other.handledAt == this.handledAt &&
+          other.convertedTaskId == this.convertedTaskId &&
+          other.sessionId == this.sessionId);
+}
+
+class DistractionNotesCompanion extends UpdateCompanion<DistractionNote> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> text_;
+  final Value<String?> categoryId;
+  final Value<String> status;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> handledAt;
+  final Value<String?> convertedTaskId;
+  final Value<String?> sessionId;
+  final Value<int> rowid;
+  const DistractionNotesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.text_ = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.handledAt = const Value.absent(),
+    this.convertedTaskId = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DistractionNotesCompanion.insert({
+    required String id,
+    required String userId,
+    required String text_,
+    this.categoryId = const Value.absent(),
+    this.status = const Value.absent(),
+    required DateTime createdAt,
+    this.handledAt = const Value.absent(),
+    this.convertedTaskId = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        userId = Value(userId),
+        text_ = Value(text_),
+        createdAt = Value(createdAt);
+  static Insertable<DistractionNote> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? text_,
+    Expression<String>? categoryId,
+    Expression<String>? status,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? handledAt,
+    Expression<String>? convertedTaskId,
+    Expression<String>? sessionId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (text_ != null) 'text': text_,
+      if (categoryId != null) 'category_id': categoryId,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+      if (handledAt != null) 'handled_at': handledAt,
+      if (convertedTaskId != null) 'converted_task_id': convertedTaskId,
+      if (sessionId != null) 'session_id': sessionId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DistractionNotesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? userId,
+      Value<String>? text_,
+      Value<String?>? categoryId,
+      Value<String>? status,
+      Value<DateTime>? createdAt,
+      Value<DateTime?>? handledAt,
+      Value<String?>? convertedTaskId,
+      Value<String?>? sessionId,
+      Value<int>? rowid}) {
+    return DistractionNotesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      text_: text_ ?? this.text_,
+      categoryId: categoryId ?? this.categoryId,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      handledAt: handledAt ?? this.handledAt,
+      convertedTaskId: convertedTaskId ?? this.convertedTaskId,
+      sessionId: sessionId ?? this.sessionId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (text_.present) {
+      map['text'] = Variable<String>(text_.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (handledAt.present) {
+      map['handled_at'] = Variable<DateTime>(handledAt.value);
+    }
+    if (convertedTaskId.present) {
+      map['converted_task_id'] = Variable<String>(convertedTaskId.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DistractionNotesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('text_: $text_, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('handledAt: $handledAt, ')
+          ..write('convertedTaskId: $convertedTaskId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7325,6 +7820,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TasksTable tasks = $TasksTable(this);
   late final $TaskSubtasksTable taskSubtasks = $TaskSubtasksTable(this);
   late final $TaskSchedulesTable taskSchedules = $TaskSchedulesTable(this);
+  late final $DistractionNotesTable distractionNotes =
+      $DistractionNotesTable(this);
   late final FocusSessionDao focusSessionDao =
       FocusSessionDao(this as AppDatabase);
   late final FocusRecordDao focusRecordDao =
@@ -7336,6 +7833,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final CraftDao craftDao = CraftDao(this as AppDatabase);
   late final SettlementDao settlementDao = SettlementDao(this as AppDatabase);
   late final TaskDao taskDao = TaskDao(this as AppDatabase);
+  late final DistractionDao distractionDao =
+      DistractionDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7356,7 +7855,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         rewardLedgerTable,
         tasks,
         taskSubtasks,
-        taskSchedules
+        taskSchedules,
+        distractionNotes
       ];
 }
 
@@ -10949,6 +11449,242 @@ typedef $$TaskSchedulesTableProcessedTableManager = ProcessedTableManager<
     ),
     TaskSchedule,
     PrefetchHooks Function()>;
+typedef $$DistractionNotesTableCreateCompanionBuilder
+    = DistractionNotesCompanion Function({
+  required String id,
+  required String userId,
+  required String text_,
+  Value<String?> categoryId,
+  Value<String> status,
+  required DateTime createdAt,
+  Value<DateTime?> handledAt,
+  Value<String?> convertedTaskId,
+  Value<String?> sessionId,
+  Value<int> rowid,
+});
+typedef $$DistractionNotesTableUpdateCompanionBuilder
+    = DistractionNotesCompanion Function({
+  Value<String> id,
+  Value<String> userId,
+  Value<String> text_,
+  Value<String?> categoryId,
+  Value<String> status,
+  Value<DateTime> createdAt,
+  Value<DateTime?> handledAt,
+  Value<String?> convertedTaskId,
+  Value<String?> sessionId,
+  Value<int> rowid,
+});
+
+class $$DistractionNotesTableFilterComposer
+    extends Composer<_$AppDatabase, $DistractionNotesTable> {
+  $$DistractionNotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get text_ => $composableBuilder(
+      column: $table.text_, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get handledAt => $composableBuilder(
+      column: $table.handledAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get convertedTaskId => $composableBuilder(
+      column: $table.convertedTaskId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+      column: $table.sessionId, builder: (column) => ColumnFilters(column));
+}
+
+class $$DistractionNotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $DistractionNotesTable> {
+  $$DistractionNotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get text_ => $composableBuilder(
+      column: $table.text_, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get handledAt => $composableBuilder(
+      column: $table.handledAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get convertedTaskId => $composableBuilder(
+      column: $table.convertedTaskId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+      column: $table.sessionId, builder: (column) => ColumnOrderings(column));
+}
+
+class $$DistractionNotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DistractionNotesTable> {
+  $$DistractionNotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get text_ =>
+      $composableBuilder(column: $table.text_, builder: (column) => column);
+
+  GeneratedColumn<String> get categoryId => $composableBuilder(
+      column: $table.categoryId, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get handledAt =>
+      $composableBuilder(column: $table.handledAt, builder: (column) => column);
+
+  GeneratedColumn<String> get convertedTaskId => $composableBuilder(
+      column: $table.convertedTaskId, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+}
+
+class $$DistractionNotesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $DistractionNotesTable,
+    DistractionNote,
+    $$DistractionNotesTableFilterComposer,
+    $$DistractionNotesTableOrderingComposer,
+    $$DistractionNotesTableAnnotationComposer,
+    $$DistractionNotesTableCreateCompanionBuilder,
+    $$DistractionNotesTableUpdateCompanionBuilder,
+    (
+      DistractionNote,
+      BaseReferences<_$AppDatabase, $DistractionNotesTable, DistractionNote>
+    ),
+    DistractionNote,
+    PrefetchHooks Function()> {
+  $$DistractionNotesTableTableManager(
+      _$AppDatabase db, $DistractionNotesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DistractionNotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DistractionNotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DistractionNotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> userId = const Value.absent(),
+            Value<String> text_ = const Value.absent(),
+            Value<String?> categoryId = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime?> handledAt = const Value.absent(),
+            Value<String?> convertedTaskId = const Value.absent(),
+            Value<String?> sessionId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              DistractionNotesCompanion(
+            id: id,
+            userId: userId,
+            text_: text_,
+            categoryId: categoryId,
+            status: status,
+            createdAt: createdAt,
+            handledAt: handledAt,
+            convertedTaskId: convertedTaskId,
+            sessionId: sessionId,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String userId,
+            required String text_,
+            Value<String?> categoryId = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            required DateTime createdAt,
+            Value<DateTime?> handledAt = const Value.absent(),
+            Value<String?> convertedTaskId = const Value.absent(),
+            Value<String?> sessionId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              DistractionNotesCompanion.insert(
+            id: id,
+            userId: userId,
+            text_: text_,
+            categoryId: categoryId,
+            status: status,
+            createdAt: createdAt,
+            handledAt: handledAt,
+            convertedTaskId: convertedTaskId,
+            sessionId: sessionId,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$DistractionNotesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $DistractionNotesTable,
+    DistractionNote,
+    $$DistractionNotesTableFilterComposer,
+    $$DistractionNotesTableOrderingComposer,
+    $$DistractionNotesTableAnnotationComposer,
+    $$DistractionNotesTableCreateCompanionBuilder,
+    $$DistractionNotesTableUpdateCompanionBuilder,
+    (
+      DistractionNote,
+      BaseReferences<_$AppDatabase, $DistractionNotesTable, DistractionNote>
+    ),
+    DistractionNote,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10984,4 +11720,6 @@ class $AppDatabaseManager {
       $$TaskSubtasksTableTableManager(_db, _db.taskSubtasks);
   $$TaskSchedulesTableTableManager get taskSchedules =>
       $$TaskSchedulesTableTableManager(_db, _db.taskSchedules);
+  $$DistractionNotesTableTableManager get distractionNotes =>
+      $$DistractionNotesTableTableManager(_db, _db.distractionNotes);
 }

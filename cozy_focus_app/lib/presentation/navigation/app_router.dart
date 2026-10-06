@@ -21,6 +21,7 @@ import '../pages/task_list_page.dart';
 import '../pages/create_task_page.dart';
 import '../pages/task_detail_page.dart';
 import '../pages/today_plan_page.dart';
+import '../pages/distraction_inbox_page.dart';
 import '../pages/schedule_to_today_page.dart';
 import '../pages/mochi_growth_page.dart';
 import '../pages/pet_dress_page.dart';
@@ -125,6 +126,10 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
         GoRoute(
           path: '/records/today',
           builder: (context, state) => const TodayPlanPage(),
+        ),
+        GoRoute(
+          path: '/records/inbox',
+          builder: (context, state) => const DistractionInboxPage(),
         ),
         GoRoute(
           path: '/records/tasks',

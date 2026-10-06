@@ -8,6 +8,7 @@ import 'package:sqlite3/sqlite3.dart';
 
 import 'package:cozy_focus_app/data/local/app_database.dart'
     hide Task, TaskSubtask, TaskSchedule, FocusSession;
+import '../support/schema_head.dart';
 
 /// P3 — a v6 database gains the timing mode, and the old rows keep their meaning.
 ///
@@ -69,7 +70,7 @@ void main() {
       try {
         final version =
             await db.customSelect('PRAGMA user_version').getSingle();
-        expect(version.read<int>('user_version'), 7);
+        expect(version.read<int>('user_version'), kSchemaHead);
 
         final sessions = await db
             .customSelect('SELECT id, planned_seconds, timing_mode '

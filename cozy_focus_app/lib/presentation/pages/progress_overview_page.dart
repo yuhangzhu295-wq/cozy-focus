@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../controllers/providers.dart';
 import '../controllers/today_plan_controller.dart';
+import '../controllers/distraction_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -287,6 +288,8 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
           _buildTodayEntry(context),
           const SizedBox(height: 10),
           _buildTaskEntry(context),
+          const SizedBox(height: 10),
+          _buildInboxEntry(context),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
@@ -364,6 +367,21 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
       title: '任务',
       trailing: open > 0 ? '$open 个进行中' : '还没有任务',
       route: '/records/tasks',
+    );
+  }
+
+  /// The way into the distraction inbox.
+  ///
+  /// Below 任务 rather than above it: a captured thought is dealt with after the
+  /// work, and the count is a nudge rather than something to act on first.
+  Widget _buildInboxEntry(BuildContext context) {
+    final open = ref.watch(openDistractionCountProvider).valueOrNull ?? 0;
+    return _navEntry(
+      context: context,
+      icon: Icons.inbox_rounded,
+      title: '分心箱',
+      trailing: open > 0 ? '$open 条待处理' : '还没有记录',
+      route: '/records/inbox',
     );
   }
 

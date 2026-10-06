@@ -11,6 +11,7 @@ import 'tables/craft_tables.dart';
 import 'tables/pet_tables.dart';
 import 'tables/achievement_table.dart';
 import 'tables/sync_tables.dart';
+import 'tables/distraction_note_table.dart';
 import 'tables/task_schedule_table.dart';
 import 'tables/task_tables.dart';
 import 'daos/focus_session_dao.dart';
@@ -20,6 +21,7 @@ import 'daos/sync_outbox_dao.dart';
 import 'daos/pet_dao.dart';
 import 'daos/craft_dao.dart';
 import 'daos/settlement_dao.dart';
+import 'daos/distraction_dao.dart';
 import 'daos/task_dao.dart';
 
 part 'app_database.g.dart';
@@ -42,6 +44,7 @@ part 'app_database.g.dart';
     Tasks,
     TaskSubtasks,
     TaskSchedules,
+    DistractionNotes,
   ],
   daos: [
     FocusSessionDao,
@@ -52,6 +55,7 @@ part 'app_database.g.dart';
     CraftDao,
     SettlementDao,
     TaskDao,
+    DistractionDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -61,7 +65,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -160,6 +164,12 @@ class AppDatabase extends _$AppDatabase {
             "UPDATE focus_records SET timing_mode = 'countUp' WHERE session_id "
             'IN (SELECT id FROM focus_sessions WHERE planned_seconds <= 0)',
           );
+        }
+        // v7 -> v8: the distraction inbox. A new table, so nothing existing is
+        // touched and there is nothing to backfill — a database from before this
+        // phase simply has no captured thoughts yet.
+        if (from < 8) {
+          await m.createTable(distractionNotes);
         }
       },
       beforeOpen: (details) async {

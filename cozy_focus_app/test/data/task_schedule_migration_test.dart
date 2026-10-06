@@ -9,6 +9,7 @@ import 'package:sqlite3/sqlite3.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart'
     hide Task, TaskSubtask, TaskSchedule;
 import 'package:cozy_focus_app/domain/models/task_schedule.dart';
+import '../support/schema_head.dart';
 
 /// P2 — a database written by the previous version opens and gains the plan.
 ///
@@ -90,7 +91,7 @@ void main() {
 
         final version =
             await db.customSelect('PRAGMA user_version').getSingle();
-        expect(version.read<int>('user_version'), 7);
+        expect(version.read<int>('user_version'), kSchemaHead);
 
         // The unique index that stops a task being on one day twice.
         final indexes = await db

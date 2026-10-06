@@ -15,6 +15,7 @@ import '../companion/companion_avatar.dart';
 import '../companion/pet_encouragement.dart';
 import '../companion/time_of_day.dart';
 import '../theme/app_theme.dart';
+import '../widgets/distraction_capture_sheet.dart';
 
 /// Screen 03 / 03A / 03B / 03C: Active Focus — V4.1 visual redesign
 /// Design ref: docs/cozy_focus_v4_1/designs/pages_ascii/03_*.png
@@ -218,6 +219,23 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
           : '已经超过这个时长了，换一个更长的模式，或者直接收尾。';
       messenger.showSnackBar(SnackBar(content: Text(reason)));
     }
+  }
+
+  /// Opens the capture sheet over the running session.
+  ///
+  /// The session is untouched: the timer keeps running behind the sheet, and its
+  /// elapsed time comes from the clock rather than from the screen being
+  /// visible, so a thought costs the user no focus time.
+  Future<void> _captureDistraction() async {
+    final sessionId = ref.read(focusSessionControllerProvider).session?.id;
+    final saved = await showDistractionCaptureSheet(
+      context,
+      sessionId: sessionId,
+    );
+    if (!mounted || saved == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('记下了，继续专注')),
+    );
   }
 
   Future<void> _handlePauseResume(bool isPaused) async {
@@ -816,6 +834,32 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                               ),
                             ] else ...[
                               // 03: side-by-side pause + end
+                              // 记一下, next to the timer rather than in the
+                              // hero: it is the one control here that must be
+                              // reachable without looking away for long.
+                              SizedBox(
+                                width: double.infinity,
+                                height: 46,
+                                child: OutlinedButton.icon(
+                                  onPressed: _captureDistraction,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.primaryDark,
+                                    side: const BorderSide(
+                                        color: AppColors.primarySage),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.pill),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.edit_note_rounded,
+                                      size: 20),
+                                  label: const Text('记一下',
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700)),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
                               Row(
                                 children: [
                                   Expanded(
