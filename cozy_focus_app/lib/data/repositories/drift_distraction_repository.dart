@@ -49,4 +49,12 @@ class DriftDistractionRepository implements IDistractionRepository {
   @override
   Future<List<domain.DistractionNote>> notesForSession(String sessionId) =>
       _dao.notesForSession(sessionId);
+
+  @override
+  Future<List<domain.DistractionNote>> notesBetween(
+    String userId,
+    DateTime from,
+    DateTime to,
+  ) =>
+      _dao.notesBetween(userId, from, to);
 }

@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../domain/models/task.dart';
 import '../../domain/models/task_schedule.dart';
+import '../../domain/models/timeline_entry.dart';
+import '../controllers/focus_session_controller.dart';
+import '../controllers/timeline_controller.dart';
 import '../controllers/today_plan_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/task_category_chip.dart';
@@ -101,29 +104,38 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
                   message: error,
                   onRetry: controller.load,
                 ),
+              // Only the plan view has this empty state. On an empty day the
+              // timeline still has something to say — it may hold focus records
+              // and captured thoughts that no plan row accounts for — so the
+              // guard asks which view is showing, not only whether the plan is
+              // empty. Without it, switching to 时间线 on a day with no
+              // placements showed the plan's empty state and the timeline tab
+              // was unreachable.
               TodayPlanState(placements: final List<PlannedTask> placements)
-                  when placements.isEmpty =>
+                  when placements.isEmpty && !_timeline =>
                 const _EmptyState(),
               _ => RefreshIndicator(
                   onRefresh: controller.load,
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
                     children: [
-                      if (state.next case final PlannedTask next) ...[
-                        _NextTaskCard(
-                          placement: next,
-                          onStart: () => _start(context, next),
-                        ),
-                        const SizedBox(height: 18),
-                      ],
+                      // The card belongs to the plan view. The timeline is a
+                      // record of the day rather than a prompt about it, and the
+                      // design puts no 下一个任务 on it — the running session is
+                      // the row it highlights instead.
                       if (_timeline)
-                        _TimelineView(
-                          placements: state.placements,
-                          onOpen: (placement) => _open(context, placement),
-                          onLongPress: (placement) =>
-                              _placementActions(context, placement),
+                        _DayTimeline(
+                          day: state.day,
+                          onStopRunning: _stopRunningSession,
                         )
-                      else
+                      else ...[
+                        if (state.next case final PlannedTask next) ...[
+                          _NextTaskCard(
+                            placement: next,
+                            onStart: () => _start(context, next),
+                          ),
+                          const SizedBox(height: 18),
+                        ],
                         for (final placement in state.placements) ...[
                           _PlanRow(
                             placement: placement,
@@ -133,6 +145,7 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
                           ),
                           const SizedBox(height: 10),
                         ],
+                      ],
                     ],
                   ),
                 ),
@@ -162,6 +175,17 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
   Future<void> _start(BuildContext context, PlannedTask placement) async {
     await context.push('/focus/setup?taskId=${placement.schedule.taskId}');
     await ref.read(todayPlanControllerProvider.notifier).load();
+  }
+
+  /// Ends the session that is running, from its timeline row.
+  ///
+  /// Goes through the focus controller, so the session is completed and saved the
+  /// same way it is from the focus screen — the timeline reads facts, it does not
+  /// write them.
+  Future<void> _stopRunningSession(String sessionId) async {
+    await ref.read(focusSessionControllerProvider.notifier).completeSession();
+    await ref.read(todayPlanControllerProvider.notifier).load();
+    if (mounted) context.go('/focus/complete');
   }
 
   Future<void> _open(BuildContext context, PlannedTask placement) async {
@@ -267,7 +291,7 @@ class _Segments extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _segment('列表', !timeline, () => onChanged(false), 'plan_view_list'),
+            _segment('计划', !timeline, () => onChanged(false), 'plan_view_list'),
             _segment(
                 '时间线', timeline, () => onChanged(true), 'plan_view_timeline'),
           ],
@@ -480,137 +504,297 @@ class _PlanRow extends StatelessWidget {
   }
 }
 
-/// The same placements on a vertical axis, where the distance between two rows
-/// is the distance between their times.
+/// The day as a timeline: plans, focus and captured thoughts on one axis.
 ///
-/// Capped so a six-hour gap does not push the rest of the day off screen: the
-/// axis is a hint about spacing, not a scale drawing, and the times are written
-/// on every row anyway.
-class _TimelineView extends StatelessWidget {
-  final List<PlannedTask> placements;
-  final ValueChanged<PlannedTask> onOpen;
-  final ValueChanged<PlannedTask> onLongPress;
+/// ## Why the rows are not the plan rows again
+///
+/// The plan view answers "what did I intend"; this answers "what does the day
+/// actually look like". A plan and the focus that followed it are two rows,
+/// because they are two facts — the gap between them is the interesting part.
+///
+/// The projection lives in `timeline_projection.dart`; this widget only draws it.
+class _DayTimeline extends ConsumerWidget {
+  final DateTime day;
+  final Future<void> Function(String sessionId) onStopRunning;
 
-  const _TimelineView({
-    required this.placements,
-    required this.onOpen,
-    required this.onLongPress,
-  });
-
-  static const double _maxGap = 56;
-  static const double _minGap = 26;
+  const _DayTimeline({required this.day, required this.onStopRunning});
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var i = 0; i < placements.length; i++) ...[
-          if (i > 0)
-            SizedBox(
-              height: _gapBetween(placements[i - 1], placements[i]),
-              child: Padding(
-                padding: const EdgeInsets.only(left: 60),
-                child: Container(width: 1, color: AppColors.border),
-              ),
-            ),
-          _TimelineRow(
-            placement: placements[i],
-            onTap: () => onOpen(placements[i]),
-            onLongPress: () => onLongPress(placements[i]),
-          ),
-        ],
-      ],
-    );
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entries = ref.watch(dayTimelineProvider(day));
 
-  double _gapBetween(PlannedTask earlier, PlannedTask later) {
-    final minutes =
-        later.schedule.startAt.difference(earlier.schedule.startAt).inMinutes;
-    return (minutes.toDouble()).clamp(_minGap, _maxGap);
+    return switch (entries) {
+      AsyncData(:final value) when value.isEmpty => const _TimelineEmpty(),
+      AsyncData(:final value) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _TimelineLegend(kinds: {for (final e in value) e.kind}),
+            const SizedBox(height: 12),
+            for (var i = 0; i < value.length; i++)
+              _TimelineRow(
+                entry: value[i],
+                last: i == value.length - 1,
+                onStopRunning: onStopRunning,
+              ),
+          ],
+        ),
+      AsyncError(:final error) => Text(
+          '时间线没能读出来：$error',
+          style: const TextStyle(fontSize: 12, color: AppColors.accentPeach),
+        ),
+      _ => const SizedBox(
+          height: 80,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+    };
   }
 }
 
+/// The legend, built from the kinds the day actually has.
+///
+/// A legend listing 休息 on a day with no rest would be a key to nothing, so it
+/// only names what is on screen.
+class _TimelineLegend extends StatelessWidget {
+  final Set<TimelineKind> kinds;
+
+  const _TimelineLegend({required this.kinds});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 14,
+      runSpacing: 6,
+      children: [
+        for (final kind in TimelineKind.values)
+          if (kinds.contains(kind))
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _kindColor(kind),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  kind.label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+      ],
+    );
+  }
+}
+
+Color _kindColor(TimelineKind kind) => switch (kind) {
+      TimelineKind.plan => AppColors.primarySage,
+      TimelineKind.focus => AppColors.primaryDark,
+      TimelineKind.rest => AppColors.catStudy,
+      TimelineKind.note => AppColors.accentGold,
+    };
+
+IconData _kindIcon(TimelineKind kind) => switch (kind) {
+      TimelineKind.plan => Icons.check_circle_outline,
+      TimelineKind.focus => Icons.adjust_rounded,
+      TimelineKind.rest => Icons.local_cafe_outlined,
+      TimelineKind.note => Icons.edit_note_rounded,
+    };
+
+/// One row: the time, a dot on the axis, and what happened.
 class _TimelineRow extends StatelessWidget {
-  final PlannedTask placement;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final TimelineEntry entry;
+  final bool last;
+  final Future<void> Function(String sessionId) onStopRunning;
 
   const _TimelineRow({
-    required this.placement,
-    required this.onTap,
-    required this.onLongPress,
+    required this.entry,
+    required this.last,
+    required this.onStopRunning,
   });
 
   @override
   Widget build(BuildContext context) {
-    final done = !placement.schedule.isPlanned;
-    final chip = TaskCategoryChip.maybe(placement.categoryId);
-    return InkWell(
-      onTap: onTap,
-      onLongPress: onLongPress,
+    final color = _kindColor(entry.kind);
+    final detail = entry.detail;
+
+    return IntrinsicHeight(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
             width: 46,
-            child: Text(
-              _timeLabel(placement.schedule.startAt),
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                entry.clock,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ),
-          Container(
-            width: 14,
-            height: 14,
-            margin: const EdgeInsets.symmetric(horizontal: 0),
-            decoration: BoxDecoration(
-              color: done
-                  ? AppColors.surface
-                  : taskCategoryColor(placement.categoryId),
-              border: Border.all(
-                color: taskCategoryColor(placement.categoryId),
-                width: 2,
-              ),
-              shape: BoxShape.circle,
+          // The axis: a dot for this row, and the line down to the next one.
+          SizedBox(
+            width: 16,
+            child: Column(
+              children: [
+                Container(
+                  width: entry.isRunning ? 13 : 10,
+                  height: entry.isRunning ? 13 : 10,
+                  margin: const EdgeInsets.only(top: 3),
+                  decoration: BoxDecoration(
+                    color: entry.isDone ? AppColors.surface : color,
+                    border: Border.all(color: color, width: 2),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                if (!last)
+                  Expanded(
+                    child: Container(width: 1.5, color: AppColors.border),
+                  ),
+              ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    placement.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      decoration: done ? TextDecoration.lineThrough : null,
-                      decorationColor: AppColors.textTertiary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    formatTaskDuration(placement.schedule.plannedSeconds),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+              padding: EdgeInsets.only(bottom: last ? 0 : 18),
+              child: _TimelineCard(
+                entry: entry,
+                color: color,
+                detail: detail,
+                onStopRunning: onStopRunning,
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          if (chip != null) chip,
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineCard extends StatelessWidget {
+  final TimelineEntry entry;
+  final Color color;
+  final String? detail;
+  final Future<void> Function(String sessionId) onStopRunning;
+
+  const _TimelineCard({
+    required this.entry,
+    required this.color,
+    required this.detail,
+    required this.onStopRunning,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Row(
+      children: [
+        Icon(
+          _kindIcon(entry.kind),
+          size: 18,
+          color: entry.isDone ? AppColors.textTertiary : color,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.isRunning ? '专注中：${entry.title}' : entry.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight:
+                      entry.isRunning ? FontWeight.w700 : FontWeight.w600,
+                  color: AppColors.textPrimary,
+                  decoration: entry.isDone ? TextDecoration.lineThrough : null,
+                  decorationColor: AppColors.textTertiary,
+                ),
+              ),
+              if (detail != null) ...[
+                const SizedBox(height: 3),
+                Text(
+                  detail!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        // Only the running session has a control here. It is the one row the
+        // user can act on, and stopping it goes through the focus controller
+        // rather than touching a record.
+        if (entry.isRunning)
+          Semantics(
+            key: const ValueKey('timeline_stop_running'),
+            button: true,
+            label: '结束这次专注',
+            child: IconButton(
+              onPressed: () => onStopRunning(entry.sourceId!),
+              icon: const Icon(Icons.stop_circle_rounded,
+                  size: 26, color: AppColors.primaryDark),
+            ),
+          ),
+      ],
+    );
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(12, 10, entry.isRunning ? 4 : 12, 10),
+      decoration: BoxDecoration(
+        color: entry.isRunning ? AppColors.primaryLight : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: entry.isRunning ? AppColors.primarySage : AppColors.border,
+        ),
+      ),
+      child: content,
+    );
+  }
+}
+
+class _TimelineEmpty extends StatelessWidget {
+  const _TimelineEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      child: Column(
+        children: [
+          Icon(Icons.timeline_rounded, size: 40, color: AppColors.textTertiary),
+          SizedBox(height: 12),
+          Text(
+            '这一天还没有任何记录',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            '安排一件事、开始一次专注，或者随手记下一个想法，\n它们都会出现在这条时间线上。',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.5,
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );

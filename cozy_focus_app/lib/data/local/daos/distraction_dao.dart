@@ -133,6 +133,21 @@ class DistractionDao extends DatabaseAccessor<AppDatabase>
     return rows.map(_map).toList();
   }
 
+  Future<List<domain.DistractionNote>> notesBetween(
+    String userId,
+    DateTime from,
+    DateTime to,
+  ) async {
+    final rows = await (select(distractionNotes)
+          ..where((t) =>
+              t.userId.equals(userId) &
+              t.createdAt.isBiggerOrEqualValue(from) &
+              t.createdAt.isSmallerThanValue(to))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+    return rows.map(_map).toList();
+  }
+
   domain.DistractionNote _map(DistractionNote row) => domain.DistractionNote(
         id: row.id,
         userId: row.userId,

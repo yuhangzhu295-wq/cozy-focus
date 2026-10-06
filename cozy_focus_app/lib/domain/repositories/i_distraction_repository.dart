@@ -41,6 +41,17 @@ abstract interface class IDistractionRepository {
 
   /// Every note the session produced, for the review screen.
   Future<List<DistractionNote>> notesForSession(String sessionId);
+
+  /// Notes made within `[from, to)`, oldest first — the timeline's 快速记录 rows.
+  ///
+  /// Both states, not only the open ones: a thought that has since become a task
+  /// still happened at that time, and hiding it would make the timeline disagree
+  /// with the day it is describing.
+  Future<List<DistractionNote>> notesBetween(
+    String userId,
+    DateTime from,
+    DateTime to,
+  );
 }
 
 /// Creates a note and returns its id.

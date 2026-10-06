@@ -195,19 +195,26 @@ void main() {
         reason: 'and it is still on the day');
   });
 
-  testWidgets('the timeline segment draws the same placements', (tester) async {
+  testWidgets('the timeline segment shows the day, not the plan prompt',
+      (tester) async {
     final id = await task('写产品方案');
     await place(id, hour: 9);
 
     final c = container();
     await pump(tester, c);
     expect(find.byKey(const ValueKey('plan_view_timeline')), findsOneWidget);
+    // The plan view: the 下一个任务 card and the row both name the task.
+    expect(find.text('下一个任务'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('plan_view_timeline')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pump(const Duration(milliseconds: 120));
 
-    expect(find.text('写产品方案'), findsNWidgets(2),
-        reason: 'card plus row: the segment changes the layout, not the data');
+    // The timeline is a record of the day rather than a prompt about it, so the
+    // card is gone and the placement is one row on the axis.
+    expect(find.text('下一个任务'), findsNothing);
+    expect(find.text('写产品方案'), findsOneWidget);
     expect(find.text('09:00'), findsOneWidget);
   });
 

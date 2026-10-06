@@ -63,6 +63,13 @@ class FocusSession {
   int elapsedSecondsAt(DateTime nowForOpenSession) {
     final reference = endAt ?? nowForOpenSession;
     final raw = reference.difference(startAt).inSeconds;
+    // A reference before the start is not a session with negative focus time —
+    // it is a clock that moved backwards, which happens on an NTP correction, a
+    // timezone change or a user setting the device clock. Returning zero keeps
+    // the timer honest; letting it through reached `clamp(0, raw)` with the
+    // bounds the wrong way round, which throws and takes the display ticker with
+    // it.
+    if (raw <= 0) return 0;
     final paused = pauseIntervals.fold<int>(0, (acc, p) {
       if (p.pauseEnd != null) {
         return acc + p.pauseEnd!.difference(p.pauseStart).inSeconds;
