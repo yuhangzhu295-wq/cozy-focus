@@ -437,7 +437,13 @@ class _RoomPageState extends ConsumerState<RoomPage>
                               ),
                             ),
                           if (craft.roomItems.isEmpty)
-                            Center(
+                            // Above the middle, not in it: the companion stands in
+                            // the lower part of the room, and a centred block put
+                            // this button underneath its head — the call to action
+                            // was drawn under the pet and its label was half
+                            // hidden. Found by walking the app on a device.
+                            Align(
+                              alignment: const Alignment(0, -0.5),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
