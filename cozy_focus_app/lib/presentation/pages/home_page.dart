@@ -10,6 +10,7 @@ import '../controllers/craft_controller.dart';
 import '../../core/auth/current_user.dart';
 import '../theme/app_theme.dart';
 import '../companion/companion_avatar.dart';
+import '../companion/companion_business_state.dart';
 import '../widgets/app_bottom_nav.dart';
 
 /// Line height that hugs the approved font's own metrics.
@@ -245,13 +246,20 @@ class _HomePageState extends ConsumerState<HomePage> {
             top: topInset + _heroPetCentre - _heroPetSize / 2,
             left: 0,
             right: 0,
-            child: const Center(
+            child: Center(
               // No speech bubble here. Reference 01 gives the hero to the
               // illustration alone — a bubble stacked above the pet either
               // overlaps the headline or forces the pet ~64dp below its
               // approved size. The level/XP truth is surfaced on the Mochi
               // growth page, which is where the design puts it.
+              //
+              // The state does come from the business facts: a rest running puts
+              // Mochi to sleep, a session running makes it focus. That is the
+              // whole of the animation layer's input, and it is read-only — see
+              // companion_business_state.dart.
               child: CompanionAvatar(
+                visualStateOverride:
+                    ref.watch(companionBusinessStateOverrideProvider),
                 size: _heroPetSize,
                 showStateBadge: false,
               ),
