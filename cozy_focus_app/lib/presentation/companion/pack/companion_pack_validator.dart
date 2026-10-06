@@ -60,6 +60,20 @@ abstract final class CompanionPackValidator {
   /// image, not an animation, and the player advances by frame index.
   static const int minFramesPerAction = 2;
 
+  /// The most frames one action may carry.
+  ///
+  /// A memory bound, and the reason it belongs here rather than in the player:
+  /// the player precaches the *active sequence* in full, deliberately, so that an
+  /// animation does not stutter while its frames decode. That is fine for a
+  /// companion animation and not fine for an action that declares thousands of
+  /// frames — the archive policy allows 4096 entries, and at 512x512 RGBA each
+  /// decoded frame is about a megabyte, so an unbounded action is a pack that
+  /// exhausts memory by being well formed.
+  ///
+  /// 64 is generous rather than tight: the shipped packs use between two and six
+  /// frames per action, and at 8fps 64 frames is an eight-second animation.
+  static const int maxFramesPerAction = 64;
+
   /// Validates [manifest] against [availableFiles].
   ///
   /// [availableFiles] are the pack's relative paths as extracted. [expectedId] is
@@ -140,6 +154,14 @@ abstract final class CompanionPackValidator {
               'action_too_short',
               'action "$id" has ${frames.length} frame(s); a still image is not '
                   'an animation');
+        }
+        if (frames.length > maxFramesPerAction) {
+          // Refused rather than trimmed: the player holds a whole sequence in
+          // memory, so accepting this would install a pack that can exhaust it.
+          reject(
+              'action_too_long',
+              'action "$id" has ${frames.length} frames, above the '
+                  '$maxFramesPerAction a sequence may carry');
         }
         final seen = <String>{};
         for (final frame in frames) {

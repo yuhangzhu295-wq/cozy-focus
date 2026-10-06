@@ -99,6 +99,46 @@ void main() {
       expect(run(m).codes, contains('action_too_short'));
     });
 
+    test('an action longer than a sequence may be is refused', () {
+      // A memory bound rather than a taste one. The player holds the active
+      // sequence in memory in full, deliberately, so an action that declares
+      // thousands of frames is a pack that exhausts memory by being well formed -
+      // the archive policy allows 4096 entries, and a decoded 512x512 frame is
+      // about a megabyte.
+      final m = goodManifest();
+      final frames = [
+        for (var i = 0; i < CompanionPackValidator.maxFramesPerAction + 1; i++)
+          'walk_${i.toString().padLeft(3, '0')}.png',
+      ];
+      (m['actions'] as Map)['walk'] = {
+        'frames': frames,
+        'fps': 8,
+        'loopMode': 'loop',
+      };
+      final result = run(m);
+      expect(result.codes, contains('action_too_long'));
+      // And the bound is stated in the refusal, so a pack author learns what it
+      // is rather than only that they exceeded it.
+      expect(result.violations.map((v) => v.detail).join(),
+          contains('${CompanionPackValidator.maxFramesPerAction}'));
+    });
+
+    test('an action at the bound is accepted', () {
+      // The guard against a bound that refuses the thing it is meant to allow.
+      final m = goodManifest();
+      final frames = [
+        for (var i = 0; i < CompanionPackValidator.maxFramesPerAction; i++)
+          'walk_${i.toString().padLeft(3, '0')}.png',
+      ];
+      (m['actions'] as Map)['walk'] = {
+        'frames': frames,
+        'fps': 8,
+        'loopMode': 'loop',
+      };
+      final result = run(m);
+      expect(result.codes, isNot(contains('action_too_long')));
+    });
+
     test('a non-positive fps is refused', () {
       final m = goodManifest();
       (m['actions'] as Map)['walk'] = {

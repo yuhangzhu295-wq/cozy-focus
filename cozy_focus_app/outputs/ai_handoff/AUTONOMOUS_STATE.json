@@ -23,7 +23,7 @@
     "P37_ai_generation_spike": "COMPLETE (REAL_PROVIDER_GENERATION = BLOCKED_EXTERNAL)"
   },
   "test_counts": {
-    "full_suite": "1508/1508",
+    "full_suite": "1510/1510",
     "pack_suite": "173",
     "format": "PASS (325 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
@@ -202,10 +202,19 @@
     "The cupertino_icons font warning during a release build is not ours: lib/ references no CupertinoIcons and pubspec does not declare the package, so it is a transitive tree-shaking artifact and no glyphs are missing.",
     "Damaged-pack hardening: 8 tests covering a manifest corrupted while running, missing frames, a deleted pack directory, availability for a damaged pack, and a cold start over a damaged root. The picker does not offer a pack it cannot read, and the app is never left unable to name the selected companion.",
     "RESOLVED, and withdrawn as a finding: the earlier note said an already-alive companionCatalogProvider did not recompute after a pack became unreadable. It does. A traced diagnostic shows two emits - [dog,cat,rabbit,mimi] then [dog,cat,rabbit,other] - so the damaged pack stops being offered without a restart. The earlier observation was an artifact of reading the provider without a listener first: a provider that is only `read` is not invalidated when its dependency changes, which is a fact about `read`, not about the catalog. The test now subscribes the way a widget does and asserts the recomputation, and passes deterministically across runs.",
-    "Accessibility on the import screen: 4 tests. The file button, the three species chips and the install button are all reachable by semantics, a chosen species announces as selected, and the completeness report is present as text rather than only as an amber pill. Reduced motion is honoured for a custom companion by construction - the same director and the same context, with no per-companion branch - which custom_companion_first_class_test already asserts."
+    "Accessibility on the import screen: 4 tests. The file button, the three species chips and the install button are all reachable by semantics, a chosen species announces as selected, and the completeness report is present as text rather than only as an amber pill. Reduced motion is honoured for a custom companion by construction - the same director and the same context, with no per-companion branch - which custom_companion_first_class_test already asserts.",
+    "Sprite-cache bound: CompanionPackValidator.maxFramesPerAction = 64. The player precaches the active sequence in full, deliberately, so an action declaring thousands of frames was a pack that exhausts memory by being well formed - the archive policy allows 4096 entries and a decoded 512x512 RGBA frame is about a megabyte. Refused at import rather than trimmed, and the refusal names the bound. Two tests: over the bound is refused, at the bound is accepted.",
+    "Process death mid-session was already covered and needed no new work: persistence_recovery_test covers an active session, a pause, and a session while finishing, and golden_flow_test covers the abandoned finishing session a kill leaves behind, settling it exactly once."
   ],
   "p39_remaining": [
     "Sprite-cache bounds and a process-death-mid-session check.",
     "A device pass over the damaged-pack cases: the tests cover the logic, and the device would show what a user actually sees."
-  ]
+  ],
+  "p39_device_damaged_pack": {
+    "device": "Pixel 7 API 34 emulator",
+    "damage": "the installed pack's manifest.json removed with run-as, then a cold start",
+    "observed": "the record file was removed (recovery dropped the pack and rewrote the records), the home page came up on Mochi with the dog sprite, the player 2 minutes and 1 day streak were untouched, and logcat had no exceptions",
+    "result": "PASS - the app degrades to a built-in, cleans up after itself, and loses none of the player data",
+    "note": "the selection FILE still reads mimi afterwards. That is harmless: an unknown stored id is ignored on read and the file is rewritten on the next select. Recorded because it is the kind of thing that looks alarming in a file dump."
+  }
 }
