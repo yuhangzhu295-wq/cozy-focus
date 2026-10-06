@@ -4,9 +4,9 @@
   "branch": "recovery/v4.2.1-rebuild",
   "updated_at_slice": "CozyFocus 2.0 P1-P10 all delivered, then walked on the emulator: three user-visible defects found that the whole suite had passed, all three fixed with reverse-proved regression tests.",
   "phase": "P10",
-  "slice": "P1-P10 complete: task domain, today plan, focus timing modes, distraction inbox, focus review, timeline projection, analytics, free time, companion wiring, settings and empty states. Schema v4 -> v11. Golden Flows A-F pass. Device walkthrough done; three defects fixed.",
+  "slice": "P1-P10 complete. Device walkthrough done: four user-visible defects found that the whole suite had passed, all four fixed and verified on the emulator with reverse-proved regression tests.",
   "start_sha": "0a116e2",
-  "latest_sha": "2055ecad6a74691bc9d05bf3e60d691f4df194e8",
+  "latest_sha": "4d072ce1308548137925c3e3047cebf094c5bde4",
   "remote_sha": "eb01eddeec5beb92bdc063c251bf27844dfb87dd",
   "local_equals_remote": true,
   "worktree": "clean",
@@ -25,7 +25,7 @@
     "golden_flows_A_to_F": "PASS"
   },
   "test_counts": {
-    "full_suite": "1836/1836",
+    "full_suite": "1839/1839",
     "schema_head": 11
   },
   "p32_device_flow": {
@@ -240,5 +240,20 @@
     "Five-tab bottom navigation (designs 15/16 show five): the brief forbids it.",
     "Visual sign-off on all sixteen designs beyond the screens walked on the emulator (records hub, today plan x3 views, task list, create task, focus setup, focus active, capture sheet, complete, inbox, rest, settings).",
     "Performance measurement (startup, frame rate, package size)."
-  ]
+  ],
+  "device_walkthrough": {
+    "verdict": "PASS after fixes",
+    "defects_found_and_fixed": [
+      "focus setup screen highlighted 成长 in the bottom nav instead of 首页",
+      "records tab inbox count did not refresh after a capture",
+      "rest screen presets wrapped 3+1 instead of the design 2x2",
+      "schedule form silently did nothing for an already-planned task"
+    ],
+    "unpinned": [
+      "the _touched guard on the schedule form: kept, no test could reach it, stated as absent at the guard itself"
+    ],
+    "not_yet_walked": [
+      "task list with rows, room (design 10), record detail, reports, growth, dress, collection"
+    ]
+  }
 }
