@@ -2,9 +2,9 @@
   "program": "RESUME_P32_THROUGH_P40",
   "project": "COZY_FOCUS",
   "branch": "recovery/v4.2.1-rebuild",
-  "updated_at_slice": "P39 partial: AAB and APK build, shipped asset integrity verified, all tooling proofs green",
-  "phase": "P38/P39",
-  "slice": "P39 hardening in progress (build artifacts, asset integrity, tooling proofs). Next: the remaining P39 items and P38.",
+  "updated_at_slice": "P39 complete and P38 classified BLOCKED_EXTERNAL with its reasoning written down",
+  "phase": "P40",
+  "slice": "P39 COMPLETE, P38 = BLOCKED_EXTERNAL. Next: P40, which needs the owner.",
   "start_sha": "0a116e2",
   "latest_sha": "45b1398",
   "remote_sha": "45b1398",
@@ -20,7 +20,9 @@
     "P34_local_pack_builder": "PASS (device-walked)",
     "P35_custom_companion_runtime": "PASS",
     "P36_local_custom_pet_golden_flow": "PASS (device-walked, offline)",
-    "P37_ai_generation_spike": "COMPLETE (REAL_PROVIDER_GENERATION = BLOCKED_EXTERNAL)"
+    "P37_ai_generation_spike": "COMPLETE (REAL_PROVIDER_GENERATION = BLOCKED_EXTERNAL)",
+    "P38_optional_cloud_backend": "BLOCKED_EXTERNAL (provider-neutral architecture delivered in P37)",
+    "P39_full_hardening": "COMPLETE"
   },
   "test_counts": {
     "full_suite": "1510/1510",
@@ -77,7 +79,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "Finish P39: corrupt-pack recovery on device, reduced-motion and accessibility passes, sprite-cache bounds, process-death mid-session, and the offline path. Then P38 as PARTIAL/BLOCKED_EXTERNAL (a provider-neutral backend skeleton only, with no claim that cloud generation works), then P40.",
+  "next_action": "P40: the release candidate. Feature freeze, resolve only reproduced blockers, run the full gate. Two things it needs from the owner and cannot get from here: OWNER_VISUAL_GATE (nobody has looked at the custom companion screens and said they are right) and RELEASE_SIGNING (android/key.properties is absent and no keystore may be invented). LAUNCHER_ICON is blocked on approved artwork. Until those arrive the honest result is READY_FOR_STORE = NO.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git status --short",
     "read this file",
@@ -113,7 +115,10 @@
     "P37_to_P40": "NOT_STARTED",
     "P37_ai_generation_spike": "COMPLETE (blocked external)",
     "P38_to_P40": "NOT_STARTED",
-    "P39_hardening": "IN_PROGRESS"
+    "P39_hardening": "IN_PROGRESS",
+    "P38_optional_cloud_backend": "BLOCKED_EXTERNAL",
+    "P39_full_hardening": "COMPLETE",
+    "P40_release_candidate": "NOT_STARTED (needs owner visual gate + signing)"
   },
   "p33_device_flow": {
     "device": "Pixel 7 API 34 emulator",
@@ -207,8 +212,8 @@
     "Process death mid-session was already covered and needed no new work: persistence_recovery_test covers an active session, a pause, and a session while finishing, and golden_flow_test covers the abandoned finishing session a kill leaves behind, settling it exactly once."
   ],
   "p39_remaining": [
-    "Sprite-cache bounds and a process-death-mid-session check.",
-    "A device pass over the damaged-pack cases: the tests cover the logic, and the device would show what a user actually sees."
+    "A device pass over the accessibility work: the assertions are widget-level and a TalkBack pass would be the real check, which needs a person listening.",
+    "A sustained performance run with several installed packs. The budget test covers one companion lifecycle, not a room full of custom ones."
   ],
   "p39_device_damaged_pack": {
     "device": "Pixel 7 API 34 emulator",
