@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models/task.dart';
+import '../../domain/models/task_schedule.dart';
 import '../controllers/providers.dart';
 import '../controllers/task_controller.dart';
 import '../theme/app_theme.dart';
-import 'task_list_page.dart' show formatTaskDuration;
+import '../widgets/plan_moment.dart';
+import '../widgets/task_duration.dart';
 
 /// Screen 12: one task, in full.
 ///
@@ -17,11 +19,12 @@ import 'task_list_page.dart' show formatTaskDuration;
 /// recent list is those same rows. Nothing on this screen is a placeholder: if
 /// the numbers are zero it is because nothing has been recorded.
 ///
-/// ## What is not here yet
+/// ## The plan side
 ///
-/// The design's `下次计划` card and its `加入今日计划` button are P2's — there is no
-/// schedule table in this phase, and a card that showed a plan nobody stored
-/// would be the fake the brief forbids. They arrive with the schedule.
+/// `下次计划` reads `task_schedules` for the next placement from today onward, and
+/// `加入今日计划` opens the same schedule form the today view uses. Both write and
+/// read the real table; the tile says 未安排 when the task is not planned, which
+/// is a state the user can act on rather than a blank.
 class TaskDetailPage extends ConsumerWidget {
   final String taskId;
 
@@ -84,7 +87,11 @@ class TaskDetailPage extends ConsumerWidget {
         TaskDetailState(isLoading: true, progress: null) =>
           const Center(child: CircularProgressIndicator()),
         TaskDetailState(progress: null) => const _MissingTask(),
-        _ => _Body(taskId: taskId, progress: progress!),
+        _ => _Body(
+            taskId: taskId,
+            progress: progress!,
+            nextSchedule: state.nextSchedule,
+          ),
       },
     );
   }
@@ -115,8 +122,13 @@ class TaskDetailPage extends ConsumerWidget {
 class _Body extends ConsumerWidget {
   final String taskId;
   final TaskWithProgress progress;
+  final TaskSchedule? nextSchedule;
 
-  const _Body({required this.taskId, required this.progress});
+  const _Body({
+    required this.taskId,
+    required this.progress,
+    this.nextSchedule,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -156,15 +168,39 @@ class _Body extends ConsumerWidget {
           const SizedBox(height: 12),
         ],
 
-        _StatCard(
-          icon: Icons.timer_outlined,
-          label: '累计专注时长',
-          value: progress.focusedSeconds > 0
-              ? formatTaskDuration(progress.focusedSeconds)
-              : '还没有开始',
-          hint: progress.sessionCount > 0
-              ? '共 ${progress.sessionCount} 次专注'
-              : null,
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _StatCard(
+                  icon: Icons.timer_outlined,
+                  label: '累计专注时长',
+                  value: progress.focusedSeconds > 0
+                      ? formatTaskDuration(progress.focusedSeconds)
+                      : '还没有开始',
+                  hint: progress.sessionCount > 0
+                      ? '共 ${progress.sessionCount} 次专注'
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatCard(
+                  icon: Icons.event_available_rounded,
+                  label: '下次计划',
+                  value: nextSchedule == null
+                      ? '未安排'
+                      : formatPlanMoment(
+                          nextSchedule!,
+                          ref.read(focusClockProvider).now(),
+                        ),
+                  hint: nextSchedule == null ? '点这里安排时间' : null,
+                  onTap: () => _openSchedule(context, ref),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
 
@@ -176,27 +212,61 @@ class _Body extends ConsumerWidget {
           _RecentFocusCard(entries: progress.recentFocus),
         if (progress.recentFocus.isNotEmpty) const SizedBox(height: 12),
 
-        SizedBox(
-          height: 52,
-          child: FilledButton.icon(
-            // The task id travels with the session, which is what makes the
-            // record count towards this task afterwards.
-            onPressed: () => context.push('/focus/setup?taskId=$taskId'),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primarySage,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 52,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openSchedule(context, ref),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryDark,
+                    side: const BorderSide(color: AppColors.primarySage),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                  ),
+                  icon: const Icon(Icons.event_available_rounded, size: 20),
+                  label: const Text(
+                    '加入今日计划',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                ),
               ),
             ),
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text(
-              '开始专注',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            const SizedBox(width: 10),
+            Expanded(
+              child: SizedBox(
+                height: 52,
+                child: FilledButton.icon(
+                  // The task id travels with the session, which is what makes
+                  // the record count towards this task afterwards.
+                  onPressed: () => context.push('/focus/setup?taskId=$taskId'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primarySage,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                  ),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text(
+                    '开始专注',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ],
     );
+  }
+
+  /// Opens the schedule form and reloads afterwards, so the 下次计划 tile shows
+  /// what was just saved rather than the value from before the trip.
+  Future<void> _openSchedule(BuildContext context, WidgetRef ref) async {
+    await context.push('/records/tasks/$taskId/schedule');
+    await ref.read(taskDetailControllerProvider(taskId).notifier).load();
   }
 
   Future<void> _editNote(
@@ -335,16 +405,21 @@ class _StatCard extends StatelessWidget {
   final String value;
   final String? hint;
 
+  /// Set when the card leads somewhere. The design's 下次计划 tile is a way into
+  /// the schedule form, so it has to be tappable rather than a dead readout.
+  final VoidCallback? onTap;
+
   const _StatCard({
     required this.icon,
     required this.label,
     required this.value,
     this.hint,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final card = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -358,13 +433,18 @@ class _StatCard extends StatelessWidget {
             children: [
               Icon(icon, size: 15, color: AppColors.primarySage),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
+              if (onTap != null)
+                const Icon(Icons.chevron_right,
+                    size: 16, color: AppColors.textTertiary),
             ],
           ),
           const SizedBox(height: 8),
@@ -387,6 +467,16 @@ class _StatCard extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+
+    if (onTap == null) return card;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: card,
       ),
     );
   }

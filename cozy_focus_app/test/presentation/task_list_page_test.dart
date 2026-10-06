@@ -8,8 +8,10 @@ import 'package:cozy_focus_app/data/local/app_database.dart'
     hide Task, TaskSubtask;
 import 'package:cozy_focus_app/data/repositories/drift_task_repository.dart';
 import 'package:cozy_focus_app/domain/models/task.dart';
+import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
 import 'package:cozy_focus_app/presentation/pages/task_list_page.dart';
+import 'package:cozy_focus_app/presentation/widgets/task_duration.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 
 /// P1 — the task list screen, against a real database.
@@ -22,12 +24,18 @@ import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 void main() {
   late AppDatabase db;
   late DriftTaskRepository repo;
+  late _FixedClock clock;
 
   const userId = 'default_user';
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    repo = DriftTaskRepository(db.taskDao);
+    // A fixed clock, because the 今天 tab now means "planned for today or
+    // written down today" — which is a question with a different answer every
+    // day. A test that used the real clock would pass on the day it was written
+    // and fail the next morning.
+    clock = _FixedClock(DateTime(2026, 10, 7, 12));
+    repo = DriftTaskRepository(db.taskDao, clock: clock);
   });
 
   tearDown(() async => db.close());
@@ -42,7 +50,10 @@ void main() {
 
   ProviderContainer container() {
     final c = ProviderContainer(
-      overrides: [appDatabaseProvider.overrideWithValue(db)],
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        focusClockProvider.overrideWithValue(clock),
+      ],
     );
     addTearDown(c.dispose);
     return c;
@@ -103,10 +114,19 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 120));
 
-    // It left the open list, because the filter says it is not there any more.
-    expect(find.text('写产品方案'), findsNothing);
+    // It stays in 今天 with a tick. Since P2 the 今天 tab means "planned for
+    // today, or written down today", and the design shows a completed row in it
+    // — a task does not leave the day it belongs to because it got done.
+    expect(find.text('写产品方案'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle), findsOneWidget);
     // And the database agrees, which is the part that matters.
     expect((await repo.findById('t1'))!.isDone, isTrue);
+
+    // 进行中 is where it left, because that tab is the open ones.
+    await tester.tap(find.text('进行中'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(find.text('写产品方案'), findsNothing);
 
     await tester.tap(find.text('已完成'));
     await tester.pump();
@@ -156,4 +176,13 @@ void main() {
     expect(formatTaskDuration(75 * 60), '1 小时 15 分钟');
     expect(formatTaskDuration(0), '未设置');
   });
+}
+
+/// A clock the test fixes, so "today" is a day and not the day the suite runs.
+class _FixedClock implements FocusClock {
+  _FixedClock(this._now);
+  final DateTime _now;
+
+  @override
+  DateTime now() => _now;
 }

@@ -11,6 +11,7 @@ import 'tables/craft_tables.dart';
 import 'tables/pet_tables.dart';
 import 'tables/achievement_table.dart';
 import 'tables/sync_tables.dart';
+import 'tables/task_schedule_table.dart';
 import 'tables/task_tables.dart';
 import 'daos/focus_session_dao.dart';
 import 'daos/focus_record_dao.dart';
@@ -40,6 +41,7 @@ part 'app_database.g.dart';
     RewardLedgerTable,
     Tasks,
     TaskSubtasks,
+    TaskSchedules,
   ],
   daos: [
     FocusSessionDao,
@@ -59,7 +61,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -125,6 +127,20 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(taskSubtasks);
           await m.addColumn(focusSessions, focusSessions.taskId);
           await m.addColumn(focusRecords, focusRecords.taskId);
+        }
+        // v5 -> v6: where a task is planned. Its own table rather than a date on
+        // the task, because the same task can be planned for more than one day
+        // and each placement has its own time.
+        if (from < 6) {
+          await m.createTable(taskSchedules);
+          // Created separately as well as in the table's own constraints, so a
+          // database that already ran this step without the constraint picks it
+          // up on the next open rather than keeping a table that allows a task
+          // to be on the same day twice.
+          await customStatement(
+            'CREATE UNIQUE INDEX IF NOT EXISTS idx_task_schedules_task_day '
+            'ON task_schedules(task_id, date);',
+          );
         }
       },
       beforeOpen: (details) async {

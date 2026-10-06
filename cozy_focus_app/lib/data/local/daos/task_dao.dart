@@ -1,7 +1,9 @@
 import 'package:drift/drift.dart';
 
 import '../../../domain/models/task.dart' as domain;
+import '../../../domain/models/task_schedule.dart' as schedule;
 import '../tables/focus_records_table.dart';
+import '../tables/task_schedule_table.dart';
 import '../tables/task_tables.dart';
 import '../app_database.dart';
 
@@ -13,7 +15,7 @@ part 'task_dao.g.dart';
 /// is a question about records joined by task id — and a repository that made
 /// the caller do that join would put the same SQL in every screen that wants the
 /// number.
-@DriftAccessor(tables: [Tasks, TaskSubtasks, FocusRecords])
+@DriftAccessor(tables: [Tasks, TaskSubtasks, TaskSchedules, FocusRecords])
 class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   TaskDao(super.db);
 
@@ -237,6 +239,149 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     ];
   }
 
+  // ── schedules ─────────────────────────────────────────────────────────────
+
+  Future<void> insertSchedule(schedule.TaskSchedule placement) async {
+    await into(taskSchedules).insert(
+      TaskSchedulesCompanion(
+        id: Value(placement.id),
+        taskId: Value(placement.taskId),
+        userId: Value(placement.userId),
+        date: Value(placement.date),
+        startAt: Value(placement.startAt),
+        plannedSeconds: Value(placement.plannedSeconds),
+        status: Value(placement.status.id),
+        createdAt: Value(placement.createdAt),
+      ),
+      mode: InsertMode.insertOrIgnore,
+    );
+  }
+
+  Future<void> updateSchedule(schedule.TaskSchedule placement) async {
+    await (update(taskSchedules)..where((t) => t.id.equals(placement.id)))
+        .write(
+      TaskSchedulesCompanion(
+        date: Value(placement.date),
+        startAt: Value(placement.startAt),
+        plannedSeconds: Value(placement.plannedSeconds),
+        status: Value(placement.status.id),
+      ),
+    );
+  }
+
+  Future<void> deleteSchedule(String id) async {
+    await (delete(taskSchedules)..where((t) => t.id.equals(id))).go();
+  }
+
+  /// A day's placements, in time order, each with the task it places.
+  ///
+  /// One join rather than a lookup per row: the today view draws every row with
+  /// its title and category, and a query per row is N queries for one screen.
+  Future<List<schedule.PlannedTask>> schedulesForDay(
+    String userId,
+    String date,
+  ) async {
+    final query = select(taskSchedules).join([
+      innerJoin(tasks, tasks.id.equalsExp(taskSchedules.taskId)),
+    ])
+      ..where(
+          taskSchedules.userId.equals(userId) & taskSchedules.date.equals(date))
+      ..orderBy([OrderingTerm.asc(taskSchedules.startAt)]);
+
+    final rows = await query.get();
+    return [
+      for (final row in rows)
+        schedule.PlannedTask(
+          schedule: _mapSchedule(row.readTable(taskSchedules)),
+          title: row.readTable(tasks).title,
+          categoryId: row.readTable(tasks).categoryId,
+        ),
+    ];
+  }
+
+  /// A task's placements from [from] onward, in time order.
+  ///
+  /// For the detail screen's "下次计划": the next time this task is planned,
+  /// which is a different question from today's list.
+  Future<List<schedule.TaskSchedule>> upcomingSchedulesFor(
+    String taskId, {
+    required String from,
+    int limit = 1,
+  }) async {
+    final rows = await (select(taskSchedules)
+          ..where((t) =>
+              t.taskId.equals(taskId) &
+              t.date.isBiggerOrEqualValue(from) &
+              t.status.equals(schedule.TaskScheduleStatus.planned.id))
+          ..orderBy([(t) => OrderingTerm.asc(t.startAt)])
+          ..limit(limit))
+        .get();
+    return rows.map(_mapSchedule).toList();
+  }
+
+  /// Whether [taskId] is already placed on [date].
+  ///
+  /// Asked before adding, so the create screen's switch is idempotent rather
+  /// than stacking a second placement on the same day.
+  Future<bool> isScheduledOn(String taskId, String date) async {
+    final count = taskSchedules.id.count();
+    final query = selectOnly(taskSchedules)
+      ..addColumns([count])
+      ..where(taskSchedules.taskId.equals(taskId) &
+          taskSchedules.date.equals(date));
+    final row = await query.getSingle();
+    return (row.read(count) ?? 0) > 0;
+  }
+
+  /// Tasks placed on [date], in start-time order.
+  ///
+  /// The task list's 今天 tab. A task with no placement is not here — that is
+  /// what makes 今天 mean "planned for today" rather than "not finished yet",
+  /// which is what 进行中 already means.
+  Future<List<domain.Task>> tasksScheduledOn(String userId, String date) async {
+    final query = select(tasks).join([
+      innerJoin(taskSchedules, taskSchedules.taskId.equalsExp(tasks.id)),
+    ])
+      ..where(
+          taskSchedules.userId.equals(userId) & taskSchedules.date.equals(date))
+      ..orderBy([OrderingTerm.asc(taskSchedules.startAt)]);
+    final rows = await query.get();
+    return [for (final row in rows) _mapTask(row.readTable(tasks))];
+  }
+
+  /// Tasks created within [from, to), newest first.
+  ///
+  /// Half of the 今天 tab's second rule: a task written down today with no plan
+  /// yet is still part of today, so that switching 加入今日计划 off on the create
+  /// screen does not make the task invisible.
+  Future<List<domain.Task>> tasksCreatedBetween(
+    String userId,
+    DateTime from,
+    DateTime to,
+  ) async {
+    final rows = await (select(tasks)
+          ..where((t) =>
+              t.userId.equals(userId) &
+              t.createdAt.isBiggerOrEqualValue(from) &
+              t.createdAt.isSmallerThanValue(to))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+    return rows.map(_mapTask).toList();
+  }
+
+  /// Every task id this user has a placement for, from [from] onward.
+  ///
+  /// One query for the whole set rather than one per task, so the 今天 tab can
+  /// tell "created today but never planned" from "planned for another day"
+  /// without a query per row.
+  Future<Set<String>> taskIdsScheduledFrom(String userId, String from) async {
+    final rows = await (select(taskSchedules)
+          ..where((t) =>
+              t.userId.equals(userId) & t.date.isBiggerOrEqualValue(from)))
+        .get();
+    return {for (final row in rows) row.taskId};
+  }
+
   // ── mapping ───────────────────────────────────────────────────────────────
 
   domain.Task _mapTask(Task row) => domain.Task(
@@ -250,6 +395,17 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
         createdAt: row.createdAt,
         completedAt: row.completedAt,
         sortOrder: row.sortOrder,
+      );
+
+  schedule.TaskSchedule _mapSchedule(TaskSchedule row) => schedule.TaskSchedule(
+        id: row.id,
+        taskId: row.taskId,
+        userId: row.userId,
+        date: row.date,
+        startAt: row.startAt,
+        plannedSeconds: row.plannedSeconds,
+        status: schedule.TaskScheduleStatus.fromId(row.status),
+        createdAt: row.createdAt,
       );
 
   domain.TaskSubtask _mapSubtask(TaskSubtask row) => domain.TaskSubtask(

@@ -1,4 +1,5 @@
 import '../models/task.dart';
+import '../models/task_schedule.dart';
 
 /// The three lists the task screen filters between.
 ///
@@ -52,4 +53,32 @@ abstract interface class ITaskRepository {
   /// How many tasks are still open — for the records tab's badge and the empty
   /// state's copy.
   Future<int> countOpen(String userId);
+
+  // ── planning ──────────────────────────────────────────────────────────────
+
+  /// A day's placements, in time order, each with the task it places.
+  Future<List<PlannedTask>> schedulesForDay(String userId, String date);
+
+  /// The next placements for [taskId] from [from] onward.
+  Future<List<TaskSchedule>> upcomingSchedulesFor(String taskId,
+      {required String from, int limit});
+
+  /// Whether [taskId] is already placed on [date].
+  Future<bool> isScheduledOn(String taskId, String date);
+
+  /// Places [taskId] on a day at a time, for [plannedSeconds].
+  ///
+  /// Returns the new placement's id. Adding the same task to the same day twice
+  /// is a no-op that returns the existing placement's id rather than stacking a
+  /// second row: the switch on the create screen can be flipped twice, and a
+  /// plan with the same task on it twice is not a plan.
+  Future<String> schedule({
+    required String taskId,
+    required String userId,
+    required DateTime startAt,
+    required int plannedSeconds,
+  });
+
+  Future<void> updateSchedule(TaskSchedule placement);
+  Future<void> deleteSchedule(String id);
 }

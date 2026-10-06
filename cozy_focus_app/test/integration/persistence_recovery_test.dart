@@ -558,12 +558,14 @@ void main() {
       expect(records.first['duration_seconds'], 1500,
           reason: 'the recorded duration is untouched');
       // The current schema version. It moves when a migration is added, and
-      // these two assertions are here to prove the chain *reached* the head
-      // rather than stopping part way.
-      expect((await rows(db, 'PRAGMA user_version')).first['user_version'], 5);
+      // these assertions are here to prove the chain *reached* the head rather
+      // than stopping part way. It went to 6 with P2's plan table.
+      expect((await rows(db, 'PRAGMA user_version')).first['user_version'], 6);
     });
 
-    test('v4 to v5 adds the task domain and keeps every focus row', () async {
+    test(
+        'v4 opens at the head with the task domain, the plan, and every focus '
+        'row', () async {
       // The v4 shape: the focus tables as v2 left them (v3 and v4 added no focus
       // columns; v4 only added the unique index), plus that index. The task
       // tables do not exist yet, which is what this migration has to create.
@@ -609,7 +611,16 @@ void main() {
           "and name = 'idx_focus_records_session_id'");
       expect(indexes, hasLength(1));
 
-      expect((await rows(db, 'PRAGMA user_version')).first['user_version'], 5);
+      expect((await rows(db, 'PRAGMA user_version')).first['user_version'], 6);
+
+      // The chain has to reach the whole head, not stop at the task domain: a
+      // v4 database that opened without the plan table would look migrated and
+      // fail the first time the user planned something.
+      final plan = await rows(
+          db,
+          "select name from sqlite_master where type='table' "
+          "and name = 'task_schedules'");
+      expect(plan, hasLength(1));
     });
 
     test('v2 to v3 adds craft progress and seeds the recipes', () async {
@@ -693,7 +704,7 @@ void main() {
       final again = openDb();
       addTearDown(again.close);
       expect(
-          (await rows(again, 'PRAGMA user_version')).first['user_version'], 5);
+          (await rows(again, 'PRAGMA user_version')).first['user_version'], 6);
       // Seeded once, not twice.
       expect(await rows(again, 'select * from craft_recipes'), hasLength(8));
     });

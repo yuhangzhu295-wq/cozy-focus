@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import '../controllers/providers.dart';
+import '../controllers/today_plan_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -283,6 +284,8 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
         children: [
           _buildStatsCard(mins, count, streak, sec),
           const SizedBox(height: 12),
+          _buildTodayEntry(context),
+          const SizedBox(height: 10),
           _buildTaskEntry(context),
           const SizedBox(height: 12),
           Container(
@@ -326,6 +329,27 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
         ]);
   }
 
+  /// The way into today's plan.
+  ///
+  /// Above 任务 because it is the narrower question — "what am I doing now" —
+  /// and the one a user opening the records tab mid-day is more likely to want.
+  /// The count is real placements, not a decoration.
+  Widget _buildTodayEntry(BuildContext context) {
+    final plan = ref.watch(todayPlanControllerProvider);
+    final trailing = plan.isEmpty
+        ? '还没有安排'
+        : plan.remaining > 0
+            ? '${plan.remaining} 项待完成'
+            : '今天的都完成了';
+    return _navEntry(
+      context: context,
+      icon: Icons.event_note_rounded,
+      title: '今日计划',
+      trailing: trailing,
+      route: '/records/today',
+    );
+  }
+
   /// The way into the task list.
   ///
   /// On the records tab rather than as a fourth bottom tab: tasks are what a
@@ -334,11 +358,27 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
   /// product two places to look for the same thing.
   Widget _buildTaskEntry(BuildContext context) {
     final open = ref.watch(taskListControllerProvider).tasks.length;
+    return _navEntry(
+      context: context,
+      icon: Icons.checklist_rounded,
+      title: '任务',
+      trailing: open > 0 ? '$open 个进行中' : '还没有任务',
+      route: '/records/tasks',
+    );
+  }
+
+  Widget _navEntry({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String trailing,
+    required String route,
+  }) {
     return Material(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
-        onTap: () => context.push('/records/tasks'),
+        onTap: () => context.push(route),
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -348,13 +388,12 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
           ),
           child: Row(
             children: [
-              const Icon(Icons.checklist_rounded,
-                  size: 20, color: AppColors.primarySage),
+              Icon(icon, size: 20, color: AppColors.primarySage),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  '任务',
-                  style: TextStyle(
+                  title,
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -362,7 +401,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
                 ),
               ),
               Text(
-                open > 0 ? '$open 个进行中' : '还没有任务',
+                trailing,
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,

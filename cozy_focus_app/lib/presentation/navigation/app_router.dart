@@ -20,12 +20,26 @@ import '../pages/companion_import_page.dart';
 import '../pages/task_list_page.dart';
 import '../pages/create_task_page.dart';
 import '../pages/task_detail_page.dart';
+import '../pages/today_plan_page.dart';
+import '../pages/schedule_to_today_page.dart';
 import '../pages/mochi_growth_page.dart';
 import '../pages/pet_dress_page.dart';
 import '../pages/pet_collection_page.dart';
 import '../pages/settings_page.dart';
 import '../pages/notifications_page.dart';
 import '../pages/data_sync_page.dart';
+
+/// A `YYYY-MM-DD` query value as a local date, or null when it is absent or
+/// unparseable.
+///
+/// The schedule page opens on today when there is nothing to go on, so a bad
+/// value falls back rather than throwing on a route.
+DateTime? _dayFromQuery(String? value) {
+  if (value == null) return null;
+  final parsed = DateTime.tryParse(value);
+  if (parsed == null) return null;
+  return DateTime(parsed.year, parsed.month, parsed.day);
+}
 
 /// Builds the app's routing table.
 ///
@@ -104,6 +118,14 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
           path: '/collection',
           builder: (context, state) => const PetCollectionPage(),
         ),
+        // Declared before `/records/:id`, which it would otherwise match: both
+        // are two segments under /records and go_router takes the first route
+        // that fits. `/records/today` is a fixed path, so it is safe to check
+        // first; a record id is never the literal string "today".
+        GoRoute(
+          path: '/records/today',
+          builder: (context, state) => const TodayPlanPage(),
+        ),
         GoRoute(
           path: '/records/tasks',
           builder: (context, state) => const TaskListPage(),
@@ -111,6 +133,16 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
         GoRoute(
           path: '/records/tasks/new',
           builder: (context, state) => const CreateTaskPage(),
+        ),
+        // Also before `/records/tasks/:id`: four segments can never be matched by
+        // a three-segment pattern, but keeping the more specific route first
+        // means the ordering rule is the same one everywhere in this table.
+        GoRoute(
+          path: '/records/tasks/:id/schedule',
+          builder: (context, state) => ScheduleToTodayPage(
+            taskId: state.pathParameters['id']!,
+            initialDay: _dayFromQuery(state.uri.queryParameters['date']),
+          ),
         ),
         GoRoute(
           path: '/records/tasks/:id',

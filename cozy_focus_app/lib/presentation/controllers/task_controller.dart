@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/models/task.dart';
+import '../../domain/models/task_schedule.dart';
 import '../../domain/repositories/i_task_repository.dart';
 import '../../data/repositories/drift_task_repository.dart';
 import 'providers.dart';
@@ -121,11 +122,20 @@ class TaskListController extends StateNotifier<TaskListState> {
 class TaskDetailState {
   final bool isLoading;
   final TaskWithProgress? progress;
+
+  /// When this task is next planned, or null when it is not planned at all.
+  ///
+  /// The design's 下次计划 tile. It is a real lookup rather than a field on the
+  /// task, because a task can be planned several times and this shows the next
+  /// one.
+  final TaskSchedule? nextSchedule;
+
   final String? error;
 
   const TaskDetailState({
     this.isLoading = false,
     this.progress,
+    this.nextSchedule,
     this.error,
   });
 
@@ -134,11 +144,13 @@ class TaskDetailState {
   TaskDetailState copyWith({
     bool? isLoading,
     TaskWithProgress? Function()? progress,
+    TaskSchedule? Function()? nextSchedule,
     String? Function()? error,
   }) =>
       TaskDetailState(
         isLoading: isLoading ?? this.isLoading,
         progress: progress != null ? progress() : this.progress,
+        nextSchedule: nextSchedule != null ? nextSchedule() : this.nextSchedule,
         error: error != null ? error() : this.error,
       );
 }
@@ -159,8 +171,17 @@ class TaskDetailController extends StateNotifier<TaskDetailState> {
     state = state.copyWith(isLoading: true, error: () => null);
     try {
       final progress = await _repo.findWithProgress(taskId);
+      final now = _ref.read(focusClockProvider).now();
+      final upcoming = await _repo.upcomingSchedulesFor(
+        taskId,
+        from: dayKeyFor(now),
+      );
       if (mounted) {
-        state = state.copyWith(isLoading: false, progress: () => progress);
+        state = state.copyWith(
+          isLoading: false,
+          progress: () => progress,
+          nextSchedule: () => upcoming.isEmpty ? null : upcoming.first,
+        );
       }
     } catch (error) {
       if (mounted) {

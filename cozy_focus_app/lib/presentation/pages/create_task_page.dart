@@ -3,19 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models/task.dart';
+import '../../domain/services/today_planner.dart';
 import '../controllers/providers.dart';
 import '../controllers/task_controller.dart';
+import '../controllers/today_plan_controller.dart';
 import '../theme/app_theme.dart';
-import 'task_list_page.dart' show formatTaskDuration;
+import '../widgets/task_duration.dart';
 
 /// Screen 11: create a task.
 ///
-/// ## What is deliberately not here yet
+/// ## 加入今日计划
 ///
-/// The design shows an `加入今日计划` switch. Today planning is P2's domain — it
-/// needs a schedule table that does not exist in this phase — and a switch that
-/// saved nothing would be exactly the fake control the brief forbids. It arrives
-/// in P2 with the table behind it.
+/// On by default, and it does what it says: saving places the task on today's
+/// plan through the same repository call the schedule page uses. The switch's
+/// subtitle names the time it will be placed at, because "自动添加" that does not
+/// say when is a promise the user cannot check.
 ///
 /// ## Validation
 ///
@@ -38,8 +40,24 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   String? _categoryId;
   int _estimatedSeconds = taskEstimatePresets.first;
   bool _customDuration = false;
+  bool _joinToday = true;
   bool _saving = false;
   String? _error;
+
+  /// Where 加入今日计划 would put the task.
+  ///
+  /// Computed from the clock and the day's existing plan, so the switch's
+  /// subtitle and the placement that actually happens are the same value rather
+  /// than two calculations that could drift.
+  DateTime get _defaultStart => defaultStartFor(
+        day: _today,
+        now: ref.read(focusClockProvider).now(),
+      );
+
+  DateTime get _today {
+    final now = ref.read(focusClockProvider).now();
+    return DateTime(now.year, now.month, now.day);
+  }
 
   @override
   void dispose() {
@@ -74,6 +92,17 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
         estimatedSeconds: _effectiveSeconds,
         note: _note.text,
       );
+      if (_joinToday) {
+        // Placed after the task exists, because a placement is a foreign key to
+        // it. If this fails the task is still created and the error surfaces,
+        // rather than the whole save being rolled back over the plan.
+        await ref.read(todayPlanControllerProvider.notifier).place(
+              taskId: id,
+              day: _today,
+              startAt: _defaultStart,
+              plannedSeconds: _effectiveSeconds,
+            );
+      }
       if (mounted) context.pop(id);
     } catch (error) {
       if (mounted) {
@@ -104,115 +133,145 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
       ),
       body: SafeArea(
         top: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
           children: [
-            const _SectionLabel(icon: Icons.edit_rounded, text: '任务名称'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _title,
-              maxLength: Task.maxTitleLength,
-              onChanged: (_) => setState(() {}),
-              decoration: _fieldDecoration(
-                hint: '输入任务名称...',
-                counter:
-                    '${_title.text.characters.length}/${Task.maxTitleLength}',
-              ),
-            ),
-            const SizedBox(height: 18),
-            const _SectionLabel(icon: Icons.local_offer_rounded, text: '任务分类'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final category in taskCategories)
-                  _ChoiceChip(
-                    label: category.label,
-                    selected: _categoryId == category.id,
-                    onTap: () => setState(() => _categoryId =
-                        _categoryId == category.id ? null : category.id),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                children: [
+                  const _SectionLabel(icon: Icons.edit_rounded, text: '任务名称'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _title,
+                    maxLength: Task.maxTitleLength,
+                    onChanged: (_) => setState(() {}),
+                    decoration: _fieldDecoration(
+                      hint: '输入任务名称...',
+                      counter:
+                          '${_title.text.characters.length}/${Task.maxTitleLength}',
+                    ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            const _SectionLabel(icon: Icons.schedule_rounded, text: '预计专注时间'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final seconds in taskEstimatePresets)
-                  _ChoiceChip(
-                    label: formatTaskDuration(seconds),
-                    selected: !_customDuration && _estimatedSeconds == seconds,
-                    onTap: () => setState(() {
-                      _customDuration = false;
-                      _estimatedSeconds = seconds;
-                    }),
+                  const SizedBox(height: 18),
+                  const _SectionLabel(
+                      icon: Icons.local_offer_rounded, text: '任务分类'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final category in taskCategories)
+                        _ChoiceChip(
+                          label: category.label,
+                          selected: _categoryId == category.id,
+                          onTap: () => setState(() => _categoryId =
+                              _categoryId == category.id ? null : category.id),
+                        ),
+                    ],
                   ),
-                _ChoiceChip(
-                  label: '自定义',
-                  selected: _customDuration,
-                  onTap: () => setState(() => _customDuration = true),
-                ),
-              ],
-            ),
-            if (_customDuration) ...[
-              const SizedBox(height: 10),
-              TextField(
-                controller: _customMinutes,
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                decoration: _fieldDecoration(hint: '输入分钟数', counter: null),
-              ),
-            ],
-            const SizedBox(height: 18),
-            const _SectionLabel(
-                icon: Icons.sticky_note_2_rounded, text: '任务备注（可选）'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _note,
-              maxLength: Task.maxNoteLength,
-              maxLines: 3,
-              onChanged: (_) => setState(() {}),
-              decoration: _fieldDecoration(
-                hint: '添加一些备注，帮助自己更专注...',
-                counter:
-                    '${_note.text.characters.length}/${Task.maxNoteLength}',
-              ),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                '保存失败：$_error',
-                style:
-                    const TextStyle(fontSize: 12, color: AppColors.accentPeach),
-              ),
-            ],
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 52,
-              child: FilledButton(
-                onPressed: _canSave ? _save : null,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primarySage,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                ),
-                child: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.textLight),
-                      )
-                    : const Text(
-                        '保存任务',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700),
+                  const SizedBox(height: 18),
+                  const _SectionLabel(
+                      icon: Icons.schedule_rounded, text: '预计专注时间'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final seconds in taskEstimatePresets)
+                        _ChoiceChip(
+                          label: formatTaskDuration(seconds),
+                          selected:
+                              !_customDuration && _estimatedSeconds == seconds,
+                          onTap: () => setState(() {
+                            _customDuration = false;
+                            _estimatedSeconds = seconds;
+                          }),
+                        ),
+                      _ChoiceChip(
+                        label: '自定义',
+                        selected: _customDuration,
+                        onTap: () => setState(() => _customDuration = true),
                       ),
+                    ],
+                  ),
+                  if (_customDuration) ...[
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _customMinutes,
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => setState(() {}),
+                      decoration:
+                          _fieldDecoration(hint: '输入分钟数', counter: null),
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  const _SectionLabel(
+                      icon: Icons.sticky_note_2_rounded, text: '任务备注（可选）'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _note,
+                    maxLength: Task.maxNoteLength,
+                    maxLines: 3,
+                    onChanged: (_) => setState(() {}),
+                    decoration: _fieldDecoration(
+                      hint: '添加一些备注，帮助自己更专注...',
+                      counter:
+                          '${_note.text.characters.length}/${Task.maxNoteLength}',
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _JoinTodaySwitch(
+                    value: _joinToday,
+                    onChanged: (value) => setState(() => _joinToday = value),
+                    subtitle: _joinToday
+                        ? '保存后会自动添加到今天 ${_timeLabel(_defaultStart)} 的计划里。'
+                        : '只保存任务，稍后再安排时间。',
+                  ),
+                ],
+              ),
+            ),
+            // Pinned rather than the last row of the scroll: the design puts it
+            // at the foot of the screen, and a save button that can be scrolled
+            // out of reach is a save button a user has to hunt for.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_error != null) ...[
+                    Text(
+                      '保存失败：$_error',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.accentPeach),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  SizedBox(
+                    height: 52,
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _canSave ? _save : null,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primarySage,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                      ),
+                      child: _saving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: AppColors.textLight),
+                            )
+                          : const Text(
+                              '保存任务',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w700),
+                            ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -236,6 +295,71 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
           borderSide: const BorderSide(color: AppColors.border),
         ),
       );
+}
+
+String _timeLabel(DateTime at) =>
+    '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}';
+
+/// 加入今日计划, as a row rather than a bare switch: the design pairs it with the
+/// sentence that says what turning it on does.
+class _JoinTodaySwitch extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final String subtitle;
+
+  const _JoinTodaySwitch({
+    required this.value,
+    required this.onChanged,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.event_available_rounded,
+              size: 18, color: AppColors.primarySage),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '加入今日计划',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    height: 1.4,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeTrackColor: AppColors.primarySage,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SectionLabel extends StatelessWidget {

@@ -7,6 +7,8 @@ import '../../domain/repositories/i_task_repository.dart';
 import '../controllers/providers.dart';
 import '../controllers/task_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/task_category_chip.dart';
+import '../widgets/task_duration.dart';
 
 /// Screen 02: the task list.
 ///
@@ -248,7 +250,10 @@ class _TaskRow extends StatelessWidget {
                     Row(
                       children: [
                         if (category != null) ...[
-                          _CategoryChip(label: category.label),
+                          TaskCategoryChip(
+                            categoryId: category.id,
+                            label: category.label,
+                          ),
                           const SizedBox(width: 8),
                         ],
                         Text(
@@ -267,31 +272,6 @@ class _TaskRow extends StatelessWidget {
                   size: 20, color: AppColors.textTertiary),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  final String label;
-
-  const _CategoryChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
         ),
       ),
     );
@@ -392,19 +372,4 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
-}
-
-/// A duration the way the design writes it: `25 分钟`, `1 小时`, `1 小时 15 分钟`.
-///
-/// Lives here rather than in a widget because the detail screen and the create
-/// screen both need it, and three copies of the same rounding is how two screens
-/// end up disagreeing about what an hour is.
-String formatTaskDuration(int seconds) {
-  if (seconds <= 0) return '未设置';
-  final totalMinutes = (seconds / 60).round();
-  if (totalMinutes < 60) return '$totalMinutes 分钟';
-  final hours = totalMinutes ~/ 60;
-  final minutes = totalMinutes % 60;
-  if (minutes == 0) return '$hours 小时';
-  return '$hours 小时 $minutes 分钟';
 }

@@ -6776,6 +6776,439 @@ class TaskSubtasksCompanion extends UpdateCompanion<TaskSubtask> {
   }
 }
 
+class $TaskSchedulesTable extends TaskSchedules
+    with TableInfo<$TaskSchedulesTable, TaskSchedule> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TaskSchedulesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  @override
+  late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
+      'task_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+      'user_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<String> date = GeneratedColumn<String>(
+      'date', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _startAtMeta =
+      const VerificationMeta('startAt');
+  @override
+  late final GeneratedColumn<DateTime> startAt = GeneratedColumn<DateTime>(
+      'start_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _plannedSecondsMeta =
+      const VerificationMeta('plannedSeconds');
+  @override
+  late final GeneratedColumn<int> plannedSeconds = GeneratedColumn<int>(
+      'planned_seconds', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('planned'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, taskId, userId, date, startAt, plannedSeconds, status, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'task_schedules';
+  @override
+  VerificationContext validateIntegrity(Insertable<TaskSchedule> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('task_id')) {
+      context.handle(_taskIdMeta,
+          taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta));
+    } else if (isInserting) {
+      context.missing(_taskIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+          _dateMeta, date.isAcceptableOrUnknown(data['date']!, _dateMeta));
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('start_at')) {
+      context.handle(_startAtMeta,
+          startAt.isAcceptableOrUnknown(data['start_at']!, _startAtMeta));
+    } else if (isInserting) {
+      context.missing(_startAtMeta);
+    }
+    if (data.containsKey('planned_seconds')) {
+      context.handle(
+          _plannedSecondsMeta,
+          plannedSeconds.isAcceptableOrUnknown(
+              data['planned_seconds']!, _plannedSecondsMeta));
+    } else if (isInserting) {
+      context.missing(_plannedSecondsMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TaskSchedule map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TaskSchedule(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      taskId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}task_id'])!,
+      userId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
+      date: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}date'])!,
+      startAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_at'])!,
+      plannedSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}planned_seconds'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $TaskSchedulesTable createAlias(String alias) {
+    return $TaskSchedulesTable(attachedDatabase, alias);
+  }
+}
+
+class TaskSchedule extends DataClass implements Insertable<TaskSchedule> {
+  final String id;
+  final String taskId;
+  final String userId;
+
+  /// The local calendar day this placement is for, as `YYYY-MM-DD`.
+  ///
+  /// A string rather than a date because it is compared and grouped, not
+  /// arithmetic, and a `DateTime` at midnight is one timezone change away from
+  /// being the previous day.
+  final String date;
+
+  /// When the placement starts.
+  final DateTime startAt;
+
+  /// How long the user intends to spend, which may differ from the task's own
+  /// estimate: planning twenty minutes of a two-hour task is normal.
+  final int plannedSeconds;
+
+  /// `planned`, `done` or `skipped`.
+  final String status;
+  final DateTime createdAt;
+  const TaskSchedule(
+      {required this.id,
+      required this.taskId,
+      required this.userId,
+      required this.date,
+      required this.startAt,
+      required this.plannedSeconds,
+      required this.status,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['task_id'] = Variable<String>(taskId);
+    map['user_id'] = Variable<String>(userId);
+    map['date'] = Variable<String>(date);
+    map['start_at'] = Variable<DateTime>(startAt);
+    map['planned_seconds'] = Variable<int>(plannedSeconds);
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  TaskSchedulesCompanion toCompanion(bool nullToAbsent) {
+    return TaskSchedulesCompanion(
+      id: Value(id),
+      taskId: Value(taskId),
+      userId: Value(userId),
+      date: Value(date),
+      startAt: Value(startAt),
+      plannedSeconds: Value(plannedSeconds),
+      status: Value(status),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory TaskSchedule.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TaskSchedule(
+      id: serializer.fromJson<String>(json['id']),
+      taskId: serializer.fromJson<String>(json['taskId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      date: serializer.fromJson<String>(json['date']),
+      startAt: serializer.fromJson<DateTime>(json['startAt']),
+      plannedSeconds: serializer.fromJson<int>(json['plannedSeconds']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'taskId': serializer.toJson<String>(taskId),
+      'userId': serializer.toJson<String>(userId),
+      'date': serializer.toJson<String>(date),
+      'startAt': serializer.toJson<DateTime>(startAt),
+      'plannedSeconds': serializer.toJson<int>(plannedSeconds),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  TaskSchedule copyWith(
+          {String? id,
+          String? taskId,
+          String? userId,
+          String? date,
+          DateTime? startAt,
+          int? plannedSeconds,
+          String? status,
+          DateTime? createdAt}) =>
+      TaskSchedule(
+        id: id ?? this.id,
+        taskId: taskId ?? this.taskId,
+        userId: userId ?? this.userId,
+        date: date ?? this.date,
+        startAt: startAt ?? this.startAt,
+        plannedSeconds: plannedSeconds ?? this.plannedSeconds,
+        status: status ?? this.status,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  TaskSchedule copyWithCompanion(TaskSchedulesCompanion data) {
+    return TaskSchedule(
+      id: data.id.present ? data.id.value : this.id,
+      taskId: data.taskId.present ? data.taskId.value : this.taskId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      date: data.date.present ? data.date.value : this.date,
+      startAt: data.startAt.present ? data.startAt.value : this.startAt,
+      plannedSeconds: data.plannedSeconds.present
+          ? data.plannedSeconds.value
+          : this.plannedSeconds,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TaskSchedule(')
+          ..write('id: $id, ')
+          ..write('taskId: $taskId, ')
+          ..write('userId: $userId, ')
+          ..write('date: $date, ')
+          ..write('startAt: $startAt, ')
+          ..write('plannedSeconds: $plannedSeconds, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, taskId, userId, date, startAt, plannedSeconds, status, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TaskSchedule &&
+          other.id == this.id &&
+          other.taskId == this.taskId &&
+          other.userId == this.userId &&
+          other.date == this.date &&
+          other.startAt == this.startAt &&
+          other.plannedSeconds == this.plannedSeconds &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt);
+}
+
+class TaskSchedulesCompanion extends UpdateCompanion<TaskSchedule> {
+  final Value<String> id;
+  final Value<String> taskId;
+  final Value<String> userId;
+  final Value<String> date;
+  final Value<DateTime> startAt;
+  final Value<int> plannedSeconds;
+  final Value<String> status;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const TaskSchedulesCompanion({
+    this.id = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.date = const Value.absent(),
+    this.startAt = const Value.absent(),
+    this.plannedSeconds = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TaskSchedulesCompanion.insert({
+    required String id,
+    required String taskId,
+    required String userId,
+    required String date,
+    required DateTime startAt,
+    required int plannedSeconds,
+    this.status = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        taskId = Value(taskId),
+        userId = Value(userId),
+        date = Value(date),
+        startAt = Value(startAt),
+        plannedSeconds = Value(plannedSeconds),
+        createdAt = Value(createdAt);
+  static Insertable<TaskSchedule> custom({
+    Expression<String>? id,
+    Expression<String>? taskId,
+    Expression<String>? userId,
+    Expression<String>? date,
+    Expression<DateTime>? startAt,
+    Expression<int>? plannedSeconds,
+    Expression<String>? status,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (taskId != null) 'task_id': taskId,
+      if (userId != null) 'user_id': userId,
+      if (date != null) 'date': date,
+      if (startAt != null) 'start_at': startAt,
+      if (plannedSeconds != null) 'planned_seconds': plannedSeconds,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TaskSchedulesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? taskId,
+      Value<String>? userId,
+      Value<String>? date,
+      Value<DateTime>? startAt,
+      Value<int>? plannedSeconds,
+      Value<String>? status,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return TaskSchedulesCompanion(
+      id: id ?? this.id,
+      taskId: taskId ?? this.taskId,
+      userId: userId ?? this.userId,
+      date: date ?? this.date,
+      startAt: startAt ?? this.startAt,
+      plannedSeconds: plannedSeconds ?? this.plannedSeconds,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (taskId.present) {
+      map['task_id'] = Variable<String>(taskId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<String>(date.value);
+    }
+    if (startAt.present) {
+      map['start_at'] = Variable<DateTime>(startAt.value);
+    }
+    if (plannedSeconds.present) {
+      map['planned_seconds'] = Variable<int>(plannedSeconds.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TaskSchedulesCompanion(')
+          ..write('id: $id, ')
+          ..write('taskId: $taskId, ')
+          ..write('userId: $userId, ')
+          ..write('date: $date, ')
+          ..write('startAt: $startAt, ')
+          ..write('plannedSeconds: $plannedSeconds, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6798,6 +7231,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $RewardLedgerTableTable(this);
   late final $TasksTable tasks = $TasksTable(this);
   late final $TaskSubtasksTable taskSubtasks = $TaskSubtasksTable(this);
+  late final $TaskSchedulesTable taskSchedules = $TaskSchedulesTable(this);
   late final FocusSessionDao focusSessionDao =
       FocusSessionDao(this as AppDatabase);
   late final FocusRecordDao focusRecordDao =
@@ -6828,7 +7262,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         syncOutboxTable,
         rewardLedgerTable,
         tasks,
-        taskSubtasks
+        taskSubtasks,
+        taskSchedules
       ];
 }
 
@@ -10171,6 +10606,226 @@ typedef $$TaskSubtasksTableProcessedTableManager = ProcessedTableManager<
     ),
     TaskSubtask,
     PrefetchHooks Function()>;
+typedef $$TaskSchedulesTableCreateCompanionBuilder = TaskSchedulesCompanion
+    Function({
+  required String id,
+  required String taskId,
+  required String userId,
+  required String date,
+  required DateTime startAt,
+  required int plannedSeconds,
+  Value<String> status,
+  required DateTime createdAt,
+  Value<int> rowid,
+});
+typedef $$TaskSchedulesTableUpdateCompanionBuilder = TaskSchedulesCompanion
+    Function({
+  Value<String> id,
+  Value<String> taskId,
+  Value<String> userId,
+  Value<String> date,
+  Value<DateTime> startAt,
+  Value<int> plannedSeconds,
+  Value<String> status,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$TaskSchedulesTableFilterComposer
+    extends Composer<_$AppDatabase, $TaskSchedulesTable> {
+  $$TaskSchedulesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get taskId => $composableBuilder(
+      column: $table.taskId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get date => $composableBuilder(
+      column: $table.date, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get startAt => $composableBuilder(
+      column: $table.startAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get plannedSeconds => $composableBuilder(
+      column: $table.plannedSeconds,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$TaskSchedulesTableOrderingComposer
+    extends Composer<_$AppDatabase, $TaskSchedulesTable> {
+  $$TaskSchedulesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get taskId => $composableBuilder(
+      column: $table.taskId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get date => $composableBuilder(
+      column: $table.date, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get startAt => $composableBuilder(
+      column: $table.startAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get plannedSeconds => $composableBuilder(
+      column: $table.plannedSeconds,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$TaskSchedulesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TaskSchedulesTable> {
+  $$TaskSchedulesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get taskId =>
+      $composableBuilder(column: $table.taskId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startAt =>
+      $composableBuilder(column: $table.startAt, builder: (column) => column);
+
+  GeneratedColumn<int> get plannedSeconds => $composableBuilder(
+      column: $table.plannedSeconds, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$TaskSchedulesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $TaskSchedulesTable,
+    TaskSchedule,
+    $$TaskSchedulesTableFilterComposer,
+    $$TaskSchedulesTableOrderingComposer,
+    $$TaskSchedulesTableAnnotationComposer,
+    $$TaskSchedulesTableCreateCompanionBuilder,
+    $$TaskSchedulesTableUpdateCompanionBuilder,
+    (
+      TaskSchedule,
+      BaseReferences<_$AppDatabase, $TaskSchedulesTable, TaskSchedule>
+    ),
+    TaskSchedule,
+    PrefetchHooks Function()> {
+  $$TaskSchedulesTableTableManager(_$AppDatabase db, $TaskSchedulesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TaskSchedulesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TaskSchedulesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TaskSchedulesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> taskId = const Value.absent(),
+            Value<String> userId = const Value.absent(),
+            Value<String> date = const Value.absent(),
+            Value<DateTime> startAt = const Value.absent(),
+            Value<int> plannedSeconds = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TaskSchedulesCompanion(
+            id: id,
+            taskId: taskId,
+            userId: userId,
+            date: date,
+            startAt: startAt,
+            plannedSeconds: plannedSeconds,
+            status: status,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String taskId,
+            required String userId,
+            required String date,
+            required DateTime startAt,
+            required int plannedSeconds,
+            Value<String> status = const Value.absent(),
+            required DateTime createdAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TaskSchedulesCompanion.insert(
+            id: id,
+            taskId: taskId,
+            userId: userId,
+            date: date,
+            startAt: startAt,
+            plannedSeconds: plannedSeconds,
+            status: status,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$TaskSchedulesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $TaskSchedulesTable,
+    TaskSchedule,
+    $$TaskSchedulesTableFilterComposer,
+    $$TaskSchedulesTableOrderingComposer,
+    $$TaskSchedulesTableAnnotationComposer,
+    $$TaskSchedulesTableCreateCompanionBuilder,
+    $$TaskSchedulesTableUpdateCompanionBuilder,
+    (
+      TaskSchedule,
+      BaseReferences<_$AppDatabase, $TaskSchedulesTable, TaskSchedule>
+    ),
+    TaskSchedule,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10204,4 +10859,6 @@ class $AppDatabaseManager {
       $$TasksTableTableManager(_db, _db.tasks);
   $$TaskSubtasksTableTableManager get taskSubtasks =>
       $$TaskSubtasksTableTableManager(_db, _db.taskSubtasks);
+  $$TaskSchedulesTableTableManager get taskSchedules =>
+      $$TaskSchedulesTableTableManager(_db, _db.taskSchedules);
 }

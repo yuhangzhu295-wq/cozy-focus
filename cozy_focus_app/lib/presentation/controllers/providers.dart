@@ -104,9 +104,13 @@ final statisticsEngineProvider = Provider<StatisticsEngine>((ref) {
 });
 
 /// Task repository — the task domain's only way to the database.
+///
+/// Given the same clock the rest of the app runs on, because what 今天 means
+/// depends on what day it is, and a repository reading `DateTime.now()` directly
+/// would be a second, unsynchronised answer to that question.
 final taskRepositoryProvider = Provider<ITaskRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  return DriftTaskRepository(db.taskDao);
+  return DriftTaskRepository(db.taskDao, clock: ref.watch(focusClockProvider));
 });
 
 /// The task list, with its filter tabs.
