@@ -10,6 +10,9 @@ class FocusSession {
   final String? categoryId;
   final String?
       taskName; // persisted so history/reports can read it after restart
+
+  /// The task this session is for, when it was started from one.
+  final String? taskId;
   final int plannedSeconds; // user-chosen duration
   final FocusMode mode;
 
@@ -30,6 +33,7 @@ class FocusSession {
     required this.userId,
     this.categoryId,
     this.taskName,
+    this.taskId,
     required this.plannedSeconds,
     required this.mode,
     required this.startAt,
@@ -75,6 +79,7 @@ class FocusSession {
   FocusSession copyWith({
     String? categoryId,
     String? taskName,
+    String? taskId,
     List<PauseInterval>? pauseIntervals,
     DateTime? endAt,
     FocusSessionStatus? status,
@@ -84,6 +89,7 @@ class FocusSession {
       userId: userId,
       categoryId: categoryId ?? this.categoryId,
       taskName: taskName ?? this.taskName,
+      taskId: taskId ?? this.taskId,
       plannedSeconds: plannedSeconds,
       mode: mode,
       startAt: startAt,

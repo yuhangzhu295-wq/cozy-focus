@@ -1,0 +1,560 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../domain/models/task.dart';
+import '../controllers/providers.dart';
+import '../controllers/task_controller.dart';
+import '../theme/app_theme.dart';
+import 'task_list_page.dart' show formatTaskDuration;
+
+/// Screen 12: one task, in full.
+///
+/// ## What is real here
+///
+/// The progress bar counts subtasks that are actually in the database, the
+/// cumulative time is a sum over `focus_records` joined by `taskId`, and the
+/// recent list is those same rows. Nothing on this screen is a placeholder: if
+/// the numbers are zero it is because nothing has been recorded.
+///
+/// ## What is not here yet
+///
+/// The design's `下次计划` card and its `加入今日计划` button are P2's — there is no
+/// schedule table in this phase, and a card that showed a plan nobody stored
+/// would be the fake the brief forbids. They arrive with the schedule.
+class TaskDetailPage extends ConsumerWidget {
+  final String taskId;
+
+  const TaskDetailPage({super.key, required this.taskId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(taskDetailControllerProvider(taskId));
+    final controller = ref.read(taskDetailControllerProvider(taskId).notifier);
+
+    final progress = state.progress;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        leading: BackButton(onPressed: () => context.pop()),
+        title: Text(
+          progress?.task.title ?? '任务',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        actions: [
+          if (progress != null)
+            PopupMenuButton<String>(
+              tooltip: '更多操作',
+              icon: const Icon(Icons.more_horiz_rounded,
+                  color: AppColors.textSecondary),
+              onSelected: (value) async {
+                switch (value) {
+                  case 'toggle':
+                    await controller.setStatus(progress.task.isDone
+                        ? TaskStatus.open
+                        : TaskStatus.done);
+                  case 'delete':
+                    final confirmed = await _confirmDelete(context);
+                    if (!confirmed) return;
+                    await controller.deleteTask();
+                    if (context.mounted) context.pop();
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'toggle',
+                  child: Text(progress.task.isDone ? '标记为未完成' : '标记为已完成'),
+                ),
+                const PopupMenuItem(value: 'delete', child: Text('删除任务')),
+              ],
+            ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: switch (state) {
+        TaskDetailState(isLoading: true, progress: null) =>
+          const Center(child: CircularProgressIndicator()),
+        TaskDetailState(progress: null) => const _MissingTask(),
+        _ => _Body(taskId: taskId, progress: progress!),
+      },
+    );
+  }
+
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('删除这个任务？'),
+        content: const Text('删除后任务就不在列表里了。已经记录的专注时间会保留，只是不再归属到这个任务。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('先留着'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('删除',
+                style: TextStyle(color: AppColors.accentPeach)),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+}
+
+class _Body extends ConsumerWidget {
+  final String taskId;
+  final TaskWithProgress progress;
+
+  const _Body({required this.taskId, required this.progress});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final task = progress.task;
+    final category = taskCategoryFor(task.categoryId);
+    final controller = ref.read(taskDetailControllerProvider(taskId).notifier);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      children: [
+        if (category != null) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+              child: Text(
+                category.label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Progress, only when there is something to count. A `0 / 0` bar would
+        // be a progress indicator for a thing that has no progress.
+        if (progress.hasSubtasks) ...[
+          _ProgressCard(progress: progress, onToggle: controller.toggleSubtask),
+          const SizedBox(height: 12),
+        ],
+
+        _StatCard(
+          icon: Icons.timer_outlined,
+          label: '累计专注时长',
+          value: progress.focusedSeconds > 0
+              ? formatTaskDuration(progress.focusedSeconds)
+              : '还没有开始',
+          hint: progress.sessionCount > 0
+              ? '共 ${progress.sessionCount} 次专注'
+              : null,
+        ),
+        const SizedBox(height: 12),
+
+        _NoteCard(
+            task: task, onEdit: () => _editNote(context, controller, task)),
+        const SizedBox(height: 12),
+
+        if (progress.recentFocus.isNotEmpty)
+          _RecentFocusCard(entries: progress.recentFocus),
+        if (progress.recentFocus.isNotEmpty) const SizedBox(height: 12),
+
+        SizedBox(
+          height: 52,
+          child: FilledButton.icon(
+            // The task id travels with the session, which is what makes the
+            // record count towards this task afterwards.
+            onPressed: () => context.push('/focus/setup?taskId=$taskId'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primarySage,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+            ),
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: const Text(
+              '开始专注',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _editNote(
+    BuildContext context,
+    TaskDetailController controller,
+    Task task,
+  ) async {
+    final text = TextEditingController(text: task.note ?? '');
+    final saved = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('任务备注'),
+        content: TextField(
+          controller: text,
+          maxLines: 4,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: '记录任务的具体内容、目标或注意事项'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(text.text),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+    text.dispose();
+    if (saved == null) return;
+    await controller.updateNote(saved.trim().isEmpty ? null : saved.trim());
+  }
+}
+
+class _ProgressCard extends StatelessWidget {
+  final TaskWithProgress progress;
+  final ValueChanged<TaskSubtask> onToggle;
+
+  const _ProgressCard({required this.progress, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.donut_small_rounded,
+                  size: 16, color: AppColors.primarySage),
+              const SizedBox(width: 6),
+              const Text(
+                '任务进度',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                progress.progressLabel!,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: LinearProgressIndicator(
+              value: progress.progressFraction,
+              minHeight: 6,
+              backgroundColor: AppColors.surfaceMuted,
+              valueColor: const AlwaysStoppedAnimation(AppColors.primarySage),
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (final subtask in progress.subtasks)
+            Semantics(
+              button: true,
+              label: '${subtask.isDone ? '取消完成' : '完成'} ${subtask.title}',
+              child: InkWell(
+                onTap: () => onToggle(subtask),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Icon(
+                        subtask.isDone
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        size: 18,
+                        color: subtask.isDone
+                            ? AppColors.primarySage
+                            : AppColors.textTertiary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          subtask.title,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                            decoration: subtask.isDone
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String? hint;
+
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.hint,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 15, color: AppColors.primarySage),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          if (hint != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              hint!,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _NoteCard extends StatelessWidget {
+  final Task task;
+  final VoidCallback onEdit;
+
+  const _NoteCard({required this.task, required this.onEdit});
+
+  @override
+  Widget build(BuildContext context) {
+    final note = task.note;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.sticky_note_2_rounded,
+                  size: 15, color: AppColors.primarySage),
+              const SizedBox(width: 6),
+              const Text(
+                '任务备注',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: onEdit,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(0, 32),
+                ),
+                child: const Text('编辑', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            note == null || note.isEmpty ? '还没有备注。' : note,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.6,
+              color: note == null || note.isEmpty
+                  ? AppColors.textTertiary
+                  : AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentFocusCard extends StatelessWidget {
+  final List<TaskFocusEntry> entries;
+
+  const _RecentFocusCard({required this.entries});
+
+  static String _clock(DateTime at) =>
+      '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.history_rounded,
+                  size: 15, color: AppColors.primarySage),
+              SizedBox(width: 6),
+              Text(
+                '最近专注记录',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (final entry in entries)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${entry.startAt.month} 月 ${entry.startAt.day} 日  '
+                      '${_clock(entry.startAt)} - ${_clock(entry.endAt)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    formatTaskDuration(entry.durationSeconds),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MissingTask extends StatelessWidget {
+  const _MissingTask();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.search_off_rounded,
+                size: 40, color: AppColors.textTertiary),
+            SizedBox(height: 12),
+            Text(
+              '这个任务不在了',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            SizedBox(height: 6),
+            Text(
+              '它可能已经被删除了。返回列表看看其它任务吧。',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.5,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

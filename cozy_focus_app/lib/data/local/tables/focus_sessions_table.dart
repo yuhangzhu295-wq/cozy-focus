@@ -7,6 +7,13 @@ class FocusSessions extends Table {
   TextColumn get userId => text()();
   TextColumn get categoryId => text().nullable()();
   TextColumn get taskName => text().nullable()();
+
+  /// The task this session is for, when it was started from one.
+  ///
+  /// Carried on the session as well as the record because the session is what a
+  /// running focus knows about, and the review screen has to be able to say what
+  /// the session was for before it has been saved.
+  TextColumn get taskId => text().nullable()();
   IntColumn get plannedSeconds => integer()();
   TextColumn get mode => text()(); // "focus" | "shortBreak" | "longBreak"
   DateTimeColumn get startAt => dateTime()();

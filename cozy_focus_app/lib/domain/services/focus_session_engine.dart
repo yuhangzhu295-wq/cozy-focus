@@ -50,6 +50,7 @@ class FocusSessionEngine {
     required FocusMode mode,
     String? categoryId,
     String? taskName,
+    String? taskId,
   }) async {
     _assertIdle();
     final session = FocusSession(
@@ -57,6 +58,7 @@ class FocusSessionEngine {
       userId: userId,
       categoryId: categoryId,
       taskName: taskName,
+      taskId: taskId,
       plannedSeconds: plannedSeconds,
       mode: mode,
       startAt: _clock.now(),
@@ -222,6 +224,10 @@ class FocusSessionEngine {
           userId: session.userId,
           categoryId: categoryId ?? session.categoryId,
           taskName: taskName ?? session.taskName,
+          // From the session, never from an argument: which task a session was
+          // for is decided when it starts and cannot be edited later, so there
+          // is no path that writes a record against the wrong task.
+          taskId: session.taskId,
           mood: mood,
           durationSeconds: elapsed,
           startAt: session.startAt,

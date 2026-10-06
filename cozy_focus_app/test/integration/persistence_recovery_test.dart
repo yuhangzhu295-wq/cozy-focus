@@ -557,7 +557,59 @@ void main() {
       expect(records.first['mood'], isNull);
       expect(records.first['duration_seconds'], 1500,
           reason: 'the recorded duration is untouched');
-      expect((await rows(db, 'PRAGMA user_version')).first['user_version'], 4);
+      // The current schema version. It moves when a migration is added, and
+      // these two assertions are here to prove the chain *reached* the head
+      // rather than stopping part way.
+      expect((await rows(db, 'PRAGMA user_version')).first['user_version'], 5);
+    });
+
+    test('v4 to v5 adds the task domain and keeps every focus row', () async {
+      // The v4 shape: the focus tables as v2 left them (v3 and v4 added no focus
+      // columns; v4 only added the unique index), plus that index. The task
+      // tables do not exist yet, which is what this migration has to create.
+      final db = await seedAndOpen([
+        v2FocusSessions,
+        v2FocusRecords,
+        'CREATE UNIQUE INDEX IF NOT EXISTS idx_focus_records_session_id '
+            'ON focus_records(session_id)',
+        'INSERT INTO focus_sessions (id,user_id,planned_seconds,mode,start_at,'
+            "pause_intervals_json,status,timezone_offset_minutes) VALUES "
+            "('s1','default_user',1500,'focus',100,'[]','completed',0)",
+        'INSERT INTO focus_records (id,session_id,user_id,duration_seconds,'
+            'start_at,end_at,recorded_at,is_counted_for_reward,note) VALUES '
+            "('r1','s1','default_user',1500,100,200,300,1,'写了初稿')",
+      ], 4);
+      addTearDown(db.close);
+
+      // The history is untouched, and the new column is present and empty --
+      // which is honest: that record was focused without a task.
+      final records = await rows(db, 'select * from focus_records');
+      expect(records, hasLength(1), reason: 'migration must not drop rows');
+      expect(records.first['duration_seconds'], 1500);
+      expect(records.first['note'], '写了初稿');
+      expect(records.first['task_id'], isNull,
+          reason: 'the column exists, and an old record has no task');
+
+      final sessions = await rows(db, 'select * from focus_sessions');
+      expect(sessions.first['task_id'], isNull);
+
+      // And the task tables are really there, not just declared.
+      final taskTables = await rows(
+          db,
+          "select name from sqlite_master where type='table' "
+          "and name in ('tasks','task_subtasks')");
+      expect(
+          taskTables.map((r) => r['name']).toSet(), {'tasks', 'task_subtasks'});
+
+      // The unique index the previous migration created must have survived: a
+      // migration that dropped it would let two records share a session.
+      final indexes = await rows(
+          db,
+          "select name from sqlite_master where type='index' "
+          "and name = 'idx_focus_records_session_id'");
+      expect(indexes, hasLength(1));
+
+      expect((await rows(db, 'PRAGMA user_version')).first['user_version'], 5);
     });
 
     test('v2 to v3 adds craft progress and seeds the recipes', () async {
@@ -641,7 +693,7 @@ void main() {
       final again = openDb();
       addTearDown(again.close);
       expect(
-          (await rows(again, 'PRAGMA user_version')).first['user_version'], 4);
+          (await rows(again, 'PRAGMA user_version')).first['user_version'], 5);
       // Seeded once, not twice.
       expect(await rows(again, 'select * from craft_recipes'), hasLength(8));
     });

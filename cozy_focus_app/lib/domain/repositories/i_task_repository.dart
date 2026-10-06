@@ -1,0 +1,55 @@
+import '../models/task.dart';
+
+/// The three lists the task screen filters between.
+///
+/// `today` is not a filter over `Task` — it is "tasks scheduled for today",
+/// which needs the schedule domain from P2. It is declared here because the
+/// screen has three tabs and the repository is what answers them; until P2 lands
+/// it answers `today` with the same set as `open`, and the wiring is in place.
+enum TaskFilter {
+  today('today'),
+  active('active'),
+  done('done');
+
+  final String id;
+  const TaskFilter(this.id);
+}
+
+/// Reading and writing tasks.
+///
+/// Deliberately narrow, and deliberately not a query builder: the screens need
+/// a handful of shapes and each one is a method, so "what does the list screen
+/// ask for" is answerable by reading this file.
+abstract interface class ITaskRepository {
+  /// Tasks matching [filter], newest first within their group.
+  Future<List<Task>> findByFilter(String userId, TaskFilter filter);
+
+  /// One task, or null.
+  Future<Task?> findById(String id);
+
+  /// A task with its subtasks and its focus totals.
+  ///
+  /// The detail screen's shape. Returns null for an unknown id rather than
+  /// throwing, because a deep link to a deleted task is an ordinary event.
+  Future<TaskWithProgress?> findWithProgress(String id);
+
+  Future<void> insert(Task task);
+  Future<void> update(Task task);
+
+  /// Marks [taskId] done, or open again, and stamps `completedAt` accordingly.
+  Future<void> setStatus(String taskId, TaskStatus status, {DateTime? at});
+
+  /// Deletes the task and its subtasks.
+  Future<void> deleteById(String id);
+
+  /// Subtasks of [taskId], in order.
+  Future<List<TaskSubtask>> subtasksFor(String taskId);
+
+  Future<void> insertSubtask(TaskSubtask subtask);
+  Future<void> updateSubtask(TaskSubtask subtask);
+  Future<void> deleteSubtask(String id);
+
+  /// How many tasks are still open — for the records tab's badge and the empty
+  /// state's copy.
+  Future<int> countOpen(String userId);
+}

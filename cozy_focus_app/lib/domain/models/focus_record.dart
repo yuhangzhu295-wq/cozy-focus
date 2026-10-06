@@ -7,6 +7,10 @@ class FocusRecord {
   final String? categoryId;
   final String?
       taskName; // denormalized for history reads without joining sessions
+
+  /// The task this focus was for, when it came from one. Null for a session
+  /// started without a task, which stays a first-class way to focus.
+  final String? taskId;
   final String? mood; // emoji string, e.g. "😊"
   final int durationSeconds; // actual elapsed, never planned
   final DateTime startAt;
@@ -21,6 +25,7 @@ class FocusRecord {
     required this.userId,
     this.categoryId,
     this.taskName,
+    this.taskId,
     this.mood,
     required this.durationSeconds,
     required this.startAt,
@@ -36,6 +41,7 @@ class FocusRecord {
     String? userId,
     String? categoryId,
     String? taskName,
+    String? taskId,
     String? mood,
     int? durationSeconds,
     DateTime? startAt,
@@ -50,6 +56,7 @@ class FocusRecord {
       userId: userId ?? this.userId,
       categoryId: categoryId ?? this.categoryId,
       taskName: taskName ?? this.taskName,
+      taskId: taskId ?? this.taskId,
       mood: mood ?? this.mood,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       startAt: startAt ?? this.startAt,

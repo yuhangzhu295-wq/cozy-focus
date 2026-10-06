@@ -11,6 +11,7 @@ import 'tables/craft_tables.dart';
 import 'tables/pet_tables.dart';
 import 'tables/achievement_table.dart';
 import 'tables/sync_tables.dart';
+import 'tables/task_tables.dart';
 import 'daos/focus_session_dao.dart';
 import 'daos/focus_record_dao.dart';
 import 'daos/reward_ledger_dao.dart';
@@ -18,6 +19,7 @@ import 'daos/sync_outbox_dao.dart';
 import 'daos/pet_dao.dart';
 import 'daos/craft_dao.dart';
 import 'daos/settlement_dao.dart';
+import 'daos/task_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -36,6 +38,8 @@ part 'app_database.g.dart';
     Achievements,
     SyncOutboxTable,
     RewardLedgerTable,
+    Tasks,
+    TaskSubtasks,
   ],
   daos: [
     FocusSessionDao,
@@ -45,6 +49,7 @@ part 'app_database.g.dart';
     PetDao,
     CraftDao,
     SettlementDao,
+    TaskDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -54,7 +59,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -112,6 +117,14 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(
             'CREATE UNIQUE INDEX IF NOT EXISTS idx_focus_records_session_id ON focus_records(session_id);',
           );
+        }
+        // v4 -> v5: the task domain, and the link from a focus session and
+        // record to the task it was for.
+        if (from < 5) {
+          await m.createTable(tasks);
+          await m.createTable(taskSubtasks);
+          await m.addColumn(focusSessions, focusSessions.taskId);
+          await m.addColumn(focusRecords, focusRecords.taskId);
         }
       },
       beforeOpen: (details) async {

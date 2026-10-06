@@ -17,6 +17,9 @@ import '../pages/inventory_page.dart';
 import '../pages/room_page.dart';
 import '../pages/companion_picker_page.dart';
 import '../pages/companion_import_page.dart';
+import '../pages/task_list_page.dart';
+import '../pages/create_task_page.dart';
+import '../pages/task_detail_page.dart';
 import '../pages/mochi_growth_page.dart';
 import '../pages/pet_dress_page.dart';
 import '../pages/pet_collection_page.dart';
@@ -43,7 +46,8 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
         ),
         GoRoute(
           path: '/focus/setup',
-          builder: (context, state) => const FocusSetupPage(),
+          builder: (context, state) =>
+              FocusSetupPage(taskId: state.uri.queryParameters['taskId']),
         ),
         GoRoute(
           path: '/focus/active',
@@ -99,6 +103,19 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
         GoRoute(
           path: '/collection',
           builder: (context, state) => const PetCollectionPage(),
+        ),
+        GoRoute(
+          path: '/records/tasks',
+          builder: (context, state) => const TaskListPage(),
+        ),
+        GoRoute(
+          path: '/records/tasks/new',
+          builder: (context, state) => const CreateTaskPage(),
+        ),
+        GoRoute(
+          path: '/records/tasks/:id',
+          builder: (context, state) =>
+              TaskDetailPage(taskId: state.pathParameters['id']!),
         ),
         GoRoute(
           path: '/records/:id',

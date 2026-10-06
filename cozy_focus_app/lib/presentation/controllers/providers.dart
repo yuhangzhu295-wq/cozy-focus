@@ -1,20 +1,23 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/local/app_database.dart';
 import '../../data/repositories/drift_focus_session_repository.dart';
 import '../../data/repositories/drift_focus_record_repository.dart';
 import '../../data/repositories/drift_pet_repository.dart';
 import '../../data/repositories/drift_reward_ledger_repository.dart';
 import '../../data/repositories/drift_craft_repository.dart';
+import '../../data/repositories/drift_task_repository.dart';
 import '../../domain/repositories/i_focus_session_repository.dart';
 import '../../domain/repositories/i_focus_record_repository.dart';
 import '../../domain/repositories/i_pet_repository.dart';
 import '../../domain/repositories/i_reward_ledger_repository.dart';
 import '../../domain/repositories/i_craft_repository.dart';
+import '../../domain/repositories/i_task_repository.dart';
 import '../../domain/services/focus_clock.dart';
 import '../../domain/services/focus_session_engine.dart';
 import '../../domain/services/reward_service.dart';
 import '../../domain/services/craft_engine.dart';
 import '../../domain/services/statistics_engine.dart';
+import 'task_controller.dart';
 
 // Re-export so other files can import currentUserIdProvider from here.
 export '../../core/auth/current_user.dart' show currentUserIdProvider;
@@ -99,3 +102,21 @@ final statisticsEngineProvider = Provider<StatisticsEngine>((ref) {
   final recordRepo = ref.watch(focusRecordRepositoryProvider);
   return StatisticsEngine(recordRepo);
 });
+
+/// Task repository — the task domain's only way to the database.
+final taskRepositoryProvider = Provider<ITaskRepository>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return DriftTaskRepository(db.taskDao);
+});
+
+/// The task list, with its filter tabs.
+final taskListControllerProvider =
+    StateNotifierProvider<TaskListController, TaskListState>(
+  (ref) => TaskListController(ref),
+);
+
+/// One task, by id, for the detail screen.
+final taskDetailControllerProvider =
+    StateNotifierProvider.family<TaskDetailController, TaskDetailState, String>(
+  (ref, taskId) => TaskDetailController(ref, taskId),
+);

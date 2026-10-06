@@ -6,6 +6,14 @@ class FocusRecords extends Table {
   TextColumn get userId => text()();
   TextColumn get categoryId => text().nullable()();
   TextColumn get taskName => text().nullable()();
+
+  /// The task this record was focused on, when it came from one.
+  ///
+  /// Nullable, and deliberately not a foreign key with a cascade: a record is a
+  /// fact about time the user spent, and deleting the task it was filed under
+  /// must not delete the history. A record whose task is gone keeps its
+  /// `taskName` and simply stops counting towards a task's total.
+  TextColumn get taskId => text().nullable()();
   TextColumn get mood => text().nullable()();
   IntColumn get durationSeconds => integer()();
   DateTimeColumn get startAt => dateTime()();

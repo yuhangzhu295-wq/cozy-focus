@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../controllers/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -282,6 +283,8 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
         children: [
           _buildStatsCard(mins, count, streak, sec),
           const SizedBox(height: 12),
+          _buildTaskEntry(context),
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
             decoration: BoxDecoration(
@@ -321,6 +324,57 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
             _buildCalendarBanner(),
           ],
         ]);
+  }
+
+  /// The way into the task list.
+  ///
+  /// On the records tab rather than as a fourth bottom tab: tasks are what a
+  /// focus session is about, and the records domain is where the app already
+  /// keeps what the user did with their time. A fourth tab would give the
+  /// product two places to look for the same thing.
+  Widget _buildTaskEntry(BuildContext context) {
+    final open = ref.watch(taskListControllerProvider).tasks.length;
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: InkWell(
+        onTap: () => context.push('/records/tasks'),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.checklist_rounded,
+                  size: 20, color: AppColors.primarySage),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  '任务',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                open > 0 ? '$open 个进行中' : '还没有任务',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const Icon(Icons.chevron_right,
+                  size: 20, color: AppColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildStatsCard(int mins, int count, int streak, int sec) {

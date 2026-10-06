@@ -16,6 +16,15 @@ void main() {
     try {
       final raw = sqlite3.open(file.path);
       try {
+        // focus_sessions too, because a real v3 database had it and the chain
+        // now runs on to v5, which adds a column to it. A fixture without it
+        // would be a database that never existed.
+        raw.execute('CREATE TABLE focus_sessions ('
+            'id TEXT NOT NULL PRIMARY KEY, user_id TEXT NOT NULL, '
+            'category_id TEXT, task_name TEXT, planned_seconds INTEGER NOT NULL, '
+            'mode TEXT NOT NULL, start_at INTEGER NOT NULL, '
+            "pause_intervals_json TEXT NOT NULL DEFAULT '[]', end_at INTEGER, "
+            'status TEXT NOT NULL, timezone_offset_minutes INTEGER NOT NULL)');
         raw.execute('CREATE TABLE focus_records ('
             'id TEXT NOT NULL PRIMARY KEY, session_id TEXT NOT NULL, '
             'user_id TEXT NOT NULL, category_id TEXT, task_name TEXT, mood TEXT, '
@@ -54,7 +63,8 @@ void main() {
 
         final version =
             await db.customSelect('PRAGMA user_version').getSingle();
-        expect(version.read<int>('user_version'), 4);
+        // The head of the chain, which moves when a migration is added.
+        expect(version.read<int>('user_version'), 5);
         final indexes = await db
             .customSelect(
               "SELECT name FROM sqlite_master WHERE type = 'index' "

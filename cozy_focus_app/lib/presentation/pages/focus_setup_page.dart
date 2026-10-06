@@ -12,7 +12,14 @@ import '../widgets/app_bottom_nav.dart';
 /// Screen 02: Focus Setup — V4.1 visual redesign
 /// Design ref: docs/cozy_focus_v4_1/designs/pages_ascii/02_focus_setup.png
 class FocusSetupPage extends ConsumerStatefulWidget {
-  const FocusSetupPage({super.key});
+  /// The task this session is for, when the user started it from a task.
+  ///
+  /// A constructor parameter rather than state read from the router inside the
+  /// page: the page does not need to know about query strings, and a test can
+  /// start a session for a task without building a router.
+  final String? taskId;
+
+  const FocusSetupPage({super.key, this.taskId});
 
   @override
   ConsumerState<FocusSetupPage> createState() => _FocusSetupPageState();
@@ -45,6 +52,7 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
             plannedSeconds: _plannedSeconds,
             mode: _focusMode,
             taskName: taskName,
+            taskId: widget.taskId,
           );
       if (mounted) context.go('/focus/active');
     } catch (e) {

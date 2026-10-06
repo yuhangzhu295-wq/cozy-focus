@@ -167,6 +167,7 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
     String? categoryId,
     String? taskName,
     String? categoryName,
+    String? taskId,
   }) async {
     final session = await _engine.start(
       userId: userId,
@@ -174,6 +175,7 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
       mode: mode,
       categoryId: categoryId,
       taskName: taskName,
+      taskId: taskId,
     );
     state = state.copyWith(
       taskName: taskName ?? '专注任务',

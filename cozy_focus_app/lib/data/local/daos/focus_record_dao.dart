@@ -18,6 +18,7 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
         userId: Value(record.userId),
         categoryId: Value(record.categoryId),
         taskName: Value(record.taskName),
+        taskId: Value(record.taskId),
         mood: Value(record.mood),
         durationSeconds: Value(record.durationSeconds),
         startAt: Value(record.startAt),
@@ -48,6 +49,7 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
       FocusRecordsCompanion(
         categoryId: Value(record.categoryId),
         taskName: Value(record.taskName),
+        taskId: Value(record.taskId),
         mood: Value(record.mood),
         note: Value(record.note),
       ),
@@ -101,6 +103,7 @@ class FocusRecordDao extends DatabaseAccessor<AppDatabase>
       userId: row.userId as String,
       categoryId: row.categoryId as String?,
       taskName: row.taskName as String?,
+      taskId: row.taskId as String?,
       mood: row.mood as String?,
       durationSeconds: row.durationSeconds as int,
       startAt: row.startAt as DateTime,
