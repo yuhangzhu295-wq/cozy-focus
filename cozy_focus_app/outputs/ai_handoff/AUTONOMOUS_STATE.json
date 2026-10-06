@@ -23,7 +23,7 @@
     "P37_ai_generation_spike": "COMPLETE (REAL_PROVIDER_GENERATION = BLOCKED_EXTERNAL)"
   },
   "test_counts": {
-    "full_suite": "1504/1504",
+    "full_suite": "1508/1508",
     "pack_suite": "173",
     "format": "PASS (325 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
@@ -201,11 +201,11 @@
     "All tooling proofs green: manifest geometry negative proof, the measurement alpha proof against 147 real indexed frames, the pack geometry audit, the builder refusals, and the video_to_sprite negative check.",
     "The cupertino_icons font warning during a release build is not ours: lib/ references no CupertinoIcons and pubspec does not declare the package, so it is a transitive tree-shaking artifact and no glyphs are missing.",
     "Damaged-pack hardening: 8 tests covering a manifest corrupted while running, missing frames, a deleted pack directory, availability for a damaged pack, and a cold start over a damaged root. The picker does not offer a pack it cannot read, and the app is never left unable to name the selected companion.",
-    "RESOLVED, and withdrawn as a finding: the earlier note said an already-alive companionCatalogProvider did not recompute after a pack became unreadable. It does. A traced diagnostic shows two emits - [dog,cat,rabbit,mimi] then [dog,cat,rabbit,other] - so the damaged pack stops being offered without a restart. The earlier observation was an artifact of reading the provider without a listener first: a provider that is only `read` is not invalidated when its dependency changes, which is a fact about `read`, not about the catalog. The test now subscribes the way a widget does and asserts the recomputation, and passes deterministically across runs."
+    "RESOLVED, and withdrawn as a finding: the earlier note said an already-alive companionCatalogProvider did not recompute after a pack became unreadable. It does. A traced diagnostic shows two emits - [dog,cat,rabbit,mimi] then [dog,cat,rabbit,other] - so the damaged pack stops being offered without a restart. The earlier observation was an artifact of reading the provider without a listener first: a provider that is only `read` is not invalidated when its dependency changes, which is a fact about `read`, not about the catalog. The test now subscribes the way a widget does and asserts the recomputation, and passes deterministically across runs.",
+    "Accessibility on the import screen: 4 tests. The file button, the three species chips and the install button are all reachable by semantics, a chosen species announces as selected, and the completeness report is present as text rather than only as an amber pill. Reduced motion is honoured for a custom companion by construction - the same director and the same context, with no per-companion branch - which custom_companion_first_class_test already asserts."
   ],
   "p39_remaining": [
-    "Corrupt-pack recovery on the device: what the app does when an installed pack is damaged under it (the tests cover a corrupt record file and a manifest that cannot be read).",
-    "A reduced-motion pass and an accessibility pass over the custom-companion screens specifically; the existing coverage is for the built-in flow.",
-    "Sprite-cache bounds and a process-death-mid-session check."
+    "Sprite-cache bounds and a process-death-mid-session check.",
+    "A device pass over the damaged-pack cases: the tests cover the logic, and the device would show what a user actually sees."
   ]
 }

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -245,6 +246,102 @@ void main() {
     // Still on the first step, with nothing said about a cancelled dialog.
     expect(find.text('选择宠物包文件'), findsOneWidget);
     expect(find.text('这个文件装不了'), findsNothing);
+  });
+  // ────────────────────────── accessibility (P39) ───────────────────────────
+
+  group('a screen reader can complete the import', () {
+    // The flow has to be finishable without seeing it. That is not the same as
+    // "the widgets have semantics": every control the flow *needs* has to be in
+    // the tree, and the ones that carry a choice have to announce the choice.
+
+    testWidgets('the file button and the picker are announced', (tester) async {
+      useTallSurface(tester);
+      final c = containerWith(_FakePicker(null));
+      await tester.pumpWidget(app(c));
+
+      expect(find.bySemanticsLabel('选择宠物包文件'), findsWidgets,
+          reason: 'the only way in must be reachable');
+    });
+
+    testWidgets('the species chips announce themselves as a selected choice',
+        (tester) async {
+      useTallSurface(tester);
+      final c = containerWith(_FakePicker(
+        PickedCompanionPack('mimi.cozy_pet', goodPack(name: '小豆')),
+      ));
+      await tester.pumpWidget(app(c));
+      await tester.tap(find.text('选择宠物包文件'));
+      await tester.pump();
+      await tester.pump();
+
+      // All three are announced, so a screen reader user can pick one. Matched
+      // by pattern rather than by exact string: the chip's own label merges with
+      // the text inside it, so the node reads the name twice.
+      for (final label in const ['狗狗', '猫咪', '兔子']) {
+        expect(find.bySemanticsLabel(RegExp(label)), findsOneWidget,
+            reason: '$label must be reachable');
+      }
+
+      // Nothing is chosen yet: this pack declares no species, so the choice is
+      // the user's. Which is itself the point — the format leaves it optional.
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel(RegExp('猫咪')))
+            .hasFlag(SemanticsFlag.isSelected),
+        isFalse,
+      );
+
+      // And choosing one announces it, which is what makes the choice legible to
+      // a screen reader rather than only visible as a border colour.
+      await tester.tap(find.text('猫咪'));
+      await tester.pump();
+
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel(RegExp('猫咪')))
+            .hasFlag(SemanticsFlag.isSelected),
+        isTrue,
+        reason: 'the chosen species must announce as selected',
+      );
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel(RegExp('狗狗')))
+            .hasFlag(SemanticsFlag.isSelected),
+        isFalse,
+      );
+    });
+
+    testWidgets('the completeness report is announced, not just drawn',
+        (tester) async {
+      useTallSurface(tester);
+      final c = containerWith(_FakePicker(
+        PickedCompanionPack('mimi.cozy_pet', goodPack(name: '小豆')),
+      ));
+      await tester.pumpWidget(app(c));
+      await tester.tap(find.text('选择宠物包文件'));
+      await tester.pump();
+      await tester.pump();
+
+      // The note is visible text, so it is read. What this asserts is that it is
+      // present as text rather than only as a colour or a badge: a user who
+      // cannot see the amber pill still learns the pack is partial.
+      expect(find.textContaining('这个伙伴会'), findsOneWidget);
+      expect(find.textContaining('不会'), findsOneWidget);
+    });
+
+    testWidgets('the install button is announced', (tester) async {
+      useTallSurface(tester);
+      final c = containerWith(_FakePicker(
+        PickedCompanionPack('mimi.cozy_pet', goodPack(name: '小豆')),
+      ));
+      await tester.pumpWidget(app(c));
+      await tester.tap(find.text('选择宠物包文件'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.bySemanticsLabel('安装这个伙伴'), findsWidgets,
+          reason: 'the action that completes the flow must be reachable');
+    });
   });
 }
 
