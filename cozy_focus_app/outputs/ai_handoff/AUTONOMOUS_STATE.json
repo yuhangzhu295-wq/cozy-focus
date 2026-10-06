@@ -1,44 +1,32 @@
 {
-  "program": "RESUME_P32_THROUGH_P40",
+  "program": "COZYFOCUS_2_0_P1_TO_P10",
   "project": "COZY_FOCUS",
   "branch": "recovery/v4.2.1-rebuild",
-  "updated_at_slice": "Every blocker that could be closed without a person is closed: frame pixels bounded, generation invariant enforced, input size bounded, ZIP bomb refused before decoding, the asset guide corrected against the real contract.",
-  "phase": "P40",
-  "slice": "P28-P40 all run. P40 gate verdict: READY_FOR_STORE = NO. Feature work complete; what remains needs the owner.",
+  "updated_at_slice": "CozyFocus 2.0 P1-P10 all delivered, then walked on the emulator: three user-visible defects found that the whole suite had passed, all three fixed with reverse-proved regression tests.",
+  "phase": "P10",
+  "slice": "P1-P10 complete: task domain, today plan, focus timing modes, distraction inbox, focus review, timeline projection, analytics, free time, companion wiring, settings and empty states. Schema v4 -> v11. Golden Flows A-F pass. Device walkthrough done; three defects fixed.",
   "start_sha": "0a116e2",
-  "latest_sha": "eb01eddeec5beb92bdc063c251bf27844dfb87dd",
+  "latest_sha": "2055ecad6a74691bc9d05bf3e60d691f4df194e8",
   "remote_sha": "eb01eddeec5beb92bdc063c251bf27844dfb87dd",
   "local_equals_remote": true,
   "worktree": "clean",
   "completed_phases": {
-    "P28_action_truth": "PASS",
-    "P29_acquisition_ux": "PASS",
-    "P30_user_golden_flow": "PASS (device-walked, database-verified)",
-    "P31_companion_pack_standard": "PASS",
-    "P32_local_import_export": "PASS (device-walked, filesystem-verified)",
-    "P33_partial_pack_capability": "PASS (device-verified)",
-    "P34_local_pack_builder": "PASS (device-walked)",
-    "P35_custom_companion_runtime": "PASS",
-    "P36_local_custom_pet_golden_flow": "PASS (device-walked, offline)",
-    "P37_ai_generation_spike": "COMPLETE (REAL_PROVIDER_GENERATION = BLOCKED_EXTERNAL)",
-    "P38_optional_cloud_backend": "BLOCKED_EXTERNAL (provider-neutral architecture delivered in P37)",
-    "P39_full_hardening": "COMPLETE",
-    "P40_release_candidate": "GATE RUN, READY_FOR_STORE = NO (2 owner blockers + 1 gap, now fixed)"
+    "P1_task_domain": "PASS",
+    "P2_today_plan": "PASS",
+    "P3_focus_timing_modes": "PASS",
+    "P4_distraction_inbox": "PASS",
+    "P5_focus_review": "PASS",
+    "P6_timeline_projection": "PASS",
+    "P7_analytics_lite": "PASS",
+    "P8_free_time": "PASS",
+    "P9_companion_wiring": "PASS",
+    "P10_settings_empty_states": "PASS",
+    "device_walkthrough": "PASS after fixes (3 defects found and fixed)",
+    "golden_flows_A_to_F": "PASS"
   },
   "test_counts": {
-    "full_suite": "1525/1525",
-    "pack_suite": "173",
-    "format": "PASS (325 files, 0 changed)",
-    "analyze": "PASS (0 issues, --fatal-infos)",
-    "geometry_negative_proof": "PASS (uniform 40px shift refused)",
-    "pack_geometry_audit": "PASS (dog verified; cat/rabbit have no contract)",
-    "avatar_install_negative_proof": "PASS (late final fails both regression tests)",
-    "debug_apk": "PASS (P34 source built and walked)",
-    "release_apk": "BUILDS (30.1 MB) but is DEBUG-SIGNED - not a store-signing pass",
-    "builder_negative_proofs": "PASS (12 refusals)",
-    "builder_consumption": "PASS (10 tests; real builder -> real importer)",
-    "release_aab": "BUILDS (48.6 MB) but is DEBUG-SIGNED; artifact inspection clean",
-    "shipped_asset_integrity": "PASS (3 packs, 147 frames, 0 missing, 0 unreferenced, all contracted)"
+    "full_suite": "1836/1836",
+    "schema_head": 11
   },
   "p32_device_flow": {
     "device": "Pixel 7 API 34 emulator",
@@ -245,5 +233,12 @@
     "release_signing": "The release build SUCCEEDS AND PRODUCES A DEBUG-SIGNED BUNDLE when android/key.properties is absent, because build.gradle.kts falls back to the debug signing config. The artifact certificate reads CN=Android Debug. A successful release build is not a store-signing pass. NOT_RECOVERED.",
     "hostile_pack_memory": "CLOSED. Both directions are bounded: the input size before reading (64 MB, in the picker and the reader) and the declared expansion before decoding (the central directory pre-flight). What remains unverified is only whether a particular crafted archive exhausts a device, which now happens after the refusal would have fired.",
     "owner_visual_gate": "Nobody has looked at the custom companion screens and said they are right."
-  }
+  },
+  "not_done": [
+    "White noise (designs 04/15): no audio assets in the repository, and a toggle that plays nothing is the fake control the brief forbids.",
+    "System notifications: the settings row stays an honest \"not wired up yet\".",
+    "Five-tab bottom navigation (designs 15/16 show five): the brief forbids it.",
+    "Visual sign-off on all sixteen designs beyond the screens walked on the emulator (records hub, today plan x3 views, task list, create task, focus setup, focus active, capture sheet, complete, inbox, rest, settings).",
+    "Performance measurement (startup, frame rate, package size)."
+  ]
 }
