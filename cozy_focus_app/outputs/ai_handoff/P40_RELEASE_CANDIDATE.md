@@ -54,17 +54,30 @@ than what is written, and it keeps the decoder away from a file chosen by accide
 or by malice. A real pack is about a megabyte, so nothing a person builds is
 refused.
 
-**What is not closed, and why it cannot be from here.** A *small* archive that
-expands hugely is still decoded before any entry can be measured, because the
-`archive` package exposes no way to read a ZIP's central directory on its own —
-`decodeBytes` and `decodeStream` both decompress. The expansion-ratio rule is inert
-on this path for the same reason, which P32 recorded honestly. Bounding the input
-is the lever this API gives, and saying so is better than implying the bomb vector
-is handled.
+**The bomb vector is now closed too.** The archive package exposes no way to read
+a ZIP's central directory on its own — `decodeBytes` and `decodeStream` both
+decompress — so `companion_pack_zip_directory.dart` reads it directly. A ZIP's
+directory is a table at the end of the file that states every entry's compressed
+and uncompressed size, and reading it costs a few hundred bytes of parsing and no
+decompression at all.
 
-**Verified:** the ordering, the missing ratio measurement, and that both size
-checks refuse before the decoder. **Not verified:** whether a particular crafted
-archive exhausts a device — that needs a crafted archive and a device run.
+So the limits are now applied twice: **before** the decoder, against what the
+directory declares, and afterwards, against the real entries. The pre-flight can
+only refuse earlier — it can never cause an archive to be accepted that the policy
+would have refused — and when it cannot parse a directory (ZIP64, a truncated
+tail) it returns null and the reader proceeds exactly as before, so the worst case
+of a bug in it is yesterday's behaviour.
+
+The test that makes this a proof rather than an assertion is a **lying directory**:
+an entry's declared uncompressed size is patched to 500 MB inside a real 64-byte
+entry. The reader refuses it — and the *same bytes* decode cleanly under permissive
+limits, which is what shows the refusal came from the directory and not from the
+entries.
+
+**Verified:** the ordering, the directory read, both pre-flight refusals, and that
+an ordinary pack is untouched. **Not verified:** whether a particular crafted
+archive exhausts a device — that needs a device run, and the refusal now happens
+before the memory would be spent, so the value of that run is lower than it was.
 
 ### 3. Frames were bounded by count, not by pixels — fixed here
 

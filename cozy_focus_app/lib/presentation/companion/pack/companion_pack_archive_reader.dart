@@ -24,6 +24,7 @@ import 'package:archive/archive.dart';
 
 import 'companion_pack_archive_policy.dart';
 import 'companion_pack_validator.dart';
+import 'companion_pack_zip_directory.dart';
 
 /// One file the archive wants written, at a path already judged safe.
 class CompanionPackFile {
@@ -88,6 +89,24 @@ abstract final class CompanionPackArchiveReader {
       );
     }
 
+    // The bomb check, from the directory and before the decoder.
+    //
+    // A compression bomb is small on disk and enormous in memory, and the memory
+    // is spent by `decodeBytes` - so every entry limit in the policy ran after the
+    // cost had already been paid. The central directory states each entry's
+    // uncompressed size without decompressing anything, which is what makes it
+    // possible to refuse before spending. The policy still runs afterwards on the
+    // real entries, so this can only refuse earlier, never accept something the
+    // policy would have refused.
+    final directory = CompanionPackZipDirectory.read(bytes);
+    if (directory != null) {
+      final declared = _refusalFromDirectory(directory, limits);
+      if (declared != null) {
+        return CompanionPackReadResult(
+            const [], PackValidationResult([declared]));
+      }
+    }
+
     final Archive archive;
     try {
       archive = ZipDecoder().decodeBytes(bytes);
@@ -141,5 +160,50 @@ abstract final class CompanionPackArchiveReader {
       ],
       verdict,
     );
+  }
+
+  /// Why the archive's own directory says it may not be decoded, or null.
+  ///
+  /// The numbers are a claim, and are treated as one: they decide whether to
+  /// spend memory, and the entries are still judged against their real bytes
+  /// afterwards. A lying directory can therefore only cause a refusal the real
+  /// archive would not have earned — never the reverse.
+  static PackViolation? _refusalFromDirectory(
+    CompanionPackZipDirectory directory,
+    PackArchiveLimits limits,
+  ) {
+    if (directory.entries.length > limits.maxEntries) {
+      return PackViolation(
+          'too_many_entries',
+          'the archive declares ${directory.entries.length} entries, above the '
+              'limit of ${limits.maxEntries}');
+    }
+
+    for (final entry in directory.entries) {
+      if (entry.uncompressedSize > limits.maxEntryBytes) {
+        return PackViolation(
+            'entry_too_large',
+            '"${entry.name}" declares ${entry.uncompressedSize} bytes, above the '
+                '${limits.maxEntryBytes} limit');
+      }
+    }
+
+    final ratio = directory.worstExpansionRatio;
+    if (ratio != null && ratio > limits.maxExpansionRatio) {
+      return PackViolation(
+          'expansion_ratio_bomb',
+          'an entry declares expanding ${ratio.toStringAsFixed(0)}x, above the '
+              '${limits.maxExpansionRatio}x limit');
+    }
+
+    final total = directory.totalUncompressedBytes;
+    if (total > limits.maxTotalBytes) {
+      return PackViolation(
+          'archive_too_large',
+          'the archive declares expanding to $total bytes, above the '
+              '${limits.maxTotalBytes} limit');
+    }
+
+    return null;
   }
 }

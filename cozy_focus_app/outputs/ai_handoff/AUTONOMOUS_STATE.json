@@ -26,7 +26,7 @@
     "P40_release_candidate": "GATE RUN, READY_FOR_STORE = NO (2 owner blockers + 1 gap, now fixed)"
   },
   "test_counts": {
-    "full_suite": "1516/1516",
+    "full_suite": "1521/1521",
     "pack_suite": "173",
     "format": "PASS (325 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
@@ -236,11 +236,12 @@
     "Frames were bounded by count, not by pixels. The importer now reads each referenced PNG IHDR and refuses a frame larger than the declared canvas, which turns \"frames are bounded\" into a statement about memory. Two tests, over the canvas and at it.",
     "The P37 invariant that a result carries no bytes unless it was generated was true only of the named constructors. It is now an assertion on the constructor, with a test.",
     "Two claims in the P39 handoff were stronger than their evidence and are corrected: the memory bound bounded a list length, and reduced motion is an argument from the design rather than a test of playback.",
-    "The read-side memory bound: PackArchiveLimits.maxInputBytes = 64 MB, applied in the picker (by declared length, without reading) and in the reader (before decoding). That is the only place a limit can bound what is read rather than what is written."
+    "The read-side memory bound: PackArchiveLimits.maxInputBytes = 64 MB, applied in the picker (by declared length, without reading) and in the reader (before decoding). That is the only place a limit can bound what is read rather than what is written.",
+    "The bomb vector: companion_pack_zip_directory.dart reads a ZIP central directory directly, because the archive package offers no way to read one without decompressing. The limits now run both before the decoder (against the declared sizes) and after it (against the real entries). The pre-flight is additive - it can only refuse earlier - and returns null on a directory it cannot parse, so its worst case is the previous behaviour. Proved by patching a real 64-byte entry to declare 500 MB: refused, while the same bytes decode under permissive limits."
   ],
   "p40_blockers": {
     "release_signing": "The release build SUCCEEDS AND PRODUCES A DEBUG-SIGNED BUNDLE when android/key.properties is absent, because build.gradle.kts falls back to the debug signing config. The artifact certificate reads CN=Android Debug. A successful release build is not a store-signing pass. NOT_RECOVERED.",
-    "hostile_pack_memory": "PARTLY CLOSED. The read-side bound is in (64 MB, checked by the picker without reading and by the reader before decoding). What remains is the small-archive-expanding-hugely vector: the archive package exposes no way to read a ZIP central directory on its own, so decodeBytes and decodeStream both decompress before any entry can be measured, and the expansion-ratio rule is inert for the same reason. Bounding the input is the lever this API gives.",
+    "hostile_pack_memory": "CLOSED. Both directions are bounded: the input size before reading (64 MB, in the picker and the reader) and the declared expansion before decoding (the central directory pre-flight). What remains unverified is only whether a particular crafted archive exhausts a device, which now happens after the refusal would have fired.",
     "owner_visual_gate": "Nobody has looked at the custom companion screens and said they are right."
   }
 }
