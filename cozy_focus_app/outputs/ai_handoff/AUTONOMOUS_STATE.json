@@ -2,9 +2,9 @@
   "program": "RESUME_P32_THROUGH_P40",
   "project": "COZY_FOCUS",
   "branch": "recovery/v4.2.1-rebuild",
-  "updated_at_slice": "P37 complete; the generation contract exists and this build honestly reports it has no provider",
-  "phase": "P37",
-  "slice": "P37 COMPLETE as far as it can be. Next: P38.",
+  "updated_at_slice": "P39 partial: AAB and APK build, shipped asset integrity verified, all tooling proofs green",
+  "phase": "P38/P39",
+  "slice": "P39 hardening in progress (build artifacts, asset integrity, tooling proofs). Next: the remaining P39 items and P38.",
   "start_sha": "0a116e2",
   "latest_sha": "45b1398",
   "remote_sha": "45b1398",
@@ -31,9 +31,11 @@
     "pack_geometry_audit": "PASS (dog verified; cat/rabbit have no contract)",
     "avatar_install_negative_proof": "PASS (late final fails both regression tests)",
     "debug_apk": "PASS (P34 source built and walked)",
-    "release_apk": "PENDING (needs a rebuild after the P32 source changes)",
+    "release_apk": "PASS (30.1 MB)",
     "builder_negative_proofs": "PASS (12 refusals)",
-    "builder_consumption": "PASS (10 tests; real builder -> real importer)"
+    "builder_consumption": "PASS (10 tests; real builder -> real importer)",
+    "release_aab": "PASS (48.6 MB)",
+    "shipped_asset_integrity": "PASS (3 packs, 147 frames, 0 missing, 0 unreferenced, all contracted)"
   },
   "p32_device_flow": {
     "device": "Pixel 7 API 34 emulator",
@@ -75,7 +77,7 @@
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P38: the optional cloud generation backend. A provider-neutral architecture can be implemented and tested without credentials - the request, the result, the policy and the pack contract are all in place from P37. What cannot be claimed is that cloud generation works: P38 = PARTIAL / BLOCKED_EXTERNAL unless real credentials appear. Do not dress a missing capability up as a success.",
+  "next_action": "Finish P39: corrupt-pack recovery on device, reduced-motion and accessibility passes, sprite-cache bounds, process-death mid-session, and the offline path. Then P38 as PARTIAL/BLOCKED_EXTERNAL (a provider-neutral backend skeleton only, with no claim that cloud generation works), then P40.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git status --short",
     "read this file",
@@ -109,7 +111,8 @@
     "P36_local_custom_pet_golden_flow": "PASS",
     "P37_to_P40": "NOT_STARTED",
     "P37_ai_generation_spike": "COMPLETE (blocked external)",
-    "P38_to_P40": "NOT_STARTED"
+    "P38_to_P40": "NOT_STARTED",
+    "P39_hardening": "IN_PROGRESS"
   },
   "p33_device_flow": {
     "device": "Pixel 7 API 34 emulator",
@@ -190,5 +193,16 @@
     "A result carries no bytes unless the status is `generated`, so a caller cannot install a placeholder by ignoring the status. UnconfiguredGenerationProvider returns blockedExternal and the runner reports it without calling the provider.",
     "Nothing in this phase fabricates a generation. The harness that builds a real .cozy_pet is test-only and named as a harness.",
     "The prompt states the canvas, anchors, action vocabulary and frame counts around the player sentence, and reads the vocabulary and counts from the app production contract so a prompt cannot promise a companion the app cannot play."
+  ],
+  "p39_done": [
+    "Release APK 30.1 MB and release AAB 48.6 MB both build from the current source.",
+    "Shipped asset integrity: all three packs have 13 actions and 49 frames, no missing and no unreferenced frames, and all three have a geometry contract.",
+    "All tooling proofs green: manifest geometry negative proof, the measurement alpha proof against 147 real indexed frames, the pack geometry audit, the builder refusals, and the video_to_sprite negative check.",
+    "The cupertino_icons font warning during a release build is not ours: lib/ references no CupertinoIcons and pubspec does not declare the package, so it is a transitive tree-shaking artifact and no glyphs are missing."
+  ],
+  "p39_remaining": [
+    "Corrupt-pack recovery on the device: what the app does when an installed pack is damaged under it (the tests cover a corrupt record file and a manifest that cannot be read).",
+    "A reduced-motion pass and an accessibility pass over the custom-companion screens specifically; the existing coverage is for the built-in flow.",
+    "Sprite-cache bounds and a process-death-mid-session check."
   ]
 }
