@@ -26,7 +26,7 @@
     "P40_release_candidate": "GATE RUN, READY_FOR_STORE = NO (2 owner blockers + 1 gap, now fixed)"
   },
   "test_counts": {
-    "full_suite": "1521/1521",
+    "full_suite": "1525/1525",
     "pack_suite": "173",
     "format": "PASS (325 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
@@ -67,7 +67,8 @@
     "P33: multi_companion_parity_test forces every profile to the dog's 13 actions. Right for built-ins, wrong as an admission requirement for a user partial pack; the two contracts must be scoped apart.",
     "P28.4: room_sit still projects to idle with no frames of its own; sofa/sit and rug/sit are hidden from the panel, but the routine and idle still select room_sit.",
     "Room: the travel ticker starts immediately after startTravel and _onCompanionAnimationChanged is empty, so the comment claiming movement waits for stand_up describes behaviour the code does not implement.",
-    "P34 remains: the pack builder itself (video/frame directory -> .cozy_pet) is not built. Its prerequisites are now in place: measurement is trustworthy, and all three shipped packs have a contract the builder can hold new packs to."
+    "P34 remains: the pack builder itself (video/frame directory -> .cozy_pet) is not built. Its prerequisites are now in place: measurement is trustworthy, and all three shipped packs have a contract the builder can hold new packs to.",
+    "One full-suite run reported a single failure that left no failure text in the captured output, and two subsequent runs passed 1525/1525 with no failure. Not reproduced, not diagnosed, and recorded rather than dismissed: an intermittent failure is a real thing even when a rerun is green, and the next person should treat a repeat as information rather than as noise."
   ],
   "known_blockers": {
     "RELEASE_SIGNING": "NOT_RECOVERED - android/key.properties absent, no keystore invented",
@@ -237,7 +238,8 @@
     "The P37 invariant that a result carries no bytes unless it was generated was true only of the named constructors. It is now an assertion on the constructor, with a test.",
     "Two claims in the P39 handoff were stronger than their evidence and are corrected: the memory bound bounded a list length, and reduced motion is an argument from the design rather than a test of playback.",
     "The read-side memory bound: PackArchiveLimits.maxInputBytes = 64 MB, applied in the picker (by declared length, without reading) and in the reader (before decoding). That is the only place a limit can bound what is read rather than what is written.",
-    "The bomb vector: companion_pack_zip_directory.dart reads a ZIP central directory directly, because the archive package offers no way to read one without decompressing. The limits now run both before the decoder (against the declared sizes) and after it (against the real entries). The pre-flight is additive - it can only refuse earlier - and returns null on a directory it cannot parse, so its worst case is the previous behaviour. Proved by patching a real 64-byte entry to declare 500 MB: refused, while the same bytes decode under permissive limits."
+    "The bomb vector: companion_pack_zip_directory.dart reads a ZIP central directory directly, because the archive package offers no way to read one without decompressing. The limits now run both before the decoder (against the declared sizes) and after it (against the real entries). The pre-flight is additive - it can only refuse earlier - and returns null on a directory it cannot parse, so its worst case is the previous behaviour. Proved by patching a real 64-byte entry to declare 500 MB: refused, while the same bytes decode under permissive limits.",
+    "docs/companion_assets.md stated a 1024x1024 canvas with anchors at 919/511; every shipped pack is 512x512 with 458/255. The guide now states the real contract, says the per-pack JSON is the authority, and describes the user-install path (builder + .cozy_pet + runtime directory) as well as the bundled one - it previously described only how to add a shipped companion, from which a reader would have concluded a user pack must go in pubspec.yaml. Four tests read the document and compare it against the contracts so it cannot drift again."
   ],
   "p40_blockers": {
     "release_signing": "The release build SUCCEEDS AND PRODUCES A DEBUG-SIGNED BUNDLE when android/key.properties is absent, because build.gradle.kts falls back to the debug signing config. The artifact certificate reads CN=Android Debug. A successful release build is not a store-signing pass. NOT_RECOVERED.",
