@@ -64,8 +64,7 @@
     "P33: multi_companion_parity_test forces every profile to the dog's 13 actions. Right for built-ins, wrong as an admission requirement for a user partial pack; the two contracts must be scoped apart.",
     "P28.4: room_sit still projects to idle with no frames of its own; sofa/sit and rug/sit are hidden from the panel, but the routine and idle still select room_sit.",
     "Room: the travel ticker starts immediately after startTravel and _onCompanionAnimationChanged is empty, so the comment claiming movement waits for stand_up describes behaviour the code does not implement.",
-    "P34 remains: the pack builder itself (video/frame directory -> .cozy_pet) is not built. Its prerequisites are now in place: measurement is trustworthy, and all three shipped packs have a contract the builder can hold new packs to.",
-    "P39 UNVERIFIED, recorded rather than papered over: an already-alive companionCatalogProvider did not recompute after a pack became unreadable, so a widget watching it would have kept offering the damaged pack until something else invalidated it. Reading the provider fresh is correct and that is what the test asserts. The staleness is bounded by the next cold start, which drops the pack from the registry and reports it. Not chased to a root cause; it needs a focused investigation of how the catalog reacts to a *removal* from the profiles map, since the P33 hot-install tests show an *addition* propagating correctly."
+    "P34 remains: the pack builder itself (video/frame directory -> .cozy_pet) is not built. Its prerequisites are now in place: measurement is trustworthy, and all three shipped packs have a contract the builder can hold new packs to."
   ],
   "known_blockers": {
     "RELEASE_SIGNING": "NOT_RECOVERED - android/key.properties absent, no keystore invented",
@@ -93,7 +92,8 @@
     "Neither tap method is universal: adb input tap at scaled device coordinates reached the install button CUA missed, and CUA reached the import bar and the ... menu that adb taps missed. Try the other before concluding a control is broken.",
     "The device screen is 1080x2400 and the CUA raster 561x1280, so the scale is about 1.925.",
     "A soft keyboard covers the bottom of the screen and eats taps meant for a button below the field. Dismiss it at the Android level (input keyevent 4) rather than by tapping, which can land in the field and type.",
-    "After the file picker has been used, am start resolves to it. force-stop the app and launch with monkey -p <pkg> -c android.intent.category.LAUNCHER 1."
+    "After the file picker has been used, am start resolves to it. force-stop the app and launch with monkey -p <pkg> -c android.intent.category.LAUNCHER 1.",
+    "A provider that is only `read` in a test is not invalidated when its dependency changes. Subscribe with `container.listen` before triggering the change, or the assertion is against a value that never recomputes. This cost two rounds here and produced a false finding."
   ],
   "_note": "Compact resumable state; history belongs in the phase handoff docs. latest_sha names the revision this file describes - the commit that writes it advances one past that, which is unavoidable and is not staleness.",
   "phases": {
@@ -200,7 +200,8 @@
     "Shipped asset integrity: all three packs have 13 actions and 49 frames, no missing and no unreferenced frames, and all three have a geometry contract.",
     "All tooling proofs green: manifest geometry negative proof, the measurement alpha proof against 147 real indexed frames, the pack geometry audit, the builder refusals, and the video_to_sprite negative check.",
     "The cupertino_icons font warning during a release build is not ours: lib/ references no CupertinoIcons and pubspec does not declare the package, so it is a transitive tree-shaking artifact and no glyphs are missing.",
-    "Damaged-pack hardening: 8 tests covering a manifest corrupted while running, missing frames, a deleted pack directory, availability for a damaged pack, and a cold start over a damaged root. The picker does not offer a pack it cannot read, and the app is never left unable to name the selected companion."
+    "Damaged-pack hardening: 8 tests covering a manifest corrupted while running, missing frames, a deleted pack directory, availability for a damaged pack, and a cold start over a damaged root. The picker does not offer a pack it cannot read, and the app is never left unable to name the selected companion.",
+    "RESOLVED, and withdrawn as a finding: the earlier note said an already-alive companionCatalogProvider did not recompute after a pack became unreadable. It does. A traced diagnostic shows two emits - [dog,cat,rabbit,mimi] then [dog,cat,rabbit,other] - so the damaged pack stops being offered without a restart. The earlier observation was an artifact of reading the provider without a listener first: a provider that is only `read` is not invalidated when its dependency changes, which is a fact about `read`, not about the catalog. The test now subscribes the way a widget does and asserts the recomputation, and passes deterministically across runs."
   ],
   "p39_remaining": [
     "Corrupt-pack recovery on the device: what the app does when an installed pack is damaged under it (the tests cover a corrupt record file and a manifest that cannot be read).",

@@ -137,12 +137,22 @@ void main() {
   }
 
   group('a pack that is damaged while installed', () {
-    test('a manifest that cannot be parsed does not break the app', () async {
+    test('a manifest that cannot be parsed drops the pack without a restart',
+        () async {
       final c = await installedAndSelected('mimi');
-      expect(
-        c.read(companionCatalogProvider).profiles.keys.map((id) => id.value),
-        contains('mimi'),
-      );
+
+      // Subscribed from the start, the way a widget watches it. A bare `read`
+      // creates the provider with no listener, and a provider that is only read
+      // is not invalidated when its dependency changes — which is a fact about
+      // `read`, not about the catalog, and it is why this test listens.
+      final seen = <List<String>>[];
+      final sub = c.listen(companionCatalogProvider, (_, next) {
+        seen.add(next.companionIds.map((id) => id.value).toList());
+      }, fireImmediately: true);
+      addTearDown(sub.close);
+
+      expect(seen.last, contains('mimi'));
+      expect(seen.last, isNot(contains('other')));
 
       // The manifest is corrupted underneath the running app, and a reload is
       // triggered the way the app triggers one.
@@ -150,20 +160,15 @@ void main() {
           .writeAsStringSync('{ not json');
       await forceReload(c, 'other');
 
-      // Read fresh, the catalog excludes it: the pack cannot be read, so it is
-      // not offered, and the pack that *is* readable still is.
-      final fresh = c.read(companionCatalogProvider);
-      expect(fresh.profiles.keys.map((id) => id.value), isNot(contains('mimi')),
-          reason: 'a pack whose manifest cannot be read must not be offered');
-      expect(fresh.profiles.keys.map((id) => id.value), contains('other'));
-
-      // OPEN FINDING, recorded rather than asserted: an *already-alive*
-      // `companionCatalogProvider` did not recompute after this reload, so a
-      // widget that was watching it would have kept offering the damaged pack
-      // until something else invalidated it. Reading it fresh is correct, which
-      // is why this test does that; the staleness itself is unverified and is
-      // written up in the P39 handoff rather than papered over with a passing
-      // assertion that does not describe it.
+      // It recomputed, and it dropped the pack it can no longer read. The pack
+      // that *is* readable is there, so this is a removal and not a wipe.
+      expect(seen.last, isNot(contains('mimi')),
+          reason:
+              'a pack whose manifest cannot be read must stop being offered '
+              'without a restart');
+      expect(seen.last, contains('other'));
+      expect(seen.last, containsAll(['dog', 'cat', 'rabbit']),
+          reason: 'and the built-ins must be untouched');
     });
 
     test('the picker does not show the default companion under the pack name',
