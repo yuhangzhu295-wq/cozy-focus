@@ -446,6 +446,36 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
           ),
+          const SizedBox(height: 8),
+          // 放松一下, the design's second way out of this card.
+          //
+          // Outlined rather than filled: focusing is what the screen is for, and a
+          // second solid button beside it would make the two look like equal
+          // choices. It leads to a real screen that writes a real rest.
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => context.push('/rest'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryDark,
+                side: const BorderSide(color: AppColors.primarySage),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+              ),
+              icon: const Icon(Icons.local_cafe_outlined, size: 20),
+              label: const Text(
+                '放松一下',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  height: _kLineHeight,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

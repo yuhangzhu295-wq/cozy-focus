@@ -10,4 +10,4 @@
 /// class, means a new migration updates one line and cannot drift.
 library;
 
-const int kSchemaHead = 9;
+const int kSchemaHead = 10;

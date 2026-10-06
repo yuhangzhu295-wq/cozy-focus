@@ -22,6 +22,7 @@ import '../pages/create_task_page.dart';
 import '../pages/task_detail_page.dart';
 import '../pages/today_plan_page.dart';
 import '../pages/distraction_inbox_page.dart';
+import '../pages/rest_page.dart';
 import '../pages/schedule_to_today_page.dart';
 import '../pages/mochi_growth_page.dart';
 import '../pages/pet_dress_page.dart';
@@ -123,6 +124,10 @@ GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
         // are two segments under /records and go_router takes the first route
         // that fits. `/records/today` is a fixed path, so it is safe to check
         // first; a record id is never the literal string "today".
+        GoRoute(
+          path: '/rest',
+          builder: (context, state) => const RestPage(),
+        ),
         GoRoute(
           path: '/records/today',
           builder: (context, state) => const TodayPlanPage(),

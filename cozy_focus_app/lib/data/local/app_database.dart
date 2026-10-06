@@ -13,6 +13,7 @@ import 'tables/pet_tables.dart';
 import 'tables/achievement_table.dart';
 import 'tables/sync_tables.dart';
 import 'tables/distraction_note_table.dart';
+import 'tables/rest_session_table.dart';
 import 'tables/task_schedule_table.dart';
 import 'tables/task_tables.dart';
 import 'daos/focus_session_dao.dart';
@@ -23,6 +24,7 @@ import 'daos/pet_dao.dart';
 import 'daos/craft_dao.dart';
 import 'daos/settlement_dao.dart';
 import 'daos/distraction_dao.dart';
+import 'daos/rest_dao.dart';
 import 'daos/task_dao.dart';
 
 part 'app_database.g.dart';
@@ -46,6 +48,7 @@ part 'app_database.g.dart';
     TaskSubtasks,
     TaskSchedules,
     DistractionNotes,
+    RestSessions,
   ],
   daos: [
     FocusSessionDao,
@@ -57,6 +60,7 @@ part 'app_database.g.dart';
     SettlementDao,
     TaskDao,
     DistractionDao,
+    RestDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -66,7 +70,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -173,6 +177,12 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(distractionNotes);
         }
         // v8 -> v9: the review's two extra answers, and the mood vocabulary.
+        // v9 -> v10: rest sessions. A new table, so nothing existing is touched
+        // and there is nothing to backfill — a database from before this phase
+        // simply has no rests recorded.
+        if (from < 10) {
+          await m.createTable(restSessions);
+        }
         if (from < 9) {
           await m.addColumn(focusRecords, focusRecords.gains);
           await m.addColumn(focusRecords, focusRecords.nextIntention);

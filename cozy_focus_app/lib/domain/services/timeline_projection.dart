@@ -10,6 +10,7 @@
 library;
 
 import '../models/focus_record.dart';
+import '../models/rest_session.dart';
 import '../models/task.dart';
 import '../models/task_schedule.dart';
 import '../models/timeline_entry.dart';
@@ -30,13 +31,18 @@ class TimelineDayFacts {
   /// The day's captured thoughts, in arrival order.
   final List<({DateTime at, String text, String? id})> notes;
 
+  /// The day's rests.
+  final List<RestSession> rest;
+
   const TimelineDayFacts({
     this.plan = const [],
     this.focus = const [],
     this.notes = const [],
+    this.rest = const [],
   });
 
-  bool get isEmpty => plan.isEmpty && focus.isEmpty && notes.isEmpty;
+  bool get isEmpty =>
+      plan.isEmpty && focus.isEmpty && notes.isEmpty && rest.isEmpty;
 }
 
 /// The day's rows, earliest first.
@@ -92,6 +98,27 @@ List<TimelineEntry> buildTimeline({
       detail: _runningDetail(runningSession, now),
       sourceId: runningSessionId,
       isRunning: true,
+    ));
+  }
+
+  for (final rest in facts.rest) {
+    // A running rest has no end yet, so its row shows how long it has been going
+    // rather than a length it has not reached.
+    final ended = rest.endAt;
+    entries.add(TimelineEntry(
+      at: rest.startAt,
+      kind: TimelineKind.rest,
+      title: ended == null ? '休息中' : '休息一下',
+      durationSeconds: ended == null
+          ? rest.elapsedSecondsAt(now)
+          : ended.difference(rest.startAt).inSeconds,
+      detail: ended == null
+          ? '已休息 ${formatDurationText(rest.elapsedSecondsAt(now))}'
+          : rest.status == RestStatus.cancelled
+              ? '${formatDurationText(ended.difference(rest.startAt).inSeconds)} · 提前结束'
+              : null,
+      sourceId: rest.id,
+      isRunning: ended == null,
     ));
   }
 

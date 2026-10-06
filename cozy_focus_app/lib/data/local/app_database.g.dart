@@ -7890,6 +7890,400 @@ class DistractionNotesCompanion extends UpdateCompanion<DistractionNote> {
   }
 }
 
+class $RestSessionsTable extends RestSessions
+    with TableInfo<$RestSessionsTable, RestSession> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RestSessionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+      'user_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _plannedSecondsMeta =
+      const VerificationMeta('plannedSeconds');
+  @override
+  late final GeneratedColumn<int> plannedSeconds = GeneratedColumn<int>(
+      'planned_seconds', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _startAtMeta =
+      const VerificationMeta('startAt');
+  @override
+  late final GeneratedColumn<DateTime> startAt = GeneratedColumn<DateTime>(
+      'start_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _endAtMeta = const VerificationMeta('endAt');
+  @override
+  late final GeneratedColumn<DateTime> endAt = GeneratedColumn<DateTime>(
+      'end_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('running'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, userId, plannedSeconds, startAt, endAt, status, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'rest_sessions';
+  @override
+  VerificationContext validateIntegrity(Insertable<RestSession> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('planned_seconds')) {
+      context.handle(
+          _plannedSecondsMeta,
+          plannedSeconds.isAcceptableOrUnknown(
+              data['planned_seconds']!, _plannedSecondsMeta));
+    } else if (isInserting) {
+      context.missing(_plannedSecondsMeta);
+    }
+    if (data.containsKey('start_at')) {
+      context.handle(_startAtMeta,
+          startAt.isAcceptableOrUnknown(data['start_at']!, _startAtMeta));
+    } else if (isInserting) {
+      context.missing(_startAtMeta);
+    }
+    if (data.containsKey('end_at')) {
+      context.handle(
+          _endAtMeta, endAt.isAcceptableOrUnknown(data['end_at']!, _endAtMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RestSession map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RestSession(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      userId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
+      plannedSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}planned_seconds'])!,
+      startAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_at'])!,
+      endAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}end_at']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $RestSessionsTable createAlias(String alias) {
+    return $RestSessionsTable(attachedDatabase, alias);
+  }
+}
+
+class RestSession extends DataClass implements Insertable<RestSession> {
+  final String id;
+  final String userId;
+
+  /// How long the user asked for. Always positive — a rest with no length is not
+  /// a thing the screen offers.
+  final int plannedSeconds;
+  final DateTime startAt;
+
+  /// Null while the rest is running.
+  final DateTime? endAt;
+
+  /// `running`, `completed` or `cancelled`.
+  ///
+  /// `cancelled` is kept rather than deleted: a rest the user ended early is a
+  /// fact about the day, and the timeline shows how long it actually lasted.
+  final String status;
+  final DateTime createdAt;
+  const RestSession(
+      {required this.id,
+      required this.userId,
+      required this.plannedSeconds,
+      required this.startAt,
+      this.endAt,
+      required this.status,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['planned_seconds'] = Variable<int>(plannedSeconds);
+    map['start_at'] = Variable<DateTime>(startAt);
+    if (!nullToAbsent || endAt != null) {
+      map['end_at'] = Variable<DateTime>(endAt);
+    }
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  RestSessionsCompanion toCompanion(bool nullToAbsent) {
+    return RestSessionsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      plannedSeconds: Value(plannedSeconds),
+      startAt: Value(startAt),
+      endAt:
+          endAt == null && nullToAbsent ? const Value.absent() : Value(endAt),
+      status: Value(status),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory RestSession.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RestSession(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      plannedSeconds: serializer.fromJson<int>(json['plannedSeconds']),
+      startAt: serializer.fromJson<DateTime>(json['startAt']),
+      endAt: serializer.fromJson<DateTime?>(json['endAt']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'plannedSeconds': serializer.toJson<int>(plannedSeconds),
+      'startAt': serializer.toJson<DateTime>(startAt),
+      'endAt': serializer.toJson<DateTime?>(endAt),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  RestSession copyWith(
+          {String? id,
+          String? userId,
+          int? plannedSeconds,
+          DateTime? startAt,
+          Value<DateTime?> endAt = const Value.absent(),
+          String? status,
+          DateTime? createdAt}) =>
+      RestSession(
+        id: id ?? this.id,
+        userId: userId ?? this.userId,
+        plannedSeconds: plannedSeconds ?? this.plannedSeconds,
+        startAt: startAt ?? this.startAt,
+        endAt: endAt.present ? endAt.value : this.endAt,
+        status: status ?? this.status,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  RestSession copyWithCompanion(RestSessionsCompanion data) {
+    return RestSession(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      plannedSeconds: data.plannedSeconds.present
+          ? data.plannedSeconds.value
+          : this.plannedSeconds,
+      startAt: data.startAt.present ? data.startAt.value : this.startAt,
+      endAt: data.endAt.present ? data.endAt.value : this.endAt,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RestSession(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('plannedSeconds: $plannedSeconds, ')
+          ..write('startAt: $startAt, ')
+          ..write('endAt: $endAt, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, userId, plannedSeconds, startAt, endAt, status, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RestSession &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.plannedSeconds == this.plannedSeconds &&
+          other.startAt == this.startAt &&
+          other.endAt == this.endAt &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt);
+}
+
+class RestSessionsCompanion extends UpdateCompanion<RestSession> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<int> plannedSeconds;
+  final Value<DateTime> startAt;
+  final Value<DateTime?> endAt;
+  final Value<String> status;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const RestSessionsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.plannedSeconds = const Value.absent(),
+    this.startAt = const Value.absent(),
+    this.endAt = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RestSessionsCompanion.insert({
+    required String id,
+    required String userId,
+    required int plannedSeconds,
+    required DateTime startAt,
+    this.endAt = const Value.absent(),
+    this.status = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        userId = Value(userId),
+        plannedSeconds = Value(plannedSeconds),
+        startAt = Value(startAt),
+        createdAt = Value(createdAt);
+  static Insertable<RestSession> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<int>? plannedSeconds,
+    Expression<DateTime>? startAt,
+    Expression<DateTime>? endAt,
+    Expression<String>? status,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (plannedSeconds != null) 'planned_seconds': plannedSeconds,
+      if (startAt != null) 'start_at': startAt,
+      if (endAt != null) 'end_at': endAt,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RestSessionsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? userId,
+      Value<int>? plannedSeconds,
+      Value<DateTime>? startAt,
+      Value<DateTime?>? endAt,
+      Value<String>? status,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return RestSessionsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      plannedSeconds: plannedSeconds ?? this.plannedSeconds,
+      startAt: startAt ?? this.startAt,
+      endAt: endAt ?? this.endAt,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (plannedSeconds.present) {
+      map['planned_seconds'] = Variable<int>(plannedSeconds.value);
+    }
+    if (startAt.present) {
+      map['start_at'] = Variable<DateTime>(startAt.value);
+    }
+    if (endAt.present) {
+      map['end_at'] = Variable<DateTime>(endAt.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RestSessionsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('plannedSeconds: $plannedSeconds, ')
+          ..write('startAt: $startAt, ')
+          ..write('endAt: $endAt, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7915,6 +8309,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TaskSchedulesTable taskSchedules = $TaskSchedulesTable(this);
   late final $DistractionNotesTable distractionNotes =
       $DistractionNotesTable(this);
+  late final $RestSessionsTable restSessions = $RestSessionsTable(this);
   late final FocusSessionDao focusSessionDao =
       FocusSessionDao(this as AppDatabase);
   late final FocusRecordDao focusRecordDao =
@@ -7928,6 +8323,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final TaskDao taskDao = TaskDao(this as AppDatabase);
   late final DistractionDao distractionDao =
       DistractionDao(this as AppDatabase);
+  late final RestDao restDao = RestDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7949,7 +8345,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         tasks,
         taskSubtasks,
         taskSchedules,
-        distractionNotes
+        distractionNotes,
+        restSessions
       ];
 }
 
@@ -11809,6 +12206,211 @@ typedef $$DistractionNotesTableProcessedTableManager = ProcessedTableManager<
     ),
     DistractionNote,
     PrefetchHooks Function()>;
+typedef $$RestSessionsTableCreateCompanionBuilder = RestSessionsCompanion
+    Function({
+  required String id,
+  required String userId,
+  required int plannedSeconds,
+  required DateTime startAt,
+  Value<DateTime?> endAt,
+  Value<String> status,
+  required DateTime createdAt,
+  Value<int> rowid,
+});
+typedef $$RestSessionsTableUpdateCompanionBuilder = RestSessionsCompanion
+    Function({
+  Value<String> id,
+  Value<String> userId,
+  Value<int> plannedSeconds,
+  Value<DateTime> startAt,
+  Value<DateTime?> endAt,
+  Value<String> status,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$RestSessionsTableFilterComposer
+    extends Composer<_$AppDatabase, $RestSessionsTable> {
+  $$RestSessionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get plannedSeconds => $composableBuilder(
+      column: $table.plannedSeconds,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get startAt => $composableBuilder(
+      column: $table.startAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get endAt => $composableBuilder(
+      column: $table.endAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$RestSessionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RestSessionsTable> {
+  $$RestSessionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get plannedSeconds => $composableBuilder(
+      column: $table.plannedSeconds,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get startAt => $composableBuilder(
+      column: $table.startAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get endAt => $composableBuilder(
+      column: $table.endAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$RestSessionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RestSessionsTable> {
+  $$RestSessionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<int> get plannedSeconds => $composableBuilder(
+      column: $table.plannedSeconds, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startAt =>
+      $composableBuilder(column: $table.startAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endAt =>
+      $composableBuilder(column: $table.endAt, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$RestSessionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RestSessionsTable,
+    RestSession,
+    $$RestSessionsTableFilterComposer,
+    $$RestSessionsTableOrderingComposer,
+    $$RestSessionsTableAnnotationComposer,
+    $$RestSessionsTableCreateCompanionBuilder,
+    $$RestSessionsTableUpdateCompanionBuilder,
+    (
+      RestSession,
+      BaseReferences<_$AppDatabase, $RestSessionsTable, RestSession>
+    ),
+    RestSession,
+    PrefetchHooks Function()> {
+  $$RestSessionsTableTableManager(_$AppDatabase db, $RestSessionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RestSessionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RestSessionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RestSessionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> userId = const Value.absent(),
+            Value<int> plannedSeconds = const Value.absent(),
+            Value<DateTime> startAt = const Value.absent(),
+            Value<DateTime?> endAt = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RestSessionsCompanion(
+            id: id,
+            userId: userId,
+            plannedSeconds: plannedSeconds,
+            startAt: startAt,
+            endAt: endAt,
+            status: status,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String userId,
+            required int plannedSeconds,
+            required DateTime startAt,
+            Value<DateTime?> endAt = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            required DateTime createdAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RestSessionsCompanion.insert(
+            id: id,
+            userId: userId,
+            plannedSeconds: plannedSeconds,
+            startAt: startAt,
+            endAt: endAt,
+            status: status,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$RestSessionsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RestSessionsTable,
+    RestSession,
+    $$RestSessionsTableFilterComposer,
+    $$RestSessionsTableOrderingComposer,
+    $$RestSessionsTableAnnotationComposer,
+    $$RestSessionsTableCreateCompanionBuilder,
+    $$RestSessionsTableUpdateCompanionBuilder,
+    (
+      RestSession,
+      BaseReferences<_$AppDatabase, $RestSessionsTable, RestSession>
+    ),
+    RestSession,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11846,4 +12448,6 @@ class $AppDatabaseManager {
       $$TaskSchedulesTableTableManager(_db, _db.taskSchedules);
   $$DistractionNotesTableTableManager get distractionNotes =>
       $$DistractionNotesTableTableManager(_db, _db.distractionNotes);
+  $$RestSessionsTableTableManager get restSessions =>
+      $$RestSessionsTableTableManager(_db, _db.restSessions);
 }

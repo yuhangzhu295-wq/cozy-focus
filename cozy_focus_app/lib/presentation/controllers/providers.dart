@@ -7,6 +7,7 @@ import '../../data/repositories/drift_reward_ledger_repository.dart';
 import '../../data/repositories/drift_craft_repository.dart';
 import '../../data/repositories/drift_task_repository.dart';
 import '../../data/repositories/drift_distraction_repository.dart';
+import '../../data/repositories/drift_rest_repository.dart';
 import '../../domain/repositories/i_focus_session_repository.dart';
 import '../../domain/repositories/i_focus_record_repository.dart';
 import '../../domain/repositories/i_pet_repository.dart';
@@ -14,6 +15,7 @@ import '../../domain/repositories/i_reward_ledger_repository.dart';
 import '../../domain/repositories/i_craft_repository.dart';
 import '../../domain/repositories/i_task_repository.dart';
 import '../../domain/repositories/i_distraction_repository.dart';
+import '../../domain/repositories/i_rest_repository.dart';
 import '../../domain/services/focus_clock.dart';
 import '../../domain/services/focus_session_engine.dart';
 import '../../domain/services/reward_service.dart';
@@ -109,6 +111,12 @@ final statisticsEngineProvider = Provider<StatisticsEngine>((ref) {
 final distractionRepositoryProvider = Provider<IDistractionRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return DriftDistractionRepository(db.distractionDao);
+});
+
+/// Rest repository — the rest screen's and the timeline's way to the database.
+final restRepositoryProvider = Provider<IRestRepository>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return DriftRestRepository(db.restDao);
 });
 
 /// Task repository — the task domain's only way to the database.

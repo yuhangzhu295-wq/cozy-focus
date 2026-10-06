@@ -34,6 +34,9 @@ final dayTimelineProvider =
   final notes = await ref
       .watch(distractionRepositoryProvider)
       .notesBetween(userId, midnight, nextMidnight);
+  final rest = await ref
+      .watch(restRepositoryProvider)
+      .findBetween(userId, midnight, nextMidnight);
 
   // The session in flight, if there is one and it started on this day. Read from
   // the controller's current session rather than from the database, because a
@@ -51,6 +54,7 @@ final dayTimelineProvider =
         for (final note in notes)
           (at: note.createdAt, text: note.text, id: note.id),
       ],
+      rest: rest,
     ),
     now: clock.now(),
     runningSessionId: runningOnThisDay ? live.id : null,
