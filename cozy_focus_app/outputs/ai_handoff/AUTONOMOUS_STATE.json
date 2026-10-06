@@ -2,9 +2,9 @@
   "program": "RESUME_P32_THROUGH_P40",
   "project": "COZY_FOCUS",
   "branch": "recovery/v4.2.1-rebuild",
-  "updated_at_slice": "P36 complete; the offline local custom pet golden flow was walked end to end on the device",
-  "phase": "P36",
-  "slice": "P36 COMPLETE. Next: P37 (AI spike; VERTEX_AI is BLOCKED_EXTERNAL).",
+  "updated_at_slice": "P37 complete; the generation contract exists and this build honestly reports it has no provider",
+  "phase": "P37",
+  "slice": "P37 COMPLETE as far as it can be. Next: P38.",
   "start_sha": "0a116e2",
   "latest_sha": "45b1398",
   "remote_sha": "45b1398",
@@ -19,12 +19,13 @@
     "P33_partial_pack_capability": "PASS (device-verified)",
     "P34_local_pack_builder": "PASS (device-walked)",
     "P35_custom_companion_runtime": "PASS",
-    "P36_local_custom_pet_golden_flow": "PASS (device-walked, offline)"
+    "P36_local_custom_pet_golden_flow": "PASS (device-walked, offline)",
+    "P37_ai_generation_spike": "COMPLETE (REAL_PROVIDER_GENERATION = BLOCKED_EXTERNAL)"
   },
   "test_counts": {
-    "full_suite": "1473/1473",
+    "full_suite": "1496/1496",
     "pack_suite": "173",
-    "format": "PASS (319 files, 0 changed)",
+    "format": "PASS (324 files, 0 changed)",
     "analyze": "PASS (0 issues, --fatal-infos)",
     "geometry_negative_proof": "PASS (uniform 40px shift refused)",
     "pack_geometry_audit": "PASS (dog verified; cat/rabbit have no contract)",
@@ -67,14 +68,14 @@
     "RELEASE_SIGNING": "NOT_RECOVERED - android/key.properties absent, no keystore invented",
     "LAUNCHER_ICON": "BLOCKED - stock Flutter icon, no approved artwork",
     "OWNER_VISUAL_GATE": "REQUIRED",
-    "VERTEX_AI": "BLOCKED_EXTERNAL - no credentials, no project, no gcloud (relevant to P37 only)"
+    "VERTEX_AI": "BLOCKED_EXTERNAL - no credentials, no project, no gcloud. The abstraction is complete; adding a provider is a class plus a ProviderScope override."
   },
   "owner_decisions_required": [
     "P32 §31A: a displayed 30-minute session settles 29:55, five seconds under a 1800s recipe. Reproduce the exact cause first; fix if it is a defect, else PRODUCT_DECISION_REQUIRED between elapsed truth and planned-duration grace.",
     "The rug's purpose now that its only action (sit) is hidden.",
     "Whether bookshelf/search may share focus_think with desk/study."
   ],
-  "next_action": "P37: the AI generation spike. VERTEX_AI is BLOCKED_EXTERNAL (no credentials, no project, no gcloud), so complete everything that does not need them - provider abstraction, request/response contract, prompt templates, pack-output contract, a deterministic local harness, cost and retry policy, technical tests - and classify REAL_PROVIDER_GENERATION = BLOCKED_EXTERNAL. Do not fake API success.",
+  "next_action": "P38: the optional cloud generation backend. A provider-neutral architecture can be implemented and tested without credentials - the request, the result, the policy and the pack contract are all in place from P37. What cannot be claimed is that cloud generation works: P38 = PARTIAL / BLOCKED_EXTERNAL unless real credentials appear. Do not dress a missing capability up as a success.",
   "resume_protocol": [
     "git symbolic-ref HEAD; git rev-parse HEAD; git status --short",
     "read this file",
@@ -106,7 +107,9 @@
     "P35_custom_companion_runtime": "PASS",
     "P36_to_P40": "NOT_STARTED",
     "P36_local_custom_pet_golden_flow": "PASS",
-    "P37_to_P40": "NOT_STARTED"
+    "P37_to_P40": "NOT_STARTED",
+    "P37_ai_generation_spike": "COMPLETE (blocked external)",
+    "P38_to_P40": "NOT_STARTED"
   },
   "p33_device_flow": {
     "device": "Pixel 7 API 34 emulator",
@@ -171,5 +174,21 @@
     "The pack digest survives the whole round trip: mimi imports at e5bab2f4, exports, is deleted, and re-imports at e5bab2f4. The digest is over contents, not archive bytes or timestamps.",
     "Deleting and re-importing a companion does not touch the player progress: the growth page still reads 10 XP and 2 minutes afterwards. The shared-growth rule holds under the harshest version of the test."
   ],
-  "p36_limitation": "The furniture-action leg was NOT exercised on this device walk: a freshly cleared app owns no furniture and the 2-minute session earned no materials, so the room honestly said it was empty. That path is covered by room_capability_wiring_test.dart, which drives the real RoomSimulationController with a real installed pack and a real sofa in the database. It is the one leg where a test stands in for a device walk."
+  "p36_limitation": "The furniture-action leg was NOT exercised on this device walk: a freshly cleared app owns no furniture and the 2-minute session earned no materials, so the room honestly said it was empty. That path is covered by room_capability_wiring_test.dart, which drives the real RoomSimulationController with a real installed pack and a real sofa in the database. It is the one leg where a test stands in for a device walk.",
+  "p37_results": {
+    "PROVIDER_ABSTRACTION": "PASS",
+    "REQUEST_RESPONSE_CONTRACT": "PASS",
+    "PROMPT_TEMPLATES": "PASS",
+    "PACK_OUTPUT_CONTRACT": "PASS (a generated pack goes through the real importer)",
+    "DETERMINISTIC_HARNESS": "PASS (test-only, cannot be reached from the app)",
+    "COST_AND_RETRY_POLICY": "PASS",
+    "TECHNICAL_TESTS": "PASS (23)",
+    "REAL_PROVIDER_GENERATION": "BLOCKED_EXTERNAL (no credentials, no project, no gcloud)",
+    "IDENTITY_OWNER_GATE": "OWNER_INPUT_REQUIRED (a likeness needs photographs of the actual pet; none exist)"
+  },
+  "p37_notes": [
+    "A result carries no bytes unless the status is `generated`, so a caller cannot install a placeholder by ignoring the status. UnconfiguredGenerationProvider returns blockedExternal and the runner reports it without calling the provider.",
+    "Nothing in this phase fabricates a generation. The harness that builds a real .cozy_pet is test-only and named as a harness.",
+    "The prompt states the canvas, anchors, action vocabulary and frame counts around the player sentence, and reads the vocabulary and counts from the app production contract so a prompt cannot promise a companion the app cannot play."
+  ]
 }
