@@ -1,0 +1,30 @@
+{
+  "what": "P36 device golden-flow evidence, pulled from the emulator after the walk",
+  "device": "Pixel 7 API 34 emulator",
+  "focus_sessions": {
+    "task_name": "专注任务",
+    "planned_seconds": 300,
+    "status": "completed",
+    "start_at": 1791255295,
+    "end_at": 1791255546,
+    "wall_clock_seconds": 251,
+    "pause_intervals": [
+      {
+        "pauseStart": "2026-10-06T02:55:55.788914",
+        "pauseEnd": "2026-10-06T02:57:57.867043"
+      }
+    ],
+    "paused_seconds": 122,
+    "focused_seconds": 129,
+    "focused_displayed": "2:09",
+    "note": "the completion screen showed 02:09, which is focused_seconds. The arithmetic reconciles exactly once the pause is subtracted."
+  },
+  "pet_progress": {
+    "level": 1,
+    "experience_points": 10,
+    "total_focus_minutes": 2,
+    "happiness_score": 100,
+    "note": "the completion screen showed +10 XP under the custom companion name, and the growth page still read 10 XP and 2 minutes after the pack was deleted and re-imported. The shared PetProgress is never involved in a pack removal, which is the shared-growth rule holding under the harshest version of the test."
+  },
+  "raw": "p36_device.sqlite in this directory is the database these numbers came from."
+}

@@ -38,6 +38,20 @@ selection file or the SQLite database. Screenshots are recorded as what was
 
 No Flutter exceptions in logcat across the whole walk.
 
+## The evidence, and where it lives
+
+`outputs/ai_handoff/android_v1_runtime/` holds the walk: seven screenshots
+covering the flow's claims (`p36_01` home with the custom companion through
+`p36_07` re-imported with progress intact), plus `p36_device_evidence.json` — the
+query results the arithmetic below is based on — and the raw
+`p36_device.sqlite` they came from.
+
+The JSON exists because the numbers live in a SQLite **WAL** file on the device,
+and pulling only the `.sqlite` reads as an empty database: the rows are in the
+write-ahead log until something checkpoints them. That trap is recorded in the
+process notes because it cost a round here, and the evidence should not depend on
+a file that can be lost between two `adb` calls.
+
 ## Three things the database proved that the screen could not
 
 ### The session arithmetic reconciles exactly
