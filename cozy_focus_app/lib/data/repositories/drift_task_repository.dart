@@ -161,6 +161,15 @@ class DriftTaskRepository implements ITaskRepository {
       _dao.isScheduledOn(taskId, date);
 
   @override
+  Future<plan.TaskSchedule?> findScheduleOn(String taskId, String date) async {
+    final rows = await _dao.upcomingSchedulesFor(taskId, from: date, limit: 1);
+    if (rows.isEmpty) return null;
+    // `upcomingSchedulesFor` is `>= from` and skips finished placements, so the
+    // first row can be a later day. The day has to match exactly.
+    return rows.first.date == date ? rows.first : null;
+  }
+
+  @override
   Future<String> schedule({
     required String taskId,
     required String userId,

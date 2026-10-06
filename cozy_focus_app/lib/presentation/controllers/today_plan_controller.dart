@@ -119,6 +119,31 @@ class TodayPlanController extends StateNotifier<TodayPlanState> {
     await load();
   }
 
+  /// Moves an existing placement to a new time and length.
+  ///
+  /// Separate from [place] because `place` is deliberately idempotent: for a task
+  /// already on the day it returns the existing row and ignores the values it was
+  /// given. That is right for the create screen's switch — flipping it twice must
+  /// not stack two rows — and wrong for a form the user has just filled in, where
+  /// pressing the button with a new time and seeing nothing change is the defect
+  /// this exists to fix.
+  /// Takes the placement itself rather than looking it up in [state]: the
+  /// schedule form has the row it just read, and a lookup against this
+  /// controller's loaded day would silently do nothing when the list has not
+  /// finished loading — which is exactly the failure mode this method exists to
+  /// remove.
+  Future<void> updatePlacement(
+    TaskSchedule placement, {
+    required DateTime startAt,
+    required int plannedSeconds,
+  }) async {
+    await _repo.updateSchedule(placement.copyWith(
+      startAt: startAt,
+      plannedSeconds: plannedSeconds,
+    ));
+    await load();
+  }
+
   /// Places a task on a day. Returns the placement's id.
   ///
   /// Reloads afterwards, so anything else watching this state — the records tab's

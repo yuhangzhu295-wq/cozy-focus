@@ -73,6 +73,13 @@ abstract interface class ITaskRepository {
   /// Whether [taskId] is already placed on [date].
   Future<bool> isScheduledOn(String taskId, String date);
 
+  /// The placement for [taskId] on [date], or null.
+  ///
+  /// The schedule screen needs the row itself rather than a yes/no: a task that is
+  /// already on the day has a time and a length, and a form that offered fresh
+  /// ones would be offering to change something it did not know about.
+  Future<TaskSchedule?> findScheduleOn(String taskId, String date);
+
   /// Places [taskId] on a day at a time, for [plannedSeconds].
   ///
   /// Returns the new placement's id. Adding the same task to the same day twice

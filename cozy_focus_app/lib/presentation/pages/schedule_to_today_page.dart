@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models/task.dart';
+import '../../domain/models/task_schedule.dart';
 import '../../domain/services/today_planner.dart';
 import '../controllers/providers.dart';
 import '../controllers/today_plan_controller.dart';
@@ -90,6 +91,31 @@ class _FormState extends ConsumerState<_Form> {
   bool _saving = false;
   String? _error;
 
+  /// The placement this task already has on the chosen day, if any.
+  ///
+  /// Loaded rather than assumed: a form that offers a fresh time for something
+  /// already planned is offering to change a row it does not know about, and
+  /// pressing its button used to write nothing at all — `place` is idempotent and
+  /// returns the existing row, ignoring the values on screen.
+  TaskSchedule? _existing;
+  bool _loadingExisting = true;
+
+  /// Whether the user has changed anything on this form.
+  ///
+  /// The lookup below resolves after the first frame, and it writes the stored
+  /// time and length into the fields whenever it does — so a tap that somehow
+  /// beat it would have been silently replaced. Nothing may overwrite a decision
+  /// already made on the screen.
+  ///
+  /// **Defensive, and not covered by a test.** I tried to pin it and could not:
+  /// every test I wrote reached the tap after the lookup had already answered, so
+  /// removing this guard left them all green. Rather than keep a test that passes
+  /// either way, the guard is kept and its coverage is stated as absent. The
+  /// window is one database round trip on the first frame, which a person cannot
+  /// realistically hit — but a slow disk is not a person, and the guard is three
+  /// lines.
+  bool _touched = false;
+
   static const List<int> _presets = [25, 40, 50, 60];
 
   @override
@@ -106,6 +132,24 @@ class _FormState extends ConsumerState<_Form> {
     _seconds = widget.task.estimatedSeconds > 0
         ? widget.task.estimatedSeconds
         : 25 * 60;
+    _loadExisting();
+  }
+
+  /// Finds the placement for this task on the day being shown, and prefills from
+  /// it when there is one.
+  Future<void> _loadExisting() async {
+    final found = await ref
+        .read(taskRepositoryProvider)
+        .findScheduleOn(widget.task.id, dayKeyFor(_day));
+    if (!mounted) return;
+    setState(() {
+      _existing = found;
+      _loadingExisting = false;
+      if (found != null && !_touched) {
+        _start = TimeOfDay.fromDateTime(found.startAt);
+        _seconds = found.plannedSeconds;
+      }
+    });
   }
 
   bool get _isToday {
@@ -134,6 +178,10 @@ class _FormState extends ConsumerState<_Form> {
               const SizedBox(height: 8),
               _DateField(day: _day, isToday: _isToday, onPick: _pickDay),
               const SizedBox(height: 18),
+              if (_existing != null) ...[
+                const _SlotNote('这一天已经有安排，保存后会更新原来的时间。'),
+                const SizedBox(height: 10),
+              ],
               const _SectionLabel(icon: Icons.schedule_rounded, text: '推荐时段'),
               const SizedBox(height: 8),
               switch (slots) {
@@ -158,7 +206,12 @@ class _FormState extends ConsumerState<_Form> {
               _DurationChips(
                 seconds: _seconds,
                 presets: _presets,
-                onPick: (seconds) => setState(() => _seconds = seconds),
+                onPick: (seconds) {
+                  setState(() {
+                    _touched = true;
+                    _seconds = seconds;
+                  });
+                },
                 onCustom: _pickCustomDuration,
               ),
             ],
@@ -188,7 +241,11 @@ class _FormState extends ConsumerState<_Form> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: _saving ? null : _submit,
+                    // Disabled while the existing placement is being looked up: the
+                    // button's label and its effect both depend on that answer, and
+                    // a press before it arrives could add a second row where the
+                    // user meant to move the first.
+                    onPressed: (_saving || _loadingExisting) ? null : _submit,
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primarySage,
                       foregroundColor: AppColors.textLight,
@@ -206,9 +263,11 @@ class _FormState extends ConsumerState<_Form> {
                               color: AppColors.textLight,
                             ),
                           )
-                        : const Text('添加到今日计划',
-                            style: TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w700)),
+                        : Text(
+                            _existing == null ? '添加到今日计划' : '更新计划',
+                            style: const TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w700),
+                          ),
                   ),
                 ),
               ],
@@ -228,7 +287,10 @@ class _FormState extends ConsumerState<_Form> {
     );
     if (picked == null || !mounted) return;
     setState(() {
+      _touched = true;
       _day = DateTime(picked.year, picked.month, picked.day);
+      _existing = null;
+      _loadingExisting = true;
       // The old start time may be in the past on the newly chosen day.
       final start = defaultStartFor(
         day: _day,
@@ -236,12 +298,16 @@ class _FormState extends ConsumerState<_Form> {
       );
       _start = TimeOfDay(hour: start.hour, minute: start.minute);
     });
+    await _loadExisting();
   }
 
   Future<void> _pickStart() async {
     final picked = await showTimePicker(context: context, initialTime: _start);
     if (picked == null || !mounted) return;
-    setState(() => _start = picked);
+    setState(() {
+      _touched = true;
+      _start = picked;
+    });
   }
 
   Future<void> _pickCustomDuration() async {
@@ -254,6 +320,7 @@ class _FormState extends ConsumerState<_Form> {
     );
     if (minutes == null || !mounted) return;
     setState(() {
+      _touched = true;
       _error = null;
       _seconds = minutes * 60;
     });
@@ -265,12 +332,31 @@ class _FormState extends ConsumerState<_Form> {
       _error = null;
     });
     try {
-      final id = await ref.read(todayPlanControllerProvider.notifier).place(
-            taskId: widget.task.id,
-            day: _day,
-            startAt: DateTime(0, 1, 1, _start.hour, _start.minute),
-            plannedSeconds: _seconds,
-          );
+      final controller = ref.read(todayPlanControllerProvider.notifier);
+      final at = DateTime(0, 1, 1, _start.hour, _start.minute);
+      final existing = _existing;
+      final id = existing != null
+          // The row already exists: move it, rather than calling `place` and
+          // watching the new time be discarded.
+          ? await controller
+              .updatePlacement(
+                existing,
+                startAt: DateTime(
+                  _day.year,
+                  _day.month,
+                  _day.day,
+                  at.hour,
+                  at.minute,
+                ),
+                plannedSeconds: _seconds,
+              )
+              .then((_) => existing.id)
+          : await controller.place(
+              taskId: widget.task.id,
+              day: _day,
+              startAt: at,
+              plannedSeconds: _seconds,
+            );
       if (!mounted) return;
       context.pop(id);
     } catch (error) {

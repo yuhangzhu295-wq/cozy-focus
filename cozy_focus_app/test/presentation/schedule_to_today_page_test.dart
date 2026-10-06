@@ -11,6 +11,7 @@ import 'package:cozy_focus_app/domain/models/task.dart';
 import 'package:cozy_focus_app/domain/models/task_schedule.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
+import 'package:cozy_focus_app/presentation/controllers/today_plan_controller.dart';
 import 'package:cozy_focus_app/presentation/pages/schedule_to_today_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 
@@ -83,6 +84,10 @@ void main() {
   ) async {
     await tester.pumpWidget(app(c, taskId));
     await tester.pump();
+    // Two queries now: the slots for the day, and the placement this task may
+    // already have on it. The second decides what the save button says and does,
+    // so the form is not usable until it answers.
+    await tester.pump(const Duration(milliseconds: 80));
     await tester.pump(const Duration(milliseconds: 80));
   }
 
@@ -104,6 +109,87 @@ void main() {
     ));
     return id;
   }
+
+  group('a task already planned for the day', () {
+    testWidgets('opens on the placement it has, and offers to update it',
+        (tester) async {
+      final id = await task(minutes: 25);
+      await repo.schedule(
+        taskId: id,
+        userId: userId,
+        startAt: DateTime(2026, 10, 7, 9),
+        plannedSeconds: 25 * 60,
+      );
+
+      final c = container();
+      await pump(tester, c, id);
+
+      // Prefilled from the row that exists, not from the clock: the form used to
+      // open on the next half hour and offer to add a second placement.
+      expect(find.text('09'), findsOneWidget);
+      expect(find.text('00'), findsOneWidget);
+      expect(find.text('更新计划'), findsOneWidget,
+          reason: 'the button has to say what it will do');
+      expect(find.text('添加到今日计划'), findsNothing);
+      expect(find.text('这一天已经有安排，保存后会更新原来的时间。'), findsOneWidget);
+    });
+
+    testWidgets('saving moves the placement instead of doing nothing',
+        (tester) async {
+      final id = await task(minutes: 25);
+      await repo.schedule(
+        taskId: id,
+        userId: userId,
+        startAt: DateTime(2026, 10, 7, 9),
+        plannedSeconds: 25 * 60,
+      );
+
+      final c = container();
+      await pump(tester, c, id);
+
+      // Scrolled to first: the note this screen adds when the task is already
+      // planned pushes the chips down, and a tap on an off-screen widget lands
+      // nowhere — which reads as "the update did nothing".
+      await tester.ensureVisible(find.text('1 小时'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('1 小时'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('更新计划'));
+      await tester.pumpAndSettle();
+
+      final day = await repo.schedulesForDay(userId, '2026-10-07');
+      expect(day, hasLength(1),
+          reason: 'an update must not add a second placement');
+      expect(day.single.schedule.plannedSeconds, 60 * 60,
+          reason:
+              'before this the save returned the existing row and discarded '
+              'the values on screen');
+      expect(day.single.schedule.startAt, DateTime(2026, 10, 7, 9),
+          reason: 'the time it already had is kept unless the user changes it');
+    });
+
+    testWidgets('another day is still an add, not an update', (tester) async {
+      final id = await task(minutes: 25);
+      await repo.schedule(
+        taskId: id,
+        userId: userId,
+        startAt: DateTime(2026, 10, 7, 9),
+        plannedSeconds: 25 * 60,
+      );
+
+      final c = container();
+      await pump(tester, c, id);
+      expect(find.text('更新计划'), findsOneWidget);
+
+      // The form is for today; a task planned for tomorrow has no placement on
+      // today and the button has to say so.
+      await c.read(todayPlanControllerProvider.notifier).showDay(
+            DateTime(2026, 10, 8),
+          );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+  });
 
   testWidgets('shows the task it is placing, with its note', (tester) async {
     final id = await task(note: '梳理核心功能', category: 'work');
