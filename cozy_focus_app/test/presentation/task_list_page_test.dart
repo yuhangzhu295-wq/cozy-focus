@@ -69,8 +69,8 @@ void main() {
     final c = container();
     await pump(tester, c);
 
-    // The 今天 tab is the default, and its empty state is about today.
-    expect(find.text('今天还没有安排'), findsOneWidget);
+    // The 今天 tab is the default, and its empty state is the first-run one.
+    expect(find.text('还没有任务哦～'), findsOneWidget);
 
     await tester.tap(find.text('已完成'));
     await tester.pump();
@@ -78,7 +78,7 @@ void main() {
 
     // A different tab says something true about *that* tab.
     expect(find.text('还没有完成的任务'), findsOneWidget);
-    expect(find.text('今天还没有安排'), findsNothing);
+    expect(find.text('还没有任务哦～'), findsNothing);
   });
 
   testWidgets('a stored task appears with its category and duration',

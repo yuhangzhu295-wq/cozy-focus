@@ -6,6 +6,7 @@ import '../../domain/models/task.dart';
 import '../../domain/services/today_planner.dart';
 import '../controllers/providers.dart';
 import '../controllers/task_controller.dart';
+import '../controllers/app_preferences_controller.dart';
 import '../controllers/today_plan_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/task_duration.dart';
@@ -38,7 +39,11 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   final TextEditingController _customMinutes = TextEditingController();
 
   String? _categoryId;
-  int _estimatedSeconds = taskEstimatePresets.first;
+
+  /// The design's 默认专注时长, from settings. Assigned once in `initState` rather
+  /// than read on every build: the field is the user's working value, and a
+  /// rebuild must not overwrite a choice they have already made on this screen.
+  late int _estimatedSeconds = taskEstimatePresets.first;
   bool _customDuration = false;
   bool _joinToday = true;
   bool _saving = false;
@@ -57,6 +62,12 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   DateTime get _today {
     final now = ref.read(focusClockProvider).now();
     return DateTime(now.year, now.month, now.day);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _estimatedSeconds = ref.read(defaultTaskEstimateProvider);
   }
 
   @override

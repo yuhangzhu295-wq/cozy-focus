@@ -37,8 +37,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-        '2. SettingsPage renders all seven honest, noninteractive rows with evidence-backed wording',
+    testWidgets('2. SettingsPage renders its rows with evidence-backed wording',
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -52,7 +51,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       final expectedTitles = [
-        '专注默认',
+        // The design's wording, which P10 adopted when the row became real.
+        '默认专注时长',
         '通知',
         '声音与触感',
         '外观',
@@ -65,13 +65,16 @@ void main() {
         expect(find.text(title), findsOneWidget);
       }
 
-      expect(find.textContaining('暂不持久化保存'), findsOneWidget);
+      // 专注默认 is a real setting since P10: it shows the stored value and its
+      // subtitle no longer claims the value is not saved.
+      expect(find.text('25 分钟'), findsOneWidget);
+      expect(find.textContaining('暂不持久化保存'), findsNothing);
       expect(find.textContaining('本地离线模式，云端同步暂不可用'), findsOneWidget);
       expect(find.textContaining('权限与隐私细则尚未完备'), findsOneWidget);
     });
 
     testWidgets(
-        '3. SettingsPage has no fake controls and two navigation chevrons',
+        '3. SettingsPage has no fake controls and three navigation chevrons',
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -89,7 +92,9 @@ void main() {
       expect(find.byType(Checkbox), findsNothing);
       expect(find.byType(CheckboxListTile), findsNothing);
       expect(find.byType(ListTile), findsNothing);
-      expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+      // Two navigable rows plus 默认专注时长, which opens a picker rather than a
+      // route but leads somewhere all the same.
+      expect(find.byIcon(Icons.chevron_right), findsNWidgets(3));
       expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
       expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
       expect(find.byType(BottomNavigationBar), findsNothing);

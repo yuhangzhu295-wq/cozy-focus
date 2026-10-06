@@ -6,6 +6,8 @@ import '../../domain/models/task.dart';
 import '../../domain/repositories/i_task_repository.dart';
 import '../controllers/providers.dart';
 import '../controllers/task_controller.dart';
+import '../../domain/models/enums.dart';
+import '../companion/companion_avatar.dart';
 import '../theme/app_theme.dart';
 import '../widgets/task_category_chip.dart';
 import '../widgets/task_duration.dart';
@@ -283,16 +285,19 @@ class _TaskRow extends StatelessWidget {
 /// The copy follows the tab rather than being one generic sentence: "no tasks"
 /// and "nothing finished yet" are different situations and a user who has
 /// completed nothing should be told that, not told the app is empty.
-class _EmptyState extends StatelessWidget {
+class _EmptyState extends ConsumerWidget {
   final TaskFilter filter;
 
   const _EmptyState({required this.filter});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final (title, body) = switch (filter) {
-      TaskFilter.today => ('今天还没有安排', '把想做的事记下来，它就会出现在这里。'),
-      TaskFilter.active => ('没有进行中的任务', '新建一个任务，开始你的第一次专注。'),
+      // The design's first-run copy on the tab the list opens on: a user with
+      // nothing planned is a user who has not started yet, and the screen's job
+      // is to invite the first step rather than to report an empty list.
+      TaskFilter.today => ('还没有任务哦～', '从一个小目标开始，让专注成为更好的日常吧！'),
+      TaskFilter.active => ('还没有任务哦～', '从一个小目标开始，让专注成为更好的日常吧！'),
       TaskFilter.done => ('还没有完成的任务', '完成一个任务后，它会出现在这里。'),
     };
 
@@ -302,9 +307,15 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.checklist_rounded,
-                size: 44, color: AppColors.textTertiary),
-            const SizedBox(height: 14),
+            // The design's companion rather than an icon: the empty state is the
+            // first thing a new user sees, and a grey glyph is the cold version
+            // of a screen that is meant to feel like an invitation.
+            const CompanionAvatar(
+              size: 120,
+              visualStateOverride: PetVisualState.greeting,
+              showStateBadge: false,
+            ),
+            const SizedBox(height: 16),
             Text(
               title,
               style: const TextStyle(
@@ -321,6 +332,55 @@ class _EmptyState extends StatelessWidget {
                 fontSize: 13,
                 height: 1.5,
                 color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Both ways out, as the design shows them: creating a task, and
+            // starting a session without one — which is a first-class way to
+            // focus and must not look like the lesser option.
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                key: const ValueKey('empty_new_task'),
+                onPressed: () async {
+                  final created =
+                      await context.push<String>('/records/tasks/new');
+                  if (created != null) {
+                    await ref.read(taskListControllerProvider.notifier).load();
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primarySage,
+                  foregroundColor: AppColors.textLight,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                ),
+                icon: const Icon(Icons.add_rounded, size: 20),
+                label: const Text('新建任务',
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                key: const ValueKey('empty_start_focus'),
+                onPressed: () => context.push('/focus/setup'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primaryDark,
+                  side: const BorderSide(color: AppColors.primarySage),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                ),
+                icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                label: const Text('开始第一次专注',
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               ),
             ),
           ],

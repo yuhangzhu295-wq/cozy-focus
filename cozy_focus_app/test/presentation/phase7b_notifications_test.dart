@@ -96,7 +96,7 @@ void main() {
     });
 
     testWidgets(
-        '4. SettingsPage has two chevron_right icons for navigable settings',
+        '4. SettingsPage has three chevron_right icons for navigable settings',
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -109,7 +109,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+      expect(find.byIcon(Icons.chevron_right), findsNWidgets(3));
       expect(
         find.widgetWithText(GestureDetector, '通知'),
         findsOneWidget,

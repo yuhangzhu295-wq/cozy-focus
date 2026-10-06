@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../companion/companion_selection.dart';
 import '../companion/companion_avatar.dart';
+import '../../domain/services/duration_text.dart';
+import '../controllers/app_preferences_controller.dart';
 import '../theme/app_theme.dart';
 
 /// Settings Page for Cozy Focus (PHASE-7A)
@@ -95,13 +97,17 @@ class SettingsPage extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              // Exactly seven static settings rows as individually separated rounded visual cards
-              const _SettingInfoCard(
-                icon: Icons.timer_outlined,
-                iconColor: AppColors.primarySage,
-                iconBgColor: AppColors.primaryLight,
-                title: '专注默认',
-                subtitle: '标准 25 分钟番茄专注（内存默认设置，暂不持久化保存）',
+              // The design's 默认专注时长, and the one setting this screen writes.
+              // It replaced a static row whose subtitle said the value was not
+              // saved, which was true then and is not now.
+              _DefaultFocusCard(
+                seconds: ref.watch(appPreferencesProvider).defaultFocusSeconds,
+                onPick: (seconds) => ref
+                    .read(appPreferencesProvider.notifier)
+                    .setDefaultFocusSeconds(seconds),
+                onReset: () => ref
+                    .read(appPreferencesProvider.notifier)
+                    .resetDefaultFocusSeconds(),
               ),
               const _NavigableSettingCard(
                 icon: Icons.notifications_none_outlined,
@@ -341,5 +347,154 @@ class _NavigableSettingCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// 默认专注时长, with the current value and a picker.
+///
+/// The design's list of choices, plus 恢复默认 so a user who has moved it can put
+/// it back without knowing what it was.
+class _DefaultFocusCard extends StatelessWidget {
+  final int seconds;
+  final ValueChanged<int> onPick;
+  final VoidCallback onReset;
+
+  const _DefaultFocusCard({
+    required this.seconds,
+    required this.onPick,
+    required this.onReset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '默认专注时长，当前 ${formatDurationText(seconds)}',
+      child: GestureDetector(
+        onTap: () => _open(context),
+        child: Container(
+          margin: _SettingRowMetrics.margin,
+          padding: _SettingRowMetrics.padding,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(_SettingRowMetrics.radius),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: const Icon(Icons.timer_outlined,
+                    size: 20, color: AppColors.primarySage),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '默认专注时长',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      '创建新任务时的默认时长',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                formatDurationText(seconds),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              const Icon(Icons.chevron_right,
+                  size: 20, color: AppColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _open(BuildContext context) async {
+    final chosen = await showModalBottomSheet<int?>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 18, 20, 6),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '默认专注时长',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+            for (final minutes in AppPreferencesController.focusMinuteChoices)
+              ListTile(
+                key: ValueKey('default_focus_$minutes'),
+                title: Text('$minutes 分钟'),
+                trailing: seconds == minutes * 60
+                    ? const Icon(Icons.check_rounded,
+                        size: 18, color: AppColors.primarySage)
+                    : null,
+                onTap: () => Navigator.of(sheetContext).pop(minutes * 60),
+              ),
+            ListTile(
+              key: const ValueKey('default_focus_reset'),
+              leading: const Icon(Icons.restart_alt_rounded,
+                  color: AppColors.textSecondary),
+              title: const Text('恢复默认'),
+              onTap: () => Navigator.of(sheetContext).pop(-1),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (chosen == null) return;
+    if (chosen == -1) {
+      // The sentinel is only a way out of the sheet; the reset is a different
+      // call, so nothing here can write -1 into the settings table.
+      onReset();
+      return;
+    }
+    onPick(chosen);
   }
 }
