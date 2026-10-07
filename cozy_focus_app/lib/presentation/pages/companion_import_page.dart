@@ -184,10 +184,17 @@ class _CompanionImportPageState extends ConsumerState<CompanionImportPage> {
           _notice = '这个伙伴已经在你的收藏里了，不用再装一次。';
         case CompanionPackImportStatus.conflict:
           _stage = _Stage.refused;
-          _refusals = const PackValidationResult([
-            PackViolation('pack_already_installed',
-                'this id is already taken by a different pack'),
-          ]);
+          // The installer's own reason when it gave one. Replacing it with a
+          // generic "already installed" told the user to delete a companion from
+          // the list — and the id can be held by a directory the list does not
+          // show, because the app cannot read it, which made the instruction a
+          // dead end. `target_appeared` is exactly that case.
+          _refusals = report.validation.violations.isNotEmpty
+              ? report.validation
+              : const PackValidationResult([
+                  PackViolation('pack_already_installed',
+                      'this id is already taken by a different pack'),
+                ]);
         case CompanionPackImportStatus.refused:
           _stage = _Stage.refused;
           _refusals = report.validation;
@@ -844,6 +851,9 @@ String describePackRefusal(PackViolation violation) {
       return '这个 id 是内置伙伴的名字，自定义的包不能用。';
     case 'pack_already_installed':
       return '已经有一个同名的伙伴了。想换的话，先去伙伴列表把它删掉。';
+    case 'target_appeared':
+      return '这个 id 已经被一个读不出来的旧目录占着了。到伙伴列表底部把它删掉，'
+          '再回来导入。';
     case 'missing_canvas':
     case 'canvas_too_small':
       return '包里没有写清楚画布大小，或者画布太小了。';

@@ -112,6 +112,31 @@ class InstalledPacksController extends StateNotifier<int> {
   /// The ids currently installed.
   Set<String> get installedIds => _registry.packIds;
 
+  /// Directories in the pack root that could not be read as packs, keyed by the
+  /// directory name with the reason.
+  ///
+  /// ## Why this is exposed
+  ///
+  /// Recovery has always collected these — `unreadableDirectories` — and nothing
+  /// ever showed them. The consequence was a dead end found by walking the import
+  /// on a device: a leftover `companion_packs/mimi` with no manifest is invisible
+  /// to the picker, but it still occupies the id, so importing a pack with that id
+  /// is refused with "已经有一个同名的伙伴了，先去伙伴列表把它删掉" — pointing at an
+  /// entry the list does not have. The user could neither install nor clear it.
+  Map<String, String> get unreadableDirectories =>
+      _recovery?.unreadableDirectories ?? const {};
+
+  /// Re-reads the pack root.
+  ///
+  /// For after a directory was removed that the registry never knew about — an
+  /// unreadable pack the user has just deleted. `recover()` alone does not
+  /// necessarily publish, because adopting nothing leaves the registry revision
+  /// unchanged, and the list would keep showing the entry that is gone.
+  void rescan() {
+    recover();
+    state = state + 1;
+  }
+
   /// The companion ids a user may select: the built-in three, plus anything
   /// installed.
   ///

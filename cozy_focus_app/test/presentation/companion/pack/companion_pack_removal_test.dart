@@ -7,6 +7,7 @@ import 'package:cozy_focus_app/presentation/companion/pack/companion_pack_remova
 import 'package:cozy_focus_app/presentation/companion/pack/installed_pack_registry.dart';
 import 'package:cozy_focus_app/presentation/companion/pack/installed_packs_provider.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
+import '../../../support/install_root_fixture.dart';
 
 /// P32G — deleting a companion, in the order that keeps the app valid.
 ///
@@ -34,7 +35,7 @@ void main() {
   const defaultId = 'dog';
 
   setUp(() {
-    root = Directory.systemTemp.createTempSync('cozy_pack_removal_');
+    root = createIsolatedInstallRoot('cozy_pack_removal_');
     packs = InstalledPacksController();
     store = _MemoryStore();
     selection = CompanionSelection(store, selectableIds: {
@@ -45,7 +46,7 @@ void main() {
   });
 
   tearDown(() {
-    if (root.existsSync()) root.deleteSync(recursive: true);
+    deleteIsolatedInstallRoot(root);
   });
 
   InstalledCompanionPack record(String id) => InstalledCompanionPack(

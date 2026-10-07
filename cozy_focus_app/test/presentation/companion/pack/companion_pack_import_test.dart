@@ -11,6 +11,7 @@ import 'package:cozy_focus_app/presentation/companion/pack/companion_pack_import
 import 'package:cozy_focus_app/presentation/companion/pack/companion_pack_root.dart';
 import 'package:cozy_focus_app/presentation/companion/pack/installed_packs_provider.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
+import '../../../support/install_root_fixture.dart';
 
 /// P32 — the import path, walked the way the app walks it.
 ///
@@ -29,13 +30,13 @@ void main() {
   late Directory installRoot;
 
   setUp(() {
-    installRoot = Directory.systemTemp.createTempSync('cozy_import_');
+    installRoot = createIsolatedInstallRoot('cozy_import_');
   });
 
   tearDown(() {
-    if (installRoot.existsSync()) installRoot.deleteSync(recursive: true);
-    final staging = CompanionPackImporter.stagingRootFor(installRoot);
-    if (staging.existsSync()) staging.deleteSync(recursive: true);
+    // Both the root and its staging sibling live under one private directory, so
+    // one call clears them and no other test can be holding either.
+    deleteIsolatedInstallRoot(installRoot);
   });
 
   /// A 1x1 transparent PNG. Real bytes, so a preview that draws the idle frame

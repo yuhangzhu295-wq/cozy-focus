@@ -1,3 +1,4 @@
+import '../companion/pack/companion_pack_install_plan.dart';
 import '../controllers/growth_controller.dart';
 import 'dart:io';
 
@@ -57,6 +58,18 @@ class CompanionPickerPage extends ConsumerWidget {
     final installedIds = ref.read(installedPacksProvider.notifier).installedIds;
     final completenessOf = ref.watch(companionCompletenessProvider);
 
+    // Directories the app found but could not read as packs. They are not
+    // selectable — nothing can draw them — but they hold their id, so the import
+    // refuses that id and tells the user to delete it here. Without this they
+    // were invisible and the instruction pointed at nothing.
+    final broken = ref
+        .read(installedPacksProvider.notifier)
+        .unreadableDirectories
+        .entries
+        .where((entry) => CompanionPackInstallRules.isSafePackId(entry.key))
+        .toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
     return Scaffold(
       backgroundColor: AppColors.backgroundWarm,
       appBar: AppBar(
@@ -75,9 +88,23 @@ class CompanionPickerPage extends ConsumerWidget {
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                itemCount: ids.length,
+                itemCount: ids.length + broken.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 14),
                 itemBuilder: (context, index) {
+                  if (index >= ids.length) {
+                    final entry = broken[index - ids.length];
+                    return _UnreadableCard(
+                      packId: entry.key,
+                      reason: entry.value,
+                      onDelete: () => _delete(
+                        context,
+                        ref,
+                        entry.key,
+                        entry.key,
+                        unreadable: true,
+                      ),
+                    );
+                  }
                   final id = ids[index];
                   final installed = installedIds.contains(id.value);
                   return _CompanionCard(
@@ -164,13 +191,20 @@ class CompanionPickerPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String packId,
-    String displayName,
-  ) async {
+    String displayName, {
+    bool unreadable = false,
+  }) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text('删除 $displayName？'),
-        content: const Text('删除之后这个伙伴就从列表里消失了。如果你还没导出过，它就找不回来了。'),
+        // A pack the app cannot read is a different thing to delete, and the
+        // ordinary warning was wrong about it twice: it is not in the list to
+        // disappear from, and it cannot be exported, so "if you have not exported
+        // it" is a warning about a door that does not exist.
+        content: Text(unreadable
+            ? '这个目录读不出来，删掉之后它会从列表里清掉，你就可以重新导入同一个 id 的包了。'
+            : '删除之后这个伙伴就从列表里消失了。如果你还没导出过，它就找不回来了。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -201,6 +235,11 @@ class CompanionPickerPage extends ConsumerWidget {
           CompanionManifestData.profiles.keys.map((id) => id.value).toSet(),
       defaultId: CompanionManifestData.defaultProfileId.value,
     );
+
+    // Re-read the pack root: an unreadable directory is not in the registry, so
+    // removing it changes nothing the registry can see, and the list would keep
+    // offering an entry whose files are gone.
+    ref.read(installedPacksProvider.notifier).rescan();
 
     if (!context.mounted) return;
     if (!report.removed) {
@@ -553,6 +592,73 @@ class _ConfirmBar extends StatelessWidget {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A pack directory the app could not read.
+///
+/// Not selectable, because nothing can draw it, and not silently hidden either:
+/// it holds its id, so the import refuses a pack with that id and points the user
+/// here. Deleting it is the only way out of that state.
+class _UnreadableCard extends StatelessWidget {
+  final String packId;
+  final String reason;
+  final Future<void> Function() onDelete;
+
+  const _UnreadableCard({
+    required this.packId,
+    required this.reason,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.accentPeach),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.report_gmailerrorred_rounded,
+              size: 22, color: AppColors.accentPeach),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$packId 读不出来',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  '这个伙伴的文件不完整，装不了也选不了。删掉之后就能重新导入同一个 id 的包。',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            key: ValueKey('remove_unreadable_$packId'),
+            onPressed: onDelete,
+            child: const Text('删除',
+                style: TextStyle(color: AppColors.accentPeach)),
+          ),
+        ],
       ),
     );
   }

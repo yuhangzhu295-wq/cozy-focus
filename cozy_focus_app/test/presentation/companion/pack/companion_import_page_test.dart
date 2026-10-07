@@ -14,6 +14,7 @@ import 'package:cozy_focus_app/presentation/companion/pack/companion_pack_root.d
 import 'package:cozy_focus_app/presentation/companion/pack/installed_packs_provider.dart';
 import 'package:cozy_focus_app/presentation/pages/companion_import_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
+import '../../../support/install_root_fixture.dart';
 
 /// P32 — the import screen, driven through its own widgets.
 ///
@@ -30,11 +31,11 @@ void main() {
   late Directory root;
 
   setUp(() {
-    root = Directory.systemTemp.createTempSync('cozy_import_ui_');
+    root = createIsolatedInstallRoot('cozy_import_ui_');
   });
 
   tearDown(() {
-    if (root.existsSync()) root.deleteSync(recursive: true);
+    deleteIsolatedInstallRoot(root);
   });
 
   final png = Uint8List.fromList(<int>[
@@ -154,7 +155,17 @@ void main() {
     // while the test waits.
     await tester.runAsync(() async {
       await tester.tap(find.text('安装这个伙伴'));
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+      // Wait for the write itself, not for a fixed delay. The install puts real
+      // files on disk, and under a full-suite load 400ms was not always enough:
+      // the assertion then ran while the page was still showing the form, which
+      // is why this test failed roughly one run in three and always passed alone.
+      final manifest = File('${root.path}/mimi/manifest.json');
+      final deadline = DateTime.now().add(const Duration(seconds: 20));
+      while (!manifest.existsSync() && DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 25));
+      }
+      // One more turn so the page's own future chain settles before the pump.
+      await Future<void>.delayed(const Duration(milliseconds: 100));
     });
     await tester.pump();
     await tester.pump();

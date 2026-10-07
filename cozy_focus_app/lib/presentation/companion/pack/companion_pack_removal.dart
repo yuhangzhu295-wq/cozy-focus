@@ -48,7 +48,13 @@ abstract final class CompanionPackRemoval {
     required Set<String> builtInIds,
     required String defaultId,
   }) async {
-    if (!packs.installedIds.contains(packId)) {
+    // A pack the app cannot read is not in the registry, but its directory is
+    // still on disk and still occupies the id. Refusing to remove it left the user
+    // with no way out: the import refuses that id and the picker does not list it,
+    // so the broken install can never be cleared. Removal has to work for the
+    // directories the app cannot describe, or the state is permanent.
+    final onDisk = Directory('${installRoot.path}/$packId').existsSync();
+    if (!packs.installedIds.contains(packId) && !onDisk) {
       return const CompanionPackRemovalReport(false);
     }
 

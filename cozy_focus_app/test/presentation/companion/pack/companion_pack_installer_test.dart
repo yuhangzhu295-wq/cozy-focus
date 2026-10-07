@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cozy_focus_app/presentation/companion/pack/companion_pack_archive_reader.dart';
 import 'package:cozy_focus_app/presentation/companion/pack/companion_pack_install_plan.dart';
 import 'package:cozy_focus_app/presentation/companion/pack/companion_pack_installer.dart';
+import '../../../support/install_root_fixture.dart';
 
 /// P32 — installing onto disk, atomically.
 ///
@@ -21,13 +22,13 @@ void main() {
   late Directory installed;
 
   setUp(() {
-    root = Directory.systemTemp.createTempSync('cozy_pack_install_');
+    root = createIsolatedInstallRoot('cozy_pack_install_');
     staging = Directory('${root.path}/staging')..createSync();
     installed = Directory('${root.path}/packs')..createSync();
   });
 
   tearDown(() {
-    if (root.existsSync()) root.deleteSync(recursive: true);
+    deleteIsolatedInstallRoot(root);
   });
 
   Uint8List zip(List<ArchiveFile> files) {
