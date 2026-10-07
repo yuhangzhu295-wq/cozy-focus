@@ -149,38 +149,40 @@ void main() {
       expect(find.text('当前装扮：暂无已装备外饰'), findsOneWidget);
     });
 
-    testWidgets(
-        '5. Outfit catalog cards show truthful status and no fake equip actions',
+    testWidgets('5. No outfit is shown that the app cannot back with data',
         (tester) async {
       await tester.pumpWidget(createTestApp(container, const PetDressPage()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('装扮图鉴'), findsOneWidget);
-      // The catalog is a lazily built SliverGrid below the preview. Scroll it
-      // into view before asserting on cards: the first row need not be built at
-      // the initial scroll offset on every screen size.
-      await tester.scrollUntilVisible(find.text('基础红项圈'), 150);
-      expect(find.text('基础红项圈'), findsOneWidget);
-      expect(find.text('暖冬姜黄围巾'), findsOneWidget);
-
-      await tester.scrollUntilVisible(find.text('小画家贝雷帽'), 150);
-      expect(find.text('小画家贝雷帽'), findsOneWidget);
-      expect(find.text('绅士小领结'), findsOneWidget);
-
-      // All rendered buttons should have disabled (null) onPressed and honest '未连接' text
-      final buttonFinder = find.byType(OutlinedButton);
-      expect(buttonFinder, findsWidgets);
-
-      for (final element in buttonFinder.evaluate()) {
-        final button = element.widget as OutlinedButton;
-        expect(button.onPressed, isNull);
+      // This screen used to render a catalog header and five named outfits from a
+      // constant in release Runtime, with their buttons marked 未连接. The buttons
+      // were honest; the list was not — a user reading 基础红项圈 beside 未连接
+      // reasonably concludes there is such an item they have not unlocked. The
+      // brief's no-fake rule forbids sample lists in release Runtime, so the
+      // catalog is gone and the page shows only what it can back.
+      expect(find.text('装扮图鉴'), findsNothing);
+      for (final invented in const [
+        '基础红项圈',
+        '暖冬姜黄围巾',
+        '小画家贝雷帽',
+        '绅士小领结',
+      ]) {
+        expect(find.text(invented), findsNothing, reason: invented);
       }
 
-      // Ensure no fake equipped or owned claims are present
+      // What it can back: the notice, and the pet it does have.
+      expect(find.textContaining('未连接数据'), findsOneWidget,
+          reason: 'the page still says why there is nothing to wear');
+
+      // And no button anywhere claims an outfit is equipped or owned.
       expect(find.text('已穿戴'), findsNothing);
       expect(find.text('已拥有'), findsNothing);
       expect(find.text('穿戴'), findsNothing);
+      for (final element in find.byType(OutlinedButton).evaluate()) {
+        expect((element.widget as OutlinedButton).onPressed, isNull,
+            reason: 'no control here may be a usable action');
+      }
     });
 
     testWidgets('6. Bottom navigation has exactly 3 items with 成长 selected',
@@ -279,19 +281,28 @@ void main() {
           ));
     }
 
-    testWidgets('every preview card carries a disabled action', (tester) async {
+    testWidgets('the page shows no outfit it cannot back with data',
+        (tester) async {
       await pumpDress(tester);
 
-      final buttons = find.byType(OutlinedButton);
-      expect(buttons, findsNWidgets(kPreviewOutfitCatalog.length),
-          reason: 'each catalog item gets exactly one action slot');
-
-      for (final element in buttons.evaluate()) {
-        expect((element.widget as OutlinedButton).onPressed, isNull,
-            reason: 'a preview card must not offer a working equip action');
+      // This screen used to render five named outfits from a constant in release
+      // Runtime and mark their buttons 未连接. The buttons were honest; the list
+      // was not — a user reading 基础红项圈 beside 未连接 reasonably concludes
+      // there is such an item they have not unlocked. The brief's no-fake rule
+      // forbids sample lists in release Runtime, so the catalog is gone and the
+      // page shows only what it can back: the notice.
+      for (final invented in const [
+        '基础红项圈',
+        '暖冬姜黄围巾',
+        '小画家贝雷帽',
+        '绅士小领结',
+      ]) {
+        expect(find.text(invented), findsNothing, reason: invented);
       }
-      expect(find.text('未连接'), findsNWidgets(kPreviewOutfitCatalog.length),
-          reason: 'and each must say so, rather than looking merely disabled');
+      expect(find.textContaining('未连接数据'), findsOneWidget,
+          reason: 'and it still says why there is nothing to wear');
+      expect(find.text('未连接'), findsNothing,
+          reason: 'there are no item cards left to carry that label');
     });
 
     testWidgets('no control anywhere on the page is a usable action',

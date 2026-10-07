@@ -9,54 +9,6 @@ import '../companion/companion_avatar.dart';
 import '../widgets/app_bottom_nav.dart';
 
 /// Presentation metadata for outfit catalog preview items.
-class OutfitPreviewItem {
-  final String id;
-  final String name;
-  final String category;
-  final IconData icon;
-  final String description;
-
-  const OutfitPreviewItem({
-    required this.id,
-    required this.name,
-    required this.category,
-    required this.icon,
-    required this.description,
-  });
-}
-
-/// Bounded outfit catalog preview matching design reference categories.
-const List<OutfitPreviewItem> kPreviewOutfitCatalog = [
-  OutfitPreviewItem(
-    id: 'basic_collar',
-    name: '基础红项圈',
-    category: '颈饰',
-    icon: Icons.circle_outlined,
-    description: '陪伴初识时的经典红色编织项圈。',
-  ),
-  OutfitPreviewItem(
-    id: 'cozy_scarf',
-    name: '暖冬姜黄围巾',
-    category: '颈饰',
-    icon: Icons.waves_rounded,
-    description: '柔软保暖的针织羊毛围巾。',
-  ),
-  OutfitPreviewItem(
-    id: 'beret_hat',
-    name: '小画家贝雷帽',
-    category: '头饰',
-    icon: Icons.brush_rounded,
-    description: '充满文艺与创想气息的深蓝贝雷帽。',
-  ),
-  OutfitPreviewItem(
-    id: 'gentleman_bowtie',
-    name: '绅士小领结',
-    category: '颈饰',
-    icon: Icons.favorite_border_rounded,
-    description: '精致优雅的深绿丝质蝴蝶结。',
-  ),
-];
-
 /// Screen: Growth > Pet Dress (10A 宠物装扮)
 /// Presentation slice aligned to design reference 10A_pet_outfit.png / 10A_宠物装扮.png.
 /// Because no outfit domain/data/repository contract exists in current codebase,
@@ -108,27 +60,6 @@ class PetDressPage extends ConsumerWidget {
             ),
             SliverToBoxAdapter(
               child: _buildHonestStatusNotice(),
-            ),
-            SliverToBoxAdapter(
-              child: _buildCatalogHeader(),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.82,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final item = kPreviewOutfitCatalog[index];
-                    return _buildOutfitCard(item);
-                  },
-                  childCount: kPreviewOutfitCatalog.length,
-                ),
-              ),
             ),
             const SliverToBoxAdapter(
               child: SizedBox(height: 24),
@@ -224,94 +155,6 @@ class PetDressPage extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCatalogHeader() {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            '装扮图鉴',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          Text(
-            '图鉴预览',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textTertiary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOutfitCard(OutfitPreviewItem item) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            height: 56,
-            width: 56,
-            decoration: const BoxDecoration(
-              color: AppColors.backgroundWarm,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(item.icon, size: 28, color: AppColors.primarySage),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            item.name,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            item.category,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textTertiary,
-            ),
-          ),
-          const Spacer(),
-          // Disabled button: explicitly null onPressed to ensure no fake clickable equip actions.
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: null,
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-              ),
-              child: const Text(
-                '未连接',
-                style: TextStyle(fontSize: 12),
               ),
             ),
           ),
