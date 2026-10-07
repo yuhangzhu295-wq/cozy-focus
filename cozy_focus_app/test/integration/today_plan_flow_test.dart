@@ -80,6 +80,7 @@ void main() {
       categoryId: 'work',
       estimatedSeconds: 25 * 60,
       note: '梳理核心功能',
+      createdAt: clock.now(),
     );
     final scheduleId = await tasks.schedule(
       taskId: taskId,
@@ -144,12 +145,14 @@ void main() {
       userId: userId,
       title: '写产品方案',
       estimatedSeconds: 25 * 60,
+      createdAt: clock.now(),
     );
     final second = await createTask(
       repository: tasks,
       userId: userId,
       title: '熟悉阅读',
       estimatedSeconds: 50 * 60,
+      createdAt: clock.now(),
     );
     await tasks.schedule(
       taskId: first,
@@ -188,12 +191,14 @@ void main() {
       userId: userId,
       title: '写产品方案',
       estimatedSeconds: 25 * 60,
+      createdAt: clock.now(),
     );
     final other = await createTask(
       repository: tasks,
       userId: userId,
       title: '健身',
       estimatedSeconds: 40 * 60,
+      createdAt: clock.now(),
     );
     await tasks.schedule(
       taskId: planned,
@@ -218,12 +223,14 @@ void main() {
       userId: userId,
       title: '今天的事',
       estimatedSeconds: 25 * 60,
+      createdAt: clock.now(),
     );
     final tomorrow = await createTask(
       repository: tasks,
       userId: userId,
       title: '明天的事',
       estimatedSeconds: 25 * 60,
+      createdAt: clock.now(),
     );
     await tasks.schedule(
       taskId: today,
@@ -261,12 +268,14 @@ void main() {
       userId: userId,
       title: '不做了',
       estimatedSeconds: 25 * 60,
+      createdAt: clock.now(),
     );
     final kept = await createTask(
       repository: tasks,
       userId: userId,
       title: '写产品方案',
       estimatedSeconds: 25 * 60,
+      createdAt: clock.now(),
     );
     for (final taskId in [doomed, kept]) {
       await tasks.schedule(

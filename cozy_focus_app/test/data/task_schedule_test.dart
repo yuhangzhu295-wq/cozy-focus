@@ -35,11 +35,18 @@ void main() {
 
   tearDown(() async => db.close());
 
+  /// A task written down "today" as this test's clock means it.
+  ///
+  /// `createdAt` is passed explicitly rather than left to `createTask`'s default:
+  /// the default is the real clock, and the 今天 rule compares against the
+  /// injected one, so the test used to pass only while the host's date happened
+  /// to equal the fixed one — it broke the first midnight after it was written.
   Future<String> makeTask(String title, {int minutes = 25}) => createTask(
         repository: repo,
         userId: userId,
         title: title,
         estimatedSeconds: minutes * 60,
+        createdAt: clock.now(),
       );
 
   group('placement', () {

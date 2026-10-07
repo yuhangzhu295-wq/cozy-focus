@@ -26,12 +26,29 @@ void main() {
   late AppDatabase db;
   late DriftTaskRepository repo;
   late _FixedClock clock;
+  late String todayKey;
+  late DateTime todayAt0830;
 
   const userId = 'default_user';
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    clock = _FixedClock(DateTime(2026, 10, 7, 8));
+    // Anchored to the real date, with a fixed time. The create screen stamps a
+    // new task with the real clock, and the 今天 rule compares against this one,
+    // so a hard-coded date made the test pass only on the day it was written — it
+    // broke the first midnight after.
+    final realToday = DateTime.now();
+    clock = _FixedClock(
+      DateTime(realToday.year, realToday.month, realToday.day, 8),
+    );
+    todayKey = _dayKey(clock.now());
+    todayAt0830 = DateTime(
+      clock.now().year,
+      clock.now().month,
+      clock.now().day,
+      8,
+      30,
+    );
     repo = DriftTaskRepository(db.taskDao, clock: clock);
   });
 
@@ -103,12 +120,12 @@ void main() {
     expect(tasks, hasLength(1));
     expect(tasks.single.title, '写产品方案');
 
-    final day = await repo.schedulesForDay(userId, '2026-10-07');
+    final day = await repo.schedulesForDay(userId, todayKey);
     expect(day, hasLength(1),
         reason: 'the switch promised a placement and has to produce one');
     expect(day.single.title, '写产品方案');
     expect(day.single.schedule.taskId, tasks.single.id);
-    expect(day.single.schedule.startAt, DateTime(2026, 10, 7, 8, 30));
+    expect(day.single.schedule.startAt, todayAt0830);
     // The length comes from the estimate chip that is on screen.
     expect(day.single.schedule.plannedSeconds, 25 * 60);
   });
@@ -131,7 +148,7 @@ void main() {
     await tester.tap(find.text('保存任务'));
     await tester.pumpAndSettle();
 
-    expect(await repo.schedulesForDay(userId, '2026-10-07'), isEmpty,
+    expect(await repo.schedulesForDay(userId, todayKey), isEmpty,
         reason: 'off has to mean off');
     expect(await repo.findByFilter(userId, TaskFilter.active), hasLength(1));
     // And it is not lost: the today tab's second rule keeps a task written down
@@ -152,7 +169,7 @@ void main() {
     await tester.tap(find.text('保存任务'));
     await tester.pumpAndSettle();
 
-    final day = await repo.schedulesForDay(userId, '2026-10-07');
+    final day = await repo.schedulesForDay(userId, todayKey);
     expect(day.single.schedule.plannedSeconds, 40 * 60);
   });
 
@@ -176,3 +193,8 @@ class _FixedClock implements FocusClock {
   @override
   DateTime now() => _now;
 }
+
+/// `YYYY-MM-DD`, the key the schedule tables are queried by.
+String _dayKey(DateTime at) => '${at.year.toString().padLeft(4, '0')}-'
+    '${at.month.toString().padLeft(2, '0')}-'
+    '${at.day.toString().padLeft(2, '0')}';

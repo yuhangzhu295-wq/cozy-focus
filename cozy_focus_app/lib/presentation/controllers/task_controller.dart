@@ -242,6 +242,7 @@ Future<String> createTask({
   int? estimatedSeconds,
   String? note,
   String? id,
+  DateTime? createdAt,
 }) async {
   final taskId = id ?? const Uuid().v4();
   final trimmedNote = note?.trim();
@@ -252,7 +253,11 @@ Future<String> createTask({
     categoryId: categoryId,
     estimatedSeconds: estimatedSeconds ?? taskEstimatePresets.first,
     note: trimmedNote == null || trimmedNote.isEmpty ? null : trimmedNote,
-    createdAt: DateTime.now(),
+    // Injectable so a test can date a task against the same clock the rest of the
+    // test uses. Without it a test that asserts the 今天 rule stamped the task
+    // with the real clock while filtering with an injected one, and passed only
+    // on the day it was written.
+    createdAt: createdAt ?? DateTime.now(),
   ));
   return taskId;
 }

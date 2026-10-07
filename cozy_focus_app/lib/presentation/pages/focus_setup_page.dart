@@ -31,12 +31,48 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
   int _selectedMinutes = 25;
   bool _reminderOn = true;
 
+  /// The category of the task this session is for, when it has one.
+  ///
+  /// Not chosen on this screen — there is no category control here — but carried
+  /// through so the record it produces is filed under the task's category rather
+  /// than none. Without it, time spent on a 工作 task came back as 未分类 in the
+  /// reports.
+  String? _categoryId;
+
   /// How this session will count. Chosen here rather than on the running screen
   /// because it is a decision about the session, and the running screen's
   /// segmented control exists to change a decision already made.
   FocusTimingMode _timingMode = FocusTimingMode.countdown;
 
   static const List<int> _quickDurations = [5, 25, 50, 90];
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillFromTask();
+  }
+
+  /// Fills the task name and category from the task this session is for.
+  ///
+  /// The page took a `taskId` and never read the task, so starting focus from a
+  /// plan row that says 写产品方案 produced a session that called itself
+  /// 专注任务 — and the paused screen and the record detail showed that
+  /// placeholder. The id travelled and the name did not.
+  ///
+  /// The field is only prefilled, never locked: the user may retitle the session,
+  /// and that edited name is what the record keeps.
+  Future<void> _prefillFromTask() async {
+    final taskId = widget.taskId;
+    if (taskId == null) return;
+    final task = await ref.read(taskRepositoryProvider).findById(taskId);
+    if (!mounted || task == null) return;
+    setState(() {
+      if (_taskController.text.trim().isEmpty) {
+        _taskController.text = task.title;
+      }
+      _categoryId = task.categoryId;
+    });
+  }
 
   @override
   void dispose() {
@@ -76,6 +112,7 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
             timingMode: _timingMode,
             taskName: taskName,
             taskId: widget.taskId,
+            categoryId: _categoryId,
           );
       if (mounted) context.go('/focus/active');
     } catch (e) {
