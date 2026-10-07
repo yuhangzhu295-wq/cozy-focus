@@ -46,7 +46,16 @@ class PeriodReport {
   final int activeDaysCount;
   final Map<DateTime, int> dailySeconds;
   final List<CategoryBreakdown> categoryBreakdowns;
-  final Map<String, int> moodCounts;
+  // There was a `moodCounts` here: how many sessions of each mood, keyed by the
+  // raw stored value. Nothing ever read it — the reports show totals, a daily
+  // series and a category breakdown, and the design's statistics view asks for
+  // those three numbers and two breakdowns, not a mood distribution. It was also
+  // unsound as written: it grouped by `r.mood` as stored, so with both vocabularies
+  // in the table (the four ids the review writes and the six emoji from before it)
+  // one question produced two sets of buckets. Removed rather than wired up.
+  //
+  // The data itself stays: `focus_records.mood` is what the record detail screen
+  // reads to show 心流 instead of `flow`.
   final List<FocusRecord> records;
   final FocusRecord? longestSession;
 
@@ -58,7 +67,6 @@ class PeriodReport {
     required this.activeDaysCount,
     required this.dailySeconds,
     required this.categoryBreakdowns,
-    required this.moodCounts,
     required this.records,
     this.longestSession,
   });
@@ -178,7 +186,6 @@ class StatisticsEngine {
     final dailySeconds = <DateTime, int>{};
     final catSeconds = <String, int>{};
     final catCounts = <String, int>{};
-    final moodCounts = <String, int>{};
     FocusRecord? longest;
 
     for (final r in records) {
@@ -192,11 +199,6 @@ class StatisticsEngine {
       final cat = r.categoryId ?? 'default';
       catSeconds[cat] = (catSeconds[cat] ?? 0) + r.durationSeconds;
       catCounts[cat] = (catCounts[cat] ?? 0) + 1;
-
-      // Mood aggregation
-      if (r.mood != null && r.mood!.isNotEmpty) {
-        moodCounts[r.mood!] = (moodCounts[r.mood!] ?? 0) + 1;
-      }
 
       // Longest session
       if (longest == null || r.durationSeconds > longest.durationSeconds) {
@@ -226,7 +228,6 @@ class StatisticsEngine {
       activeDaysCount: dailySeconds.keys.length,
       dailySeconds: dailySeconds,
       categoryBreakdowns: categoryBreakdowns,
-      moodCounts: moodCounts,
       longestSession: longest,
       records: records,
     );
