@@ -41,9 +41,9 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
 
   Future<void> _shareYearlyReport(PeriodReport report, int year) async {
     final companionName = ref.watch(companionDisplayNameProvider);
-    final hours = (report.totalSeconds / 3600).toStringAsFixed(1);
+    final total = _durationParts(report.totalSeconds);
     final text =
-        '$year年，我和 $companionName 一起专注了 $hours 小时，累计 ${report.sessionCount} 次，坚持了 ${report.activeDaysCount} 天！🌸\n回顾这一年的专注旅程，看见更好的自己。♡';
+        '$year年，我和 $companionName 一起专注了 ${total.value} ${total.unit}，累计 ${report.sessionCount} 次，坚持了 ${report.activeDaysCount} 天！🌸\n回顾这一年的专注旅程，看见更好的自己。♡';
     await SharePlus.instance.share(
       ShareParams(text: text, subject: 'Cozy Focus $year 年度报告分享'),
     );
@@ -108,15 +108,13 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
     final peakSlot = state.yearlyPeakSlot;
     final currentYear = state.yearlyYear;
 
-    final totalHours =
-        report != null ? (report.totalSeconds / 3600).toStringAsFixed(0) : '0';
+    final total = _durationParts(report?.totalSeconds ?? 0);
     final sessionCount = report?.sessionCount ?? 0;
     final activeDays = report?.activeDaysCount ?? 0;
     final isLeapYear = (currentYear % 4 == 0 && currentYear % 100 != 0) ||
         (currentYear % 400 == 0);
     final totalDaysInYear = isLeapYear ? 366 : 365;
-    final dayPercentage =
-        ((activeDays / totalDaysInYear) * 100).toStringAsFixed(0);
+    final dayPercentage = _dayPercentageLabel(activeDays, totalDaysInYear);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -171,7 +169,8 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
                   child: Column(
                     children: [
                       _buildMetricCardsRow(
-                        totalHours: totalHours,
+                        totalValue: total.value,
+                        totalUnit: total.unit,
                         hoursDiffPct: comp?.durationChangePercentage,
                         sessionCount: sessionCount,
                         sessionCountDiff: comp?.sessionCountDiff,
@@ -410,7 +409,8 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
   }
 
   Widget _buildMetricCardsRow({
-    required String totalHours,
+    required String totalValue,
+    required String totalUnit,
     required double? hoursDiffPct,
     required int sessionCount,
     required int? sessionCountDiff,
@@ -423,8 +423,8 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
           child: _buildMetricCard(
             icon: Icons.timer_outlined,
             title: '年度专注时长',
-            value: totalHours,
-            unit: '小时',
+            value: totalValue,
+            unit: totalUnit,
             diffLabel: hoursDiffPct != null
                 ? '比去年多了 ${hoursDiffPct.abs().toStringAsFixed(0)}% ${hoursDiffPct >= 0 ? "↑" : "↓"}'
                 : '开启新一年的积累',
@@ -533,12 +533,29 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
     );
   }
 
+  /// `(value, unit)` for a duration, in the unit that reads.
+  ///
+  /// The yearly cards printed whole hours, so any year under thirty minutes read
+  /// `0 小时`, and 最佳月份 printed hours to one decimal, so a six-minute best
+  /// month read `0.1 小时`. Found by walking the reports on a device.
+  ({String value, String unit}) _durationParts(int seconds) {
+    if (seconds < 3600) return (value: '${(seconds / 60).round()}', unit: '分钟');
+    return (value: (seconds / 3600).toStringAsFixed(1), unit: '小时');
+  }
+
+  /// `12%`, or `<1%` when there is at least a day but it rounds to nothing.
+  ///
+  /// 专注天数 said `1 天` beside 占全年 `0%`, which reads as a contradiction.
+  String _dayPercentageLabel(int activeDays, int totalDaysInYear) {
+    if (activeDays <= 0) return '0%';
+    final pct = (activeDays / totalDaysInYear) * 100;
+    return pct < 1 ? '<1%' : '${pct.toStringAsFixed(0)}%';
+  }
+
   Widget _buildHighlightsRow(
       BestMonthSummary? bestMonth, TimeSlotSummary? peakSlot) {
     final monthStr = bestMonth != null ? '${bestMonth.month} 月' : '暂无数据';
-    final monthHours = bestMonth != null
-        ? (bestMonth.totalSeconds / 3600).toStringAsFixed(1)
-        : '0';
+    final month = _durationParts(bestMonth?.totalSeconds ?? 0);
 
     // Fixed: was ' ()' — string interpolation was empty due to missing dollar signs. — string interpolation was empty due to missing dollar signs.
     final slotLabel =
@@ -583,7 +600,7 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '专注 $monthHours 小时',
+                  '专注 ${month.value} ${month.unit}',
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.textTertiary,
