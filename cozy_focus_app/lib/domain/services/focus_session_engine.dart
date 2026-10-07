@@ -202,14 +202,49 @@ class FocusSessionEngine {
     }
     // Close any open pause
     final intervals = _closeOpenPause(session.pauseIntervals);
+    final now = _clock.now();
     final updated = session.copyWith(
       pauseIntervals: intervals,
-      endAt: _clock.now(),
+      endAt: _endAtForCountdown(session, intervals, now),
       status: FocusSessionStatus.finishing,
     );
     await _sessionRepo.update(updated);
     _currentSession = updated;
     return updated;
+  }
+
+  /// When a countdown session actually ended.
+  ///
+  /// A countdown is over when its target is reached: that is what the mode
+  /// promises, and what the running screen does while the app is alive, where the
+  /// ticker completes the session within a second of the ring emptying. The gap
+  /// this guards against only exists when nothing was alive to notice — the app
+  /// was closed, the phone slept, the process was killed — and charging that gap
+  /// as focus time is how a 25 minute countdown left open overnight banked the
+  /// whole night, and with it the coins, the XP and the streak that are scaled
+  /// from it. Seen on a device: a session that overran to 94 minutes offered to
+  /// save 94:30 and 188 coins, where the mode's own promise was 25 minutes.
+  ///
+  /// So the end is reconstructed from the start, the target and the pauses rather
+  /// than read from the clock that happened to notice. That makes the recorded
+  /// length independent of whether the app was running, which is the property the
+  /// number is supposed to have.
+  ///
+  /// A session ended *before* its target keeps the real end: there the user chose
+  /// to stop, and the time they actually focused is the honest number. The
+  /// open-ended modes keep it too — having no target is the whole point of them.
+  DateTime _endAtForCountdown(
+    FocusSession session,
+    List<PauseInterval> intervals,
+    DateTime now,
+  ) {
+    if (!session.timingMode.hasTarget) return now;
+    final target = session.plannedSeconds;
+    if (target <= 0) return now;
+    final paused = intervals.fold<int>(
+        0, (total, pause) => total + (pause.durationSeconds ?? 0));
+    final reachedAt = session.startAt.add(Duration(seconds: target + paused));
+    return reachedAt.isBefore(now) ? reachedAt : now;
   }
 
   // ── save (user confirms and record is written) ─────────────────────────────

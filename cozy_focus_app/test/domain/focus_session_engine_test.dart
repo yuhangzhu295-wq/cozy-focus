@@ -332,4 +332,89 @@ void main() {
           reason: 'a session that never ended must not produce a record');
     });
   });
+
+  // Found by walking the app on a device: a 25 minute countdown left running
+  // while the app was closed came back offering 94:30 and 188 coins, because
+  // complete() stamped the end with the clock that noticed rather than with the
+  // moment the target was reached. The reward, the XP, the streak seconds and
+  // the craft progress are all scaled from that one number.
+  group('an overrun countdown ends at its target, not at the clock', () {
+    /// Starts a countdown, leaves the clock alone for [away], completes.
+    Future<FocusSession> countdownLeftAlone(Duration away,
+        {int plannedSeconds = 1500}) async {
+      final session = await engine.start(
+        userId: 'u1',
+        plannedSeconds: plannedSeconds,
+        mode: FocusMode.focus,
+      );
+      clock.advance(away);
+      return engine.complete();
+    }
+
+    test('a countdown that overran records the target, not the gap', () async {
+      final session = await countdownLeftAlone(const Duration(minutes: 94));
+
+      expect(session.elapsedSecondsAt(clock.now()), 1500,
+          reason: 'the mode promised 25 minutes and the ticker ends it there');
+
+      await engine.save();
+      final record = await recordRepo.findBySessionId(session.id);
+      expect(record!.durationSeconds, 1500);
+    });
+
+    test('the reward is scaled from the target, not from the gap', () async {
+      final session = await countdownLeftAlone(const Duration(hours: 8));
+
+      await engine.save();
+
+      final ledger = await ledgerRepo.findBySessionId(session.id);
+      expect(ledger, isNotNull);
+      // 25 minutes at 2 coins and 5 XP a minute. Eight hours away would have
+      // been 960 coins and 2400 XP for a session the user did not sit through.
+      expect(ledger!.focusCoinsEarned, 50);
+      expect(ledger.experienceEarned, 125);
+    });
+
+    test('a pause inside the overrun is not counted against the target',
+        () async {
+      // Ten minutes of focus, paused, then the app was away for hours before the
+      // target was reached. The target is measured in focused seconds, so the
+      // session ends ten minutes after it resumed — not at the pause.
+      await engine.start(
+          userId: 'u1', plannedSeconds: 1500, mode: FocusMode.focus);
+      clock.advance(const Duration(minutes: 10));
+      await engine.pause();
+      clock.advance(const Duration(minutes: 5));
+      await engine.resume();
+      clock.advance(const Duration(hours: 3));
+      // The completed session, not the snapshot start() returned: that one still
+      // has a null endAt and would be dated against the clock instead.
+      final completed = await engine.complete();
+
+      expect(completed.elapsedSecondsAt(clock.now()), 1500);
+    });
+
+    test('completing before the target keeps the real elapsed time', () async {
+      // The clamp must not turn every countdown into its target: a user who
+      // stops early focused for as long as they focused.
+      final session = await countdownLeftAlone(const Duration(minutes: 10));
+
+      expect(session.elapsedSecondsAt(clock.now()), 600);
+    });
+
+    test('an open-ended mode is never clamped to a length it does not have',
+        () async {
+      // countUp and deepFocus have no target, so the overrun is the session.
+      await engine.start(
+        userId: 'u1',
+        plannedSeconds: 0,
+        mode: FocusMode.focus,
+        timingMode: FocusTimingMode.countUp,
+      );
+      clock.advance(const Duration(minutes: 94));
+      final completed = await engine.complete();
+
+      expect(completed.elapsedSecondsAt(clock.now()), 94 * 60);
+    });
+  });
 }
