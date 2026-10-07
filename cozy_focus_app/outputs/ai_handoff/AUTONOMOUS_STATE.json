@@ -259,6 +259,12 @@
     ],
     "needs_owner_decision": [
       "pet_dress_page.dart:29 hardcodes five outfit names and descriptions into release Runtime and renders them as the outfit catalog. The buttons are honest (未连接) but the list content is invented with no \"for illustration\" marking, which reads as a NO-FAKE contract breach (rule 3). Left alone: it is outside the 16 designs and the fix is a product decision — keep a preview catalog (then label it as illustrative and move the constant to lib/dev) or show only the honest empty state."
+    ],
+    "statically_checked": [
+      "report pages: every figure comes from PeriodReport, no hardcoded design numbers, and they do not read the new P1-P10 fields so the record-detail class of defect has no counterpart there"
+    ],
+    "known_minor": [
+      "StatisticsEngine.moodCounts is computed and consumed by nothing; harmless, left alone because removing it would touch the engine and its tests"
     ]
   }
 }
