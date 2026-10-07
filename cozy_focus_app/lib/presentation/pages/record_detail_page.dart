@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../companion/companion_selection.dart';
 import '../../domain/models/focus_record.dart';
+import '../../domain/models/focus_review.dart';
 import '../companion/companion_avatar.dart';
 import '../controllers/providers.dart';
 import '../controllers/records_controller.dart';
@@ -85,13 +86,13 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       {'id': 'other', 'name': '其他', 'icon': Icons.more_horiz_rounded},
     ];
 
+    // The four moods the review screen writes, not the six emoji this dialog used
+    // to offer. Those were a second vocabulary for the same question: editing a
+    // reviewed record rewrote its mood as an emoji, undoing the migration that
+    // translated them in the first place.
     final moods = [
-      {'emoji': '😊', 'label': '开心'},
-      {'emoji': '😄', 'label': '愉快'},
-      {'emoji': '🌿', 'label': '平静'},
-      {'emoji': '😌', 'label': '放松'},
-      {'emoji': '💪', 'label': '专注'},
-      {'emoji': '😴', 'label': '疲惫'},
+      for (final mood in FocusMood.values)
+        {'id': mood.id, 'emoji': mood.face, 'label': mood.label},
     ];
 
     final updated = await showDialog<bool>(
@@ -183,13 +184,17 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                       spacing: 8,
                       runSpacing: 8,
                       children: moods.map((m) {
+                        // The id is what gets stored; the face is only drawn.
+                        // Writing the face here is what put the old emoji
+                        // vocabulary back into records that the review had
+                        // already written as ids.
+                        final id = m['id'] as String;
                         final emoji = m['emoji'] as String;
                         final label = m['label'] as String;
                         final isSel =
-                            selectedMood != null && selectedMood == emoji;
+                            selectedMood != null && selectedMood == id;
                         return GestureDetector(
-                          onTap: () =>
-                              setDialogState(() => selectedMood = emoji),
+                          onTap: () => setDialogState(() => selectedMood = id),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 6),
@@ -395,6 +400,119 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       default:
         return AppColors.catOther;
     }
+  }
+
+  /// The face for a stored mood.
+  ///
+  /// A record written by the review screen holds an id — `flow`, `good` — and one
+  /// written before that holds an emoji. Both are shown, because both are real
+  /// rows in the database; what must not happen is showing the id itself, which is
+  /// what this screen did: a user who picked 心流 read "flow" in their own record.
+  String _moodFace(String? stored) {
+    if (stored == null || stored.isEmpty) return '🌱';
+    return FocusMood.fromId(stored)?.face ?? stored;
+  }
+
+  /// The label for a stored mood, or 未选择心情 when there is none.
+  String _moodText(String? stored) {
+    if (stored == null || stored.isEmpty) return '未选择心情';
+    final mood = FocusMood.fromId(stored);
+    if (mood != null) return mood.label;
+    // A legacy emoji, or a value nothing recognises. `_moodLabel` covers the
+    // emoji; anything else is shown as it is rather than relabelled.
+    return _moodLabel(stored);
+  }
+
+  /// The review's other two answers, when the record has them.
+  ///
+  /// P5 collects 本次收获 and 下次继续 and writes them to the record; until now
+  /// nothing read them, so they were stored and never seen — the review's loop was
+  /// open on the read side.
+  Widget _reviewExtras(BuildContext context, FocusRecord r) {
+    final gains = r.gainValues;
+    final next = r.nextIntention;
+    if (gains.isEmpty && (next == null || next.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (gains.isNotEmpty) ...[
+              const Row(
+                children: [
+                  Icon(Icons.emoji_events_outlined,
+                      size: 18, color: AppColors.accentGold),
+                  SizedBox(width: 8),
+                  Text('本次收获',
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final gain in gains)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                      child: Text(
+                        gain.label,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            if (gains.isNotEmpty && next != null && next.isNotEmpty)
+              const SizedBox(height: 16),
+            if (next != null && next.isNotEmpty) ...[
+              const Row(
+                children: [
+                  Icon(Icons.refresh_rounded,
+                      size: 18, color: AppColors.primarySage),
+                  SizedBox(width: 8),
+                  Text('下次继续',
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                next,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   /// Returns the label text for a mood emoji, e.g. '😊' → '开心'.
@@ -628,16 +746,12 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            r.mood != null && r.mood!.isNotEmpty
-                                ? r.mood!
-                                : '🌱',
+                            _moodFace(r.mood),
                             style: const TextStyle(fontSize: 20),
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            r.mood != null && r.mood!.isNotEmpty
-                                ? _moodLabel(r.mood!)
-                                : '未选择心情',
+                            _moodText(r.mood),
                             style: const TextStyle(
                               fontSize: 13,
                               color: AppColors.textSecondary,
@@ -678,6 +792,9 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                 ),
               ),
               const SizedBox(height: 14),
+
+              // The review's other two answers, when the record has them.
+              _reviewExtras(context, r),
 
               // Rewards Settled Card — title changed to 「本次成长」
               Container(
