@@ -46,7 +46,13 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
       case 'life':
         return '生活';
       default:
-        return '其他';
+        // `其他` is a category the user can actually pick. A record with no
+        // category at all has not been put in it, and labelling it 其他 told the
+        // user they had chosen something they never chose — the same rule the
+        // task domain follows, where an unknown category shows no chip rather
+        // than 其他. Found by walking the app on a device: three sessions with no
+        // category came out as 其他 100%.
+        return '未分类';
     }
   }
 
@@ -376,7 +382,7 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
                                               fontSize: 12,
                                               color: AppColors.textSecondary)),
                                       Text(
-                                        '${_weekdayName(bestDay.date.weekday)} · ${(bestDay.totalSeconds / 3600).toStringAsFixed(1)}h',
+                                        '${_weekdayName(bestDay.date.weekday)} · ${_formatShortDuration(bestDay.totalSeconds)}',
                                         style: const TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
@@ -527,14 +533,13 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
               children: List.generate(7, (i) {
                 final weekday = i + 1;
                 final sec = dayTotals[weekday] ?? 0;
-                final hours = (sec / 3600);
                 final heightRatio = (sec / maxSec).clamp(0.05, 1.0);
 
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      sec > 0 ? '${hours.toStringAsFixed(1)}h' : '',
+                      sec > 0 ? _formatShortDuration(sec) : '',
                       style: const TextStyle(
                           fontSize: 10,
                           color: AppColors.textSecondary,
@@ -691,6 +696,19 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
         ],
       ),
     );
+  }
+
+  /// `6 分钟` under an hour, `1.5h` above it.
+  ///
+  /// The charts printed hours to one decimal everywhere, so a six-minute week
+  /// read `0.1h` and anything under three minutes read `0h`. The unit has to
+  /// follow the magnitude.
+  String _formatShortDuration(int seconds) {
+    if (seconds < 3600) {
+      final minutes = (seconds / 60).round();
+      return '$minutes 分钟';
+    }
+    return '${(seconds / 3600).toStringAsFixed(1)}h';
   }
 
   /// `12h 30m` — the form reference 06 prints inside the ring.

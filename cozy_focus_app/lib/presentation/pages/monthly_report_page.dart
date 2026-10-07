@@ -34,6 +34,14 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
     });
   }
 
+  /// `6 分钟` under an hour, `1.5h` above it — the unit follows the magnitude.
+  String _formatShortDuration(int seconds) {
+    if (seconds < 3600) {
+      return '${(seconds / 60).round()} 分钟';
+    }
+    return '${(seconds / 3600).toStringAsFixed(1)}h';
+  }
+
   String _categoryLabel(String id) {
     switch (id) {
       case 'study':
@@ -45,7 +53,10 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
       case 'life':
         return '生活';
       default:
-        return '其他';
+        // `其他` is a category the user can pick; a record with no category has
+        // not been put in it. Same rule as the weekly report, and the same one the
+        // task domain follows.
+        return '未分类';
     }
   }
 
@@ -497,8 +508,16 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
                             day == 14 ||
                             day == 21 ||
                             day == 28)
+                          // The day alone, on one line. `10/28` inside a
+                          // one-thirty-first column wrapped to three stacked
+                          // lines and the labels overlapped each other into an
+                          // unreadable smear — found by walking the app on a
+                          // device. The month is already in the header above.
                           Text(
-                            '$month/$day',
+                            '$day',
+                            maxLines: 1,
+                            softWrap: false,
+                            textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 8,
                               color: AppColors.textTertiary,
@@ -930,7 +949,7 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
           const SizedBox(height: 14),
           Column(
             children: report.categoryBreakdowns.map((cat) {
-              final hours = (cat.totalSeconds / 3600).toStringAsFixed(1);
+              final amount = _formatShortDuration(cat.totalSeconds);
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
@@ -952,7 +971,7 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
                       ),
                     ),
                     Text(
-                      '${hours}h (${(cat.percentage * 100).toStringAsFixed(0)}%)',
+                      '$amount (${(cat.percentage * 100).toStringAsFixed(0)}%)',
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
