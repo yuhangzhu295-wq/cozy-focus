@@ -146,7 +146,8 @@ void main() {
       ],
     ));
 
-    expect(entries.first.detail, '工作');
+    expect(entries.first.detail, '25 分钟 · 工作',
+        reason: 'the design puts a duration on every row');
     expect(entries.first.isDone, isFalse);
     expect(entries.last.isDone, isTrue);
   });
@@ -163,7 +164,8 @@ void main() {
       ],
     ));
 
-    expect(entries.single.detail, isNull);
+    expect(entries.single.detail, '25 分钟',
+        reason: 'a plan row with no category still shows its length');
   });
 
   test('a focus row says how long it was, and its mood when there was one', () {
@@ -195,7 +197,8 @@ void main() {
       notes: [(at: DateTime(2026, 10, 8, 12), text: '买充电线', id: 'n1')],
     ));
     expect(entries.single.durationSeconds, isNull);
-    expect(entries.single.detail, isNull);
+    expect(entries.single.detail, isNull,
+        reason: 'a thought has no length, so there is nothing to say');
   });
 
   group('the session in flight', () {

@@ -174,8 +174,9 @@ void main() {
     expect(find.text('专题阅读'), findsOneWidget);
     expect(find.text('12:00'), findsOneWidget);
     expect(find.text('买充电线'), findsOneWidget);
-    // The plan row shows its category; the focus row shows its length.
-    expect(find.text('工作'), findsOneWidget);
+    // Every row carries a duration, as the design draws it: the plan row shows
+    // its length and its category together, the focus row its own length.
+    expect(find.text('25 分钟 · 工作'), findsOneWidget);
     expect(find.text('25 分钟'), findsOneWidget);
   });
 

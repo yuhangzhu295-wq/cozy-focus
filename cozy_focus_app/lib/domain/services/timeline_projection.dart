@@ -60,13 +60,22 @@ List<TimelineEntry> buildTimeline({
   final entries = <TimelineEntry>[];
 
   for (final placement in facts.plan) {
+    // The length first, then the category when the task has one. The design puts
+    // a duration on every row, and a plan row used to show only its category —
+    // so a task without a category rendered as a bare title while the focus rows
+    // beside it showed 25 分钟. Found by walking the timeline on a device.
     final category = taskCategoryFor(placement.categoryId)?.label;
+    final parts = <String>[
+      formatDurationText(placement.schedule.plannedSeconds),
+    ];
+    if (category != null) parts.add(category);
+
     entries.add(TimelineEntry(
       at: placement.schedule.startAt,
       kind: TimelineKind.plan,
       title: placement.title,
       durationSeconds: placement.schedule.plannedSeconds,
-      detail: category,
+      detail: parts.join(' · '),
       sourceId: placement.schedule.taskId,
       isDone: !placement.schedule.isPlanned,
     ));
