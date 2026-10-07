@@ -6,7 +6,7 @@
   "phase": "P10",
   "slice": "P1-P10 complete. Device walkthrough done: four user-visible defects found that the whole suite had passed, all four fixed and verified on the emulator with reverse-proved regression tests.",
   "start_sha": "0a116e2",
-  "latest_sha": "ac7b543dccac980f409ae036cd36b5e7d4f6a120",
+  "latest_sha": "45cd4c83b0f13f24fd4c62585985d00a0192c3ba",
   "remote_sha": "eb01eddeec5beb92bdc063c251bf27844dfb87dd",
   "local_equals_remote": true,
   "worktree": "clean",
@@ -25,7 +25,7 @@
     "golden_flows_A_to_F": "PASS"
   },
   "test_counts": {
-    "full_suite": "1839/1839",
+    "full_suite": "1845/1845",
     "schema_head": 11
   },
   "p32_device_flow": {
@@ -248,13 +248,14 @@
       "records tab inbox count did not refresh after a capture",
       "rest screen presets wrapped 3+1 instead of the design 2x2",
       "schedule form silently did nothing for an already-planned task",
-      "room: the empty state CTA was drawn under the companion"
+      "room: the empty state CTA was drawn under the companion",
+      "record detail could not read what the review writes: raw mood id shown, edit dialog rewrote the old emoji vocabulary, gains and next intention never displayed"
     ],
     "unpinned": [
       "the _touched guard on the schedule form: kept, no test could reach it, stated as absent at the guard itself"
     ],
     "not_yet_walked": [
-      "record detail, reports (weekly/monthly/yearly/wrapped), collection (图鉴), companion picker and import"
+      "reports (weekly/monthly/yearly/wrapped), collection (图鉴), companion picker and import"
     ],
     "needs_owner_decision": [
       "pet_dress_page.dart:29 hardcodes five outfit names and descriptions into release Runtime and renders them as the outfit catalog. The buttons are honest (未连接) but the list content is invented with no \"for illustration\" marking, which reads as a NO-FAKE contract breach (rule 3). Left alone: it is outside the 16 designs and the fix is a product decision — keep a preview catalog (then label it as illustrative and move the constant to lib/dev) or show only the honest empty state."
