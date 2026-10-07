@@ -1,3 +1,4 @@
+import '../controllers/growth_controller.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -100,7 +101,21 @@ class CompanionPickerPage extends ConsumerWidget {
               ),
             ),
             _ConfirmBar(
-              onConfirm: () => context.pop(),
+              onConfirm: () async {
+                // Confirming has to mean something. It used to be `context.pop()`
+                // and nothing else, so the choice lived in a display preference
+                // while the adopted pet — and every number that belongs to it —
+                // stayed whatever it was.
+                final profile = catalog.profileFor(selected);
+                await ref
+                    .read(growthControllerProvider.notifier)
+                    .adoptCompanion(
+                      characterId: selected.value,
+                      species: profile.species,
+                      name: profile.displayName,
+                    );
+                if (context.mounted) context.pop();
+              },
             ),
           ],
         ),
