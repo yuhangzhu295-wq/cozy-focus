@@ -71,6 +71,7 @@
     "S2.01 GLOBAL PALETTE: the primary green was a colour the designs do not contain. Measured across all 16 boards with tools/qa/palette_report.py — design primary #44714B covers 125,256 px on every board, the old #5E8D6D only 1,468 (anti-aliasing fringe). Changed one token; also fixes white-on-green contrast 3.81 -> 5.66 (was below WCAG AA). 6 tests, reverse-proved, device-verified at pixel level",
     "S2.02 SPLIT CLOCK: RecordsController, ReportsController and progress_overview_page read DateTime.now() while the rest of the app reads FocusClock. This is why six tests were already red at HEAD and why one more passed vacuously. 3 guard tests on an ancient date, reverse-proved",
     "S2.03 flaky test de-flaked: room_placement_toolbar P7 waited a fixed 400ms for a ref.listen callback; now bounded polling, assertion unchanged",
+    "S5.03a ACCESSIBILITY, 21 sites: screen readers said the same words twice. Found one on the device (the capture sheet chip read '标签 生活\\n生活'), scanned for the shape, then found two more classes only the platform's own tree could see — the bottom nav (icon semanticLabel duplicating the item label) and the timer (label interpolating the same value as the child Text). Fixed with excludeSemantics: true, or by removing the redundant semanticLabel. Guarded by a class-level scan in Dart plus a widget test, both reverse-proved, and device-verified on home, growth, room and the focus page",
     "S7.01 five deliverables written with real content (01, 04, 07, 08, 09)"
   ],
 
@@ -80,7 +81,7 @@
     "S3.05b capture sheet: the selected chip uses the category colour where design 05 draws the brand green",
     "S3.05c capture sheet: the n/100 counter sits below the input box, the design puts it inside the bottom-right",
     "S3.05d capture sheet: the input is about two lines tall, the design draws about four",
-    "S3.05e capture sheet a11y: the chip node announces '标签 生活' then '生活' again (missing excludeSemantics)",
+    "S3.05e capture sheet a11y: the chip announced its label twice — DONE, see S5.03a",
     "S3.03 home: the current-task card the design puts under the greeting is missing",
     "S3.04 home: the hourly focus chart in 今天的专注 is missing",
     "S3.05 today plan: rows are cards, the design draws a flat rail list",

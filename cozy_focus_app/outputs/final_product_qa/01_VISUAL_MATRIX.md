@@ -99,7 +99,7 @@
 | 未选中标签：浅灰底 + 灰边 + 灰字 | 一致（`background` 底 + `border` 边 + `textSecondary`） | PASS |
 | 主按钮 `记下，继续专注`：深绿实心 + 白字 + 胶囊 | 一致（颜色已在本次改为设计图的深绿；空输入时为禁用态） | PASS |
 | 空输入时按钮禁用 | 一致（设计图未画禁用态，实机灰底灰字） | PASS |
-| 可访问名称 | 读屏读出 `标签 生活` **后接** `生活`——同一节点里说了两遍 | **缺陷（无障碍）**：`Semantics(label:)` 未 `excludeSemantics`，子 `Text` 也进了同一节点 |
+| 可访问名称 | 读屏读出 `标签 生活` **后接** `生活`——同一节点里说了两遍 | **已修**：加 `excludeSemantics: true`；设备复验读出 `标签 生活` 一次。同类问题全局共 21 处，见 `04_BUG_FIX_LEDGER.md` 第 7 条 |
 
 对照判据：设计 05 展板屏幕区裁剪见 `_crops/05_DISTRACTION_CAPTURE_330_750_470x450@1.9x.jpg`；颜色用 `tools/qa/sample_colors.py` 取值（按钮 `#446E4B`、选中 chip 底 `#DCF1D7`、未选中 chip 底 `#F4F2EC`）。
 
