@@ -48,7 +48,7 @@ class _YearlyWrappedSharePageState
       }
       final result = await _exportService.saveToGallery(
         bytes,
-        'cozy_focus_${year}_wrapped.png',
+        'cozy_focus_${year}_wrapped',
       );
       switch (result) {
         case ExportResult.success:
@@ -83,7 +83,7 @@ class _YearlyWrappedSharePageState
       if (bytes != null) {
         await _exportService.shareAsImage(
           bytes,
-          'cozy_focus_${year}_wrapped.png',
+          'cozy_focus_${year}_wrapped',
           shareText,
         );
       } else {

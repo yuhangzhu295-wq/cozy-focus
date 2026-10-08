@@ -46,12 +46,19 @@ class WrappedExportService {
   /// Save [bytes] as a PNG to the device gallery via [gal].
   ///
   /// Returns [ExportResult.success] only if [Gal.putImageBytes] succeeds.
+  ///
+  /// [name] is the base name, with or without `.png`. `gal` appends the
+  /// extension itself and its own documentation says not to include one, so
+  /// passing `photo.png` saved `photo.png.png` — found by saving a card on a
+  /// device and reading the gallery. The extension is normalised here rather
+  /// than left to each caller, because the two callers are not the only ones a
+  /// later change could add, and the gallery is where it shows.
   Future<ExportResult> saveToGallery(
     Uint8List bytes,
-    String filename,
+    String name,
   ) async {
     try {
-      await Gal.putImageBytes(bytes, name: filename);
+      await Gal.putImageBytes(bytes, name: baseName(name));
       return ExportResult.success;
     } on GalException catch (e) {
       if (e.type == GalExceptionType.accessDenied ||
@@ -64,16 +71,26 @@ class WrappedExportService {
     }
   }
 
+  /// `cozy_focus_2026_wrapped.png` -> `cozy_focus_2026_wrapped`.
+  ///
+  /// A leading dot is left alone: `.hidden` is a name, not an extension.
+  static String baseName(String name) {
+    final dot = name.lastIndexOf('.');
+    return dot > 0 ? name.substring(0, dot) : name;
+  }
+
   /// Write [bytes] to a temporary PNG file and open the system share sheet.
   ///
   /// [text] is the accompanying share text (must not contain private notes).
+  /// [name] is a base name; the extension is added here, because the file this
+  /// writes is the one the share sheet reads and it does need one.
   Future<void> shareAsImage(
     Uint8List bytes,
-    String filename,
+    String name,
     String text,
   ) async {
     final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/$filename');
+    final file = File('${dir.path}/${baseName(name)}.png');
     await file.writeAsBytes(bytes, flush: true);
 
     await SharePlus.instance.share(

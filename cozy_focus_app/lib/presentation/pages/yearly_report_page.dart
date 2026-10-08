@@ -68,7 +68,7 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
       }
       final result = await _exportService.saveToGallery(
         bytes,
-        'cozy_focus_${year}_yearly.png',
+        'cozy_focus_${year}_yearly',
       );
       if (!mounted) return;
       switch (result) {
