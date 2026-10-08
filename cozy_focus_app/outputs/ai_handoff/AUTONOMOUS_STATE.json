@@ -298,7 +298,7 @@
   "not_walked": "small-screen and landscape adaptation of the report pages: the emulator has one size"
  },
  "round3_walkthrough": {
-  "range": "b938d29 -> 0f9d6ce",
+  "range": "b938d29 -> 924fa93 (the docs commit follows)",
   "method": "adb wm size 720x1280 + density 320 (360dp), then wm size/density reset with user_rotation 1 (landscape at the real 411x914dp)",
   "fixed": {
    "monthly_axis_labels_clipped": "31 Expanded columns give each day ~7dp at 360dp and a two-digit label needs ~9, so 14/21/28 drew as one digit and a sliver. The label now lays out at its own width via OverflowBox(fit: deferToChild) — the default `max` fit asks for unbounded height inside a Column and throws, which I hit first.",
