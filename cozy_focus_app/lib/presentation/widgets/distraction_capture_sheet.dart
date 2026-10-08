@@ -128,39 +128,62 @@ class _CaptureSheetState extends ConsumerState<_CaptureSheet> {
                 ],
               ),
               const SizedBox(height: 4),
-              TextField(
-                controller: _text,
-                autofocus: true,
-                maxLength: DistractionNote.maxTextLength,
-                maxLines: 3,
-                minLines: 2,
-                onChanged: (_) => setState(() {}),
-                style:
-                    const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                decoration: InputDecoration(
-                  hintText: '想到什么，先记下来…',
-                  hintStyle: const TextStyle(
-                      fontSize: 14, color: AppColors.textTertiary),
-                  counterText:
-                      '${_text.text.characters.length}/${DistractionNote.maxTextLength}',
-                  filled: true,
-                  fillColor: AppColors.background,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    borderSide: const BorderSide(color: AppColors.border),
+              // The count sits inside the box, bottom-right, the way design 05
+              // draws it. Flutter's own counter always renders *below* the field
+              // and outside its border, so it is drawn here instead and the
+              // built-in one is switched off with an empty `counterText`.
+              //
+              // The field is four lines tall because the design draws it that
+              // way: measured against the board, its height is about a third of
+              // its width, roughly four lines, against the two this used to be.
+              // A thought is easier to re-read while typing it than to fit.
+              Stack(
+                children: [
+                  TextField(
+                    controller: _text,
+                    autofocus: true,
+                    maxLength: DistractionNote.maxTextLength,
+                    maxLines: 5,
+                    minLines: 4,
+                    onChanged: (_) => setState(() {}),
+                    style: const TextStyle(
+                        fontSize: 14, color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: '想到什么，先记下来…',
+                      hintStyle: const TextStyle(
+                          fontSize: 14, color: AppColors.textTertiary),
+                      counterText: '',
+                      filled: true,
+                      fillColor: AppColors.background,
+                      contentPadding: const EdgeInsets.fromLTRB(14, 12, 14, 22),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        borderSide: const BorderSide(
+                            color: AppColors.primarySage, width: 1.5),
+                      ),
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    borderSide: const BorderSide(color: AppColors.border),
+                  Positioned(
+                    right: 12,
+                    bottom: 6,
+                    child: IgnorePointer(
+                      child: Text(
+                        '${_text.text.characters.length}'
+                        '/${DistractionNote.maxTextLength}',
+                        style: const TextStyle(
+                            fontSize: 11, color: AppColors.textTertiary),
+                      ),
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    borderSide: const BorderSide(
-                        color: AppColors.primarySage, width: 1.5),
-                  ),
-                ),
+                ],
               ),
               const SizedBox(height: 4),
               // Optional, and the design says so: a thought that fits no category
@@ -237,7 +260,15 @@ class _TagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = taskCategoryColor(category.id);
+    // Selection is the brand green, not the category's colour.
+    //
+    // The two are different jobs and the designs use them differently: a chip
+    // *on a task row* (design 02) is tinted by its category, which is how you
+    // tell 生活 from 工作 at a glance. A chip *offering a choice* here is tinted
+    // by whether it is chosen — design 05 draws 生活 selected in green, and the
+    // icon is what carries the category. Tinting the selection by category made
+    // an orange chip read as "this is 生活" rather than "this is chosen".
+    final tint = selected ? AppColors.primaryDark : AppColors.textSecondary;
     return Semantics(
       excludeSemantics: true,
       button: true,
@@ -248,20 +279,19 @@ class _TagChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color:
-                selected ? color.withValues(alpha: 0.14) : AppColors.background,
+            color: selected ? AppColors.primaryLight : AppColors.background,
             borderRadius: BorderRadius.circular(AppRadius.pill),
             border: Border.all(
-              color: selected ? color : AppColors.border,
+              color: selected ? AppColors.primarySage : AppColors.border,
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                selected ? Icons.sell_rounded : Icons.sell_outlined,
+                taskCategoryIcon(category.id),
                 size: 14,
-                color: selected ? color : AppColors.textSecondary,
+                color: tint,
               ),
               const SizedBox(width: 5),
               Text(
@@ -269,7 +299,7 @@ class _TagChip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: selected ? color : AppColors.textSecondary,
+                  color: tint,
                 ),
               ),
             ],

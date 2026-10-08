@@ -19,6 +19,27 @@ Color taskCategoryColor(String? categoryId) {
   };
 }
 
+/// The icon the designs draw for a category.
+///
+/// The designs give each category its own mark — a house, an open book, a
+/// briefcase, three dots — and every place that offers a category to pick
+/// (the capture sheet, the create-task form, the today plan) draws them. Before
+/// this existed, the capture sheet drew the same tag glyph four times, and
+/// [TaskCategory.iconName] was declared and rendered nowhere.
+///
+/// Keyed on the model's own `iconName` rather than on the id, so the domain keeps
+/// naming its marks and this is only the translation into Flutter's icon set. An
+/// unknown name gets the neutral tag rather than a guess.
+IconData taskCategoryIcon(String? categoryId) {
+  return switch (taskCategoryFor(categoryId)?.iconName) {
+    'home' => Icons.home_rounded,
+    'book' => Icons.menu_book_rounded,
+    'briefcase' => Icons.work_rounded,
+    'more' => Icons.more_horiz_rounded,
+    _ => Icons.sell_outlined,
+  };
+}
+
 /// The category chip the designs show: a tinted pill with the category's name.
 class TaskCategoryChip extends StatelessWidget {
   final String? categoryId;
