@@ -5,7 +5,7 @@
   "branch": "recovery/v4.2.1-rebuild",
   "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
   "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
-  "updated_at": "2026-10-09T00:55:00+08:00",
+  "updated_at": "2026-10-09T06:32:52+08:00",
   "continuation": {
     "question": "does this environment support automatic continuation of the work?",
     "answer": "PARTIALLY — and the honest split matters.",
@@ -20,14 +20,16 @@
       "No mechanism can make a single run finish an unbounded program. Work is therefore cut into work units that each end at a committed, verified, resumable point."
     ],
     "explicitly_not_done": "No claim that automatic continuation is solved. Repeating a prompt to look busy is not continuation and was not used. The real mechanism is: every work unit ends committed and recorded, and the hourly schedule (or the owner) can pick the program up from CHECKPOINT.md at any time.",
-    "resume_entry_point": "outputs/autonomous_execution/RESUME_INSTRUCTIONS.md"
+    "resume_entry_point": "outputs/autonomous_execution/RESUME_INSTRUCTIONS.md",
+    "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
   },
   "git": {
-    "head": "e8647f33a58cf4206499157cfd44298f7fadce0b",
+    "head": "0ecd347ed04ef85a0ce0c48f13948da2e47656b3",
     "remote_head": "e8647f33a58cf4206499157cfd44298f7fadce0b",
-    "head_matches_remote": true,
-    "worktree": "clean",
-    "last_verified_at": "2026-10-08T23:39:00+08:00"
+    "head_matches_remote": false,
+    "worktree": "dirty",
+    "last_verified_at": "2026-10-09T06:32:52+08:00",
+    "note": "HEAD is 30 commits ahead of the remote. Nothing has been pushed since e8647f3; the earlier push authorisation covered the batch before that."
   },
   "current": {
     "stage": "STAGE_3_VISUAL_RESTORATION",
@@ -104,9 +106,9 @@
     "S7 depends on all of the above"
   ],
   "recent_test_evidence": {
-    "at": "2026-10-09T12:15:00+08:00",
+    "at": "2026-10-09T06:32:52+08:00",
     "command": "flutter test",
-    "result": "1993/1993 passed",
+    "result": "1993/1993 passed (verified in the previous window)",
     "note": "The flake is resolved and it was a product defect, not the harness: ReportsController's constructor called loadAllReports() without awaiting it while all three report pages already called the same method from initState, so every visit loaded twice and the constructor's round could land after a test's teardown closed the database. It failed with no exception text at all, just '+2 -1'. Removing the constructor's call took the suspect file from 8/10 clean to 12/12. An earlier fix to the room-placement test's fixed-frame wait addressed a real but different fragility.",
     "before_this_window": "6 tests were red at HEAD (e8647f33) and had been for a day, because the records screen read the wall clock while the tests seeded against an injected one. The 1931/1931 recorded in the previous version of this file was stale.",
     "analyze": "flutter analyze --fatal-infos: No issues found",

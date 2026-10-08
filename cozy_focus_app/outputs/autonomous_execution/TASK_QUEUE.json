@@ -1,7 +1,7 @@
 {
   "queue_version": 1,
   "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
-  "updated_at": "2026-10-09T12:15:00+08:00",
+  "updated_at": "2026-10-09T06:32:52+08:00",
   "tasks": [
     {
       "id": "S1.01",
@@ -125,15 +125,17 @@
       "id": "S3.03",
       "stage": 3,
       "title": "home: add the current-task card under the greeting",
-      "status": "PENDING",
-      "from": "S1.01"
+      "status": "TESTED",
+      "from": "S1.01",
+      "note": "DONE: CurrentTaskCard, device-verified, 9 tests"
     },
     {
       "id": "S3.04",
       "stage": 3,
       "title": "home: add the hourly focus chart to 今天的专注",
-      "status": "PENDING",
-      "from": "S1.01"
+      "status": "TESTED",
+      "from": "S1.01",
+      "note": "DONE: HourlyFocus + HourlyFocusChart, device-verified, 15 tests"
     },
     {
       "id": "S3.05",
