@@ -7,7 +7,7 @@
  "slice": "P1-P10 complete. Round 2 walkthrough complete: five defects found and fixed, each with a reverse-proved regression test and a device re-check; two candidate findings withdrawn after re-measuring.",
  "start_sha": "0a116e2",
  "latest_sha": "17b3bab8f56c2c2c122622e61f021cc93ea50961",
- "remote_sha": "09024945fe55b9a8e765bb07fb0630d132662157 (pushed; remote HEAD verified equal to local HEAD)",
+ "remote_sha": "1e289274c5cbbe1765807b46342942a54a91ee47 (pushed; remote HEAD verified equal to local HEAD) — this field always lags by the commits that carry it, because a file cannot name its own commit",
  "local_equals_remote": true,
  "worktree": "clean",
  "completed_phases": {
