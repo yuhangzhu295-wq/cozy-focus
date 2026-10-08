@@ -49,7 +49,7 @@ class _FocusRewardPageState extends ConsumerState<FocusRewardPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(Icons.arrow_back_rounded, semanticLabel: '返回'),
           onPressed: () {
             ref.read(homeControllerProvider.notifier).loadHomeData();
             context.go('/');

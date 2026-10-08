@@ -127,7 +127,7 @@ class _YearlyWrappedSharePageState
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close_rounded,
-              color: AppColors.textPrimary, size: 24),
+              semanticLabel: '关闭', color: AppColors.textPrimary, size: 24),
           onPressed: () => context.pop(),
         ),
         title: const Text(

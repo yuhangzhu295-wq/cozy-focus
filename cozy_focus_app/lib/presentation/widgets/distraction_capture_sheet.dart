@@ -117,15 +117,13 @@ class _CaptureSheetState extends ConsumerState<_CaptureSheet> {
                       ),
                     ),
                   ),
-                  Semantics(
+                  IconButton(
                     key: const ValueKey('distraction_close'),
-                    button: true,
-                    label: '关闭',
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded,
-                          size: 20, color: AppColors.textSecondary),
-                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded,
+                        semanticLabel: '关闭',
+                        size: 20,
+                        color: AppColors.textSecondary),
                   ),
                 ],
               ),

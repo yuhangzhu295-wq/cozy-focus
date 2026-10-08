@@ -113,7 +113,7 @@ class _Header extends StatelessWidget {
           IconButton(
             onPressed: onBack,
             icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                size: 20, color: AppColors.textPrimary),
+                semanticLabel: '返回', size: 20, color: AppColors.textPrimary),
           ),
           const Expanded(
             child: Column(

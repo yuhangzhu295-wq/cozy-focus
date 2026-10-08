@@ -24,7 +24,8 @@ class DataSyncPage extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back,
+              semanticLabel: '返回', color: AppColors.textPrimary),
           onPressed: () {
             if (context.canPop()) {
               context.pop();

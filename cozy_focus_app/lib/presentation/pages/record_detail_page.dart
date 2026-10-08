@@ -548,7 +548,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_rounded,
-                color: AppColors.textPrimary),
+                semanticLabel: '返回', color: AppColors.textPrimary),
             onPressed: () => context.pop(),
           ),
           title: const Text('记录详情',
@@ -578,7 +578,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: AppColors.textPrimary),
+              semanticLabel: '返回', color: AppColors.textPrimary),
           onPressed: () => context.pop(),
         ),
         title: const Text(

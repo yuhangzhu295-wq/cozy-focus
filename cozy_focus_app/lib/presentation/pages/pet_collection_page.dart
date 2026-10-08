@@ -294,7 +294,7 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, semanticLabel: '返回'),
           onPressed: () {
             if (context.canPop()) {
               context.pop();

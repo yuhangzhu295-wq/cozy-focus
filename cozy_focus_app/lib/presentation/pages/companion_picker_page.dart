@@ -495,8 +495,10 @@ class _PackMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       tooltip: '$displayName 的更多操作',
-      icon: const Icon(Icons.more_horiz_rounded,
-          size: 20, color: AppColors.textTertiary),
+      icon: Icon(Icons.more_horiz_rounded,
+          semanticLabel: '$displayName 的更多操作',
+          size: 20,
+          color: AppColors.textTertiary),
       onSelected: (value) {
         if (value == 'export') onExport?.call();
         if (value == 'delete') onDelete?.call();

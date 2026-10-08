@@ -123,7 +123,7 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary, size: 20),
+              semanticLabel: '返回', color: AppColors.textPrimary, size: 20),
           onPressed: () => context.pop(),
         ),
         title: const Text(
@@ -138,7 +138,7 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.share_outlined,
-                color: AppColors.textPrimary, size: 22),
+                semanticLabel: '分享', color: AppColors.textPrimary, size: 22),
             onPressed: report != null
                 ? () => _shareYearlyReport(report, currentYear)
                 : null,
@@ -320,7 +320,7 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
       children: [
         IconButton(
           icon: const Icon(Icons.chevron_left_rounded,
-              color: AppColors.textPrimary),
+              semanticLabel: '上一年', color: AppColors.textPrimary),
           onPressed: () =>
               ref.read(reportsControllerProvider.notifier).previousYear(),
         ),
@@ -342,7 +342,7 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
         ),
         IconButton(
           icon: const Icon(Icons.chevron_right_rounded,
-              color: AppColors.textPrimary),
+              semanticLabel: '下一年', color: AppColors.textPrimary),
           onPressed: () =>
               ref.read(reportsControllerProvider.notifier).nextYear(),
         ),

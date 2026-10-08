@@ -153,7 +153,9 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                   left: 8,
                   child: IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.textPrimary, size: 20),
+                        semanticLabel: '返回',
+                        color: AppColors.textPrimary,
+                        size: 20),
                     onPressed: () => context.go('/'),
                   ),
                 ),

@@ -144,7 +144,7 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded, size: 26),
+          icon: const Icon(Icons.close_rounded, semanticLabel: '关闭', size: 26),
           onPressed: _isSaving ? null : _handleClose,
         ),
         title: const Text('保存本次记录'),
@@ -221,7 +221,9 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                               horizontal: 16, vertical: 14),
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.cancel_rounded,
-                                size: 20, color: AppColors.textTertiary),
+                                semanticLabel: '清空',
+                                size: 20,
+                                color: AppColors.textTertiary),
                             onPressed: () => _taskController.clear(),
                           ),
                         ),

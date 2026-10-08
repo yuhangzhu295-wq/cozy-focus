@@ -5,7 +5,7 @@
     "width": 512,
     "height": 512
   },
-  "groundBaseline": 459,
+  "groundBaseline": 458,
   "centerAnchor": 255,
   "actions": {
     "celebrate": {

@@ -58,7 +58,7 @@ class TaskDetailPage extends ConsumerWidget {
             PopupMenuButton<String>(
               tooltip: '更多操作',
               icon: const Icon(Icons.more_horiz_rounded,
-                  color: AppColors.textSecondary),
+                  semanticLabel: '更多操作', color: AppColors.textSecondary),
               onSelected: (value) async {
                 switch (value) {
                   case 'toggle':

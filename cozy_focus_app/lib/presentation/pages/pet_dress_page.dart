@@ -29,7 +29,7 @@ class PetDressPage extends ConsumerWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded,
-              color: AppColors.textPrimary),
+              semanticLabel: '返回', color: AppColors.textPrimary),
           onPressed: () {
             if (context.canPop()) {
               context.pop();

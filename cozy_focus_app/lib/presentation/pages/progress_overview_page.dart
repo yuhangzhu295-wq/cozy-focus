@@ -652,7 +652,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             IconButton(
                 icon: const Icon(Icons.chevron_left_rounded,
-                    color: AppColors.textSecondary),
+                    semanticLabel: '上一个月', color: AppColors.textSecondary),
                 onPressed: () => ref
                     .read(recordsControllerProvider.notifier)
                     .changeCalendarMonth(-1)),
@@ -663,7 +663,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
                     color: AppColors.textPrimary)),
             IconButton(
                 icon: const Icon(Icons.chevron_right_rounded,
-                    color: AppColors.textSecondary),
+                    semanticLabel: '下一个月', color: AppColors.textSecondary),
                 onPressed: () => ref
                     .read(recordsControllerProvider.notifier)
                     .changeCalendarMonth(1)),
@@ -896,8 +896,12 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
               ],
             ])),
         trailing: PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert_rounded,
-              color: AppColors.textTertiary, size: 18),
+          // Named after the record it acts on, the way the inbox row's menu is:
+          // a screen reader user hears which row this belongs to.
+          icon: Icon(Icons.more_vert_rounded,
+              semanticLabel: '${r.taskName ?? '专注任务'} 的操作',
+              color: AppColors.textTertiary,
+              size: 18),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.md)),
           itemBuilder: (ctx) => [

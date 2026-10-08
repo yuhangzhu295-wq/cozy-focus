@@ -210,15 +210,11 @@ class _RangeHeader extends StatelessWidget {
       padding: const EdgeInsets.only(top: 10),
       child: Row(
         children: [
-          Semantics(
-            button: true,
-            label: '上一段',
-            child: IconButton(
-              key: const ValueKey('stats_previous'),
-              onPressed: () => onStep(-1),
-              icon: const Icon(Icons.chevron_left_rounded,
-                  color: AppColors.textSecondary),
-            ),
+          IconButton(
+            key: const ValueKey('stats_previous'),
+            onPressed: () => onStep(-1),
+            icon: const Icon(Icons.chevron_left_rounded,
+                semanticLabel: '上一段', color: AppColors.textSecondary),
           ),
           Expanded(
             child: GestureDetector(
@@ -234,15 +230,11 @@ class _RangeHeader extends StatelessWidget {
               ),
             ),
           ),
-          Semantics(
-            button: true,
-            label: '下一段',
-            child: IconButton(
-              key: const ValueKey('stats_next'),
-              onPressed: () => onStep(1),
-              icon: const Icon(Icons.chevron_right_rounded,
-                  color: AppColors.textSecondary),
-            ),
+          IconButton(
+            key: const ValueKey('stats_next'),
+            onPressed: () => onStep(1),
+            icon: const Icon(Icons.chevron_right_rounded,
+                semanticLabel: '下一段', color: AppColors.textSecondary),
           ),
         ],
       ),

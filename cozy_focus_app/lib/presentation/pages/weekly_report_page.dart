@@ -130,7 +130,7 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: AppColors.textPrimary),
+              semanticLabel: '返回', color: AppColors.textPrimary),
           onPressed: () => context.pop(),
         ),
         title: const Text(
@@ -225,6 +225,7 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.chevron_left_rounded,
+                                  semanticLabel: '上一周',
                                   color: AppColors.primarySage),
                               onPressed: () => ref
                                   .read(reportsControllerProvider.notifier)
@@ -240,6 +241,7 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.chevron_right_rounded,
+                                  semanticLabel: '下一周',
                                   color: AppColors.primarySage),
                               onPressed: () => ref
                                   .read(reportsControllerProvider.notifier)

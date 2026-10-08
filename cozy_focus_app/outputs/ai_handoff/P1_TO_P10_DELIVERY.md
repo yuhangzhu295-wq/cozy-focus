@@ -412,3 +412,63 @@ App 没有锁定方向——manifest 和 `SystemChrome` 里都没有，所以横
 按 UTC 重算：那条是 **84 秒**，floor 和 round 都是 1 分钟，**两种取整都解释得通，它不是证据**。
 真正的证据是 54 秒那条（UTC 16:12），而它不在今天的列表里。**下结论前先用 `date +%z` 把时区
 钉死**，别再拿墙上时钟推断。
+
+## 十六、第五轮：可访问性扫描（25+4 个按钮没有名字）
+
+起点 `6fb07f1`，测试从 1898 涨到 1913。这一轮做的是 `next_action` 里点名的第二件可独立完成的
+事：「新屏幕的触控尺寸与语义覆盖扫描」。
+
+### 找到什么
+
+`lib/presentation` 里有 **25 个 `IconButton` 没有任何可访问名字**——没有 `tooltip`，也没有
+`Semantics` 包装。返回箭头、报告页的上下周期箭头、复盘页的关闭、分享按钮。读屏器只会念
+"按钮"，然后停住。没有任何测试发现，因为**从来没有任何测试问过一个控件叫什么**。
+
+### 正确的修法不是显而易见的那个（三种都实测过）
+
+我先用了工程里已有的形状，然后按语义树量了结果：
+
+| 写法 | 语义树结果 |
+|---|---|
+| `Semantics(button: true, label: '返回', child: IconButton(...))` | **两个** button 节点：包装那个有名字，IconButton 自己那个**没有**。读屏器两个都会遇到。 |
+| `IconButton(tooltip: '返回')` | 一个节点，但字符串落在节点的 `tooltip` 字段上，`label` 仍是空。 |
+| `IconButton(icon: Icon(Icons.arrow_back, semanticLabel: '返回'))` | **一个**节点，带名字。 |
+
+所以最终用的是第三种，给图标的 `semanticLabel`。**工程里原有的 4 处 `Semantics` 包装（统计视图
+的上下段、时间线的停止按钮、捕捉面板的关闭）有同样的双节点问题**，也一并改掉了——它们的 key
+移到 `IconButton` 上，测试照旧。
+
+另外发现同一类的第二个来源：**`PopupMenuButton(tooltip:)` 的 tooltip 落在 Tooltip 节点上，按钮
+节点仍然无名**。4 处（分心箱的 ⋯、伙伴选择卡的 ⋯、任务详情的 ⋯、记录行的 ⋯）都补了图标
+`semanticLabel`；记录行那个按分心箱的先例带上行名，读屏器能听出是哪一行。
+
+### 守卫怎么写的，以及为什么这样写
+
+`test/architecture/control_accessibility_test.dart` **遍历 `rootSemanticsNode`**，断言没有任何
+带 `isButton` 的节点 label 为空。不按控件查语义——那样恰恰会漏掉最要命的情形：**控件包了，
+它产生的节点没包**。两个反向证明守着这条：一个裸 `IconButton` 必须被报出来；一个只有
+`Semantics` 包装的必须**仍被报出来**（证明读树而不是读控件是必要的）。
+
+**尺寸部分只记录、不断言**：多处控件是 38–46dp，低于 48dp 指南，但那是本 App 的密度而不是
+缺陷——Material 自己的 `Chip` 高 32dp、`SegmentedButton` 高 40dp，本 App 的分段控件与筛选
+chip 与之一致。按 48 断言会判设计自己的组件不合格，按 38 断言则把今天的现状固化成规则。
+
+`tools/find_unlabelled_icon_buttons.py` 对全工程做静态扫描，覆盖测试挂不起来的屏幕。
+
+### 设备验证
+
+读的不是截图，是 **Android 无障碍树**（`uiautomator`/UI 工具给出的 `content-desc`，也就是
+TalkBack 读的字段）。周报页现在：返回按钮 `"返回"`、左箭头 `"上一周"`、右箭头 `"下一周"`。
+
+### 顺带修掉的一处数据不一致
+
+`assets/companions/rabbit/manifest.json`（运行时清单）写 `groundBaseline: 459`，而同一个包的
+`animation_manifest.json`（创作契约）写 458、几何审计实测帧也在 458。没有任何测试把这两份
+清单互相对照过。改 458 时被「镜像与 JSON 逐字段一致」那条测试拦下——**459 还存在于一份 Dart
+镜像里**（`companion_action_manifest_data.dart`，由 `tools/gen_manifest_dart.py` 生成）。用生成器
+重跑对齐，并新增 `test/architecture/runtime_manifest_matches_contract_test.dart`：每个包的运行时
+清单必须等于它自己的契约（canvas/锚点/companionId），外加一条把契约值钉在格式定义上，免得
+两个文件一起漂移还能算「一致」。
+
+契约里的 `anchorTolerancePx: 2` **不适用于**这条比较，理由写在测试里：那个容差是给**测量帧**
+用的，两份**声明**之间没有测量，要么相等要么其中一个错了。

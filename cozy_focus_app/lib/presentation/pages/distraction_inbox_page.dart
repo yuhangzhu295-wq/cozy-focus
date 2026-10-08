@@ -49,8 +49,10 @@ class DistractionInboxPage extends ConsumerWidget {
           // with. A menu with nothing behind it would be decoration.
           PopupMenuButton<String>(
             tooltip: '更多',
+            // The tooltip lands on a Tooltip node, not on the button, so the
+            // button itself is announced with no name. The icon carries it.
             icon: const Icon(Icons.more_horiz_rounded,
-                color: AppColors.textSecondary),
+                semanticLabel: '更多', color: AppColors.textSecondary),
             onSelected: (value) async {
               if (value != 'explain') return;
               await showDialog<void>(

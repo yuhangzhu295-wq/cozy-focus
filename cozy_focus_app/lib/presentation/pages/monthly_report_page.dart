@@ -111,7 +111,7 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: AppColors.textPrimary),
+              semanticLabel: '返回', color: AppColors.textPrimary),
           onPressed: () => context.pop(),
         ),
         title: const Text(
@@ -205,6 +205,7 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.chevron_left_rounded,
+                                  semanticLabel: '上一月',
                                   color: AppColors.textSecondary),
                               onPressed: () => ref
                                   .read(reportsControllerProvider.notifier)
@@ -220,6 +221,7 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.chevron_right_rounded,
+                                  semanticLabel: '下一月',
                                   color: AppColors.textSecondary),
                               onPressed: () => ref
                                   .read(reportsControllerProvider.notifier)

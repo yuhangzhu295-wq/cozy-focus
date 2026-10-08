@@ -780,15 +780,13 @@ class _TimelineCard extends StatelessWidget {
         // user can act on, and stopping it goes through the focus controller
         // rather than touching a record.
         if (entry.isRunning)
-          Semantics(
+          IconButton(
             key: const ValueKey('timeline_stop_running'),
-            button: true,
-            label: '结束这次专注',
-            child: IconButton(
-              onPressed: () => onStopRunning(entry.sourceId!),
-              icon: const Icon(Icons.stop_circle_rounded,
-                  size: 26, color: AppColors.primaryDark),
-            ),
+            onPressed: () => onStopRunning(entry.sourceId!),
+            icon: const Icon(Icons.stop_circle_rounded,
+                semanticLabel: '结束这次专注',
+                size: 26,
+                color: AppColors.primaryDark),
           ),
       ],
     );

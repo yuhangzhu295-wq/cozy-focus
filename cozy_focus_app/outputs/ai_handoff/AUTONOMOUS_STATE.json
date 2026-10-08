@@ -2,7 +2,7 @@
  "program": "COZYFOCUS_2_0_P1_TO_P10",
  "project": "COZY_FOCUS",
  "branch": "recovery/v4.2.1-rebuild",
- "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then four rounds of device and screen-size walkthrough. Round 4 reproduced the P32 §31A settlement question to its root cause: a display disagreement, not an arithmetic one.",
+ "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then five rounds of device, screen-size and accessibility passes. Round 5 was the programmatic semantics sweep the state file asked for: 29 controls had no accessible name.",
  "phase": "P10",
  "slice": "P1-P10 complete. Round 2 walkthrough complete: five defects found and fixed, each with a reverse-proved regression test and a device re-check; two candidate findings withdrawn after re-measuring.",
  "start_sha": "0a116e2",
@@ -25,7 +25,7 @@
   "golden_flows_A_to_F": "PASS"
  },
  "test_counts": {
-  "full_suite": "1898/1898",
+  "full_suite": "1913/1913",
   "schema_head": 11
  },
  "p32_device_flow": {
@@ -51,12 +51,12 @@
   "P32: symlink rejection is NOT verified through the reader, and duplicate-name ZIP entries cannot be built with ZipEncoder. Both rules are covered directly at the policy level only.",
   "P32: the expansion-ratio bomb check is inert on this path; per-entry and total byte caps still apply.",
   "P32: recovery reads every frame of a pack that has no record, to compute its digest. Fine for one pack; revisit if many are dropped in by hand.",
-  "docs/companion_assets.md is stale: claims 1024x1024 canvas with 919/511 anchors and that every pack must be added to pubspec.yaml; the real JSON is 512x512 with ~458/255.",
-  "P33: multi_companion_parity_test forces every profile to the dog's 13 actions. Right for built-ins, wrong as an admission requirement for a user partial pack; the two contracts must be scoped apart.",
   "P28.4: room_sit still projects to idle with no frames of its own; sofa/sit and rug/sit are hidden from the panel, but the routine and idle still select room_sit.",
   "Room: the travel ticker starts immediately after startTravel and _onCompanionAnimationChanged is empty, so the comment claiming movement waits for stand_up describes behaviour the code does not implement.",
   "P34 remains: the pack builder itself (video/frame directory -> .cozy_pet) is not built. Its prerequisites are now in place: measurement is trustworthy, and all three shipped packs have a contract the builder can hold new packs to.",
-  "One full-suite run reported a single failure that left no failure text in the captured output, and two subsequent runs passed 1525/1525 with no failure. Not reproduced, not diagnosed, and recorded rather than dismissed: an intermittent failure is a real thing even when a rerun is green, and the next person should treat a repeat as information rather than as noise."
+  "One full-suite run reported a single failure that left no failure text in the captured output, and two subsequent runs passed 1525/1525 with no failure. Not reproduced, not diagnosed, and recorded rather than dismissed: an intermittent failure is a real thing even when a rerun is green, and the next person should treat a repeat as information rather than as noise.",
+  "RESOLVED at round 5 (checked, not redone): the P33 note that multi_companion_parity_test forces every profile to the dog's 13 actions is already scoped - the file documents that it is an admission requirement for a companion we ship and that the loop is built-in-only by construction (CompanionManifestData.profiles is a compiled-in table and nothing writes to it), and partial_pack_capability_test.dart is P33's answer for a user's partial pack. The note was stale.",
+  "RESOLVED at round 5 (checked, not redone): docs/companion_assets.md is no longer stale - it states 512x512 / 458 / 255 and says plainly that it said 1024x1024 / 919 / 511 until P40, and asset_guide_matches_contract_test.dart holds it to the code."
  ],
  "known_blockers": {
   "RELEASE_SIGNING": "NOT_RECOVERED - android/key.properties absent, no keystore invented",
@@ -69,7 +69,7 @@
   "The rug's purpose now that its only action (sit) is hidden.",
   "Whether bookshelf/search may share focus_think with desk/study."
  ],
- "next_action": "What remains needs the owner and cannot be done from here: (1) OWNER_VISUAL_GATE - nobody has looked at the custom companion screens and said they are right; (2) RELEASE_SIGNING - the release artifacts are DEBUG-SIGNED because android/key.properties is absent and build.gradle.kts falls back to the debug signing config, so a successful release build is not a signing pass; (3) LAUNCHER_ICON - approved artwork; (4) a TalkBack listening pass, and a sustained multi-pack device run. Two things that could still be done alone: the multi-pack device run, and a programmatic pass over touch-target sizes and semantics coverage on the new screens. Resume from outputs/ai_handoff/P40_RELEASE_CANDIDATE.md.",
+ "next_action": "What remains needs the owner: (1) OWNER_VISUAL_GATE; (2) RELEASE_SIGNING - the release artifacts are DEBUG-SIGNED because android/key.properties is absent; (3) LAUNCHER_ICON - approved artwork; (4) a TalkBack listening pass on a device with a real screen reader (the semantics tree is now clean, but nobody has listened to it), and a sustained multi-pack device run. Resume from outputs/ai_handoff/P40_RELEASE_CANDIDATE.md.",
  "resume_protocol": [
   "git symbolic-ref HEAD; git rev-parse HEAD; git rev-parse origin/recovery/v4.2.1-rebuild; git status --short",
   "read this file",
@@ -321,5 +321,22 @@
   },
   "still_the_owners": "whether a 1800s recipe should accept 1795s — unchanged, and now the only part of §31A left.",
   "my_own_measurement_error_again": "I read the device's 02:36-02:37 record as 54 seconds and called its 1 分钟 a bug. The device timezone is UTC (date +%z = +0000) and I had converted with the HOST offset — the same mistake as the round-3 weekly report. In UTC that record is 84 seconds, where floor and round agree, so it was never evidence either way. Pin the timezone with `date +%z` before drawing a conclusion; do not infer it from wall-clock readings."
+ },
+ "round5_accessibility_pass": {
+  "range": "6fb07f1 -> (this commit)",
+  "trigger": "next_action listed 'a programmatic pass over touch-target sizes and semantics coverage on the new screens' as work that could be done alone",
+  "found": "25 IconButtons in lib/presentation had no accessible name - no tooltip, no Semantics wrapper. Back arrows, the report pages' period chevrons, the review screen's close, the share button. Nothing noticed because no test had ever asked what a control is called.",
+  "the_fix_is_not_the_obvious_one": {
+   "Semantics(button: true, label: X, child: IconButton(...))": "TWO button nodes: the wrapper, named, and the IconButton's own, unnamed. A screen reader reaches both. This is the shape the codebase already used in four places.",
+   "IconButton(tooltip: X)": "One node, but the string lands in the node's tooltip and its label is still empty.",
+   "Icon(Icons.x, semanticLabel: X)": "One node, labelled. This is what was applied.",
+   "four_pre_existing_sites": "statistics_view x2, today_plan x1, distraction_capture_sheet x1 used the wrapper shape and had the same defect. Their keys moved to the IconButton; the tests that tap them still pass.",
+   "second_source": "PopupMenuButton(tooltip:) puts the tooltip on a Tooltip node and leaves the button unnamed. Four of them fixed; the records row's menu is named after the row, following the inbox row's precedent."
+  },
+  "guard": "test/architecture/control_accessibility_test.dart walks rootSemanticsNode and asserts no node with isButton has an empty label - not the widget's semantics, which misses exactly the case that matters (the widget is wrapped, the node it makes is not). Two negative proofs: a bare IconButton must be reported, and a Semantics-wrapped one must STILL be reported.",
+  "sizes_recorded_not_asserted": "Several controls are 38-46dp against the 48dp guideline. That is the app's density, not a defect: Material's own Chip is 32dp and SegmentedButton 40, and this app's segmented controls and filter chips match. A 48 guard would fail the design's own components; a 38 guard would encode today's state as a rule.",
+  "static_tool": "tools/find_unlabelled_icon_buttons.py scans the whole app for the screens the test cannot mount.",
+  "device_evidence": "the Android accessibility tree (what TalkBack reads), not a screenshot: the weekly report now reports content-desc 返回 / 上一周 / 下一周.",
+  "also_fixed": "the rabbit's runtime manifest said groundBaseline 459 while its own authoring contract and its audited frames both say 458, and nothing compared the two files. The Dart mirror carried 459 as well; regenerating from the JSON aligned it. New guard: test/architecture/runtime_manifest_matches_contract_test.dart."
  }
 }

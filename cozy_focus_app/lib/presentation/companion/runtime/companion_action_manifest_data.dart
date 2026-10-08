@@ -464,7 +464,7 @@ abstract final class CompanionActionManifestData {
       posePack: 'rabbit',
       canvasWidth: 512,
       canvasHeight: 512,
-      groundBaseline: 459,
+      groundBaseline: 458,
       centerAnchor: 255,
       actions: {
         'celebrate': CompanionActionSpec(
