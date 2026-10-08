@@ -83,12 +83,18 @@ class CompanionActionAvailability {
   /// something else — a real behaviour the director may schedule, reported
   /// through [fallbackOnly] so nothing counts it as a distinct action.
   ///
-  /// But the room *commits* an action the player then watches. An action that
-  /// draws something else is not the action it claims to be, and committing it
-  /// would show the player a companion using furniture in a way it cannot. So the
-  /// room requires the stricter answer — which is the same one the furniture
-  /// panel already applies when deciding what to offer, and having both ask one
-  /// question in one place is what stops the offer and the decision disagreeing.
+  /// **This is the question every player-facing claim asks.** The furniture panel
+  /// applies it when deciding what to offer, because a chip promises a specific
+  /// visible action, and the room's status sentence asks it too, for the same
+  /// reason: a sentence that names an action promises the player will see it.
+  ///
+  /// The room's *decision* asks [canPerform] instead, deliberately — using this
+  /// there would refuse the dog its own sofa, since `room_sit` is declared as a
+  /// fallback rather than shipped as frames. That reasoning lives at
+  /// `FurnitureActionResolver._decisionFor`, which is the authority on it. An
+  /// earlier version of this comment claimed "the room requires the stricter
+  /// answer", which is not what the resolver does; a comment describing the wrong
+  /// behaviour is worse than none, because the next reader trusts it.
   bool canShow(String actionId) =>
       schedulable.contains(actionId) && !fallbackOnly.contains(actionId);
 

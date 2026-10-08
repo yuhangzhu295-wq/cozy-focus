@@ -2,7 +2,7 @@
  "program": "COZYFOCUS_2_0_P1_TO_P10",
  "project": "COZY_FOCUS",
  "branch": "recovery/v4.2.1-rebuild",
- "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then five rounds of device, screen-size and accessibility passes. Round 5 was the programmatic semantics sweep the state file asked for: 29 controls had no accessible name.",
+ "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then six rounds of device, screen-size and accessibility passes. Round 6 worked the open-findings list: one closed, one fixed, two withdrawn as stale.",
  "phase": "P10",
  "slice": "P1-P10 complete. Round 2 walkthrough complete: five defects found and fixed, each with a reverse-proved regression test and a device re-check; two candidate findings withdrawn after re-measuring.",
  "start_sha": "0a116e2",
@@ -25,7 +25,7 @@
   "golden_flows_A_to_F": "PASS"
  },
  "test_counts": {
-  "full_suite": "1913/1913",
+  "full_suite": "1916/1916",
   "schema_head": 11
  },
  "p32_device_flow": {
@@ -338,5 +338,25 @@
   "static_tool": "tools/find_unlabelled_icon_buttons.py scans the whole app for the screens the test cannot mount.",
   "device_evidence": "the Android accessibility tree (what TalkBack reads), not a screenshot: the weekly report now reports content-desc 返回 / 上一周 / 下一周.",
   "also_fixed": "the rabbit's runtime manifest said groundBaseline 459 while its own authoring contract and its audited frames both say 458, and nothing compared the two files. The Dart mirror carried 459 as well; regenerating from the JSON aligned it. New guard: test/architecture/runtime_manifest_matches_contract_test.dart."
+ },
+ "round6_open_findings": {
+  "range": "e1a070e -> (this commit)",
+  "closed": {
+   "symlink rejection not verified through the reader": "ZipEncoder always writes an MS-DOS creator and the decoder only reads the Unix file type when versionMadeBy >> 8 == 3, so the encoder cannot build one. The bytes are patched by hand: ArchiveFile.mode = 0xa1ff puts S_IFLNK in the external attributes, then the central directory's creator byte is set to 3. The test first asserts the input really decodes as a symlink (or a refusal would pass for the wrong reason), then that the reader refuses it with non_regular_entry, plus a control that the same bytes as an ordinary file are accepted. Reverse-proved. Verdict: the reader is correct; this was a verification gap."
+  },
+  "fixed": {
+   "the room's status sentence named an action the player cannot see": "_activityLabel printed 正在坐下 whenever the action existed. room_sit has no frames in any pack - every layer falls back to idle and the pet is drawn standing - so a routine that rested the companion on the sofa produced the sentence over a standing pet. P28.4 hid the chip for exactly this reason and the sentence kept saying it, because the chip asked canShow and the sentence only asked whether the action existed. The sentence asks canShow now. Two tests (not named, and the control where it is), reverse-proved."
+  },
+  "documentation_corrected": {
+   "CompanionActionAvailability.canShow": "its doc claimed 'the room requires the stricter answer', while FurnitureActionResolver._decisionFor deliberately uses canPerform and says so. The code is right and the comment was wrong; it now describes the actual behaviour and points at the resolver as the authority for that decision."
+  },
+  "withdrawn_as_stale": {
+   "the room travel ticker comment": "the finding said a comment claimed movement waits for stand_up. The comment in the code describes the opposite and explains why - the ticker starts immediately because position and animation share one clock. Already corrected.",
+   "P33 parity scoping and the stale companion assets doc": "both verified resolved in round 5."
+  },
+  "left_alone": {
+   "the empty _onCompanionAnimationChanged": "its doc says 'tracked for diagnostics' and the body does nothing. Removing it is cleanup rather than a fix, so it was left and recorded here."
+  },
+  "still_the_owners": "room_sit's art. The sentence no longer lies, but a companion on the sofa is still drawn standing, and inventing placeholder art is explicitly out of bounds (P28.4). That is the only part of the room_sit finding left."
  }
 }

@@ -259,10 +259,17 @@ class CompanionVitalsBar extends StatelessWidget {
   /// Mochi was wandering around their room.
   final String companionName;
 
+  /// What the selected companion can actually be seen doing.
+  ///
+  /// The activity sentence may only name an action this says yes to; see
+  /// `_activityLabel`.
+  final CompanionActionAvailability availability;
+
   const CompanionVitalsBar({
     super.key,
     required this.simulation,
     required this.companionName,
+    required this.availability,
   });
 
   @override
@@ -280,7 +287,7 @@ class CompanionVitalsBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(_activityLabel(simulation, companionName),
+          Text(_activityLabel(simulation, companionName, availability),
               style:
                   const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
@@ -298,14 +305,30 @@ class CompanionVitalsBar extends StatelessWidget {
   ///
   /// [companionName] is the selected companion's name, so the sentence follows
   /// the player's choice instead of always naming Mochi.
-  static String _activityLabel(
-      RoomSimulationState simulation, String companionName) {
+  ///
+  /// ## The sentence may only name an action the companion can be seen doing
+  ///
+  /// The same rule the panel applies to its chips, for the same reason: a
+  /// sentence that names an action promises the player will see it. `room_sit`
+  /// has no frames of its own in any pack — every layer draws idle — so a
+  /// routine that rests the companion on the sofa produced "咪咪 正在坐一会儿"
+  /// over a standing pet. The chip was hidden for exactly this (P28.4) and the
+  /// status line kept saying it, because the two asked different questions.
+  ///
+  /// `canShow`, not `canPerform`: the room's *decision* deliberately allows a
+  /// declared fallback so the dog can use its own sofa, and that stays. This is
+  /// about what the player is told, which is the stricter question — see
+  /// `CompanionActionAvailability.canShow`.
+  static String _activityLabel(RoomSimulationState simulation,
+      String companionName, CompanionActionAvailability availability) {
     final actionId = simulation.activity.actionId;
     if (actionId != null) {
       final entity = FurnitureCatalog.forId(
           _itemIdFromAnchor(simulation.activity.anchorId));
       final action = entity?.actionById(actionId);
-      if (action != null) return '$companionName 正在${action.label}';
+      if (action != null && availability.canShow(action.companionAction)) {
+        return '$companionName 正在${action.label}';
+      }
     }
     return switch (simulation.cause) {
       RoomDecisionCause.focus => '$companionName 在陪你专注',

@@ -472,3 +472,65 @@ TalkBack 读的字段）。周报页现在：返回按钮 `"返回"`、左箭头
 
 契约里的 `anchorTolerancePx: 2` **不适用于**这条比较，理由写在测试里：那个容差是给**测量帧**
 用的，两份**声明**之间没有测量，要么相等要么其中一个错了。
+
+## 十七、第六轮：清 open findings —— 关掉一条、修掉一条、撤掉两条
+
+起点 `e1a070e`，测试从 1913 涨到 1916。这一轮逐条处理清单里剩下的 open findings，其中两条
+核实后是**过期的**（不重做），一条是**真的没验证过**（补上），一条是**真的没修完**（修掉）。
+
+### 关掉：符号链接的拒绝只在校验策略层测过
+
+清单原文：「symlink rejection is NOT verified through the reader」。测试文件里也写着同样的
+话：「读取器是否真能识别符号链接，取决于解码器，这个测试够不到——是一条未验证项，不是通过。」
+
+现在关了。`ZipEncoder` 写死了 MS-DOS creator，而解码器只有在 `versionMadeBy >> 8 == 3` 时
+才会去读 Unix mode 的 file type 位，所以**编码器造不出这种条目**——于是手工补字节：用
+`ArchiveFile.mode = 0xa1ff`（S_IFLNK | 0777）让编码器把模式写进外部属性，再把中央目录记录
+的 creator 字节补成 3。
+
+测试先断言**这个输入确实是符号链接**（`ZipDecoder` 解回来 `isSymbolicLink == true`、
+`symbolicLink == '/etc/passwd'`），再断言读取器拒它（`non_regular_entry`）。第一步不能省：
+拒绝一个从来就不是符号链接的东西会「因为错误的原因通过」。另加一条对照——同样字节的普通
+文件必须被接受，否则「全都拒」也能让上面那条绿。
+
+反向证明：让读取器忽略 `isSymbolicLink`，这条立刻红。
+
+**结论：读取器是对的**，这条是验证缺口，不是缺陷。
+
+### 修掉：状态行替一个玩家看不见的动作命名
+
+`furniture_use_panel.dart` 的 `_activityLabel` 只要动作**存在**就打印「咪咪 正在坐下」。
+但 `room_sit` 在任何包里都没有帧——三层都回退到 idle，狗的分层骨架只把 `earRotation` 转了
+0.06——**画出来是一只站着的宠物**。
+
+P28.4 已经因为这个把面板的 chip 藏了（"an action the companion cannot actually show is not a
+choice, it is a button that lies"），P28 文档也写着「每一层都是 idle，所以标签承诺了一个玩家
+看不到的动作」。但**状态行还在说**，因为 chip 问的是「能不能演出来」，句子只问「有没有这个
+动作」。而 routine 会自己触发它——P30 的设备记录就是：放下地毯后自动出现「正在坐一会儿」。
+
+修法：状态行改用 `canShow`，和面板同一个判据。两条测试（不显示 + 能显示时的对照），反向
+证明过。
+
+### 顺带修正一段替代码说谎的文档
+
+`CompanionActionAvailability.canShow` 的注释写着「the room requires the stricter answer」，
+但 `FurnitureActionResolver._decisionFor` **故意**用的是 `canPerform`，并在自己的注释里写明
+原因（「Using canShow here would refuse the dog its own sofa…a decided behaviour with its own
+tests, not something to overturn from here」）。代码是对的、文档是错的，已改成实际行为，并
+指向 resolver 作为该决定的权威。
+
+### 撤掉：两条过期的 open findings（核实，不重做）
+
+- **房间移动注释**：「注释声称移动等 stand_up，而代码不是这样」。现在的注释写的就是实际行为
+  （ticker 立刻启动，因为位置与动画跑在同一个时钟上，stand_up 与头几米自然重叠），并解释了
+  为什么不串行。旧注释已经不在了。
+- **P33 的 parity 范围**与**资产文档过期**：第五轮已核实解决。
+
+剩下那个空回调（`_onCompanionAnimationChanged`）是唯一没动的小瑕疵：它的文档说「tracked for
+diagnostics」，而方法体什么都不做。删掉它属于清理而非修复，我没有动，记在这里。
+
+### 仍然需要你
+
+`room_sit` 的**美术**：状态行不再说谎了，但宠物坐在沙发上画的仍是站姿。补帧是内容工作，而
+"inventing placeholder art is explicitly out of bounds"（P28.4 的原话）。这是 `room_sit` 那条
+finding 唯一剩下的部分。

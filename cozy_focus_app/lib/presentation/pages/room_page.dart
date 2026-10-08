@@ -8,6 +8,7 @@ import '../companion/animation/animation_state.dart';
 import '../companion/animation/locomotion_controller.dart';
 import '../companion/companion_avatar.dart';
 import '../companion/companion_selection.dart';
+import '../companion/pack/companion_availability_provider.dart';
 import '../companion/mochi_layered_renderer.dart';
 import '../companion/room_presence.dart';
 import '../companion/room/anchor_point.dart';
@@ -323,6 +324,11 @@ class _RoomPageState extends ConsumerState<RoomPage>
                 CompanionVitalsBar(
                   simulation: simulation,
                   companionName: companionName,
+                  // The sentence the bar prints may only name an action the
+                  // companion can be seen doing, so it needs the same answer the
+                  // furniture panel uses to decide what to offer.
+                  availability: ref.watch(companionAvailabilityProvider)(
+                      ref.watch(companionSelectionProvider).value),
                 ),
                 Expanded(
                   child: LayoutBuilder(

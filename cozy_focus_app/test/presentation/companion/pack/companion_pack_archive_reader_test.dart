@@ -136,18 +136,71 @@ void main() {
   });
 
   group('two rules this encoder cannot produce an input for', () {
-    test('a symlink: the model holds one, the round trip drops it', () {
-      // Recorded rather than asserted green. `ZipEncoder` does not carry
-      // `symbolicLink` through encode/decode, so `isSymbolicLink` comes back
-      // false and a symlink cannot be built here. The policy's
-      // `non_regular_entry` refusal is covered directly in the policy test with
-      // `isRegularFile: false`. Whether the *reader* detects a real symlink
-      // depends on the decoder, which this test cannot reach - so it is an open
-      // verification item, not a pass.
-      final link = entry('idle_000.png')..symbolicLink = '/etc/passwd';
+    /// A real ZIP whose `idle_000.png` entry is a Unix symlink.
+    ///
+    /// `ZipEncoder` always writes an MS-DOS creator and never carries
+    /// `symbolicLink` through encode/decode, so the entry is built by hand:
+    /// `ArchiveFile.mode` goes out as the external attributes (`mode << 16`),
+    /// and the creator byte is patched to 3 - which is the condition the decoder
+    /// checks before it will read a mode as a file type at all. Without the
+    /// patch the archive is an ordinary ZIP with odd attributes.
+    Uint8List zipWithUnixSymlink() {
+      const target = '/etc/passwd';
+      final link = ArchiveFile(
+        'idle_000.png',
+        target.length,
+        Uint8List.fromList(utf8.encode(target)),
+      )..mode = 0xa1ff; // S_IFLNK | 0777
+
+      final out = Uint8List.fromList(zip([manifestEntry(), link]));
+      for (var i = 0; i + 5 < out.length; i++) {
+        final isCentralHeader = out[i] == 0x50 &&
+            out[i + 1] == 0x4b &&
+            out[i + 2] == 0x01 &&
+            out[i + 3] == 0x02;
+        if (isCentralHeader) out[i + 5] = 3; // high byte of versionMadeBy: Unix
+      }
+      return out;
+    }
+
+    test('a symlink: the reader refuses one, built for real', () {
+      // The open verification item this group used to record, closed. The
+      // question was never whether the policy can refuse `isRegularFile: false`
+      // - it can, and the policy test covers it - but whether the *reader* ever
+      // produces that flag from a real archive.
+      final bytes = zipWithUnixSymlink();
+
+      // First that the input is what this test claims. A refusal of something
+      // that was never a symlink would pass for the wrong reason, and that is
+      // the failure mode a hand-built archive invites.
+      final decoded = ZipDecoder().decodeBytes(bytes);
+      final link = decoded.files.firstWhere((f) => f.name == 'idle_000.png');
       expect(link.isSymbolicLink, isTrue,
-          reason: 'the model can hold one, which is what the policy is written '
-              'against');
+          reason: 'the patched archive must decode as a symlink, or the '
+              'refusal below proves nothing');
+      expect(link.symbolicLink, '/etc/passwd');
+
+      final result = CompanionPackArchiveReader.read(bytes);
+      expect(result.ok, isFalse);
+      expect(result.files, isEmpty,
+          reason: 'a refusal must never hand a caller files to write');
+      expect(result.validation.codes, contains('non_regular_entry'));
+    });
+
+    test('the same archive without the patch is accepted', () {
+      // The control. If the reader refused every archive, the test above would
+      // pass and mean nothing; the only difference here is the creator byte and
+      // the mode.
+      const target = '/etc/passwd';
+      final plain = ArchiveFile(
+        'idle_000.png',
+        target.length,
+        Uint8List.fromList(utf8.encode(target)),
+      );
+      final result = read([manifestEntry(), plain]);
+
+      expect(result.ok, isTrue,
+          reason: 'an ordinary file of the same bytes is a fine pack entry');
     });
 
     test('a duplicate path: the archive model de-duplicates on add', () {
