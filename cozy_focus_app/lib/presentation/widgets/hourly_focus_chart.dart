@@ -85,12 +85,16 @@ class HourlyFocus {
       } else if (from.hour < startHour) {
         startHour = from.hour;
       }
-      final lastHour = to.minute > 0 || to.second > 0 ? to.hour + 1 : to.hour;
-      if (to.isAfter(dayStart.add(const Duration(days: 1)))) {
-        endHour = 24;
-      } else if (lastHour > endHour) {
-        endHour = lastHour;
-      }
+      // Measured from the day's start rather than read off the clock, so a
+      // session that runs past midnight extends the window instead of being
+      // cut at 24:00. That matters because the day's total counts the whole
+      // session — attribution is by its start, everywhere in the app — so
+      // clipping the tail would leave the card printing a total the bars did
+      // not account for, which is the same contradiction widening the window
+      // already exists to avoid.
+      final hoursIntoDay = to.difference(dayStart).inHours +
+          (to.minute > 0 || to.second > 0 ? 1 : 0);
+      if (hoursIntoDay > endHour) endHour = hoursIntoDay;
     }
     startHour -= startHour % bucketHours;
     endHour += endHour % bucketHours;
@@ -140,7 +144,7 @@ class HourlyFocusChart extends StatelessWidget {
       label: busiest == 0
           ? '今天的专注分布：还没有记录'
           : '今天的专注分布：'
-              '${focus.startHour} 点到 ${focus.endHour} 点，'
+              '${focus.startHour % 24} 点到 ${focus.endHour % 24} 点，'
               '最集中的两小时有 ${(busiest / 60).floor()} 分钟',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -188,7 +192,12 @@ class HourlyFocusChart extends StatelessWidget {
                           math.max(0.0, constraints.maxWidth - 14),
                         ),
                         child: Text(
-                          '$hour',
+                          // Past midnight the window keeps counting — 24, 25 —
+                          // but the axis is a clock, so it reads 0, 1. A window
+                          // that stopped at 24 would need a different label for
+                          // the same instant depending on which side of it the
+                          // bucket fell.
+                          '${hour % 24}',
                           style: const TextStyle(
                             fontSize: 10,
                             color: AppColors.textTertiary,

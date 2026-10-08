@@ -67,6 +67,37 @@ void main() {
       expect(focus.endHour, 24);
       expect(focus.totalSeconds, 2100);
     });
+
+    test('a session that runs past midnight is counted whole', () {
+      // 23:30 to 00:30. The app attributes a session to the day it *started*
+      // on — the day total, the records list and the reports all do — so this
+      // hour belongs to 2026-10-09 and the bars have to account for all of it.
+      // Capping the window at 24:00 dropped the last thirty minutes and left
+      // the card printing a total the bars did not add up to.
+      final focus = HourlyFocus.of(
+        [record(DateTime(2026, 10, 9, 23, 30), DateTime(2026, 10, 10, 0, 30))],
+        day,
+      );
+
+      expect(focus.endHour, 26,
+          reason: 'the window follows it into the next day');
+      expect(focus.totalSeconds, 3600);
+      expect(focus.seconds[focus.bucketForHour(23)!], 1800);
+      expect(focus.seconds[focus.bucketForHour(24)!], 1800);
+    });
+
+    test('and the window keeps counting past 24 rather than wrapping', () {
+      final focus = HourlyFocus.of(
+        [record(DateTime(2026, 10, 9, 23, 30), DateTime(2026, 10, 10, 0, 30))],
+        day,
+      );
+
+      // 24 on the window's own scale is midnight; the axis renders it as `0`,
+      // but the bucket index has to stay monotonic or the two halves of one
+      // session land in the same place.
+      expect(focus.labelHours, contains(24));
+      expect(focus.bucketForHour(24), isNot(focus.bucketForHour(23)));
+    });
   });
 
   group('where the time goes', () {
