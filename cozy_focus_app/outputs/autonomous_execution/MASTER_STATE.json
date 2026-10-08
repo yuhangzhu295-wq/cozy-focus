@@ -70,7 +70,7 @@
     "S3.02 the ring is sized from screen height so the controls stay on the smallest target (commit bec8026, 4 tests, reverse-proved)",
     "S2.01 GLOBAL PALETTE: the primary green was a colour the designs do not contain. Measured across all 16 boards with tools/qa/palette_report.py — design primary #44714B covers 125,256 px on every board, the old #5E8D6D only 1,468 (anti-aliasing fringe). Changed one token; also fixes white-on-green contrast 3.81 -> 5.66 (was below WCAG AA). 6 tests, reverse-proved, device-verified at pixel level",
     "S2.02 SPLIT CLOCK: RecordsController, ReportsController and progress_overview_page read DateTime.now() while the rest of the app reads FocusClock. This is why six tests were already red at HEAD and why one more passed vacuously. 3 guard tests on an ancient date, reverse-proved",
-    "S2.03 flaky test de-flaked: room_placement_toolbar P7 waited a fixed 400ms for a ref.listen callback; now bounded polling, assertion unchanged",
+    "S2.03 flaky test: RESOLVED, and it was a product defect. ReportsController's constructor fired an unawaited loadAllReports() while all three report pages already called it from initState — every visit loaded twice and the constructor's round could land after a teardown closed the database. Also de-flaked the room-placement test's fixed-frame wait, which was a real but different fragility",
     "S5.03a ACCESSIBILITY, 21 sites: screen readers said the same words twice. Found one on the device (the capture sheet chip read '标签 生活\\n生活'), scanned for the shape, then found two more classes only the platform's own tree could see — the bottom nav (icon semanticLabel duplicating the item label) and the timer (label interpolating the same value as the child Text). Fixed with excludeSemantics: true, or by removing the redundant semanticLabel. Guarded by a class-level scan in Dart plus a widget test, both reverse-proved, and device-verified on home, growth, room and the focus page",
     "S1.07 design 07 statistics audited (structural: every element the design draws exists)",
     "S1.09 design 09 timeline audited (structural; one open question about the design's fifth kind, registered as S1.09a)",
@@ -91,8 +91,7 @@
     "S5.* multi-size, accessibility, performance. The a11y sweep is done for home, growth, room and the focus page; the records tabs, settings and the create-task flow are not swept",
     "S5.06 the home page has NO widget test at all — found while adding the card. It is the app's main screen",
     "S6.* golden flows A..H on the device",
-    "S7.* remaining deliverables (02, 03, 05, 06) and the final gate",
-    "FLAKE: three single full-suite failures across ~15 runs whose test is still unidentified. Hunt on a frozen tree, not a moving one"
+    "S7.* remaining deliverables (02, 03, 05, 06) and the final gate"
   ],
 
   "failed": [],
@@ -106,10 +105,10 @@
   ],
 
   "recent_test_evidence": {
-    "at": "2026-10-09T04:10:00+08:00",
+    "at": "2026-10-09T05:05:00+08:00",
     "command": "flutter test",
-    "result": "1957/1957 passed",
-    "note": "The suite is NOT recorded as deterministically green. After the room-placement flake was fixed, three further single failures appeared across roughly fifteen full runs and the identity of that test is still unknown — the hunt was stopped to spend the time on the fixes and will be re-run on a frozen tree. A suite that is green four times in five is not green.",
+    "result": "1957/1957 passed on 4 consecutive full runs",
+    "note": "The flake is resolved and it was a product defect, not the harness: ReportsController's constructor called loadAllReports() without awaiting it while all three report pages already called the same method from initState, so every visit loaded twice and the constructor's round could land after a test's teardown closed the database. It failed with no exception text at all, just '+2 -1'. Removing the constructor's call took the suspect file from 8/10 clean to 12/12. An earlier fix to the room-placement test's fixed-frame wait addressed a real but different fragility.",
     "before_this_window": "6 tests were red at HEAD (e8647f33) and had been for a day, because the records screen read the wall clock while the tests seeded against an injected one. The 1931/1931 recorded in the previous version of this file was stale.",
     "analyze": "flutter analyze --fatal-infos: No issues found",
     "format": "dart format --set-exit-if-changed .: 0 changed",

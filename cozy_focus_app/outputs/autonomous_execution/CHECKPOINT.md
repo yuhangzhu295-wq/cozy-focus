@@ -4,7 +4,7 @@
 below; re-verify the git state before acting on it.
 
 ```
-at           2026-10-09T04:15:00+08:00
+at           2026-10-09T05:10:00+08:00
 branch       recovery/v4.2.1-rebuild
 HEAD         (advanced by this window — run `git log --oneline -12` and read it)
 remote HEAD  origin/recovery/v4.2.1-rebuild
@@ -15,7 +15,7 @@ The previous checkpoint recorded `e8647f33a58cf4206499157cfd44298f7fadce0b`. Thi
 window added commits on top of it. **Do not reset to any recorded SHA** — read the
 log and continue from wherever HEAD actually is.
 
-## What this window did (ten commits)
+## What this window did (thirteen commits)
 
 1. Finished `outputs/autonomous_execution/` (all seven files) and registered a
    recurring continuation schedule. `MASTER_STATE.json` → `continuation` states
@@ -48,9 +48,9 @@ Then S3.03a, the duration selector: the board draws the selected duration as a
 solid dark-green card with a leaf above the number, where the app draws a light
 outlined pill.
 
-## Two open items that must not be quietly closed
+## One open item that must not be quietly closed
 
-- **The flake.** Three single full-suite failures across roughly fifteen runs, and
+- **The flake is resolved** (`f23a7ac`): `ReportsController`'s constructor fired an unawaited `loadAllReports()` while all three report pages already called it from `initState`. Removing it took the suspect file from 8/10 clean to 12/12. What remains is only that the hunt cost time because the first hypothesis was wrong — the lesson is in `TEST_EVIDENCE.md`.
   the test is still unidentified — the hunt was stopped to spend the time on fixes.
   Hunt it on a frozen tree. Until then the suite is **not** recorded as
   deterministically green, and both `TEST_EVIDENCE.md` and `MASTER_STATE.json` say so.
