@@ -17,7 +17,28 @@ class AppColors {
   static const Color focusNightSurface = Color(0xFF272F38);
 
   // Brand Accents
-  static const Color primarySage = Color(0xFF5E8D6D);
+  //
+  // [primarySage] is the app's primary: filled buttons, the running ring's arc,
+  // selection, and the 192 accent sites that use it directly. Its value is
+  // measured from the design boards rather than chosen. Across the sixteen
+  // boards the green that fills the primary buttons is `#44714B` — 125,256
+  // pixels of it, present on every board — while the previous `#5E8D6D` matched
+  // only 1,468 pixels, the anti-aliased fringe of the deeper green against the
+  // cream background rather than any fill. The other two tokens were checked the
+  // same way and are correct as they stand: [primaryLight] `#EAF2EB` matches
+  // 162,685 pixels and [primaryDark] `#4A7256` matches 35,771.
+  //
+  // `tools/qa/palette_report.py` and `tools/qa/sample_colors.py` are the tools
+  // that measured this, and `test/theme/primary_green_matches_design_test.dart`
+  // pins the value so it cannot drift back.
+  static const Color primarySage = Color(0xFF44714B);
+
+  /// The designs' second green, used for emphasis text and icons.
+  ///
+  /// Despite the name this is not a shade of [primarySage]: the two sit within
+  /// 3% of each other in luminance, and this one is the bluer of the pair. It
+  /// keeps its name because it is what 70 call sites already read as "the
+  /// darker green", and renaming it would be churn without a visual change.
   static const Color primaryDark = Color(0xFF4A7256);
   static const Color primaryLight = Color(0xFFEAF2EB);
   static const Color accentPeach = Color(0xFFE28768);
