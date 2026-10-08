@@ -166,6 +166,19 @@ void main() {
       expect(other.hasFlag(SemanticsFlag.isSelected), isFalse, reason: id);
       expect(other.hasFlag(SemanticsFlag.isButton), isTrue, reason: id);
     }
+
+    // And each says its name once. The wrapper supplies the whole name and
+    // excludes the chip's own text; without that the device tree read
+    // `今天\n今天` for all three, which is a screen reader saying every filter
+    // twice. The flags above were green throughout — they never looked at the
+    // name.
+    expect(today.label, '今天');
+    for (final entry in const {'active': '进行中', 'done': '已完成'}.entries) {
+      final node = tester.getSemantics(
+        find.byKey(ValueKey('task_filter_${entry.key}')),
+      );
+      expect(node.label, entry.value, reason: entry.key);
+    }
   });
 
   testWidgets('the duration reads the way the design writes it',

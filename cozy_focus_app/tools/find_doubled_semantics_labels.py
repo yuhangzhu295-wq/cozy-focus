@@ -125,7 +125,14 @@ def _arg_value(body: str, name: str) -> str | None:
 
 
 def _normalise(expression: str) -> str:
-    return re.sub(r"\s+", "", expression)
+    """Strip what does not change which value an expression names.
+
+    Whitespace, and a trailing `!`. The task list's filter chips are written
+    `label: _labels[filter]` over `Text(_labels[filter]!)`, and the null-assertion
+    was enough to hide three doubled labels from this scan while the device tree
+    showed all three — `今天`, `进行中` and `已完成`, each announced twice.
+    """
+    return re.sub(r"\s+", "", expression).rstrip("!")
 
 
 def _has_plain(haystack: str, needle: str) -> bool:

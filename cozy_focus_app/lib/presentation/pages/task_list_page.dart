@@ -133,6 +133,14 @@ class _FilterTabs extends StatelessWidget {
                 // Keyed so a test can address one tab without matching its
                 // prose, which also appears in the empty state.
                 key: ValueKey('task_filter_${filter.id}'),
+                // The wrapper supplies the whole name, so it excludes the chip's
+                // own text. Without this the device tree read `今天\n今天` for
+                // each of the three — a screen reader saying every filter twice.
+                // It survived the earlier accessibility sweep because the label
+                // is written `_labels[filter]` and the text `_labels[filter]!`,
+                // and the null-assertion was enough to hide the match from the
+                // scan while the device showed it plainly.
+                excludeSemantics: true,
                 button: true,
                 selected: filter == active,
                 label: _labels[filter],
