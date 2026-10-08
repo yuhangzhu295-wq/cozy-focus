@@ -34,7 +34,7 @@
 
   "current": {
     "stage": "STAGE_3_VISUAL_RESTORATION",
-    "subtask": "design 05 is closed (all five differences fixed and device-verified). Next: design 01's two missing elements on the home page — the current-task card and the hourly focus chart",
+    "subtask": "design 05 closed, design 01's current-task card built and device-verified. Next: design 01's hourly focus chart (data is available on DayProgressSummary.records), then the duration-selector styling the board shows as a solid dark-green card",
     "mode": "IN_PROGRESS"
   },
 
@@ -75,26 +75,24 @@
     "S1.07 design 07 statistics audited (structural: every element the design draws exists)",
     "S1.09 design 09 timeline audited (structural; one open question about the design's fifth kind, registered as S1.09a)",
     "S3.05a-e design 05 CLOSED: the four tags each draw their own icon (TaskCategory.iconName was dead data), selection is the brand green rather than the category colour, the count sits inside the field, and the field is four lines tall. 6 tests, all reverse-proved, device-verified",
+    "S3.03 home: the current-task card the design puts under the greeting is missing — DONE, CurrentTaskCard, device-verified, 9 tests",
     "S7.01 five deliverables written with real content (01, 04, 07, 08, 09)"
   ],
 
   "pending": [
-    "S1.07..S1.16 audit designs 07..16",
-    "S3.05a capture sheet: the four category chips all draw the same tag icon; TaskCategory.iconName is declared but never rendered anywhere",
-    "S3.05b capture sheet: the selected chip uses the category colour where design 05 draws the brand green",
-    "S3.05c capture sheet: the n/100 counter sits below the input box, the design puts it inside the bottom-right",
-    "S3.05d capture sheet: the input is about two lines tall, the design draws about four",
-    "S3.05e capture sheet a11y: the chip announced its label twice — DONE, see S5.03a",
-    "S3.03 home: the current-task card the design puts under the greeting is missing",
-    "S3.04 home: the hourly focus chart in 今天的专注 is missing",
+    "S1.08, S1.10..S1.16 audit designs 08 and 10..16",
+    "S3.04 home: the hourly focus chart in 今天的专注 is missing. The data is already on hand — DayProgressSummary carries the day's records — so this is a widget plus a bucketing rule, not a new query",
+    "S3.03a home: the duration selector. The board draws the selected duration as a solid dark-green card with a leaf above the number, where the app draws a light outlined pill",
     "S3.05 today plan: rows are cards, the design draws a flat rail list",
     "S3.06 focus: the control row is full-width buttons, the design draws four round controls",
     "S3.07..S3.20 the remaining per-page visual diffs once audited",
     "S2.* finish re-verifying the four known timing defects and unify the rules; the clock unification is done, the arithmetic ones are not",
     "S4.* companion animation and room (room_sit pose, anchors, z-order, switching)",
-    "S5.* multi-size, accessibility, performance",
+    "S5.* multi-size, accessibility, performance. The a11y sweep is done for home, growth, room and the focus page; the records tabs, settings and the create-task flow are not swept",
+    "S5.06 the home page has NO widget test at all — found while adding the card. It is the app's main screen",
     "S6.* golden flows A..H on the device",
-    "S7.* remaining deliverables (02, 03, 05, 06) and the final gate"
+    "S7.* remaining deliverables (02, 03, 05, 06) and the final gate",
+    "FLAKE: three single full-suite failures across ~15 runs whose test is still unidentified. Hunt on a frozen tree, not a moving one"
   ],
 
   "failed": [],
@@ -108,9 +106,9 @@
   ],
 
   "recent_test_evidence": {
-    "at": "2026-10-09T03:20:00+08:00",
+    "at": "2026-10-09T04:10:00+08:00",
     "command": "flutter test",
-    "result": "1948/1948 passed",
+    "result": "1957/1957 passed",
     "note": "The suite is NOT recorded as deterministically green. After the room-placement flake was fixed, three further single failures appeared across roughly fifteen full runs and the identity of that test is still unknown — the hunt was stopped to spend the time on the fixes and will be re-run on a frozen tree. A suite that is green four times in five is not green.",
     "before_this_window": "6 tests were red at HEAD (e8647f33) and had been for a day, because the records screen read the wall clock while the tests seeded against an injected one. The 1931/1931 recorded in the previous version of this file was stale.",
     "analyze": "flutter analyze --fatal-infos: No issues found",
