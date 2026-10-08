@@ -342,7 +342,7 @@ void main() {
     /// Starts a countdown, leaves the clock alone for [away], completes.
     Future<FocusSession> countdownLeftAlone(Duration away,
         {int plannedSeconds = 1500}) async {
-      final session = await engine.start(
+      await engine.start(
         userId: 'u1',
         plannedSeconds: plannedSeconds,
         mode: FocusMode.focus,
