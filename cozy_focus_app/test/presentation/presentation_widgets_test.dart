@@ -368,6 +368,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('提前结束'), findsOneWidget);
+      // The page is a scroll view, and this test's surface is 800x600 — shorter
+      // than any phone — so the control starts below the fold. Scrolling to it is
+      // how a user on a short screen reaches it; the tap itself is unchanged.
+      await tester.ensureVisible(find.text('提前结束'));
+      await tester.pump();
       await tester.tap(find.text('提前结束'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

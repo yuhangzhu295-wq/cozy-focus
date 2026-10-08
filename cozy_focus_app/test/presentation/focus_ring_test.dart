@@ -123,7 +123,9 @@ void main() {
 
   testWidgets('a paused session says so, on the ring', (tester) async {
     await startAndPump(tester, plannedSeconds: 25 * 60);
-    await container.read(focusSessionControllerProvider.notifier).pauseSession();
+    await container
+        .read(focusSessionControllerProvider.notifier)
+        .pauseSession();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 

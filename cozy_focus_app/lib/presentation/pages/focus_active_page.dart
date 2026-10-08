@@ -1114,23 +1114,35 @@ class FocusTimerRing extends StatelessWidget {
   final String statusLabel;
   final bool paused;
 
-  /// Reference 04 draws the ring about 230pt across on a 393pt-wide screen.
-  static const double _diameter = 224;
+  /// Reference 04 draws the ring about 220pt across on a 393pt-wide screen.
+  static const double _maxDiameter = 224;
   static const double _stroke = 6;
+
+  /// The ring's size for a screen [height] tall.
+  ///
+  /// Capped rather than fixed, because a fixed one pushed the controls off the
+  /// bottom: measured at 360x800, 暂停 and 提前结束 sat at y 790-808 in an 800pt
+  /// viewport — the page scrolls so they were reachable, but the design shows them
+  /// without scrolling and a control you have to hunt for is not the design.
+  /// 0.24 keeps the ring at its drawn size on the phone the design was made for
+  /// (220 at 915) and shrinks it only where the room is missing.
+  static double diameterFor(double height) =>
+      math.min(_maxDiameter, height * 0.24);
 
   @override
   Widget build(BuildContext context) {
+    final diameter = diameterFor(MediaQuery.sizeOf(context).height);
     return Semantics(
       readOnly: true,
       label: '专注计时 $time，当前$statusLabel',
       child: SizedBox(
-        width: _diameter,
-        height: _diameter,
+        width: diameter,
+        height: diameter,
         child: Stack(
           alignment: Alignment.center,
           children: [
             CustomPaint(
-              size: const Size.square(_diameter),
+              size: Size.square(diameter),
               painter: _FocusRingPainter(
                 remaining: remaining,
                 track: AppColors.primaryLight,
@@ -1153,8 +1165,10 @@ class FocusTimerRing extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     time,
-                    style: const TextStyle(
-                      fontSize: 46,
+                    style: TextStyle(
+                      // Scales with the ring, so the number keeps the design's
+                      // proportion to it at every size.
+                      fontSize: 46 * (diameter / _maxDiameter),
                       fontWeight: FontWeight.w700,
                       color: AppColors.primaryDark,
                       letterSpacing: 2,
