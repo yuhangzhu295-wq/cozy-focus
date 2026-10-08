@@ -4,14 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../companion/companion_selection.dart';
 import '../../domain/models/enums.dart';
+import '../../domain/models/task_schedule.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/craft_controller.dart';
+import '../controllers/today_plan_controller.dart';
 import '../../core/auth/current_user.dart';
 import '../theme/app_theme.dart';
 import '../companion/companion_avatar.dart';
 import '../companion/companion_business_state.dart';
 import '../widgets/app_bottom_nav.dart';
+import '../widgets/current_task_card.dart';
 
 /// Line height that hugs the approved font's own metrics.
 ///
@@ -120,6 +123,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _buildHeroArea(context)),
+            SliverToBoxAdapter(child: _buildCurrentTaskCard(context)),
             SliverToBoxAdapter(child: _buildFocusPanel(hasActive)),
             SliverToBoxAdapter(
               child: _buildStatsPanel(todayMinutes, streakDays),
@@ -266,6 +270,62 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// The card design 01 puts between the companion and the duration selector.
+  ///
+  /// Null when there is nothing honest to show: no session in flight and nothing
+  /// left planned for today. An empty shell would be worse than no card.
+  ///
+  /// The two sources are used for what each actually knows. A session that has
+  /// not ended is running or paused, and it carries the task it was started
+  /// from — that is what the design's 专注中 badge reports, and it is only shown
+  /// while that is true. Otherwise the card falls back to the day's next planned
+  /// task, which is the same [PlannedTask] the 今日计划 screen's 下一个任务 card
+  /// reads, so the two screens cannot disagree about what is next.
+  ///
+  /// `2/3` comes from the task's position among today's placements, and is
+  /// omitted when the task is not one of them rather than guessed at.
+  Widget? _buildCurrentTaskCard(BuildContext context) {
+    final plan = ref.watch(todayPlanControllerProvider);
+    final session = ref.watch(focusSessionControllerProvider).session;
+
+    // `endAt` is null while a session is running or paused; it is set once the
+    // session is over. That is the model's own definition, not a second one.
+    final running = session != null && session.endAt == null;
+
+    PlannedTask? placement;
+    for (final candidate in plan.placements) {
+      if (candidate.schedule.taskId == session?.taskId) {
+        placement = candidate;
+        break;
+      }
+    }
+
+    final showingSession = running && session.taskName != null;
+    final title =
+        showingSession ? session.taskName : (placement ?? plan.next)?.title;
+    if (title == null) return null;
+
+    // Only claim the position when the card is describing that placement.
+    final placed = placement ?? (showingSession ? null : plan.next);
+    final index = placed == null ? 0 : plan.placements.indexOf(placed) + 1;
+
+    final seconds = placed?.schedule.plannedSeconds ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: CurrentTaskCard(
+        title: title,
+        inFocus: showingSession,
+        position: index > 0 ? index : null,
+        total: index > 0 ? plan.placements.length : null,
+        estimate: seconds > 0 ? Duration(seconds: seconds) : null,
+        // The task's own screen. The card names a task; tapping it should open
+        // that task, and 今日计划 is where it can be started, moved or finished.
+        onTap: () => context.go('/records/today'),
       ),
     );
   }
