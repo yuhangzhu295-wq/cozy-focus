@@ -1,271 +1,300 @@
 {
-  "program": "COZYFOCUS_2_0_P1_TO_P10",
-  "project": "COZY_FOCUS",
-  "branch": "recovery/v4.2.1-rebuild",
-  "updated_at_slice": "CozyFocus 2.0 P1-P10 all delivered, then walked on the emulator: three user-visible defects found that the whole suite had passed, all three fixed with reverse-proved regression tests.",
-  "phase": "P10",
-  "slice": "P1-P10 complete. Device walkthrough done: four user-visible defects found that the whole suite had passed, all four fixed and verified on the emulator with reverse-proved regression tests.",
-  "start_sha": "0a116e2",
-  "latest_sha": "1c09a8050bfc77572dce556d59441b9e9daae82b",
-  "remote_sha": "eb01eddeec5beb92bdc063c251bf27844dfb87dd",
-  "local_equals_remote": true,
-  "worktree": "clean",
-  "completed_phases": {
-    "P1_task_domain": "PASS",
-    "P2_today_plan": "PASS",
-    "P3_focus_timing_modes": "PASS",
-    "P4_distraction_inbox": "PASS",
-    "P5_focus_review": "PASS",
-    "P6_timeline_projection": "PASS",
-    "P7_analytics_lite": "PASS",
-    "P8_free_time": "PASS",
-    "P9_companion_wiring": "PASS",
-    "P10_settings_empty_states": "PASS",
-    "device_walkthrough": "PASS after fixes (3 defects found and fixed)",
-    "golden_flows_A_to_F": "PASS"
+ "program": "COZYFOCUS_2_0_P1_TO_P10",
+ "project": "COZY_FOCUS",
+ "branch": "recovery/v4.2.1-rebuild",
+ "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then two rounds of device walkthrough. Round 2 (tasks A-F) fixed five more user-visible defects and withdrew two false findings that were measurement errors on my side.",
+ "phase": "P10",
+ "slice": "P1-P10 complete. Round 2 walkthrough complete: five defects found and fixed, each with a reverse-proved regression test and a device re-check; two candidate findings withdrawn after re-measuring.",
+ "start_sha": "0a116e2",
+ "latest_sha": "17b3bab8f56c2c2c122622e61f021cc93ea50961",
+ "remote_sha": "57ae770b7efe12edcc347f1b223633538b63a3d3",
+ "local_equals_remote": false,
+ "worktree": "clean at the time of writing; the docs commit follows this file",
+ "completed_phases": {
+  "P1_task_domain": "PASS",
+  "P2_today_plan": "PASS",
+  "P3_focus_timing_modes": "PASS",
+  "P4_distraction_inbox": "PASS",
+  "P5_focus_review": "PASS",
+  "P6_timeline_projection": "PASS",
+  "P7_analytics_lite": "PASS",
+  "P8_free_time": "PASS",
+  "P9_companion_wiring": "PASS",
+  "P10_settings_empty_states": "PASS",
+  "device_walkthrough": "PASS after fixes (3 defects found and fixed)",
+  "golden_flows_A_to_F": "PASS"
+ },
+ "test_counts": {
+  "full_suite": "1876/1876",
+  "schema_head": 11
+ },
+ "p32_device_flow": {
+  "device": "Pixel 7 API 34 emulator",
+  "pack": "tools/make_demo_pack.py -> xiaomao (the cat's frames, name 小豆, species cat)",
+  "walked": "picker -> import -> file picker -> preview -> install -> select (no restart) -> restart -> export -> delete -> fallback -> re-import",
+  "verified_against": "companion_packs/, installed_packs.json, companion_selection.json, logcat",
+  "result": "all steps PASS; no Flutter exceptions"
+ },
+ "defects_found_on_device": [
+  "D1 (d4b5f73): _registry and _director were `late final` and the refresh path reassigns both, so the first install with an avatar on screen threw LateInitializationError and drew a red error box over every companion. No test reached it: the refresh needs a rebuild, and no test installed under a mounted avatar. Two regression tests added; restoring `late final` fails both.",
+  "D2 (c0c92dc): the installed-pack registry was in memory only, so a cold start offered only the built-ins and silently discarded the persisted selection. Fixed with an install record at the pack root plus a directory scan; a pack neither source can classify is skipped and reported, never guessed.",
+  "D3 (a23d7ba): recovery read a hand-copied pack from its own manifest and kept nothing, so every launch re-hashed every frame and re-derived the name. Recovery now writes the records."
+ ],
+ "p32_gaps_closed": [
+  "frame content: the validator judges names and never bytes, so nothing checked that a file called idle_000.png is a PNG. The importer now checks the PNG signature of every referenced frame before anything is written."
+ ],
+ "p32_claims_corrected": [
+  "The reader's `unreadable_archive` branch is effectively unreachable. ZipDecoder in archive 4.3.0 does not throw for unparseable input - measured: garbage, half-truncated, and 8-byte-header inputs all return a zero-file archive, and corrupt bytes in the middle still yield files. Malformed input arrives as `empty_archive` or as a manifest validation failure. Safety is unchanged (refused, zero files) but the old comment described an unreachable path."
+ ],
+ "open_findings": [
+  "CORRECTED at b13e7b1: productionise.measure and asset_pipeline.measure read split()[-1] as alpha, which is the palette index on an indexed PNG - but BOTH call sites already convert to RGBA first, so nothing was broken. The earlier note called it a bug; checking it properly says it was a latent trap. Both functions now convert for themselves and refuse an empty frame, proven by tools/test_measure_alpha.py against 147 real indexed frames (115 of which distinguish the two channels, so the proof is not vacuous).",
+  "P32: symlink rejection is NOT verified through the reader, and duplicate-name ZIP entries cannot be built with ZipEncoder. Both rules are covered directly at the policy level only.",
+  "P32: the expansion-ratio bomb check is inert on this path; per-entry and total byte caps still apply.",
+  "P32: recovery reads every frame of a pack that has no record, to compute its digest. Fine for one pack; revisit if many are dropped in by hand.",
+  "docs/companion_assets.md is stale: claims 1024x1024 canvas with 919/511 anchors and that every pack must be added to pubspec.yaml; the real JSON is 512x512 with ~458/255.",
+  "P33: multi_companion_parity_test forces every profile to the dog's 13 actions. Right for built-ins, wrong as an admission requirement for a user partial pack; the two contracts must be scoped apart.",
+  "P28.4: room_sit still projects to idle with no frames of its own; sofa/sit and rug/sit are hidden from the panel, but the routine and idle still select room_sit.",
+  "Room: the travel ticker starts immediately after startTravel and _onCompanionAnimationChanged is empty, so the comment claiming movement waits for stand_up describes behaviour the code does not implement.",
+  "P34 remains: the pack builder itself (video/frame directory -> .cozy_pet) is not built. Its prerequisites are now in place: measurement is trustworthy, and all three shipped packs have a contract the builder can hold new packs to.",
+  "One full-suite run reported a single failure that left no failure text in the captured output, and two subsequent runs passed 1525/1525 with no failure. Not reproduced, not diagnosed, and recorded rather than dismissed: an intermittent failure is a real thing even when a rerun is green, and the next person should treat a repeat as information rather than as noise."
+ ],
+ "known_blockers": {
+  "RELEASE_SIGNING": "NOT_RECOVERED - android/key.properties absent, no keystore invented",
+  "LAUNCHER_ICON": "BLOCKED - stock Flutter icon, no approved artwork",
+  "OWNER_VISUAL_GATE": "REQUIRED",
+  "VERTEX_AI": "BLOCKED_EXTERNAL - no credentials, no project, no gcloud. The abstraction is complete; adding a provider is a class plus a ProviderScope override."
+ },
+ "owner_decisions_required": [
+  "P32 §31A: a displayed 30-minute session settles 29:55, five seconds under a 1800s recipe. Reproduce the exact cause first; fix if it is a defect, else PRODUCT_DECISION_REQUIRED between elapsed truth and planned-duration grace.",
+  "The rug's purpose now that its only action (sit) is hidden.",
+  "Whether bookshelf/search may share focus_think with desk/study."
+ ],
+ "next_action": "What remains needs the owner and cannot be done from here: (1) OWNER_VISUAL_GATE - nobody has looked at the custom companion screens and said they are right; (2) RELEASE_SIGNING - the release artifacts are DEBUG-SIGNED because android/key.properties is absent and build.gradle.kts falls back to the debug signing config, so a successful release build is not a signing pass; (3) LAUNCHER_ICON - approved artwork; (4) a TalkBack listening pass, and a sustained multi-pack device run. Two things that could still be done alone: the multi-pack device run, and a programmatic pass over touch-target sizes and semantics coverage on the new screens. Resume from outputs/ai_handoff/P40_RELEASE_CANDIDATE.md.",
+ "resume_protocol": [
+  "git symbolic-ref HEAD; git rev-parse HEAD; git rev-parse origin/recovery/v4.2.1-rebuild; git status --short",
+  "read this file",
+  "read outputs/ai_handoff/P40_RELEASE_CANDIDATE.md for the current gate verdict and blockers",
+  "do not redo completed phases; the next action needs the owner"
+ ],
+ "process_notes": [
+  "Never write file content through a shell heredoc in this environment: it has silently truncated content three times. Use the file tool and verify after writing.",
+  "Prefer patching by rewriting a file whole over matching long anchors: dart format rewraps and breaks anchors silently.",
+  "The screen is not evidence for state. Verify against the device filesystem, the database, or an instrumented trace. The device SQLite holds its rows in the -wal file: pull the .sqlite, -wal and -shm together or the tables read as empty.",
+  "The emulator window can be minimised, and a minimised window reports bounds at -32000. Clicks then go nowhere with no error; getScreenshot restores it on Windows.",
+  "Neither tap method is universal: adb input tap at scaled device coordinates reached the install button CUA missed, and CUA reached the import bar and the ... menu that adb taps missed. Try the other before concluding a control is broken.",
+  "The device screen is 1080x2400 and the CUA raster 561x1280, so the scale is about 1.925.",
+  "A soft keyboard covers the bottom of the screen and eats taps meant for a button below the field. Dismiss it at the Android level (input keyevent 4) rather than by tapping, which can land in the field and type.",
+  "After the file picker has been used, am start resolves to it. force-stop the app and launch with monkey -p <pkg> -c android.intent.category.LAUNCHER 1.",
+  "A provider that is only `read` in a test is not invalidated when its dependency changes. Subscribe with `container.listen` before triggering the change, or the assertion is against a value that never recomputes. This cost two rounds here and produced a false finding."
+ ],
+ "_note": "Compact resumable state; history belongs in the phase handoff docs. latest_sha names the revision this file describes - the commit that writes it advances one past that, which is unavoidable and is not staleness. It had drifted twelve commits behind before P40 closed; if it is stale again, that is the first thing to fix, because a fresh session reads this field to find the resume point.",
+ "phases": {
+  "P28_action_truth": "PASS",
+  "P29_acquisition_ux": "PASS",
+  "P30_user_golden_flow": "PASS",
+  "P31_pack_standard": "PASS",
+  "P32_local_import_export": "PASS",
+  "P33_to_P40": "NOT_STARTED",
+  "P33_partial_pack_capability": "PASS",
+  "P34_to_P40": "NOT_STARTED",
+  "P34_local_pack_builder": "PASS",
+  "P35_to_P40": "NOT_STARTED",
+  "P35_custom_companion_runtime": "PASS",
+  "P36_to_P40": "NOT_STARTED",
+  "P36_local_custom_pet_golden_flow": "PASS",
+  "P37_to_P40": "NOT_STARTED",
+  "P37_ai_generation_spike": "COMPLETE (blocked external)",
+  "P38_to_P40": "NOT_STARTED",
+  "P39_hardening": "IN_PROGRESS",
+  "P38_optional_cloud_backend": "BLOCKED_EXTERNAL",
+  "P39_full_hardening": "COMPLETE",
+  "P40_release_candidate": "GATE RUN, READY_FOR_STORE = NO"
+ },
+ "p33_device_flow": {
+  "device": "Pixel 7 API 34 emulator",
+  "pack": "tools/make_demo_pack.py --actions idle,walk -> doubao (2 of 13 actions)",
+  "observed": "import preview reads 2 / 13 and names the missing three and the eight declared as drawn-as-something-else; the companion list shows 13 / 13 green for the complete pack and 2 / 13 amber for the partial one; 2 + 8 + 3 = 13 reconciles",
+  "result": "PASS"
+ },
+ "p33_defects_fixed": [
+  "The availability answer for an installed pack was the dog's: CompanionActionAvailabilityResolver.resolve reads the compiled-in table, which knows the three shipped companions, so a pack was handed thirteen capabilities while its own art was honest. Fixed with resolveForManifest plus companionAvailabilityProvider, wired into the director, the avatar and the furniture panel. The negative proof is a test: the raw resolver says a partial pack can focus_read and the provider says it cannot.",
+  "A declared semanticFallback was scheduled and then not drawn: a pack declaring focus_read -> idle was schedulable for focus_read and drew nothing, so the companion vanished for a whole focus session. specForRendering rightly refuses the implicit idle; declaredFallbackFor honours the pack's explicit instruction, which is a different promise. Found on device by reading the completeness report honestly."
+ ],
+ "p33_open": [
+  "The furniture panel's offer is now gated on the pack's real capabilities, but the room decision loop still records and applies a furniture effect before the director sees the committed action. A room-runtime change, not a gating one; P35.",
+  "Two vocabularies overlap and neither contains the other: the contract's 13 actions include walk, sit_down and stand_up, which are animation states rather than poses, so a complete pack reports ten schedulable poses. Pinned by a test with the reason."
+ ],
+ "p34_progress": [
+  "measure()/asset_pipeline.measure() convert to RGBA themselves and refuse an empty frame, proven against 147 real indexed frames.",
+  "cat and rabbit have geometry contracts; all three packs verify against a declared contract.",
+  "tools/cozy_pet_builder/build.py builds a .cozy_pet from clips or frame directories; tools/cozy_pet_builder/test_builder.py holds 12 negative proofs.",
+  "test/presentation/companion/pack/pack_builder_consumption_test.dart runs the real builder and feeds the bytes to the real importer, validator and install rules."
+ ],
+ "p34_results": {
+  "BUILDER": "PASS",
+  "VIDEO_INPUT": "PASS",
+  "FRAME_INPUT": "PASS",
+  "PARTIAL_PACK": "PASS",
+  "FULL_PACK": "PASS",
+  "IMPORTER_ACCEPTS_OUTPUT": "PASS",
+  "GEOMETRY_INDEPENDENT": "PASS",
+  "NEGATIVE_GEOMETRY_PROOF": "PASS",
+  "ROUND_TRIP": "PASS",
+  "DEVICE": "PASS"
+ },
+ "p34_defects_fixed": [
+  "The frame path kept the source frame names, so idle/000.png and walk/000.png collided and the second action overwrote the first - both would have played the same pictures, and the importer accepted it because the validator checks frames within an action, not between them. Frames are now namespaced per action. Found by the self-consumption test.",
+  "video_to_sprite.load_contract and manifest.load_contract read the same file into two different shapes (tolerancePx + tuple canvas vs anchorTolerancePx + list), so handing one to the other raised KeyError. video_to_sprite now delegates to the single reader.",
+  "DUPLICATE_MAX_DISTANCE was 0.005, calibrated on the dog alone; the cat's closest idle pair is 0.0044 and the rabbit's 0.0053, so the video QA refused two thirds of the approved art. Now 0.002, with the measured pairs for all three packs recorded beside it."
+ ],
+ "p35_results": {
+  "ROOM_CAPABILITY_TRUTH": "PASS (no capability -> no commitment -> no effect)",
+  "ROOM_SIT": "PASS (panel hides it; a pack without a fallback for it cannot be given it)",
+  "SEARCH_STUDY": "PASS (shared focus_think recorded and pinned, not removed)",
+  "FIRST_CLASS_GUARD": "PASS (one generic provider, no source branch, no isCustom branch)",
+  "PARTIAL_AND_COMPLETE_CAPABILITY": "PASS (covered by P33/P34 suites)",
+  "HOT_COLD_SELECT_DELETE_FALLBACK": "PASS (covered by P32/P33/P34, re-walked in P36)"
+ },
+ "p35_decisions": [
+  "The decision gate uses canPerform, not canShow. canShow is the panel's question (a chip promises a specific visible action); using it in the decision refused the dog its own sofa, because room_sit is a declared fallback rather than shipped frames, and broke fifteen P28 commitment tests.",
+  "bookshelf/search keeps sharing focus_think with desk/study. The labels describe what the player asks for, and one animation is the honest answer. The test that pins it found two more shared pairs (room_sit on sofa/rug, sleep on sofa nap/bed) which are now recorded too."
+ ],
+ "p35_open": [
+  "room_sit still has no frames of its own. The panel does not offer it; give it frames or a drawAliases entry and the chip returns with no code change.",
+  "The animation-state path (travel, posture transitions) is still a separate selection path from the director."
+ ],
+ "p36_results": {
+  "LOCAL_CUSTOM_PET_GOLDEN_FLOW": "PASS",
+  "OFFLINE": "PASS (no network, no backend, no seeded rows, no developer UI)",
+  "VERIFIED_AGAINST": "filesystem, install record, selection file, SQLite"
+ },
+ "p36_findings": [
+  "The session arithmetic reconciles exactly: 251s wall clock minus a 122s pause interval = 129s = the 2:09 displayed, with total_focus_minutes 2 and experience_points 10 matching the +10 XP shown. This narrows the open P32 31A question (a displayed 30:00 settling at 29:55): the discrepancy is not a general drift in elapsed-time computation.",
+  "The pack digest survives the whole round trip: mimi imports at e5bab2f4, exports, is deleted, and re-imports at e5bab2f4. The digest is over contents, not archive bytes or timestamps.",
+  "Deleting and re-importing a companion does not touch the player progress: the growth page still reads 10 XP and 2 minutes afterwards. The shared-growth rule holds under the harshest version of the test."
+ ],
+ "p36_limitation": "The furniture-action leg was NOT exercised on this device walk: a freshly cleared app owns no furniture and the 2-minute session earned no materials, so the room honestly said it was empty. That path is covered by room_capability_wiring_test.dart, which drives the real RoomSimulationController with a real installed pack and a real sofa in the database. It is the one leg where a test stands in for a device walk.",
+ "p37_results": {
+  "PROVIDER_ABSTRACTION": "PASS",
+  "REQUEST_RESPONSE_CONTRACT": "PASS",
+  "PROMPT_TEMPLATES": "PASS",
+  "PACK_OUTPUT_CONTRACT": "PASS (a generated pack goes through the real importer)",
+  "DETERMINISTIC_HARNESS": "PASS (test-only, cannot be reached from the app)",
+  "COST_AND_RETRY_POLICY": "PASS",
+  "TECHNICAL_TESTS": "PASS (23)",
+  "REAL_PROVIDER_GENERATION": "BLOCKED_EXTERNAL (no credentials, no project, no gcloud)",
+  "IDENTITY_OWNER_GATE": "OWNER_INPUT_REQUIRED (a likeness needs photographs of the actual pet; none exist)"
+ },
+ "p37_notes": [
+  "A result carries no bytes unless the status is `generated`, so a caller cannot install a placeholder by ignoring the status. UnconfiguredGenerationProvider returns blockedExternal and the runner reports it without calling the provider.",
+  "Nothing in this phase fabricates a generation. The harness that builds a real .cozy_pet is test-only and named as a harness.",
+  "The prompt states the canvas, anchors, action vocabulary and frame counts around the player sentence, and reads the vocabulary and counts from the app production contract so a prompt cannot promise a companion the app cannot play."
+ ],
+ "p39_done": [
+  "Release APK 30.1 MB and release AAB 48.6 MB both build from the current source.",
+  "Shipped asset integrity: all three packs have 13 actions and 49 frames, no missing and no unreferenced frames, and all three have a geometry contract.",
+  "All tooling proofs green: manifest geometry negative proof, the measurement alpha proof against 147 real indexed frames, the pack geometry audit, the builder refusals, and the video_to_sprite negative check.",
+  "The cupertino_icons font warning during a release build is not ours: lib/ references no CupertinoIcons and pubspec does not declare the package, so it is a transitive tree-shaking artifact and no glyphs are missing.",
+  "Damaged-pack hardening: 8 tests covering a manifest corrupted while running, missing frames, a deleted pack directory, availability for a damaged pack, and a cold start over a damaged root. The picker does not offer a pack it cannot read, and the app is never left unable to name the selected companion.",
+  "RESOLVED, and withdrawn as a finding: the earlier note said an already-alive companionCatalogProvider did not recompute after a pack became unreadable. It does. A traced diagnostic shows two emits - [dog,cat,rabbit,mimi] then [dog,cat,rabbit,other] - so the damaged pack stops being offered without a restart. The earlier observation was an artifact of reading the provider without a listener first: a provider that is only `read` is not invalidated when its dependency changes, which is a fact about `read`, not about the catalog. The test now subscribes the way a widget does and asserts the recomputation, and passes deterministically across runs.",
+  "Accessibility on the import screen: 4 tests. The file button, the three species chips and the install button are all reachable by semantics, a chosen species announces as selected, and the completeness report is present as text rather than only as an amber pill. Reduced motion is honoured for a custom companion by construction - the same director and the same context, with no per-companion branch - which custom_companion_first_class_test already asserts.",
+  "Sprite-cache bound: CompanionPackValidator.maxFramesPerAction = 64. The player precaches the active sequence in full, deliberately, so an action declaring thousands of frames was a pack that exhausts memory by being well formed - the archive policy allows 4096 entries and a decoded 512x512 RGBA frame is about a megabyte. Refused at import rather than trimmed, and the refusal names the bound. Two tests: over the bound is refused, at the bound is accepted.",
+  "Process death mid-session was already covered and needed no new work: persistence_recovery_test covers an active session, a pause, and a session while finishing, and golden_flow_test covers the abandoned finishing session a kill leaves behind, settling it exactly once."
+ ],
+ "p39_remaining": [
+  "A device pass over the accessibility work: the assertions are widget-level and a TalkBack pass would be the real check, which needs a person listening.",
+  "A sustained performance run with several installed packs. The budget test covers one companion lifecycle, not a room full of custom ones."
+ ],
+ "p39_device_damaged_pack": {
+  "device": "Pixel 7 API 34 emulator",
+  "damage": "the installed pack's manifest.json removed with run-as, then a cold start",
+  "observed": "the record file was removed (recovery dropped the pack and rewrote the records), the home page came up on Mochi with the dog sprite, the player 2 minutes and 1 day streak were untouched, and logcat had no exceptions",
+  "result": "PASS - the app degrades to a built-in, cleans up after itself, and loses none of the player data",
+  "note": "the selection FILE still reads mimi afterwards. That is harmless: an unknown stored id is ignored on read and the file is rewritten on the next select. Recorded because it is the kind of thing that looks alarming in a file dump."
+ },
+ "p40_gate": {
+  "analyze": "PASS (0 issues)",
+  "tests": "PASS (1513/1513)",
+  "format": "PASS (325 files, 0 changed)",
+  "tooling_proofs": "PASS (5)",
+  "artifact_inspection": "PASS (no keystore, key file, env, python tooling, test tree, handoff docs or credentials)",
+  "git": "PASS (clean, local == remote)",
+  "reviewer_verdict": "READY_FOR_STORE: NO"
+ },
+ "p40_fixed_in_response": [
+  "Frames were bounded by count, not by pixels. The importer now reads each referenced PNG IHDR and refuses a frame larger than the declared canvas, which turns \"frames are bounded\" into a statement about memory. Two tests, over the canvas and at it.",
+  "The P37 invariant that a result carries no bytes unless it was generated was true only of the named constructors. It is now an assertion on the constructor, with a test.",
+  "Two claims in the P39 handoff were stronger than their evidence and are corrected: the memory bound bounded a list length, and reduced motion is an argument from the design rather than a test of playback.",
+  "The read-side memory bound: PackArchiveLimits.maxInputBytes = 64 MB, applied in the picker (by declared length, without reading) and in the reader (before decoding). That is the only place a limit can bound what is read rather than what is written.",
+  "The bomb vector: companion_pack_zip_directory.dart reads a ZIP central directory directly, because the archive package offers no way to read one without decompressing. The limits now run both before the decoder (against the declared sizes) and after it (against the real entries). The pre-flight is additive - it can only refuse earlier - and returns null on a directory it cannot parse, so its worst case is the previous behaviour. Proved by patching a real 64-byte entry to declare 500 MB: refused, while the same bytes decode under permissive limits.",
+  "docs/companion_assets.md stated a 1024x1024 canvas with anchors at 919/511; every shipped pack is 512x512 with 458/255. The guide now states the real contract, says the per-pack JSON is the authority, and describes the user-install path (builder + .cozy_pet + runtime directory) as well as the bundled one - it previously described only how to add a shipped companion, from which a reader would have concluded a user pack must go in pubspec.yaml. Four tests read the document and compare it against the contracts so it cannot drift again."
+ ],
+ "p40_blockers": {
+  "release_signing": "The release build SUCCEEDS AND PRODUCES A DEBUG-SIGNED BUNDLE when android/key.properties is absent, because build.gradle.kts falls back to the debug signing config. The artifact certificate reads CN=Android Debug. A successful release build is not a store-signing pass. NOT_RECOVERED.",
+  "hostile_pack_memory": "CLOSED. Both directions are bounded: the input size before reading (64 MB, in the picker and the reader) and the declared expansion before decoding (the central directory pre-flight). What remains unverified is only whether a particular crafted archive exhausts a device, which now happens after the refusal would have fired.",
+  "owner_visual_gate": "Nobody has looked at the custom companion screens and said they are right."
+ },
+ "not_done": [
+  "White noise (designs 04/15): no audio assets in the repository, and a toggle that plays nothing is the fake control the brief forbids.",
+  "System notifications: the settings row stays an honest \"not wired up yet\".",
+  "Five-tab bottom navigation (designs 15/16 show five): the brief forbids it.",
+  "Visual sign-off on all sixteen designs beyond the screens walked on the emulator (records hub, today plan x3 views, task list, create task, focus setup, focus active, capture sheet, complete, inbox, rest, settings).",
+  "Performance measurement (startup, frame rate, package size)."
+ ],
+ "device_walkthrough": {
+  "verdict": "PASS after fixes",
+  "defects_found_and_fixed": [
+   "focus setup screen highlighted 成长 in the bottom nav instead of 首页",
+   "records tab inbox count did not refresh after a capture",
+   "rest screen presets wrapped 3+1 instead of the design 2x2",
+   "schedule form silently did nothing for an already-planned task",
+   "room: the empty state CTA was drawn under the companion",
+   "record detail could not read what the review writes: raw mood id shown, edit dialog rewrote the old emoji vocabulary, gains and next intention never displayed",
+   "dress page rendered five hardcoded outfit names from release Runtime"
+  ],
+  "unpinned": [
+   "the _touched guard on the schedule form: kept, no test could reach it, stated as absent at the guard itself"
+  ],
+  "not_yet_walked": [
+   "collection (图鉴) on a device"
+  ],
+  "needs_owner_decision": [
+   "whether to keep a teaser outfit catalog at all — if yes it must be labelled illustrative and live where release does not read it; the release page now shows only the honest notice"
+  ],
+  "statically_checked": [
+   "report pages: every figure comes from PeriodReport, no hardcoded design numbers, and they do not read the new P1-P10 fields so the record-detail class of defect has no counterpart there"
+  ],
+  "known_minor": [
+   "StatisticsEngine.moodCounts is computed and consumed by nothing; harmless, left alone because removing it would touch the engine and its tests"
+  ],
+  "round2": "see round2_walkthrough: five more defects fixed, two candidate findings withdrawn, reports/picker/import/dress all walked"
+ },
+ "round2_walkthrough": {
+  "range": "c26a3da -> 17b3bab (6 commits)",
+  "verdict": "PASS after five fixes",
+  "fixed": {
+   "countdown_overrun_banked_the_gap (6c66fe6)": "complete() stamped endAt with the clock that noticed, so a 25 min countdown left running while the app was closed recorded the whole gap. On the device it offered 94:30 and 188 coins, which is exactly 94x2. endAt is now reconstructed from the start, the target and the pauses; early finishes and the open-ended modes are untouched. 5 tests, 3 fail without it.",
+   "capture_sheet_lost_the_thought (6665e3b)": "the completion navigation is a `go`, which replaced the route stack and took the sheet with it, so a thought typed while the timer expired was never saved. The navigation now waits for the sheet. 3 widget tests, all 3 fail without the guard.",
+   "gallery_file_named_png_png (17579d7)": "gal appends the extension itself, so the callers passing `..._wrapped.png` produced `..._wrapped.png.png` in Pictures. The extension is now the service's business. 4 tests, 2 fail without the strip.",
+   "record_row_printed_the_mood_id (17b3bab)": "今日记录 drew Text(r.mood!), so a session reviewed as 心流 showed the string `flow`. Resolved through FocusMood now; a legacy emoji is still shown as it is. Same commit: the reward chip said '+N Pet XP', the only place in the app that called the pet 'Pet'. 4 tests, 2 fail without the resolution.",
+   "timeline_plan_row_had_no_duration (75559d2)": "the projection put only the category into detail, so an uncategorised task rendered as a bare title while the focus rows beside it showed a length."
   },
-  "test_counts": {
-    "full_suite": "1845/1845",
-    "schema_head": 11
+  "withdrawn_after_re_measuring": {
+   "weekly_report_weekday_totals": "looked wrong (周二 7 分钟 vs my 2.1 min) because I aggregated records in the HOST timezone. In the device timezone it is exactly right: 401s -> 7 分钟, 5724s -> 1.6h, 907s -> 15 分钟, total 1h57m / 9 sessions, matching the page field by field. My measurement was wrong, not the app.",
+   "dress_page_named_the_pet_小兔_while_the_chip_said_咪咪": "looked like two sources of truth (pets row rabbit/小兔 vs selection mimi). It was stale state from a selection made BEFORE the adoptCompanion fix. Switching on the device now syncs both paths: built-in -> pets=rabbit/小兔, imported pack -> pets=mimi/cat/咪咪. No code changed."
   },
-  "p32_device_flow": {
-    "device": "Pixel 7 API 34 emulator",
-    "pack": "tools/make_demo_pack.py -> xiaomao (the cat's frames, name 小豆, species cat)",
-    "walked": "picker -> import -> file picker -> preview -> install -> select (no restart) -> restart -> export -> delete -> fallback -> re-import",
-    "verified_against": "companion_packs/, installed_packs.json, companion_selection.json, logcat",
-    "result": "all steps PASS; no Flutter exceptions"
+  "seen_and_deliberately_not_changed": {
+   "heatmap_level_legibility": "无记录 F5EFE6 vs 少量 EAF2EB are nearly indistinguishable; the mapping itself is right (pixel-checked: 3 non-empty cells for 专注天数 3 天). It is the theme palette and primaryLight is used as a tint app-wide, so changing it is a brand decision.",
+   "review_page_defaults_category_to_学习": "not the page's invention: the session controller writes `categoryName ?? '学习'` and the save page defaults to the same. Demonstrated: a record saved without touching the chips landed with category_id='study'. The app treats 'no category' as an honest state elsewhere (未分类, clearable inbox tags), so this is a product call.",
+   "record_categories_5_vs_task_categories_4": "records carry 阅读/reading, tasks do not. Shared ids agree and each domain is internally consistent; judged deliberate.",
+   "imported_pack_renders_as_a_black_square": "the pack's frames are opaque (top corners alpha=255, 10% transparent). My walkthrough material, not an app defect: the validator deliberately does not decode PNGs."
   },
-  "defects_found_on_device": [
-    "D1 (d4b5f73): _registry and _director were `late final` and the refresh path reassigns both, so the first install with an avatar on screen threw LateInitializationError and drew a red error box over every companion. No test reached it: the refresh needs a rebuild, and no test installed under a mounted avatar. Two regression tests added; restoring `late final` fails both.",
-    "D2 (c0c92dc): the installed-pack registry was in memory only, so a cold start offered only the built-ins and silently discarded the persisted selection. Fixed with an install record at the pack root plus a directory scan; a pack neither source can classify is skipped and reported, never guessed.",
-    "D3 (a23d7ba): recovery read a hand-copied pack from its own manifest and kept nothing, so every launch re-hashed every frame and re-derived the name. Recovery now writes the records."
+  "walked_this_round": [
+   "reports: weekly / monthly / yearly / yearly wrapped share, including 保存到相册 (a real file) and 分享到社交平台 (the real system share sheet with the PNG and the share text)",
+   "companion picker, companion import, dress page (real empty state, no mock catalog)",
+   "golden flows: focus -> review -> record -> timeline -> analytics; focus -> distraction inbox -> convert to task; free time -> timeline; companion import -> select -> restart"
   ],
-  "p32_gaps_closed": [
-    "frame content: the validator judges names and never bytes, so nothing checked that a file called idle_000.png is a PNG. The importer now checks the PNG signature of every referenced frame before anything is written."
-  ],
-  "p32_claims_corrected": [
-    "The reader's `unreadable_archive` branch is effectively unreachable. ZipDecoder in archive 4.3.0 does not throw for unparseable input - measured: garbage, half-truncated, and 8-byte-header inputs all return a zero-file archive, and corrupt bytes in the middle still yield files. Malformed input arrives as `empty_archive` or as a manifest validation failure. Safety is unchanged (refused, zero files) but the old comment described an unreachable path."
-  ],
-  "open_findings": [
-    "CORRECTED at b13e7b1: productionise.measure and asset_pipeline.measure read split()[-1] as alpha, which is the palette index on an indexed PNG - but BOTH call sites already convert to RGBA first, so nothing was broken. The earlier note called it a bug; checking it properly says it was a latent trap. Both functions now convert for themselves and refuse an empty frame, proven by tools/test_measure_alpha.py against 147 real indexed frames (115 of which distinguish the two channels, so the proof is not vacuous).",
-    "P32: symlink rejection is NOT verified through the reader, and duplicate-name ZIP entries cannot be built with ZipEncoder. Both rules are covered directly at the policy level only.",
-    "P32: the expansion-ratio bomb check is inert on this path; per-entry and total byte caps still apply.",
-    "P32: recovery reads every frame of a pack that has no record, to compute its digest. Fine for one pack; revisit if many are dropped in by hand.",
-    "docs/companion_assets.md is stale: claims 1024x1024 canvas with 919/511 anchors and that every pack must be added to pubspec.yaml; the real JSON is 512x512 with ~458/255.",
-    "P33: multi_companion_parity_test forces every profile to the dog's 13 actions. Right for built-ins, wrong as an admission requirement for a user partial pack; the two contracts must be scoped apart.",
-    "P28.4: room_sit still projects to idle with no frames of its own; sofa/sit and rug/sit are hidden from the panel, but the routine and idle still select room_sit.",
-    "Room: the travel ticker starts immediately after startTravel and _onCompanionAnimationChanged is empty, so the comment claiming movement waits for stand_up describes behaviour the code does not implement.",
-    "P34 remains: the pack builder itself (video/frame directory -> .cozy_pet) is not built. Its prerequisites are now in place: measurement is trustworthy, and all three shipped packs have a contract the builder can hold new packs to.",
-    "One full-suite run reported a single failure that left no failure text in the captured output, and two subsequent runs passed 1525/1525 with no failure. Not reproduced, not diagnosed, and recorded rather than dismissed: an intermittent failure is a real thing even when a rerun is green, and the next person should treat a repeat as information rather than as noise."
-  ],
-  "known_blockers": {
-    "RELEASE_SIGNING": "NOT_RECOVERED - android/key.properties absent, no keystore invented",
-    "LAUNCHER_ICON": "BLOCKED - stock Flutter icon, no approved artwork",
-    "OWNER_VISUAL_GATE": "REQUIRED",
-    "VERTEX_AI": "BLOCKED_EXTERNAL - no credentials, no project, no gcloud. The abstraction is complete; adding a provider is a class plus a ProviderScope override."
-  },
-  "owner_decisions_required": [
-    "P32 §31A: a displayed 30-minute session settles 29:55, five seconds under a 1800s recipe. Reproduce the exact cause first; fix if it is a defect, else PRODUCT_DECISION_REQUIRED between elapsed truth and planned-duration grace.",
-    "The rug's purpose now that its only action (sit) is hidden.",
-    "Whether bookshelf/search may share focus_think with desk/study."
-  ],
-  "next_action": "What remains needs the owner and cannot be done from here: (1) OWNER_VISUAL_GATE - nobody has looked at the custom companion screens and said they are right; (2) RELEASE_SIGNING - the release artifacts are DEBUG-SIGNED because android/key.properties is absent and build.gradle.kts falls back to the debug signing config, so a successful release build is not a signing pass; (3) LAUNCHER_ICON - approved artwork; (4) a TalkBack listening pass, and a sustained multi-pack device run. Two things that could still be done alone: the multi-pack device run, and a programmatic pass over touch-target sizes and semantics coverage on the new screens. Resume from outputs/ai_handoff/P40_RELEASE_CANDIDATE.md.",
-  "resume_protocol": [
-    "git symbolic-ref HEAD; git rev-parse HEAD; git rev-parse origin/recovery/v4.2.1-rebuild; git status --short",
-    "read this file",
-    "read outputs/ai_handoff/P40_RELEASE_CANDIDATE.md for the current gate verdict and blockers",
-    "do not redo completed phases; the next action needs the owner"
-  ],
-  "process_notes": [
-    "Never write file content through a shell heredoc in this environment: it has silently truncated content three times. Use the file tool and verify after writing.",
-    "Prefer patching by rewriting a file whole over matching long anchors: dart format rewraps and breaks anchors silently.",
-    "The screen is not evidence for state. Verify against the device filesystem, the database, or an instrumented trace. The device SQLite holds its rows in the -wal file: pull the .sqlite, -wal and -shm together or the tables read as empty.",
-    "The emulator window can be minimised, and a minimised window reports bounds at -32000. Clicks then go nowhere with no error; getScreenshot restores it on Windows.",
-    "Neither tap method is universal: adb input tap at scaled device coordinates reached the install button CUA missed, and CUA reached the import bar and the ... menu that adb taps missed. Try the other before concluding a control is broken.",
-    "The device screen is 1080x2400 and the CUA raster 561x1280, so the scale is about 1.925.",
-    "A soft keyboard covers the bottom of the screen and eats taps meant for a button below the field. Dismiss it at the Android level (input keyevent 4) rather than by tapping, which can land in the field and type.",
-    "After the file picker has been used, am start resolves to it. force-stop the app and launch with monkey -p <pkg> -c android.intent.category.LAUNCHER 1.",
-    "A provider that is only `read` in a test is not invalidated when its dependency changes. Subscribe with `container.listen` before triggering the change, or the assertion is against a value that never recomputes. This cost two rounds here and produced a false finding."
-  ],
-  "_note": "Compact resumable state; history belongs in the phase handoff docs. latest_sha names the revision this file describes - the commit that writes it advances one past that, which is unavoidable and is not staleness. It had drifted twelve commits behind before P40 closed; if it is stale again, that is the first thing to fix, because a fresh session reads this field to find the resume point.",
-  "phases": {
-    "P28_action_truth": "PASS",
-    "P29_acquisition_ux": "PASS",
-    "P30_user_golden_flow": "PASS",
-    "P31_pack_standard": "PASS",
-    "P32_local_import_export": "PASS",
-    "P33_to_P40": "NOT_STARTED",
-    "P33_partial_pack_capability": "PASS",
-    "P34_to_P40": "NOT_STARTED",
-    "P34_local_pack_builder": "PASS",
-    "P35_to_P40": "NOT_STARTED",
-    "P35_custom_companion_runtime": "PASS",
-    "P36_to_P40": "NOT_STARTED",
-    "P36_local_custom_pet_golden_flow": "PASS",
-    "P37_to_P40": "NOT_STARTED",
-    "P37_ai_generation_spike": "COMPLETE (blocked external)",
-    "P38_to_P40": "NOT_STARTED",
-    "P39_hardening": "IN_PROGRESS",
-    "P38_optional_cloud_backend": "BLOCKED_EXTERNAL",
-    "P39_full_hardening": "COMPLETE",
-    "P40_release_candidate": "GATE RUN, READY_FOR_STORE = NO"
-  },
-  "p33_device_flow": {
-    "device": "Pixel 7 API 34 emulator",
-    "pack": "tools/make_demo_pack.py --actions idle,walk -> doubao (2 of 13 actions)",
-    "observed": "import preview reads 2 / 13 and names the missing three and the eight declared as drawn-as-something-else; the companion list shows 13 / 13 green for the complete pack and 2 / 13 amber for the partial one; 2 + 8 + 3 = 13 reconciles",
-    "result": "PASS"
-  },
-  "p33_defects_fixed": [
-    "The availability answer for an installed pack was the dog's: CompanionActionAvailabilityResolver.resolve reads the compiled-in table, which knows the three shipped companions, so a pack was handed thirteen capabilities while its own art was honest. Fixed with resolveForManifest plus companionAvailabilityProvider, wired into the director, the avatar and the furniture panel. The negative proof is a test: the raw resolver says a partial pack can focus_read and the provider says it cannot.",
-    "A declared semanticFallback was scheduled and then not drawn: a pack declaring focus_read -> idle was schedulable for focus_read and drew nothing, so the companion vanished for a whole focus session. specForRendering rightly refuses the implicit idle; declaredFallbackFor honours the pack's explicit instruction, which is a different promise. Found on device by reading the completeness report honestly."
-  ],
-  "p33_open": [
-    "The furniture panel's offer is now gated on the pack's real capabilities, but the room decision loop still records and applies a furniture effect before the director sees the committed action. A room-runtime change, not a gating one; P35.",
-    "Two vocabularies overlap and neither contains the other: the contract's 13 actions include walk, sit_down and stand_up, which are animation states rather than poses, so a complete pack reports ten schedulable poses. Pinned by a test with the reason."
-  ],
-  "p34_progress": [
-    "measure()/asset_pipeline.measure() convert to RGBA themselves and refuse an empty frame, proven against 147 real indexed frames.",
-    "cat and rabbit have geometry contracts; all three packs verify against a declared contract.",
-    "tools/cozy_pet_builder/build.py builds a .cozy_pet from clips or frame directories; tools/cozy_pet_builder/test_builder.py holds 12 negative proofs.",
-    "test/presentation/companion/pack/pack_builder_consumption_test.dart runs the real builder and feeds the bytes to the real importer, validator and install rules."
-  ],
-  "p34_results": {
-    "BUILDER": "PASS",
-    "VIDEO_INPUT": "PASS",
-    "FRAME_INPUT": "PASS",
-    "PARTIAL_PACK": "PASS",
-    "FULL_PACK": "PASS",
-    "IMPORTER_ACCEPTS_OUTPUT": "PASS",
-    "GEOMETRY_INDEPENDENT": "PASS",
-    "NEGATIVE_GEOMETRY_PROOF": "PASS",
-    "ROUND_TRIP": "PASS",
-    "DEVICE": "PASS"
-  },
-  "p34_defects_fixed": [
-    "The frame path kept the source frame names, so idle/000.png and walk/000.png collided and the second action overwrote the first - both would have played the same pictures, and the importer accepted it because the validator checks frames within an action, not between them. Frames are now namespaced per action. Found by the self-consumption test.",
-    "video_to_sprite.load_contract and manifest.load_contract read the same file into two different shapes (tolerancePx + tuple canvas vs anchorTolerancePx + list), so handing one to the other raised KeyError. video_to_sprite now delegates to the single reader.",
-    "DUPLICATE_MAX_DISTANCE was 0.005, calibrated on the dog alone; the cat's closest idle pair is 0.0044 and the rabbit's 0.0053, so the video QA refused two thirds of the approved art. Now 0.002, with the measured pairs for all three packs recorded beside it."
-  ],
-  "p35_results": {
-    "ROOM_CAPABILITY_TRUTH": "PASS (no capability -> no commitment -> no effect)",
-    "ROOM_SIT": "PASS (panel hides it; a pack without a fallback for it cannot be given it)",
-    "SEARCH_STUDY": "PASS (shared focus_think recorded and pinned, not removed)",
-    "FIRST_CLASS_GUARD": "PASS (one generic provider, no source branch, no isCustom branch)",
-    "PARTIAL_AND_COMPLETE_CAPABILITY": "PASS (covered by P33/P34 suites)",
-    "HOT_COLD_SELECT_DELETE_FALLBACK": "PASS (covered by P32/P33/P34, re-walked in P36)"
-  },
-  "p35_decisions": [
-    "The decision gate uses canPerform, not canShow. canShow is the panel's question (a chip promises a specific visible action); using it in the decision refused the dog its own sofa, because room_sit is a declared fallback rather than shipped frames, and broke fifteen P28 commitment tests.",
-    "bookshelf/search keeps sharing focus_think with desk/study. The labels describe what the player asks for, and one animation is the honest answer. The test that pins it found two more shared pairs (room_sit on sofa/rug, sleep on sofa nap/bed) which are now recorded too."
-  ],
-  "p35_open": [
-    "room_sit still has no frames of its own. The panel does not offer it; give it frames or a drawAliases entry and the chip returns with no code change.",
-    "The animation-state path (travel, posture transitions) is still a separate selection path from the director."
-  ],
-  "p36_results": {
-    "LOCAL_CUSTOM_PET_GOLDEN_FLOW": "PASS",
-    "OFFLINE": "PASS (no network, no backend, no seeded rows, no developer UI)",
-    "VERIFIED_AGAINST": "filesystem, install record, selection file, SQLite"
-  },
-  "p36_findings": [
-    "The session arithmetic reconciles exactly: 251s wall clock minus a 122s pause interval = 129s = the 2:09 displayed, with total_focus_minutes 2 and experience_points 10 matching the +10 XP shown. This narrows the open P32 31A question (a displayed 30:00 settling at 29:55): the discrepancy is not a general drift in elapsed-time computation.",
-    "The pack digest survives the whole round trip: mimi imports at e5bab2f4, exports, is deleted, and re-imports at e5bab2f4. The digest is over contents, not archive bytes or timestamps.",
-    "Deleting and re-importing a companion does not touch the player progress: the growth page still reads 10 XP and 2 minutes afterwards. The shared-growth rule holds under the harshest version of the test."
-  ],
-  "p36_limitation": "The furniture-action leg was NOT exercised on this device walk: a freshly cleared app owns no furniture and the 2-minute session earned no materials, so the room honestly said it was empty. That path is covered by room_capability_wiring_test.dart, which drives the real RoomSimulationController with a real installed pack and a real sofa in the database. It is the one leg where a test stands in for a device walk.",
-  "p37_results": {
-    "PROVIDER_ABSTRACTION": "PASS",
-    "REQUEST_RESPONSE_CONTRACT": "PASS",
-    "PROMPT_TEMPLATES": "PASS",
-    "PACK_OUTPUT_CONTRACT": "PASS (a generated pack goes through the real importer)",
-    "DETERMINISTIC_HARNESS": "PASS (test-only, cannot be reached from the app)",
-    "COST_AND_RETRY_POLICY": "PASS",
-    "TECHNICAL_TESTS": "PASS (23)",
-    "REAL_PROVIDER_GENERATION": "BLOCKED_EXTERNAL (no credentials, no project, no gcloud)",
-    "IDENTITY_OWNER_GATE": "OWNER_INPUT_REQUIRED (a likeness needs photographs of the actual pet; none exist)"
-  },
-  "p37_notes": [
-    "A result carries no bytes unless the status is `generated`, so a caller cannot install a placeholder by ignoring the status. UnconfiguredGenerationProvider returns blockedExternal and the runner reports it without calling the provider.",
-    "Nothing in this phase fabricates a generation. The harness that builds a real .cozy_pet is test-only and named as a harness.",
-    "The prompt states the canvas, anchors, action vocabulary and frame counts around the player sentence, and reads the vocabulary and counts from the app production contract so a prompt cannot promise a companion the app cannot play."
-  ],
-  "p39_done": [
-    "Release APK 30.1 MB and release AAB 48.6 MB both build from the current source.",
-    "Shipped asset integrity: all three packs have 13 actions and 49 frames, no missing and no unreferenced frames, and all three have a geometry contract.",
-    "All tooling proofs green: manifest geometry negative proof, the measurement alpha proof against 147 real indexed frames, the pack geometry audit, the builder refusals, and the video_to_sprite negative check.",
-    "The cupertino_icons font warning during a release build is not ours: lib/ references no CupertinoIcons and pubspec does not declare the package, so it is a transitive tree-shaking artifact and no glyphs are missing.",
-    "Damaged-pack hardening: 8 tests covering a manifest corrupted while running, missing frames, a deleted pack directory, availability for a damaged pack, and a cold start over a damaged root. The picker does not offer a pack it cannot read, and the app is never left unable to name the selected companion.",
-    "RESOLVED, and withdrawn as a finding: the earlier note said an already-alive companionCatalogProvider did not recompute after a pack became unreadable. It does. A traced diagnostic shows two emits - [dog,cat,rabbit,mimi] then [dog,cat,rabbit,other] - so the damaged pack stops being offered without a restart. The earlier observation was an artifact of reading the provider without a listener first: a provider that is only `read` is not invalidated when its dependency changes, which is a fact about `read`, not about the catalog. The test now subscribes the way a widget does and asserts the recomputation, and passes deterministically across runs.",
-    "Accessibility on the import screen: 4 tests. The file button, the three species chips and the install button are all reachable by semantics, a chosen species announces as selected, and the completeness report is present as text rather than only as an amber pill. Reduced motion is honoured for a custom companion by construction - the same director and the same context, with no per-companion branch - which custom_companion_first_class_test already asserts.",
-    "Sprite-cache bound: CompanionPackValidator.maxFramesPerAction = 64. The player precaches the active sequence in full, deliberately, so an action declaring thousands of frames was a pack that exhausts memory by being well formed - the archive policy allows 4096 entries and a decoded 512x512 RGBA frame is about a megabyte. Refused at import rather than trimmed, and the refusal names the bound. Two tests: over the bound is refused, at the bound is accepted.",
-    "Process death mid-session was already covered and needed no new work: persistence_recovery_test covers an active session, a pause, and a session while finishing, and golden_flow_test covers the abandoned finishing session a kill leaves behind, settling it exactly once."
-  ],
-  "p39_remaining": [
-    "A device pass over the accessibility work: the assertions are widget-level and a TalkBack pass would be the real check, which needs a person listening.",
-    "A sustained performance run with several installed packs. The budget test covers one companion lifecycle, not a room full of custom ones."
-  ],
-  "p39_device_damaged_pack": {
-    "device": "Pixel 7 API 34 emulator",
-    "damage": "the installed pack's manifest.json removed with run-as, then a cold start",
-    "observed": "the record file was removed (recovery dropped the pack and rewrote the records), the home page came up on Mochi with the dog sprite, the player 2 minutes and 1 day streak were untouched, and logcat had no exceptions",
-    "result": "PASS - the app degrades to a built-in, cleans up after itself, and loses none of the player data",
-    "note": "the selection FILE still reads mimi afterwards. That is harmless: an unknown stored id is ignored on read and the file is rewritten on the next select. Recorded because it is the kind of thing that looks alarming in a file dump."
-  },
-  "p40_gate": {
-    "analyze": "PASS (0 issues)",
-    "tests": "PASS (1513/1513)",
-    "format": "PASS (325 files, 0 changed)",
-    "tooling_proofs": "PASS (5)",
-    "artifact_inspection": "PASS (no keystore, key file, env, python tooling, test tree, handoff docs or credentials)",
-    "git": "PASS (clean, local == remote)",
-    "reviewer_verdict": "READY_FOR_STORE: NO"
-  },
-  "p40_fixed_in_response": [
-    "Frames were bounded by count, not by pixels. The importer now reads each referenced PNG IHDR and refuses a frame larger than the declared canvas, which turns \"frames are bounded\" into a statement about memory. Two tests, over the canvas and at it.",
-    "The P37 invariant that a result carries no bytes unless it was generated was true only of the named constructors. It is now an assertion on the constructor, with a test.",
-    "Two claims in the P39 handoff were stronger than their evidence and are corrected: the memory bound bounded a list length, and reduced motion is an argument from the design rather than a test of playback.",
-    "The read-side memory bound: PackArchiveLimits.maxInputBytes = 64 MB, applied in the picker (by declared length, without reading) and in the reader (before decoding). That is the only place a limit can bound what is read rather than what is written.",
-    "The bomb vector: companion_pack_zip_directory.dart reads a ZIP central directory directly, because the archive package offers no way to read one without decompressing. The limits now run both before the decoder (against the declared sizes) and after it (against the real entries). The pre-flight is additive - it can only refuse earlier - and returns null on a directory it cannot parse, so its worst case is the previous behaviour. Proved by patching a real 64-byte entry to declare 500 MB: refused, while the same bytes decode under permissive limits.",
-    "docs/companion_assets.md stated a 1024x1024 canvas with anchors at 919/511; every shipped pack is 512x512 with 458/255. The guide now states the real contract, says the per-pack JSON is the authority, and describes the user-install path (builder + .cozy_pet + runtime directory) as well as the bundled one - it previously described only how to add a shipped companion, from which a reader would have concluded a user pack must go in pubspec.yaml. Four tests read the document and compare it against the contracts so it cannot drift again."
-  ],
-  "p40_blockers": {
-    "release_signing": "The release build SUCCEEDS AND PRODUCES A DEBUG-SIGNED BUNDLE when android/key.properties is absent, because build.gradle.kts falls back to the debug signing config. The artifact certificate reads CN=Android Debug. A successful release build is not a store-signing pass. NOT_RECOVERED.",
-    "hostile_pack_memory": "CLOSED. Both directions are bounded: the input size before reading (64 MB, in the picker and the reader) and the declared expansion before decoding (the central directory pre-flight). What remains unverified is only whether a particular crafted archive exhausts a device, which now happens after the refusal would have fired.",
-    "owner_visual_gate": "Nobody has looked at the custom companion screens and said they are right."
-  },
-  "not_done": [
-    "White noise (designs 04/15): no audio assets in the repository, and a toggle that plays nothing is the fake control the brief forbids.",
-    "System notifications: the settings row stays an honest \"not wired up yet\".",
-    "Five-tab bottom navigation (designs 15/16 show five): the brief forbids it.",
-    "Visual sign-off on all sixteen designs beyond the screens walked on the emulator (records hub, today plan x3 views, task list, create task, focus setup, focus active, capture sheet, complete, inbox, rest, settings).",
-    "Performance measurement (startup, frame rate, package size)."
-  ],
-  "device_walkthrough": {
-    "verdict": "PASS after fixes",
-    "defects_found_and_fixed": [
-      "focus setup screen highlighted 成长 in the bottom nav instead of 首页",
-      "records tab inbox count did not refresh after a capture",
-      "rest screen presets wrapped 3+1 instead of the design 2x2",
-      "schedule form silently did nothing for an already-planned task",
-      "room: the empty state CTA was drawn under the companion",
-      "record detail could not read what the review writes: raw mood id shown, edit dialog rewrote the old emoji vocabulary, gains and next intention never displayed",
-      "dress page rendered five hardcoded outfit names from release Runtime"
-    ],
-    "unpinned": [
-      "the _touched guard on the schedule form: kept, no test could reach it, stated as absent at the guard itself"
-    ],
-    "not_yet_walked": [
-      "reports (weekly/monthly/yearly/wrapped), collection (图鉴), companion picker and import"
-    ],
-    "needs_owner_decision": [
-      "whether to keep a teaser outfit catalog at all — if yes it must be labelled illustrative and live where release does not read it; the release page now shows only the honest notice"
-    ],
-    "statically_checked": [
-      "report pages: every figure comes from PeriodReport, no hardcoded design numbers, and they do not read the new P1-P10 fields so the record-detail class of defect has no counterpart there"
-    ],
-    "known_minor": [
-      "StatisticsEngine.moodCounts is computed and consumed by nothing; harmless, left alone because removing it would touch the engine and its tests"
-    ]
-  }
+  "verified_against": "SQLite on the device (records, notes, tasks, pets, rest_sessions), companion_selection.json, /sdcard/Pictures, and pixel probes where the question was about what is drawn",
+  "not_walked": "small-screen and landscape adaptation of the report pages: the emulator has one size"
+ }
 }
