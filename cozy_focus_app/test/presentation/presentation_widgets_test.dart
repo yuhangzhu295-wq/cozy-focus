@@ -102,7 +102,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.textContaining('和 Mochi 一起'), findsOneWidget);
-      expect(find.text('专注时长'), findsOneWidget);
+      // The design's own words for this card. It used to read `专注时长` with a
+      // sprout emoji in front; the board reads `选择专注时长` and carries no
+      // leading glyph, so the label moved with the design.
+      expect(find.text('选择专注时长'), findsOneWidget);
       expect(find.text('开始专注'), findsOneWidget);
     });
 

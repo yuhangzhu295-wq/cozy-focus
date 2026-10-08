@@ -57,6 +57,16 @@ class AppColors {
   static const Color chartBar = Color(0xFF7AB278);
   static const Color chartBarFaint = Color(0xFFCEE8C1);
 
+  /// The fill of the chosen length in 选择专注时长, and the leaf on every one.
+  ///
+  /// Measured from page 01: the chosen card is filled `#517C52` with its number
+  /// in white, and the leaf above every number is `#7ABB55` — a brighter,
+  /// yellower green than the card it sits on, in both states. Neither is
+  /// [primarySage]; the card is a lighter green and the leaf a different hue, so
+  /// deriving them from the brand green would have been wrong twice.
+  static const Color durationSelected = Color(0xFF517C52);
+  static const Color leaf = Color(0xFF7ABB55);
+
   /// Ink for the large focus timer figure.
   ///
   /// Sampled from the approved page renders rather than chosen: the `25:00`

@@ -365,31 +365,22 @@ class _HomePageState extends ConsumerState<HomePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Expanded(
-                  child: Row(
-                    children: [
-                      Text(
-                        '🌱 ',
-                        style: TextStyle(
-                          fontSize: 20,
-                          height: _kLineHeight,
-                        ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    // The design's own words for this card, and it carries no
+                    // leading glyph: the sprout emoji that used to sit here was
+                    // ours, and the design puts the leaf on each of the four
+                    // cards instead, where it marks what the card is for.
+                    child: Text(
+                      '选择专注时长',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        height: _kLineHeight,
+                        color: AppColors.textPrimary,
                       ),
-                      Flexible(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '专注时长',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              height: _kLineHeight,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
                 // Reference 01 sets "自定义 >" in a muted pill rather than as
@@ -762,14 +753,25 @@ class _DurationChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Reference 01/02: the unselected chip is a near-white surface inside a hair
-    // border, and the selected one is `primaryLight` inside a sage border. Both
-    // are 44dp tall and carry the number above the unit — never a check mark.
+    // Reference 01: the chosen card is a **solid** green with its number and unit
+    // in white, and every card carries a leaf above the number. The unselected
+    // one is a near-white surface inside a hair border. Measured off the board,
+    // the chosen fill is `#517C52` and the leaf `#7ABB55` — the leaf stays the
+    // same brighter green in both states, which is why it is not tinted here.
+    //
+    // This used to draw the chosen card as `primaryLight` inside a sage border,
+    // which is a lighter treatment than the design and reads as "highlighted"
+    // rather than as "chosen".
+    final numberColor = selected ? Colors.white : AppColors.textPrimary;
+    final unitColor = selected ? Colors.white : AppColors.textTertiary;
+
     return Semantics(
+      excludeSemantics: true,
       selected: selected,
       button: true,
+      label: '$minutes 分钟',
       child: Material(
-        color: selected ? AppColors.primaryLight : AppColors.surface,
+        color: selected ? AppColors.durationSelected : AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: onTap,
@@ -779,21 +781,21 @@ class _DurationChip extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: selected ? AppColors.primarySage : AppColors.border,
+                color: selected ? AppColors.durationSelected : AppColors.border,
               ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const Icon(Icons.eco_rounded, size: 13, color: AppColors.leaf),
+                const SizedBox(height: 1),
                 Text(
                   '$minutes',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                     height: _kLineHeight,
-                    color: selected
-                        ? AppColors.primaryDark
-                        : AppColors.textPrimary,
+                    color: numberColor,
                   ),
                 ),
                 Text(
@@ -801,9 +803,7 @@ class _DurationChip extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     height: _kLineHeight,
-                    color: selected
-                        ? AppColors.primaryDark
-                        : AppColors.textTertiary,
+                    color: unitColor,
                   ),
                 ),
               ],
