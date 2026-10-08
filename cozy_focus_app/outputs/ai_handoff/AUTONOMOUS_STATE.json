@@ -2,7 +2,7 @@
  "program": "COZYFOCUS_2_0_P1_TO_P10",
  "project": "COZY_FOCUS",
  "branch": "recovery/v4.2.1-rebuild",
- "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then two rounds of device walkthrough. Round 2 (tasks A-F) fixed five more user-visible defects and withdrew two false findings that were measurement errors on my side.",
+ "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then three rounds of device walkthrough. Round 3 walked a 360dp screen and landscape: four more defects found, all invisible at the single size the suite had always run at.",
  "phase": "P10",
  "slice": "P1-P10 complete. Round 2 walkthrough complete: five defects found and fixed, each with a reverse-proved regression test and a device re-check; two candidate findings withdrawn after re-measuring.",
  "start_sha": "0a116e2",
@@ -25,7 +25,7 @@
   "golden_flows_A_to_F": "PASS"
  },
  "test_counts": {
-  "full_suite": "1876/1876",
+  "full_suite": "1893/1893",
   "schema_head": 11
  },
  "p32_device_flow": {
@@ -296,5 +296,17 @@
   ],
   "verified_against": "SQLite on the device (records, notes, tasks, pets, rest_sessions), companion_selection.json, /sdcard/Pictures, and pixel probes where the question was about what is drawn",
   "not_walked": "small-screen and landscape adaptation of the report pages: the emulator has one size"
+ },
+ "round3_walkthrough": {
+  "range": "b938d29 -> 0f9d6ce",
+  "method": "adb wm size 720x1280 + density 320 (360dp), then wm size/density reset with user_rotation 1 (landscape at the real 411x914dp)",
+  "fixed": {
+   "monthly_axis_labels_clipped": "31 Expanded columns give each day ~7dp at 360dp and a two-digit label needs ~9, so 14/21/28 drew as one digit and a sliver. The label now lays out at its own width via OverflowBox(fit: deferToChild) — the default `max` fit asks for unbounded height inside a Column and throws, which I hit first.",
+   "yearly_metric_labels_ellipsized": "at 360dp the cards read 年度专注时… and lost the ↑ from 比去年多了 100% ↑. Both lines now wrap to two, and the three cards are equal height via IntrinsicHeight + stretch. At 411dp nothing changed.",
+   "yearly_heatmap_header_overflow": "the spaceBetween row was 0.75px wider than a 360dp card. Found by the new test throwing during layout, not by looking. The caption is Flexible now.",
+   "reports_stretched_in_landscape": "nothing locks the orientation, so landscape is reachable. At 914dp the year heatmap's spaceBetween row spread its 31 fixed cells 21dp apart and stopped reading as a calendar. AppLayout.reportMaxWidth = 560 with a max(20, (w-560)/2) gutter, applied as the scroll views' padding. Measured on the device: content 557dp, cell spacing 9.2dp. The 52dp left/right difference is the app window's cutout inset, not an off-centre layout."
+  },
+  "collection_page_walked": "10 entries, 8 obtainable and 2 preview (obtainable: false). On the device the 8 read 未收集 and the 2 read 未开放, the counter is 0/8 rather than 0/10, and the footer says the achievement system is not wired to the runtime database. Truthful, not a mock list.",
+  "not_walked": "small-screen and landscape outside the report pages: the home/records/growth tabs stretch on a wide screen, which is cosmetic rather than broken, and was left alone."
  }
 }

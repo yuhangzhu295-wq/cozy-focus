@@ -211,7 +211,13 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
                       child: CircularProgressIndicator(
                           color: AppColors.primarySage))
                   : ListView(
-                      padding: const EdgeInsets.all(20),
+                      // Centred on a wide screen, so a landscape phone does not
+                      // stretch every card across it — see AppLayout.
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppLayout.reportGutter(
+                            MediaQuery.sizeOf(context).width),
+                        vertical: 20,
+                      ),
                       children: [
                         // Week Navigator
                         Row(

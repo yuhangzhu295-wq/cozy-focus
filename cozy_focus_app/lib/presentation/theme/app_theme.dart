@@ -62,6 +62,33 @@ class AppRadius {
   static const double pill = 999.0;
 }
 
+/// Layout widths the screens share.
+class AppLayout {
+  AppLayout._();
+
+  /// The widest a report reads at.
+  ///
+  /// The report pages are single columns of cards, and the app does not lock its
+  /// orientation, so on a landscape phone the column was laid out across ~1100dp:
+  /// the year heatmap's `spaceBetween` row spread its 31 fixed-size days 27dp
+  /// apart and stopped reading as a calendar, and the bar charts stretched into
+  /// thin spikes. Capping the column keeps every card at the width it was drawn
+  /// for and centres the page. It never binds in portrait — a 411dp phone is
+  /// narrower than this — so the design's own layout is untouched.
+  static const double reportMaxWidth = 560.0;
+
+  /// The gutter the report pages use, on a screen [screenWidth] wide.
+  ///
+  /// The design's own 20dp whenever that already holds the content to
+  /// [reportMaxWidth], and half the excess when it does not — which is what
+  /// centres the column. Written as a `max` rather than a branch so the two
+  /// cases meet without a step: at exactly [reportMaxWidth] + 40 both give 20.
+  static double reportGutter(double screenWidth) {
+    final excess = (screenWidth - reportMaxWidth) / 2;
+    return excess > 20.0 ? excess : 20.0;
+  }
+}
+
 class AppTheme {
   AppTheme._();
 

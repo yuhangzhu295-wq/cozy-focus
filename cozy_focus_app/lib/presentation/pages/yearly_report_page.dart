@@ -149,7 +149,13 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primarySage))
           : ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              // Centred on a wide screen, so a landscape phone does not stretch
+              // every card across it — see AppLayout.
+              padding: EdgeInsets.symmetric(
+                horizontal:
+                    AppLayout.reportGutter(MediaQuery.sizeOf(context).width),
+                vertical: 12,
+              ),
               children: [
                 // Top Segmented Control (日报, 周报, 月报, 年报)
                 _buildTopTabNav(context),
@@ -417,49 +423,61 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
     required int activeDays,
     required String dayPercentage,
   }) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildMetricCard(
-            icon: Icons.timer_outlined,
-            title: '年度专注时长',
-            value: totalValue,
-            unit: totalUnit,
-            diffLabel: hoursDiffPct != null
-                ? '比去年多了 ${hoursDiffPct.abs().toStringAsFixed(0)}% ${hoursDiffPct >= 0 ? "↑" : "↓"}'
-                : '开启新一年的积累',
-            diffColor: AppColors.primarySage,
+    // Three cards, equal height, so a label that needs a second line on a narrow
+    // phone does not leave one card taller than the others. `IntrinsicHeight`
+    // with a stretched cross axis is what makes the short cards match the tall
+    // one; at the width the design was drawn for every label fits on one line
+    // and nothing about the row changes.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _buildMetricCard(
+              key: const ValueKey('yearly_metric_duration'),
+              icon: Icons.timer_outlined,
+              title: '年度专注时长',
+              value: totalValue,
+              unit: totalUnit,
+              diffLabel: hoursDiffPct != null
+                  ? '比去年多了 ${hoursDiffPct.abs().toStringAsFixed(0)}% ${hoursDiffPct >= 0 ? "↑" : "↓"}'
+                  : '开启新一年的积累',
+              diffColor: AppColors.primarySage,
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildMetricCard(
-            icon: Icons.checklist_rounded,
-            title: '总计专注次数',
-            value: '$sessionCount',
-            unit: '次',
-            diffLabel: sessionCountDiff != null
-                ? '比去年多了 ${sessionCountDiff.abs()} 次'
-                : '稳步向前',
-            diffColor: AppColors.primarySage,
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildMetricCard(
+              key: const ValueKey('yearly_metric_sessions'),
+              icon: Icons.checklist_rounded,
+              title: '总计专注次数',
+              value: '$sessionCount',
+              unit: '次',
+              diffLabel: sessionCountDiff != null
+                  ? '比去年多了 ${sessionCountDiff.abs()} 次'
+                  : '稳步向前',
+              diffColor: AppColors.primarySage,
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildMetricCard(
-            icon: Icons.calendar_today_rounded,
-            title: '专注天数',
-            value: '$activeDays',
-            unit: '天',
-            diffLabel: '占全年 $dayPercentage%',
-            diffColor: AppColors.accentPeach,
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildMetricCard(
+              key: const ValueKey('yearly_metric_days'),
+              icon: Icons.calendar_today_rounded,
+              title: '专注天数',
+              value: '$activeDays',
+              unit: '天',
+              diffLabel: '占全年 $dayPercentage%',
+              diffColor: AppColors.accentPeach,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildMetricCard({
+    required Key key,
     required IconData icon,
     required String title,
     required String value,
@@ -468,6 +486,7 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
     required Color diffColor,
   }) {
     return Container(
+      key: key,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -488,7 +507,11 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
                     fontSize: 10,
                     color: AppColors.textSecondary,
                   ),
-                  maxLines: 1,
+                  // Two lines rather than an ellipsis. On a 360dp phone a card is
+                  // about 100dp wide and `年度专注时长` did not fit, so the row
+                  // read 年度专注时… — a truncated word is not a shorter word.
+                  // Found by walking the reports on a small screen.
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -525,7 +548,9 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
               fontWeight: FontWeight.w600,
               color: diffColor,
             ),
-            maxLines: 1,
+            // Two lines for the same reason as the title above: `比去年多了
+            // 100% ↑` lost its arrow to the ellipsis on a narrow phone.
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -685,6 +710,7 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
         children: [
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 '全年日历热力图',
@@ -694,9 +720,18 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              Text(
-                '每一个专注的日子，都闪闪发光。♡',
-                style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
+              // Flexible, because the title and the caption together are a hair
+              // wider than a 360dp card: the row overflowed by 0.75px, which is
+              // a striped band in a debug build and a silently clipped caption in
+              // a release one. Found by the small-screen pass. The caption is the
+              // part that can give way — it wraps rather than pushing the title
+              // off the edge.
+              Flexible(
+                child: Text(
+                  '每一个专注的日子，都闪闪发光。♡',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                ),
               ),
             ],
           ),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+// `OverflowBoxFit`, for the chart's day labels. `material.dart` does not put the
+// rendering enums in scope.
+import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
@@ -188,7 +191,13 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
                       child: CircularProgressIndicator(
                           color: AppColors.primarySage))
                   : ListView(
-                      padding: const EdgeInsets.all(20),
+                      // Centred on a wide screen, so a landscape phone does not
+                      // stretch every card across it — see AppLayout.
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppLayout.reportGutter(
+                            MediaQuery.sizeOf(context).width),
+                        vertical: 20,
+                      ),
                       children: [
                         // Month Selector
                         Row(
@@ -513,14 +522,32 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
                           // lines and the labels overlapped each other into an
                           // unreadable smear — found by walking the app on a
                           // device. The month is already in the header above.
-                          Text(
-                            '$day',
-                            maxLines: 1,
-                            softWrap: false,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 8,
-                              color: AppColors.textTertiary,
+                          //
+                          // Given its own width, because the column cannot give
+                          // it one: on a 360dp phone each of the 31 columns is
+                          // about 7dp and a two-digit label needs 9, so `14`,
+                          // `21` and `28` were drawn as one digit and a sliver
+                          // of the next. Found by walking the reports on a small
+                          // screen. The labelled days are six apart, so the
+                          // couple of dp of spill has nothing to overlap.
+                          OverflowBox(
+                            maxWidth: 40,
+                            maxHeight: 20,
+                            // Sized to the label rather than to the column it is
+                            // escaping: the default `max` fit asks the parent for
+                            // as much as it will give, and a Column hands its
+                            // non-flex children an unbounded main axis.
+                            fit: OverflowBoxFit.deferToChild,
+                            alignment: Alignment.center,
+                            child: Text(
+                              '$day',
+                              maxLines: 1,
+                              softWrap: false,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 8,
+                                color: AppColors.textTertiary,
+                              ),
                             ),
                           )
                         else
