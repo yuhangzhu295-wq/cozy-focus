@@ -2,7 +2,7 @@
  "program": "COZYFOCUS_2_0_P1_TO_P10",
  "project": "COZY_FOCUS",
  "branch": "recovery/v4.2.1-rebuild",
- "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then seven rounds of device, screen-size, accessibility and multi-pack passes. Round 7 ran several packs on the device and found a deletion defect.",
+ "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then eight rounds of device, screen-size, accessibility, multi-pack and unwalked-screen passes.",
  "phase": "P10",
  "slice": "P1-P10 complete. Round 2 walkthrough complete: five defects found and fixed, each with a reverse-proved regression test and a device re-check; two candidate findings withdrawn after re-measuring.",
  "start_sha": "0a116e2",
@@ -25,7 +25,7 @@
   "golden_flows_A_to_F": "PASS"
  },
  "test_counts": {
-  "full_suite": "1921/1921",
+  "full_suite": "1923/1923",
   "schema_head": 11
  },
  "p32_device_flow": {
@@ -372,5 +372,18 @@
   "rule_narrowed_again": "'Make the row match the selection' was too wide: it fought an adoption in progress, and three tests of the picker's confirm path caught it. The rule is now 'repair a pet whose companion no longer exists', which is the deleted-pack case and nothing else.",
   "shipped_art_measured": "4 of 147 shipped frames fall below the builder's own admission rule (dog/stand_up_000 44%, dog/tap_react_002 47%, rabbit/celebrate_000 39%, rabbit/celebrate_002 37%). Measured with the builder's metric; cropping to content moves the numbers but not the verdict, so it is softness and not framing. Recorded in docs/companion_assets.md, with tools/cozy_pet_builder/test_shipped_frames.py as a ratchet so the list cannot grow unnoticed. Fixing them is artwork, which is out of bounds.",
   "stale_finding_withdrawn": "'P34 remains: the pack builder itself is not built' is stale - tools/cozy_pet_builder/build.py exists, has a CLI, refuses every bad input in its own test suite, and two Flutter tests depend on it."
+ },
+ "round8_unwalked_tabs": {
+  "range": "4410cbc -> (this commit)",
+  "history_tab": "walked and correct: search (a dialog, not an inline field), the record-domain category chips, the rows through the shared duration formatter, the empty state. Positive search is not device-testable here - `adb input text` cannot send Chinese - and is covered by widget tests instead.",
+  "calendar_tab": {
+   "what": "the day header read 共 1 分钟 2 次 over rows reading 0 分钟 and 1 分钟. The numbers agreed by luck; the conventions did not - the header took DayProgressSummary.totalMinutes (floor) and the rows take formatDurationText (round). Two 50-second sessions show it: header 1 分钟 over two rows of 1 分钟.",
+   "why_it_matters": "the same shape as the mood id, the record row and the room's status sentence: one quantity, two answers. Rounded parts not summing to the rounded whole is not the problem - any rounding does that, as the reports' percentages show. Two conventions is.",
+   "fix": "the header uses the shared formatter; zero is written by hand because it answers 未设置 for zero, which is a task's 'no length set' rather than an empty day.",
+   "device": "header went from 共 1 分钟 to 共 2 分钟 2 次."
+  },
+  "the_intermittent_failure": "6 consecutive full-suite runs green in the background, about 10 in all since; not reproduced, still not diagnosed. Recorded rather than dismissed. One thing to change next time: the original failure left no text because the output was truncated, so a repeat should capture full output or it will be undiagnosable again.",
+  "talkback_is_not_installable_here": "this emulator image has no TalkBack service (only com.android.systemui.accessibility.accessibilitymenu), so the screen-reader pass needs the owner's device. The semantics tree itself is clean as of round 5.",
+  "p32_expansion_ratio_checked": "accurate but not a gap: the live check runs before decoding (archive_reader.dart:192, from the central directory's declared sizes), which is where it matters - refusing before the memory is spent. The entry-level one is inert because the reader passes no trustworthy compressed size; making it live would only refuse again after the cost. Left alone."
  }
 }

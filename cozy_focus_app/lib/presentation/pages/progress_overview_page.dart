@@ -11,6 +11,7 @@ import '../companion/companion_selection.dart';
 import '../../domain/models/focus_record.dart';
 import '../../domain/models/focus_review.dart';
 import '../../domain/services/duration_text.dart';
+import '../../domain/services/statistics_engine.dart';
 import '../controllers/records_controller.dart';
 import '../theme/app_theme.dart';
 import '../companion/companion_avatar.dart';
@@ -702,7 +703,13 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
                     color: AppColors.textPrimary)),
             const Spacer(),
             Text(
-                '共 ${selSum?.totalMinutes ?? 0} 分钟  ${selSum?.sessionCount ?? 0} 次',
+                // The shared formatter, so the day's total and the rows under it
+                // are described the same way. It answered 未设置 for zero, which is
+                // a *task's* "no length was set" rather than a day with nothing in
+                // it, so zero is written here. `totalMinutes` floored, and the rows
+                // below rounded — the same quantity with two conventions on one
+                // screen, which is the defect this codebase keeps finding.
+                '共 ${_dayTotalText(selSum)}  ${selSum?.sessionCount ?? 0} 次',
                 style: const TextStyle(
                     fontSize: 12, color: AppColors.textSecondary)),
           ]),
@@ -821,6 +828,12 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
         ]),
       ),
     );
+  }
+
+  /// The selected day's total, in the words the rows below use.
+  static String _dayTotalText(DayProgressSummary? summary) {
+    final seconds = summary?.totalSeconds ?? 0;
+    return seconds <= 0 ? '0 分钟' : formatDurationText(seconds);
   }
 
   // ===== Record Row =====
