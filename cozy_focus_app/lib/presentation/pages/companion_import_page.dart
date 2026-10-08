@@ -603,6 +603,7 @@ class _SpeciesChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = _labels[species] ?? species;
     return Semantics(
+      excludeSemantics: true,
       button: true,
       selected: selected,
       label: label,

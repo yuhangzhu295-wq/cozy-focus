@@ -369,6 +369,7 @@ class _DefaultFocusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      excludeSemantics: true,
       button: true,
       label: '默认专注时长，当前 ${formatDurationText(seconds)}',
       child: GestureDetector(

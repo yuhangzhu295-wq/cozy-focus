@@ -42,17 +42,24 @@ class AppBottomNav extends ConsumerWidget {
 
   const AppBottomNav({super.key, required this.currentIndex});
 
+  // No `semanticLabel` on these icons. `BottomNavigationBarItem.label` already
+  // names the destination, and the icon's label merges into the same node, so
+  // having both made every tab announce itself twice — the device tree read
+  // `首页\n首页\nTab 1 of 3`. A `semanticLabel` is only needed on an icon that
+  // nothing else names; the opposite mistake (an unnamed icon button) was fixed
+  // earlier in this project by adding one, which is why it is worth saying which
+  // case this is.
   static const List<BottomNavigationBarItem> _items = [
     BottomNavigationBarItem(
-      icon: Icon(Icons.home_rounded, semanticLabel: '首页'),
+      icon: Icon(Icons.home_rounded),
       label: '首页',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.bar_chart_rounded, semanticLabel: '记录'),
+      icon: Icon(Icons.bar_chart_rounded),
       label: '记录',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.eco_outlined, semanticLabel: '成长'),
+      icon: Icon(Icons.eco_outlined),
       label: '成长',
     ),
   ];

@@ -358,6 +358,7 @@ class _ProgressCard extends StatelessWidget {
           const SizedBox(height: 12),
           for (final subtask in progress.subtasks)
             Semantics(
+              excludeSemantics: true,
               button: true,
               label: '${subtask.isDone ? '取消完成' : '完成'} ${subtask.title}',
               child: InkWell(

@@ -1041,6 +1041,7 @@ class _TimingModeSwitch extends StatelessWidget {
           for (final option in FocusTimingMode.values)
             Expanded(
               child: Semantics(
+                excludeSemantics: true,
                 key: ValueKey('focus_mode_${option.id}'),
                 button: true,
                 selected: option == mode,
@@ -1133,6 +1134,7 @@ class FocusTimerRing extends StatelessWidget {
   Widget build(BuildContext context) {
     final diameter = diameterFor(MediaQuery.sizeOf(context).height);
     return Semantics(
+      excludeSemantics: true,
       readOnly: true,
       label: '专注计时 $time，当前$statusLabel',
       child: SizedBox(

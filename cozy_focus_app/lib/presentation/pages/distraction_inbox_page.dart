@@ -315,6 +315,7 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      excludeSemantics: true,
       button: true,
       selected: selected,
       label: label,

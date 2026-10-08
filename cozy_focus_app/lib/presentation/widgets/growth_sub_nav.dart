@@ -88,6 +88,7 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      excludeSemantics: true,
       selected: active,
       button: true,
       label: label,

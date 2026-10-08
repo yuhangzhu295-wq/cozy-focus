@@ -537,6 +537,7 @@ class _ModeSegments extends StatelessWidget {
           for (final option in FocusTimingMode.values)
             Expanded(
               child: Semantics(
+                excludeSemantics: true,
                 key: ValueKey('setup_mode_${option.id}'),
                 button: true,
                 selected: option == mode,

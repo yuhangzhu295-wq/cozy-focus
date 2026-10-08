@@ -493,6 +493,7 @@ class _DateField extends StatelessWidget {
         '周${weekdays[day.weekday - 1]}';
 
     return Semantics(
+      excludeSemantics: true,
       button: true,
       label: '选择日期 $label',
       child: Material(
@@ -629,6 +630,7 @@ class _StartTimeField extends StatelessWidget {
     final hour = start.hour.toString().padLeft(2, '0');
     final minute = start.minute.toString().padLeft(2, '0');
     return Semantics(
+      excludeSemantics: true,
       button: true,
       label: '开始时间 $hour:$minute',
       child: Material(
@@ -719,6 +721,7 @@ class _DurationChips extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Semantics(
+      excludeSemantics: true,
       button: true,
       selected: active,
       label: label,

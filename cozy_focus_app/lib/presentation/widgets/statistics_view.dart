@@ -157,6 +157,7 @@ class _KindSelector extends StatelessWidget {
           for (final option in AnalyticsRangeKind.values)
             Expanded(
               child: Semantics(
+                excludeSemantics: true,
                 key: ValueKey('stats_range_${option.id}'),
                 button: true,
                 selected: option == kind,

@@ -344,6 +344,7 @@ class _Segments extends StatelessWidget {
   Widget _segment(String label, bool active, VoidCallback onTap, String key) {
     return Expanded(
       child: Semantics(
+        excludeSemantics: true,
         key: ValueKey(key),
         button: true,
         selected: active,

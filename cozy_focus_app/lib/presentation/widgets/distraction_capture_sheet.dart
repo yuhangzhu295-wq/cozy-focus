@@ -239,6 +239,7 @@ class _TagChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = taskCategoryColor(category.id);
     return Semantics(
+      excludeSemantics: true,
       button: true,
       selected: selected,
       label: '标签 ${category.label}',

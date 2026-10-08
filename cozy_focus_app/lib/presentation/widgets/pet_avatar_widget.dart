@@ -187,7 +187,13 @@ class PetAvatarWidget extends StatelessWidget {
               ),
             ),
           ],
+          // This wrapper owns the whole name, the hint and both gestures, so it
+          // excludes what it wraps. Without that, the sprite renderer's own
+          // `semanticLabel` — the same string — merged into this node and the
+          // device tree read `Mochi 庆祝中\nMochi 庆祝中`. The badge text below is
+          // already inside an `ExcludeSemantics` for the same reason.
           Semantics(
+            excludeSemantics: true,
             button: controller != null && _respondsToTouch(activeState),
             label: semanticLabelOverride ?? _petSemanticLabel(activeState),
             hint: controller != null ? _touchHint(activeState) : null,
