@@ -34,7 +34,7 @@
 
   "current": {
     "stage": "STAGE_3_VISUAL_RESTORATION",
-    "subtask": "design 05 closed, design 01's current-task card built and device-verified. Next: design 01's hourly focus chart (data is available on DayProgressSummary.records), then the duration-selector styling the board shows as a solid dark-green card",
+    "subtask": "design 01's current-task card and hourly chart are both built and device-verified. Next: S3.03a the duration selector, which the board draws as a solid dark-green card with a leaf above the number, where the app draws a light outlined pill",
     "mode": "IN_PROGRESS"
   },
 
@@ -76,6 +76,7 @@
     "S1.09 design 09 timeline audited (structural; one open question about the design's fifth kind, registered as S1.09a)",
     "S3.05a-e design 05 CLOSED: the four tags each draw their own icon (TaskCategory.iconName was dead data), selection is the brand green rather than the category colour, the count sits inside the field, and the field is four lines tall. 6 tests, all reverse-proved, device-verified",
     "S3.03 home: the current-task card the design puts under the greeting is missing — DONE, CurrentTaskCard, device-verified, 9 tests",
+    "S3.04 home: the hourly focus chart — DONE, HourlyFocus + HourlyFocusChart, device-verified, 13 tests. The bucket size was measured (8 two-hour bars, 06:00-22:00, labels at their real clock positions) with tools/qa/chart_bars.py rather than guessed",
     "S7.01 five deliverables written with real content (01, 04, 07, 08, 09)"
   ],
 
