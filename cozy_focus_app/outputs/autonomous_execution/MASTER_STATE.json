@@ -6,7 +6,6 @@
   "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
   "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
   "updated_at": "2026-10-09T00:55:00+08:00",
-
   "continuation": {
     "question": "does this environment support automatic continuation of the work?",
     "answer": "PARTIALLY — and the honest split matters.",
@@ -23,7 +22,6 @@
     "explicitly_not_done": "No claim that automatic continuation is solved. Repeating a prompt to look busy is not continuation and was not used. The real mechanism is: every work unit ends committed and recorded, and the hourly schedule (or the owner) can pick the program up from CHECKPOINT.md at any time.",
     "resume_entry_point": "outputs/autonomous_execution/RESUME_INSTRUCTIONS.md"
   },
-
   "git": {
     "head": "e8647f33a58cf4206499157cfd44298f7fadce0b",
     "remote_head": "e8647f33a58cf4206499157cfd44298f7fadce0b",
@@ -31,13 +29,11 @@
     "worktree": "clean",
     "last_verified_at": "2026-10-08T23:39:00+08:00"
   },
-
   "current": {
     "stage": "STAGE_3_VISUAL_RESTORATION",
-    "subtask": "design 01 is COMPLETE — every element the board draws is now built and device-verified. Next: design 04's focus control row (S3.06), where the board draws four round controls and the app draws full-width buttons",
+    "subtask": "Stage 2 is now largely proved: the duration convention is unified (three answers became one), and the overrun, idempotence and memory claims were re-proved by mutation rather than inherited. Next: design 04's focus control row (S3.06), or the rest of Stage 2 (timezone, pause/resume, cross-day, restart) if that reads as higher risk.",
     "mode": "IN_PROGRESS"
   },
-
   "status_vocabulary": [
     "PENDING",
     "IN_PROGRESS",
@@ -49,14 +45,12 @@
     "BLOCKED_EXTERNAL",
     "NOT_VERIFIED"
   ],
-
   "gates": {
     "gate_a_business_correctness": "IN_PROGRESS",
     "gate_b_visual_consistency": "IN_PROGRESS",
     "gate_c_companion_and_room": "PENDING",
     "gate_d_device_and_release": "PENDING"
   },
-
   "completed_this_program": [
     "S0.01 dev pack extracted outside the repo and read in full (16 designs, 5 autopilot docs, animation plan, GitHub refs)",
     "S0.02 board-vs-screen comparison tooling written (six detection criteria tried; boards are the reference of record)",
@@ -80,9 +74,10 @@
     "S3.03a home: the duration selector — DONE. The title now reads 选择专注时长 (no emoji), every card carries a leaf (#7ABB55), and the chosen card is filled solid #517C52 with white text instead of primaryLight inside a border. Device-verified",
     "S5.06 the home page now has its own test file (7 tests). It did have two tests in presentation_widgets_test.dart, which an earlier note of mine wrongly denied — corrected in the ledger rather than edited away",
     "S3.03b home: 放松一下 is now its own card below 今天的专注, with the companion in its sleep pose, a subtitle and a chevron, instead of a second full-width button inside the focus card. Device-verified, 3 tests. DESIGN 01 IS NOW COMPLETE",
-    "S7.01 five deliverables written with real content (01, 04, 07, 08, 09)"
+    "S7.01 five deliverables written with real content (01, 04, 07, 08, 09)",
+    "S2.03 DURATION CONVENTION: the app turned seconds into a figure four ways — formatDurationText rounds, the weekly and monthly report pages floored their own split, the wrapped page rounded to whole hours. One week of 9,359 seconds read 2 小时 36 分钟, 2h 35m and 3 小时 on three screens. Unified on durationMinutes + durationParts; the per-screen formats are untouched. 6 tests, 3 reverse-proved. Deliberately NOT unified: RewardService.settle still floors, because paying for an unspent minute is a different mistake from rounding a display, and the code now says so where the two rules meet",
+    "S2.01/S2.05 RE-PROVED BY MUTATION, not inherited: removing _endAtForCountdown records 5640 s instead of 1500 and pays 960 coins instead of 50 — the original 94-minute defect reproduced exactly; making the settlement gate always true lets the second settle return true and doubles coins and XP. Idempotence rests on the reward_ledger primary key {sessionId} plus INSERT OR IGNORE and SELECT changes(), not on a comment"
   ],
-
   "pending": [
     "S1.08, S1.10..S1.16 audit designs 08 and 10..16",
     "S3.04 home: the hourly focus chart in 今天的专注 is missing. The data is already on hand — DayProgressSummary carries the day's records — so this is a widget plus a bucketing rule, not a new query",
@@ -97,9 +92,7 @@
     "S6.* golden flows A..H on the device",
     "S7.* remaining deliverables (02, 03, 05, 06) and the final gate"
   ],
-
   "failed": [],
-
   "dependencies": [
     "S3 per-page fixes depend on that page's S1 audit",
     "S2 has no dependency on S1/S3 and can run in any window",
@@ -107,11 +100,10 @@
     "S6 depends on S2 and S3 being stable",
     "S7 depends on all of the above"
   ],
-
   "recent_test_evidence": {
-    "at": "2026-10-09T06:05:00+08:00",
+    "at": "2026-10-09T10:20:00+08:00",
     "command": "flutter test",
-    "result": "1977/1977 passed",
+    "result": "1986/1986 passed",
     "note": "The flake is resolved and it was a product defect, not the harness: ReportsController's constructor called loadAllReports() without awaiting it while all three report pages already called the same method from initState, so every visit loaded twice and the constructor's round could land after a test's teardown closed the database. It failed with no exception text at all, just '+2 -1'. Removing the constructor's call took the suspect file from 8/10 clean to 12/12. An earlier fix to the room-placement test's fixed-frame wait addressed a real but different fragility.",
     "before_this_window": "6 tests were red at HEAD (e8647f33) and had been for a day, because the records screen read the wall clock while the tests seeded against an injected one. The 1931/1931 recorded in the previous version of this file was stale.",
     "analyze": "flutter analyze --fatal-infos: No issues found",
@@ -119,11 +111,8 @@
     "apk": "flutter build apk --debug: built",
     "diff_check": "clean"
   },
-
   "uncommitted": "none",
-
   "next_instruction": "Continue Stage 1 from design 05: view 05_DISTRACTION_CAPTURE, capture the app's capture sheet with real data, write the matrix row, register any diff in the queue. Then 06..16 in order. Stage 2 may be interleaved when the emulator is unusable.",
-
   "external_blockers": [
     "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
     "LAUNCHER_ICON: stock Flutter icon, no approved artwork",
@@ -134,6 +123,5 @@
     "ROOM_SIT_FRAMES: no pack ships a sustained sit pose",
     "SOFT_SHIPPED_FRAMES: 4 of 147 shipped frames are below the pack builder's own admission rule"
   ],
-
   "final_gate": "NOT_REACHED"
 }

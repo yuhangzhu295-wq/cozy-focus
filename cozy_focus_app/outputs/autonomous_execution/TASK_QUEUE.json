@@ -1,7 +1,7 @@
 {
   "queue_version": 1,
   "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
-  "updated_at": "2026-10-09T02:45:00+08:00",
+  "updated_at": "2026-10-09T10:20:00+08:00",
   "tasks": [
     {
       "id": "S1.01",
@@ -168,43 +168,50 @@
       "id": "S2.01",
       "stage": 2,
       "title": "re-verify: a countdown that overran records the target",
-      "status": "PENDING"
+      "status": "TESTED",
+      "note": "re-proved by mutation: removing the guard records 5640 s instead of 1500 s and pays 960 coins instead of 50"
     },
     {
       "id": "S2.02",
       "stage": 2,
       "title": "re-verify: the early-finish dialog does not promise an unpaid minute",
-      "status": "PENDING"
+      "status": "TESTED",
+      "note": "guard present and green; the dialog floors like the reward does"
     },
     {
       "id": "S2.03",
       "stage": 2,
       "title": "re-verify: one duration convention across rows, timeline and totals",
-      "status": "PENDING"
+      "status": "TESTED",
+      "note": "DEFECT FOUND AND FIXED: three conventions became one. See ledger entry 13"
     },
     {
       "id": "S2.04",
       "stage": 2,
       "title": "re-verify: the calendar day total matches its rows",
-      "status": "PENDING"
+      "status": "TESTED",
+      "note": "guard present and green (calendar_day_total_test)"
     },
     {
       "id": "S2.05",
       "stage": 2,
       "title": "settlement idempotence: one session, one reward",
-      "status": "PENDING"
+      "status": "TESTED",
+      "note": "re-proved by mutation: the reward_ledger primary key plus changes() is what makes it idempotent"
     },
     {
       "id": "S2.06",
       "stage": 2,
       "title": "timezone, pause, resume, early finish, cross-day, restart",
-      "status": "PENDING"
+      "status": "PENDING",
+      "note": "timezone, pause, resume, early finish, cross-day, restart — not yet walked end to end this program"
     },
     {
       "id": "S2.07",
       "stage": 2,
       "title": "FocusRecord / RewardLedger / StatisticsEngine / task totals / timeline derive from one source",
-      "status": "PENDING"
+      "status": "PENDING",
+      "note": "the four sources agree — the duration convention was the first part of this; the rest is not yet checked"
     },
     {
       "id": "S4.01",
