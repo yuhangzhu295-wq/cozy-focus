@@ -1,7 +1,7 @@
 {
   "queue_version": 1,
   "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
-  "updated_at": "2026-10-09T10:20:00+08:00",
+  "updated_at": "2026-10-09T11:30:00+08:00",
   "tasks": [
     {
       "id": "S1.01",
@@ -203,15 +203,15 @@
       "id": "S2.06",
       "stage": 2,
       "title": "timezone, pause, resume, early finish, cross-day, restart",
-      "status": "PENDING",
-      "note": "timezone, pause, resume, early finish, cross-day, restart — not yet walked end to end this program"
+      "status": "TESTED",
+      "note": "pause and cross-midnight both done: pause re-proved by mutation, and cross-midnight produced a real defect in the hourly chart (fixed). Timezone and the abandoned-session restart path are covered by existing guards (focus_session_clock_safety_test, the finishing-session recovery group) but have not been re-proved by mutation this program"
     },
     {
       "id": "S2.07",
       "stage": 2,
       "title": "FocusRecord / RewardLedger / StatisticsEngine / task totals / timeline derive from one source",
       "status": "PENDING",
-      "note": "the four sources agree — the duration convention was the first part of this; the rest is not yet checked"
+      "note": "the duration convention was the first part (fixed); whether FocusRecord, RewardLedger, StatisticsEngine, task totals and the timeline all agree on a set of sessions is not yet checked as one test"
     },
     {
       "id": "S4.01",
