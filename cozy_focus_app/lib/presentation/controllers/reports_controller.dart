@@ -94,6 +94,15 @@ class ReportsController extends StateNotifier<ReportsState> {
 
   // The clock is only needed to open on the right period; every later move is
   // relative to the state, so it is not kept as a field.
+  //
+  // The constructor deliberately does not start loading. It used to, and that
+  // unawaited call was both redundant and harmful: all three report pages
+  // already call [loadAllReports] from `initState`, so the constructor's copy
+  // meant every visit ran the whole set of queries twice, with the second round
+  // belonging to nobody — nothing awaited it and nothing observed a failure.
+  // It also made this controller impossible to test without racing: the query
+  // could land after a test's teardown had closed the database, which failed the
+  // suite about twice in ten runs.
   ReportsController({
     required StatisticsEngine statsEngine,
     required IPetRepository petRepo,
@@ -102,9 +111,7 @@ class ReportsController extends StateNotifier<ReportsState> {
     // Default kept for unit tests; production uses currentUserIdProvider.
   })  : _statsEngine = statsEngine,
         _petRepo = petRepo,
-        super(_initialState(clock)) {
-    loadAllReports();
-  }
+        super(_initialState(clock));
 
   /// The week, month and year the reports open on, taken from the injected clock
   /// rather than the wall clock.
