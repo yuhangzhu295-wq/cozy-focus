@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/models/focus_record.dart';
 import '../../domain/models/pet_models.dart';
 import '../../domain/models/enums.dart';
 import 'providers.dart';
@@ -9,6 +10,16 @@ class HomeUIState {
   final int todayFocusSeconds;
   final int sessionCountToday;
   final int streakDays;
+
+  /// Today's records, in the order the repository returned them.
+  ///
+  /// Carried rather than re-queried: the home screen's 今天的专注 card draws an
+  /// hourly distribution, and that needs the sessions themselves, not just their
+  /// total. [HomeController.loadHomeData] already fetches exactly this range, so
+  /// holding it costs nothing and keeps the card's total and its bars reading
+  /// from one fetch rather than two that could disagree.
+  final List<FocusRecord> todayRecords;
+
   final Pet? pet;
   final PetProgress? petProgress;
   final bool hasActiveSession;
@@ -18,6 +29,7 @@ class HomeUIState {
     this.todayFocusSeconds = 0,
     this.sessionCountToday = 0,
     this.streakDays = 0,
+    this.todayRecords = const [],
     this.pet,
     this.petProgress,
     this.hasActiveSession = false,
@@ -30,6 +42,7 @@ class HomeUIState {
     int? todayFocusSeconds,
     int? sessionCountToday,
     int? streakDays,
+    List<FocusRecord>? todayRecords,
     Pet? pet,
     PetProgress? petProgress,
     bool? hasActiveSession,
@@ -39,6 +52,7 @@ class HomeUIState {
       todayFocusSeconds: todayFocusSeconds ?? this.todayFocusSeconds,
       sessionCountToday: sessionCountToday ?? this.sessionCountToday,
       streakDays: streakDays ?? this.streakDays,
+      todayRecords: todayRecords ?? this.todayRecords,
       pet: pet ?? this.pet,
       petProgress: petProgress ?? this.petProgress,
       hasActiveSession: hasActiveSession ?? this.hasActiveSession,
@@ -120,6 +134,7 @@ class HomeController extends StateNotifier<HomeUIState> {
       todayFocusSeconds: todaySec,
       sessionCountToday: todayRecords.length,
       streakDays: streak,
+      todayRecords: todayRecords,
       pet: pet,
       petProgress: progress,
       hasActiveSession: activeSessions.isNotEmpty,

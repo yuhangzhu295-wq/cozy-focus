@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../companion/companion_selection.dart';
 import '../../domain/models/enums.dart';
+import '../../domain/models/focus_record.dart';
 import '../../domain/models/task_schedule.dart';
+import '../../domain/services/duration_text.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/craft_controller.dart';
+import '../controllers/providers.dart';
 import '../controllers/today_plan_controller.dart';
 import '../../core/auth/current_user.dart';
 import '../theme/app_theme.dart';
@@ -15,6 +18,7 @@ import '../companion/companion_avatar.dart';
 import '../companion/companion_business_state.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/current_task_card.dart';
+import '../widgets/hourly_focus_chart.dart';
 
 /// Line height that hugs the approved font's own metrics.
 ///
@@ -101,8 +105,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final homeState = ref.watch(homeControllerProvider);
-    final todayMinutes = homeState.todayMinutes;
-    final streakDays = homeState.streakDays;
     final hasActive = homeState.hasActiveSession;
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -126,7 +128,11 @@ class _HomePageState extends ConsumerState<HomePage> {
             SliverToBoxAdapter(child: _buildCurrentTaskCard(context)),
             SliverToBoxAdapter(child: _buildFocusPanel(hasActive)),
             SliverToBoxAdapter(
-              child: _buildStatsPanel(todayMinutes, streakDays),
+              child: _buildStatsPanel(
+                homeState.todayFocusSeconds,
+                homeState.sessionCountToday,
+                homeState.todayRecords,
+              ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
@@ -549,9 +555,13 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildStatsPanel(int todayMinutes, int streakDays) {
+  Widget _buildStatsPanel(
+    int todaySeconds,
+    int sessionCount,
+    List<FocusRecord> todayRecords,
+  ) {
     final companionName = ref.watch(companionDisplayNameProvider);
-    final progress = (todayMinutes / 240).clamp(0.0, 1.0);
+    final progress = (todaySeconds / (240 * 60)).clamp(0.0, 1.0);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       // Reference 01 measures this card at 170.5pt (593.75 -> 764.25): 13.6pt
@@ -662,82 +672,51 @@ class _HomePageState extends ConsumerState<HomePage> {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        '$todayMinutes 分钟',
+                        // The app's one duration formatter, so an hour reads the
+                        // same here as on the timeline and the reports. Zero is
+                        // spelled out rather than passed through: the formatter
+                        // answers '未设置' for it, which is true of a goal and
+                        // not of a total.
+                        todaySeconds <= 0
+                            ? '0 分钟'
+                            : formatDurationText(todaySeconds),
                         style: const TextStyle(
-                          fontSize: 24,
+                          fontSize: 20,
                           fontWeight: FontWeight.w700,
                           height: _kLineHeight,
                           color: AppColors.textPrimary,
                         ),
                       ),
                     ),
-                    const Text(
-                      '今日专注时长',
-                      style: TextStyle(
-                        fontSize: 12,
+                    Text(
+                      // The design's second line. It replaces '今日专注时长',
+                      // which restated the figure above it, and the encouragement
+                      // below it, which the card's banner already carries.
+                      '完成 $sessionCount 次专注',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
                         height: _kLineHeight,
                         color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const Text(
-                      '继续加油！',
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: _kLineHeight,
-                        color: AppColors.textTertiary,
                       ),
                     ),
                   ],
                 ),
               ),
-              Container(
-                width: 1,
-                height: 48,
-                color: AppColors.border,
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('🔥', style: TextStyle(fontSize: 18)),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '$streakDays 天',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              height: _kLineHeight,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+              const SizedBox(width: 12),
+              // The chart takes a fixed share rather than an `Expanded` one.
+              // With both sides expanding, the figure and its label were the
+              // parts that gave way — the number shrank and 完成 N 次专注 wrapped
+              // to two lines, which is the opposite of what the design draws.
+              SizedBox(
+                width: 128,
+                child: HourlyFocusChart(
+                  focus: HourlyFocus.of(
+                    todayRecords,
+                    ref.watch(focusClockProvider).now(),
                   ),
-                  const Text(
-                    '连续专注',
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: _kLineHeight,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const Text(
-                    '保持好节奏！',
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: _kLineHeight,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),

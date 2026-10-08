@@ -46,6 +46,17 @@ class AppColors {
   static const Color accentGold = Color(0xFFE5A93C);
   static const Color accentGoldLight = Color(0xFFFEF8EC);
 
+  /// The green the designs fill their bar charts with.
+  ///
+  /// Measured from the boards rather than derived from [primarySage]. Page 01's
+  /// home chart fills its tallest bar with `#7AB278` and its shortest with
+  /// `#CEE8C1`; a tint of `#44714B` comes out grey beside them, because the
+  /// chart green is a more saturated one rather than a lighter brand green. The
+  /// faint value is what a bucket holding almost nothing is drawn in, so the low
+  /// end reads as "barely any" instead of as a different category.
+  static const Color chartBar = Color(0xFF7AB278);
+  static const Color chartBarFaint = Color(0xFFCEE8C1);
+
   /// Ink for the large focus timer figure.
   ///
   /// Sampled from the approved page renders rather than chosen: the `25:00`
