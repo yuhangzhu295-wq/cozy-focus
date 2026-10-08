@@ -134,6 +134,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 homeState.todayRecords,
               ),
             ),
+            SliverToBoxAdapter(child: _buildRestRow(context)),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
@@ -512,36 +513,88 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           ),
           const SizedBox(height: 8),
-          // 放松一下, the design's second way out of this card.
-          //
-          // Outlined rather than filled: focusing is what the screen is for, and a
-          // second solid button beside it would make the two look like equal
-          // choices. It leads to a real screen that writes a real rest.
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => context.push('/rest'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primaryDark,
-                side: const BorderSide(color: AppColors.primarySage),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
-              icon: const Icon(Icons.local_cafe_outlined, size: 20),
-              label: const Text(
-                '放松一下',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  height: _kLineHeight,
-                ),
-              ),
-            ),
-          ),
         ],
+      ),
+    );
+  }
+
+  /// 放松一下, as design 01 draws it.
+  ///
+  /// It used to be an outlined button **inside** the focus card, sitting under
+  /// 开始专注 at the same width, which made leaving to rest look like a second
+  /// way to start focusing. The board puts it in its own card below 今天的专注,
+  /// with the companion asleep on a cushion beside the words — a different
+  /// gesture for a different thing.
+  ///
+  /// The thumbnail is the app's own companion renderer in its sleep state, not a
+  /// new illustration: the pose already exists and is already used when a rest is
+  /// running, so the row shows the same Mochi the rest screen will.
+  Widget _buildRestRow(BuildContext context) {
+    return Semantics(
+      excludeSemantics: true,
+      button: true,
+      label: '放松一下，累了就休息一会儿吧',
+      child: GestureDetector(
+        onTap: () => context.push('/rest'),
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  color: AppColors.backgroundWarm,
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+                alignment: Alignment.center,
+                child: const CompanionAvatar(
+                  visualStateOverride: PetVisualState.sleep,
+                  size: 52,
+                  showStateBadge: false,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '放松一下',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        height: _kLineHeight,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      '累了就休息一会儿吧',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: _kLineHeight,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: AppColors.textTertiary,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

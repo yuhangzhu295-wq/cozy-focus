@@ -154,6 +154,44 @@ void main() {
     });
   });
 
+  group('the 放松一下 row', () {
+    testWidgets('is its own row, not a second button in the focus card',
+        (tester) async {
+      await pumpHome(tester);
+
+      // The old treatment was an outlined button with the same label and
+      // nothing else, sitting inside the focus card at 开始专注's width — which
+      // made resting look like a second way to start focusing. The design's row
+      // carries a subtitle and a chevron, and those are what tell the two apart.
+      expect(find.text('放松一下'), findsOneWidget);
+      expect(find.text('累了就休息一会儿吧'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
+    });
+
+    testWidgets('sits below the card that holds 开始专注', (tester) async {
+      await pumpHome(tester);
+
+      final startButton = tester.getRect(find.text('开始专注'));
+      final restRow = tester.getRect(find.text('放松一下'));
+
+      expect(
+        restRow.top,
+        greaterThan(startButton.bottom),
+        reason: 'the design puts it in its own card below 今天的专注',
+      );
+    });
+
+    testWidgets('leads to the rest screen', (tester) async {
+      await pumpHome(tester);
+
+      await tester.tap(find.text('放松一下'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('rest'), findsOneWidget);
+    });
+  });
+
   group('the cards design 01 draws', () {
     testWidgets('carries the hourly distribution', (tester) async {
       await pumpHome(tester);

@@ -72,6 +72,19 @@ Widget createTestApp(ProviderContainer container, Widget child) {
   );
 }
 
+/// The hero's companion.
+///
+/// The home page draws a second, much smaller one in the 放松一下 row — a
+/// thumbnail of the same pet asleep — so `find.byType(PetAvatarWidget)` is no
+/// longer the hero's alone. The hero's is the large one; every other companion
+/// on this page is a thumbnail.
+Finder heroPetFinder(WidgetTester tester) {
+  final largest = tester
+      .widgetList<PetAvatarWidget>(find.byType(PetAvatarWidget))
+      .reduce((a, b) => a.size >= b.size ? a : b);
+  return find.byWidget(largest);
+}
+
 void main() {
   late AppDatabase db;
   late WidgetTestClock testClock;
@@ -146,7 +159,7 @@ void main() {
       // carries no speech bubble. That means the page must not print a level or
       // an XP figure anywhere in the hero either — the truthful level/XP display
       // lives on the Mochi growth page, which is where the design puts it.
-      final avatarFinder = find.byType(PetAvatarWidget);
+      final avatarFinder = heroPetFinder(tester);
       expect(avatarFinder, findsOneWidget);
       final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
       expect(avatarWidget.message, isNull);
@@ -197,7 +210,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      final avatarFinder = find.byType(PetAvatarWidget);
+      final avatarFinder = heroPetFinder(tester);
       expect(avatarFinder, findsOneWidget);
 
       final headlineFinder = find.text('专注当下，\n让更好的自己慢慢长大。');
@@ -205,7 +218,7 @@ void main() {
 
       // Measure the companion's rendered box rather than a specific renderer:
       // the pose can legitimately use either the layered rig or sprite art.
-      final petFinder = find.byType(PetAvatarWidget);
+      final petFinder = heroPetFinder(tester);
       expect(petFinder, findsOneWidget);
 
       final headlineRect = tester.getRect(headlineFinder);
@@ -254,7 +267,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      final avatarFinder = find.byType(PetAvatarWidget);
+      final avatarFinder = heroPetFinder(tester);
       expect(avatarFinder, findsOneWidget);
       final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
       expect(avatarWidget.message, isNull);
@@ -262,7 +275,7 @@ void main() {
       final headlineFinder = find.text('专注当下，\n让更好的自己慢慢长大。');
       expect(headlineFinder, findsOneWidget);
 
-      final petFinder = find.byType(PetAvatarWidget);
+      final petFinder = heroPetFinder(tester);
       expect(petFinder, findsOneWidget);
 
       final headlineRect = tester.getRect(headlineFinder);
@@ -294,7 +307,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      final avatarFinder = find.byType(PetAvatarWidget);
+      final avatarFinder = heroPetFinder(tester);
       expect(avatarFinder, findsOneWidget);
       final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
       expect(avatarWidget.message, isNull);
