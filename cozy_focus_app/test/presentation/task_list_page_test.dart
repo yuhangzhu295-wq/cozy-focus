@@ -146,6 +146,15 @@ void main() {
       find.widgetWithIcon(IconButton, Icons.add_circle),
     );
     expect(plus.onPressed, isNotNull);
+
+    // And it has a name. Its tooltip used to be doing that job and does not:
+    // measured in Flutter, a tooltip lands in `tooltip` and leaves `label`
+    // empty, and on the device the button came back as `content-desc=""` with
+    // no tooltip attribute in the tree at all. The name now sits on the icon.
+    final node = tester.getSemantics(
+      find.widgetWithIcon(IconButton, Icons.add_circle),
+    );
+    expect(node.label, '新建任务');
   });
 
   testWidgets('the filter tabs announce which one is active', (tester) async {

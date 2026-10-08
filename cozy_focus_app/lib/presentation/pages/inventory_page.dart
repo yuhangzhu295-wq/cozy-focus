@@ -54,7 +54,8 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
           IconButton(
             tooltip: '前往房间',
             onPressed: () => context.go('/room'),
-            icon: const Icon(Icons.meeting_room_outlined),
+            icon:
+                const Icon(Icons.meeting_room_outlined, semanticLabel: '前往房间'),
           ),
         ],
       ),

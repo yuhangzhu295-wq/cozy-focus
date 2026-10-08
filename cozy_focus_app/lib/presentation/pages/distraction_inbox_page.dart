@@ -437,14 +437,18 @@ class _NoteRow extends StatelessWidget {
                 ],
               ),
             ),
-            Semantics(
-              button: true,
-              label: '${note.text} 的操作',
-              child: IconButton(
-                onPressed: onActions,
-                icon: const Icon(Icons.more_horiz_rounded,
-                    size: 20, color: AppColors.textSecondary),
-              ),
+            // Named on the icon rather than by a wrapper. The wrapper this
+            // replaced produced two nodes — the named one and the IconButton's
+            // own, unnamed — so a screen reader stopped twice and one stop said
+            // nothing. Measured, not assumed; see the probe note in
+            // TEST_EVIDENCE.
+            IconButton(
+              onPressed: onActions,
+              tooltip: '${note.text} 的操作',
+              icon: Icon(Icons.more_horiz_rounded,
+                  semanticLabel: '${note.text} 的操作',
+                  size: 20,
+                  color: AppColors.textSecondary),
             ),
           ],
         ),

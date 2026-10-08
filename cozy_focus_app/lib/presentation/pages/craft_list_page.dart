@@ -232,7 +232,10 @@ class _HeaderIconButton extends StatelessWidget {
     return IconButton(
       onPressed: onPressed,
       tooltip: tooltip,
-      icon: Icon(icon),
+      // `tooltip` is the name this helper was given, and a tooltip alone
+      // does not reach the platform's accessibility name — see
+      // tools/find_unlabelled_icon_buttons.py.
+      icon: Icon(icon, semanticLabel: tooltip),
       color: AppColors.textPrimary,
       style: IconButton.styleFrom(
         backgroundColor: AppColors.surface,

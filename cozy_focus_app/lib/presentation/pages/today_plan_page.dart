@@ -90,7 +90,7 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
             tooltip: '选择日期',
             onPressed: () => _pickDay(context, state.day),
             icon: const Icon(Icons.calendar_month_rounded,
-                color: AppColors.primarySage),
+                semanticLabel: '选择日期', color: AppColors.primarySage),
           ),
           const SizedBox(width: 4),
         ],

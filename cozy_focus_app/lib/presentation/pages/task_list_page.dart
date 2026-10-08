@@ -55,7 +55,8 @@ class TaskListPage extends ConsumerWidget {
                 await ref.read(taskListControllerProvider.notifier).load();
               }
             },
-            icon: const Icon(Icons.add_circle, color: AppColors.primarySage),
+            icon: const Icon(Icons.add_circle,
+                semanticLabel: '新建任务', color: AppColors.primarySage),
           ),
           const SizedBox(width: 4),
         ],

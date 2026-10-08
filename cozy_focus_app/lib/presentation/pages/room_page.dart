@@ -305,12 +305,12 @@ class _RoomPageState extends ConsumerState<RoomPage>
         leading: BackButton(onPressed: () => context.go('/')),
         actions: [
           IconButton(
-            icon: const Icon(Icons.inventory_2_outlined),
+            icon: const Icon(Icons.inventory_2_outlined, semanticLabel: '库存'),
             tooltip: '库存',
             onPressed: () => context.go('/inventory'),
           ),
           IconButton(
-            icon: const Icon(Icons.handyman_outlined),
+            icon: const Icon(Icons.handyman_outlined, semanticLabel: '制作工坊'),
             tooltip: '制作工坊',
             onPressed: () => context.go('/craft'),
           ),
@@ -982,7 +982,8 @@ class _SelectionToolbar extends StatelessWidget {
     Color? color,
   }) =>
       IconButton(
-        icon: Icon(icon, color: color),
+        // The helper's `tooltip` is its name; a tooltip on its own is not one.
+        icon: Icon(icon, color: color, semanticLabel: tooltip),
         tooltip: tooltip,
         onPressed: onPressed,
       );

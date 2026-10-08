@@ -1,13 +1,25 @@
 """Find IconButtons that carry no accessible name, with enough context to judge.
 
-An `IconButton` gets its semantics label from `tooltip`. Without one - and
-without a `Semantics` wrapper - a screen reader announces "button" and nothing
-else.
+## What actually names an IconButton
 
-The wrapper is the reason this prints context: `Semantics(label: ..., child:
-IconButton(...))` is a label the IconButton itself does not carry, so a scan
-that only reads the IconButton's own arguments reports it as unnamed. The three
-lines above each hit say whether a wrapper is there.
+**Not `tooltip`.** This file said the opposite for a long time, and the rule was
+wrong in a way that hid a real defect on the task list. Measured two ways:
+
+* in Flutter, `IconButton(tooltip: '新建任务', ...)` gives a node with
+  `label == ''` and `tooltip == '新建任务'` — the string lands in a different
+  field;
+* on the device, `uiautomator` reports that button as
+  `content-desc="" text=""`, and the dump contains no `tooltip=` attribute at
+  all. The string never reaches the platform.
+
+So a screen reader announces "button" and nothing else. What does name it is
+either a `semanticLabel` on the `Icon` inside, or a `Semantics` wrapper carrying
+a `label`.
+
+The wrapper is why this prints context: `Semantics(label: ..., child:
+IconButton(...))` is a name the IconButton itself does not carry, so a scan that
+only reads the IconButton's own arguments reports it as unnamed. The three lines
+above each hit say whether a wrapper is there.
 """
 
 import pathlib
@@ -36,27 +48,32 @@ def main():
         src = path.read_text(encoding="utf-8")
         for match in re.finditer(r"\bIconButton\(", src):
             body = call_body(src, match.end() - 1)
-            if "tooltip" in body or "semanticLabel" in body:
+            if "semanticLabel" in body:
                 continue
             line = src[: match.start()].count("\n") + 1
             before = src[: match.start()].split("\n")[-9:]
             wrapped = any("Semantics(" in b for b in before)
             icon = re.search(r"Icon\(\s*([^)\n]*)", body)
+            tooltip_only = "tooltip" in body
             hits.append(
                 (
                     "wrapped" if wrapped else "BARE",
                     path.as_posix(),
                     line,
                     icon.group(1).strip() if icon else "?",
+                    tooltip_only,
                     " / ".join(b.strip() for b in before if b.strip()),
                 )
             )
 
     bare = [h for h in hits if h[0] == "BARE"]
-    print("candidates: %d   of which not inside a Semantics wrapper: %d"
-          % (len(hits), len(bare)))
-    for kind, path, line, icon, context in bare:
-        print("  %s:%d  %s" % (path, line, icon))
+    print(
+        "candidates: %d   of which not inside a Semantics wrapper: %d"
+        % (len(hits), len(bare))
+    )
+    for kind, path, line, icon, tooltip_only, context in bare:
+        note = "  (tooltip only — that is NOT a name)" if tooltip_only else ""
+        print("  %s:%d  %s%s" % (path, line, icon, note))
         print("      above: %s" % context)
 
 
