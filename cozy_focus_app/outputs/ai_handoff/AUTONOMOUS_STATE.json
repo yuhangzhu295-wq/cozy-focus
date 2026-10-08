@@ -2,7 +2,7 @@
  "program": "COZYFOCUS_2_0_P1_TO_P10",
  "project": "COZY_FOCUS",
  "branch": "recovery/v4.2.1-rebuild",
- "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then three rounds of device walkthrough. Round 3 walked a 360dp screen and landscape: four more defects found, all invisible at the single size the suite had always run at.",
+ "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then four rounds of device and screen-size walkthrough. Round 4 reproduced the P32 §31A settlement question to its root cause: a display disagreement, not an arithmetic one.",
  "phase": "P10",
  "slice": "P1-P10 complete. Round 2 walkthrough complete: five defects found and fixed, each with a reverse-proved regression test and a device re-check; two candidate findings withdrawn after re-measuring.",
  "start_sha": "0a116e2",
@@ -25,7 +25,7 @@
   "golden_flows_A_to_F": "PASS"
  },
  "test_counts": {
-  "full_suite": "1893/1893",
+  "full_suite": "1898/1898",
   "schema_head": 11
  },
  "p32_device_flow": {
@@ -65,7 +65,7 @@
   "VERTEX_AI": "BLOCKED_EXTERNAL - no credentials, no project, no gcloud. The abstraction is complete; adding a provider is a class plus a ProviderScope override."
  },
  "owner_decisions_required": [
-  "P32 §31A: a displayed 30-minute session settles 29:55, five seconds under a 1800s recipe. Reproduce the exact cause first; fix if it is a defect, else PRODUCT_DECISION_REQUIRED between elapsed truth and planned-duration grace.",
+  "P32 §31A, remaining half only: whether an 1800-second recipe should accept 1795 seconds of focus (elapsed truth vs planned-duration grace). The other half — the app telling the user they had done 30 minutes and then paying for 29 — was a display disagreement and is fixed; see round4_walkthrough.",
   "The rug's purpose now that its only action (sit) is hidden.",
   "Whether bookshelf/search may share focus_think with desk/study."
  ],
@@ -308,5 +308,18 @@
   },
   "collection_page_walked": "10 entries, 8 obtainable and 2 preview (obtainable: false). On the device the 8 read 未收集 and the 2 read 未开放, the counter is 0/8 rather than 0/10, and the footer says the achievement system is not wired to the runtime database. Truthful, not a mock list.",
   "not_walked": "small-screen and landscape outside the report pages: the home/records/growth tabs stretch on a wide screen, which is cosmetic rather than broken, and was left alone."
+ },
+ "round4_walkthrough": {
+  "range": "c4dd289 -> (this commit)",
+  "trigger": "the owner_decisions_required item that said 'reproduce the exact cause first'",
+  "root_cause_of_the_2955_settlement": "Not the settlement: 1795 seconds in, 1795 seconds out, and RewardService pays (elapsed/60).floor() = 29 minutes. The cause was one screen rounding the same quantity in two directions — the running page's own 已专注 label floors, the early-finish dialog ceiled. At 1795s the dialog said 已经专注了 30 分钟 while the settlement was about to credit 29, which is how a player came to believe they had met an 1800-second recipe. Reproduced before changing: 1795 rendered 30, 59 rendered 1.",
+  "second_defect_found_by_following_the_thread": "The records list floored its own minutes while formatDurationText — documented as the single authority for 'what an hour is', and read by the timeline and both report pages — rounds. So one 54-second record read 0 分钟 in the list and 1 分钟 on the timeline. The list now uses the shared formatter. The reverse fix would have moved the contradiction into more places.",
+  "two_rounding_families": {
+   "progress (floors)": "RewardService minutes, craft progress, the 已专注 label, the early-finish dialog. Answers 'how many whole minutes did you complete' — the number a user compares against a goal or a payment, so it must never overstate.",
+   "duration label (rounds)": "formatDurationText -> timeline, reports, task durations. Answers 'how long was that' — a description.",
+   "device_evidence": "a 152-second session: the dialog said 1 分钟 (its snapshot at open), the completion screen printed 02:32, the reward paid +4 coins (floor 2), and the record row wrote 3 分钟, agreeing with the timeline."
+  },
+  "still_the_owners": "whether a 1800s recipe should accept 1795s — unchanged, and now the only part of §31A left.",
+  "my_own_measurement_error_again": "I read the device's 02:36-02:37 record as 54 seconds and called its 1 分钟 a bug. The device timezone is UTC (date +%z = +0000) and I had converted with the HOST offset — the same mistake as the round-3 weekly report. In UTC that record is 84 seconds, where floor and round agree, so it was never evidence either way. Pin the timezone with `date +%z` before drawing a conclusion; do not infer it from wall-clock readings."
  }
 }

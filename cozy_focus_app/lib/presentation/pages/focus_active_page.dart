@@ -274,8 +274,17 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
   }
 
   /// Screen 03C: Early-finish confirmation dialog
+  ///
+  /// The whole minutes, rounded down, because that is what everything else does
+  /// with this number: `RewardService.settle` pays `(elapsed / 60).floor()`
+  /// minutes, the completion screen prints the exact 29:55, and this screen's own
+  /// 已专注 label floors as well. Rounding up here made the dialog the one place
+  /// that disagreed — at 29:55 it said 已经专注了 30 分钟 while the settlement was
+  /// about to credit 29, which is how a player came to believe they had met a
+  /// 1800-second recipe and had not (P32 §31A). Reproduced before changing:
+  /// 1795 seconds rendered 30, 59 seconds rendered 1.
   Future<void> _showEarlyFinishDialog(int elapsedSeconds) async {
-    final minutes = (elapsedSeconds / 60).ceil();
+    final minutes = elapsedSeconds ~/ 60;
     final shouldEnd = await showDialog<bool>(
       context: context,
       barrierDismissible: true,

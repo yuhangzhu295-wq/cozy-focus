@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import '../companion/companion_selection.dart';
 import '../../domain/models/focus_record.dart';
 import '../../domain/models/focus_review.dart';
+import '../../domain/services/duration_text.dart';
 import '../controllers/records_controller.dart';
 import '../theme/app_theme.dart';
 import '../companion/companion_avatar.dart';
@@ -824,7 +825,12 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
 
   // ===== Record Row =====
   Widget _buildRecordRow(FocusRecord r) {
-    final mins = (r.durationSeconds / 60).floor();
+    // The shared formatter, not a floor of this screen's own. It is what the
+    // timeline and both report pages write for the same record, and a second
+    // formatter here made a 54-second session read `0 分钟` in this list and
+    // `1 分钟` on the timeline — found by following the early-finish dialog,
+    // which was rounding the same quantity the other way.
+    final duration = formatDurationText(r.durationSeconds);
     final time =
         '${DateFormat('HH:mm').format(r.startAt)} – ${DateFormat('HH:mm').format(r.endAt)}';
     return Container(
@@ -852,7 +858,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
                       color: AppColors.textPrimary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis)),
-          Text('$mins 分钟',
+          Text(duration,
               style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
