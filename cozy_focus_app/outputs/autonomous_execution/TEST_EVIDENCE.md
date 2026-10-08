@@ -18,6 +18,13 @@ the only version of "verified" that means anything:
 Idempotence rests on the `reward_ledger` primary key `{sessionId}` plus
 `INSERT OR IGNORE` and `SELECT changes()`, not on a comment.
 
+| paused time is not counted as focus | drop the pause subtraction in `elapsedSecondsAt` | a 5-minute session read **1800 s instead of 1500**; the overrun-with-pause case went red with it |
+
+Two more, from the cross-midnight work: the two day-total queries
+(`totalSecondsForDay` and `getDaySummary`) both filter on `startAt` and therefore
+agree — but the hourly chart I added last round capped its window at 24:00 and so
+disagreed with both. Fixed in ledger entry 14.
+
 **And one real defect came out of it**: the same duration had three answers
 across the report screens. See ledger entry 13.
 
