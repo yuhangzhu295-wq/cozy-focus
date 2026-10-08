@@ -69,19 +69,31 @@ The clock guard seeds **2001-03-05** deliberately. A guard pinned to a date near
 the present would pass or fail depending on when it runs, which is exactly how the
 six failures above hid for a day.
 
-### Flake status
+### Flake status — resolved, and it was a product defect
 
 `room_placement_toolbar_test.dart` "P7 — a failed placement is surfaced" failed
-twice in ten full runs and never in ten runs of its file alone; the cause was a
-fixed 400ms wait for a `ref.listen` callback that can arrive a frame later under
-CPU contention. The wait is now bounded polling and the assertion is unchanged
-(`b7f011d`).
+twice in ten full runs and never in ten runs of its file alone; a fixed 400ms wait
+for a `ref.listen` callback was replaced with bounded polling (`b7f011d`). That
+was real but it was **not the whole story**: single failures kept appearing, about
+three or four in fifteen runs, with **no exception text at all** — just `+2 -1`.
 
-One further single failure was observed in a gate run immediately after four
-consecutive clean runs. Its identity was not captured, because that run's output
-was redirected in the wrong order (`2>&1 > file` sends stderr to the terminal and
-hides the exception). A hunt is running to identify it; **the suite is not
-recorded as deterministically green until that is resolved.**
+That absence was the clue. Running the suspect file alone reproduced it twice in
+ten, and the failure was in `records_screen_uses_the_app_clock_test.dart` reading
+`reportsControllerProvider`. The cause was in `ReportsController`: **its
+constructor called `loadAllReports()` without awaiting it**, so the query could
+land after `tearDown` had closed the in-memory database.
+
+It was also a real redundancy. All three report pages already call
+`loadAllReports()` from `initState`, so the constructor's copy meant every visit
+ran the whole set of queries twice, the second round belonging to nobody —
+nothing awaited it and nothing observed its failure.
+
+Removing the constructor's call took the file from 8/10 clean to **12/12**, and
+four consecutive full-suite runs since are clean at 1957.
+
+The lesson is worth keeping: when one symptom has two causes, fixing the first
+does not make the symptom go away, and the right response is to change the
+hypothesis rather than to lengthen a timeout.
 
 ## 2026-10-08 — after bec8026 (the responsive ring)
 
