@@ -1,7 +1,7 @@
 {
   "queue_version": 1,
   "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
-  "updated_at": "2026-10-09T01:10:00+08:00",
+  "updated_at": "2026-10-09T02:45:00+08:00",
   "tasks": [
     {
       "id": "S1.01",
@@ -49,7 +49,8 @@
       "id": "S1.07",
       "stage": 1,
       "title": "audit design 07 analytics lite",
-      "status": "PENDING"
+      "status": "TESTED",
+      "note": "structural audit only; every element the design draws exists, pixel detail not yet compared"
     },
     {
       "id": "S1.08",
@@ -61,7 +62,8 @@
       "id": "S1.09",
       "stage": 1,
       "title": "audit design 09 timeline",
-      "status": "PENDING"
+      "status": "TESTED",
+      "note": "structural audit; the design's legend has five kinds and the app models four"
     },
     {
       "id": "S1.10",
@@ -245,7 +247,8 @@
       "id": "S5.03",
       "stage": 5,
       "title": "accessible names on every screen",
-      "status": "PENDING"
+      "status": "IN_PROGRESS",
+      "note": "21 doubled announcements fixed and device-verified; the sweep continues"
     },
     {
       "id": "S5.04",
@@ -386,9 +389,15 @@
     },
     {
       "id": "S3.05e",
-      "status": "PENDING",
+      "status": "TESTED",
       "title": "capture sheet a11y: the chip announces its label twice",
-      "note": "Semantics(label:) without excludeSemantics merges the child Text into the same node"
+      "note": "fixed with excludeSemantics: true, and the same defect was found in 20 more places"
+    },
+    {
+      "id": "S1.09a",
+      "status": "NOT_VERIFIED",
+      "title": "timeline: the design's day has non-task events the app has no source for",
+      "note": "design 09 shows 08:00 起床 / 12:00 午休 / 18:00 自由时间 with a 用餐·生活 dot, and its legend names five kinds; TimelineKind models four and '用餐' appears nowhere in the repo. Two readings, both needing a product decision: a life-event source, or drawing 生活-category plan rows in that colour. Not changed."
     }
   ]
 }
