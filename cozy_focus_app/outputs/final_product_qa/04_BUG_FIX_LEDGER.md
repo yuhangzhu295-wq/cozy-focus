@@ -82,6 +82,19 @@
 - **设备复验**：411×914 下四个图标各不相同；计数 `4/100` 在框内右下角；框明显变高；点 `生活` 后是**绿色**选中态而非橙色。截图见 `02_BEFORE_AFTER/after/after_capture_sheet*.png`。
 - **顺带修掉的测试夹具错误**：这条测试一开始把画布设成 `physicalSize 1080×2400 + dpr 1.0`，那是 1080pt 宽的视口而不是设计稿的 411dp 手机，量出的比值只有 0.197 并误判为失败。改为 `dpr = 1080/411` 后为 0.32。
 
+### 9. 首页缺"当前任务"卡片
+
+- **发现方式**：设计 01 展板（裁切见 `_crops/01_HOME_OPTIMIZED_330_545_470x300@1.9x.jpg`）在**伙伴与「选择专注时长」之间**放了一张卡片：`○ 写产品方案 [专注中] ›` / `2/3 · 预计 90 分钟`。实机首页完全没有这张卡——页面直接给出时长和开始按钮，却不说这次专注是为了什么。
+- **修复**：新增 `CurrentTaskCard`（`lib/presentation/widgets/current_task_card.dart`），并在首页插入到 `_buildHeroArea` 与 `_buildFocusPanel` 之间。
+- **数据来源**：读的是**今日计划**同一个 `PlannedTask`（`todayPlanControllerProvider`），也就是「今日计划」页 `下一个任务` 卡片读的那份，所以两个页面不可能对"下一个是什么"各说各话。
+- **两处刻意与设计不同**（都不画会撒谎）：
+  1. `专注中` 徽章**只在真有会话在跑**时出现。会话"在跑"的判据用模型自己的定义——`FocusSession.endAt == null`（跑着或暂停），而不是另立一套。设备上当前没有会话在跑，卡片就不带徽章。
+  2. `2/3` **只在任务确实是当天计划里的一条**时才画。从一个没排过期的会话进来的任务没有位置，画 `null/3` 或 `0/3` 都是编。
+- **测试**：`test/presentation/current_task_card_test.dart` 9 条——副标题四种组合（都缺时为 `null` 因而不画那一行）、有焦点时画徽章、**无焦点时不画徽章**、缺信息时那行整个不出现、点击回调、读屏读成一句完整的话而不是碎片。
+- **反向证明**：把徽章改成无条件绘制 → "an idle card does not claim to be focusing" 变红（`Expected: no matching candidates / Actual: Found 1 widget with text "专注中"`）。
+- **设备复验**：411×914 实机首页显示 `○ Write the product spec` / `1/1 · 预计 25 分钟`，位置与设计一致；无会话时不带 `专注中`。截图 `02_BEFORE_AFTER/after/after_home_card.png`。
+- **顺带发现的缺口**：首页此前**没有任何 widget 测试**（`test/` 下无 home 相关文件）。本次只补了卡片自身的测试，首页整体的测试仍缺，记入待办。
+
 ## 本轮定位但**尚未修复**
 
 | 缺陷 | 证据 | 影响 |
