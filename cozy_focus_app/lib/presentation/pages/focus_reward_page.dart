@@ -40,6 +40,10 @@ class _FocusRewardPageState extends ConsumerState<FocusRewardPage> {
     final sessionState = ref.watch(focusSessionControllerProvider);
     final craft = ref.watch(craftControllerProvider);
     final sessionId = widget.sessionId ?? sessionState.session?.id;
+    // The companion's own name, the way the completion screen writes it. This
+    // chip said "Pet XP" — the only place in the app that called the pet "Pet",
+    // next to a 专注币 chip that was in Chinese. Found on a device.
+    final companionName = ref.watch(companionDisplayNameProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -103,7 +107,7 @@ class _FocusRewardPageState extends ConsumerState<FocusRewardPage> {
                       const SizedBox(width: 12),
                       _buildRewardChip(
                         icon: '⭐',
-                        label: '+$xp Pet XP',
+                        label: '+$xp $companionName XP',
                         color: AppColors.primaryLight,
                         textColor: AppColors.primaryDark,
                       ),

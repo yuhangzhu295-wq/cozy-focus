@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../companion/companion_selection.dart';
 import '../../domain/models/focus_record.dart';
+import '../../domain/models/focus_review.dart';
 import '../controllers/records_controller.dart';
 import '../theme/app_theme.dart';
 import '../companion/companion_avatar.dart';
@@ -877,7 +878,15 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
                       fontSize: 11, color: AppColors.textTertiary)),
               if (r.mood != null) ...[
                 const SizedBox(width: 4),
-                Text(r.mood!, style: const TextStyle(fontSize: 12))
+                // The model's own face, not the stored value. This row printed
+                // `flow` — the string in the column, which is an id the user
+                // never wrote and cannot read. Found by reviewing a session on a
+                // device and looking at 今日记录. A legacy emoji, or anything
+                // else the vocabulary does not know, is still shown as it is.
+                Text(
+                  FocusMood.fromId(r.mood)?.face ?? r.mood!,
+                  style: const TextStyle(fontSize: 12),
+                ),
               ],
             ])),
         trailing: PopupMenuButton<String>(

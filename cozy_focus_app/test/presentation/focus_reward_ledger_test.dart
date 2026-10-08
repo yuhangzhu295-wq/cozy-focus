@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/domain/models/sync_models.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
+import 'package:cozy_focus_app/presentation/companion/companion_selection.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
 import 'package:cozy_focus_app/presentation/pages/focus_reward_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
@@ -74,10 +75,15 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
+    // The chip names the companion, the way the completion screen does. The
+    // name is read rather than written out, so this stays an assertion about the
+    // number — which is what the test exists to pin.
+    final name = container.read(companionDisplayNameProvider);
+
     expect(find.text('+42 专注币'), findsOneWidget);
-    expect(find.text('+120 Pet XP'), findsOneWidget);
+    expect(find.text('+120 $name XP'), findsOneWidget);
     expect(find.text('+0 专注币'), findsNothing);
-    expect(find.text('+0 Pet XP'), findsNothing);
+    expect(find.text('+0 $name XP'), findsNothing);
   });
 
   testWidgets('renders zeros only when the ledger row really is zero',
@@ -100,6 +106,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('+0 专注币'), findsOneWidget);
-    expect(find.text('+0 Pet XP'), findsOneWidget);
+    expect(find.text('+0 ${container.read(companionDisplayNameProvider)} XP'),
+        findsOneWidget);
   });
 }
