@@ -132,8 +132,13 @@ void main() {
 
     // `CompanionProfile.species` is nullable on purpose and nothing may infer it
     // from the id, so a profile without one must not overwrite what is stored.
+    //
+    // The id is one the catalog knows, because the growth controller repairs a pet
+    // whose companion *no longer exists* — a leftover from a deleted pack — and an
+    // id nothing declares reads as exactly that. What this test is about is the
+    // null argument, so it stays out of that path.
     await container.read(growthControllerProvider.notifier).adoptCompanion(
-          characterId: 'custom_pack_pet',
+          characterId: 'rabbit',
           species: null,
           name: '自定义伙伴',
         );
@@ -142,7 +147,7 @@ void main() {
         await container.read(petRepositoryProvider).findPetByUser(userId);
     expect(pet!.species, PetSpecies.dog,
         reason: 'the stored species is kept rather than guessed at');
-    expect(pet.characterId, 'custom_pack_pet');
+    expect(pet.characterId, 'rabbit');
     expect(pet.name, '自定义伙伴');
   });
 

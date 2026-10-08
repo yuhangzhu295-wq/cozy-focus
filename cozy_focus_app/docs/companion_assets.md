@@ -143,3 +143,31 @@ the contract for the species the user chose — but it is not added to
 `pubspec.yaml`, the Dart mirror or the visual registry. That is the architecture
 rule: after installation a pack goes through the same availability, provider and
 player path as a built-in, and nothing branches on where it came from.
+
+#### What the builder refuses, and four shipped frames it would
+
+`build.py` holds a frame directory to more than the geometry contract. It refuses
+an action whose frames are copies of each other, an action with one frame,
+unpadded frame names, a frame that is not a PNG, an action the app does not know,
+a pack with no `idle`, a built-in pack id, an id that could escape the pack root,
+frames that are not on the declared canvas, a fallback pointing at an action the
+pack lacks — and **a frame whose sharpness is below half the median of its own
+action**, which is how it catches a motion-blur or interpolated frame.
+
+That last rule is worth knowing before copying art out of a shipped pack: four of
+the 147 shipped frames do not pass it.
+
+| frame | sharpness | action median | ratio |
+| --- | --- | --- | --- |
+| `dog/stand_up_000.png` | 2582 | 5900 | 44% |
+| `dog/tap_react_002.png` | 2481 | 5272 | 47% |
+| `rabbit/celebrate_000.png` | 2225 | 5696 | 39% |
+| `rabbit/celebrate_002.png` | 2090 | 5696 | 37% |
+
+Measured with the builder's own metric over the whole frame. Cropping each frame
+to its content moves the numbers but not the verdict, so this is softness rather
+than a wide pose in a small box. Each is one frame of a transition, so it reads as
+a brief softness rather than a visible break, and the four are recorded rather
+than fixed: replacing them is artwork, and placeholder art is out of bounds.
+`python tools/cozy_pet_builder/test_shipped_frames.py` measures the whole set and
+fails if the list grows.

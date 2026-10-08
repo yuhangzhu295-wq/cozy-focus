@@ -2,7 +2,7 @@
  "program": "COZYFOCUS_2_0_P1_TO_P10",
  "project": "COZY_FOCUS",
  "branch": "recovery/v4.2.1-rebuild",
- "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then six rounds of device, screen-size and accessibility passes. Round 6 worked the open-findings list: one closed, one fixed, two withdrawn as stale.",
+ "updated_at_slice": "CozyFocus 2.0 P1-P10 delivered, then seven rounds of device, screen-size, accessibility and multi-pack passes. Round 7 ran several packs on the device and found a deletion defect.",
  "phase": "P10",
  "slice": "P1-P10 complete. Round 2 walkthrough complete: five defects found and fixed, each with a reverse-proved regression test and a device re-check; two candidate findings withdrawn after re-measuring.",
  "start_sha": "0a116e2",
@@ -25,7 +25,7 @@
   "golden_flows_A_to_F": "PASS"
  },
  "test_counts": {
-  "full_suite": "1916/1916",
+  "full_suite": "1921/1921",
   "schema_head": 11
  },
  "p32_device_flow": {
@@ -358,5 +358,19 @@
    "the empty _onCompanionAnimationChanged": "its doc says 'tracked for diagnostics' and the body does nothing. Removing it is cleanup rather than a fix, so it was left and recorded here."
   },
   "still_the_owners": "room_sit's art. The sentence no longer lies, but a companion on the sofa is still drawn standing, and inventing placeholder art is explicitly out of bounds (P28.4). That is the only part of the room_sit finding left."
+ },
+ "round7_multi_pack_device_run": {
+  "range": "672dd66 -> (this commit)",
+  "how": "two packs built with tools/cozy_pet_builder/build.py from the built-ins' frames, installed through the real import path after pm clear",
+  "passed": "two packs listed together, switch persisted across restart, deleting a pack that was not selected left the selection alone, and the builder's output rendered with clean transparency",
+  "defect_found": {
+   "what": "deleting the pack the user was using repaired the selection (it fell back to dog) but not the `pets` row, which still said mimi2/cat/咪咪二号. The dress page then read 咪咪二号 three times over a picture of Mochi, with the chip beside it saying Mochi.",
+   "why": "the selection and the pets row are two records of one fact. The picker's confirm writes both (adoptCompanion); the removal path only wrote the selection.",
+   "fix": "GrowthController.syncWithSelection(), called by the removal path, plus a healing pass on load so an install already left in that state repairs itself."
+  },
+  "hazard_found_in_my_own_first_fix": "Reconciling on every load read the selection before it had been restored from its store, where it reads as the default — so a slow start would have silently reverted the user's companion to Mochi. Caught by the control test (a stored `cat` came back as `Mochi`). Fixed with an explicit CompanionSelection.restored signal and a deterministic test using a store whose read is held open.",
+  "rule_narrowed_again": "'Make the row match the selection' was too wide: it fought an adoption in progress, and three tests of the picker's confirm path caught it. The rule is now 'repair a pet whose companion no longer exists', which is the deleted-pack case and nothing else.",
+  "shipped_art_measured": "4 of 147 shipped frames fall below the builder's own admission rule (dog/stand_up_000 44%, dog/tap_react_002 47%, rabbit/celebrate_000 39%, rabbit/celebrate_002 37%). Measured with the builder's metric; cropping to content moves the numbers but not the verdict, so it is softness and not framing. Recorded in docs/companion_assets.md, with tools/cozy_pet_builder/test_shipped_frames.py as a ratchet so the list cannot grow unnoticed. Fixing them is artwork, which is out of bounds.",
+  "stale_finding_withdrawn": "'P34 remains: the pack builder itself is not built' is stale - tools/cozy_pet_builder/build.py exists, has a CLI, refuses every bad input in its own test suite, and two Flutter tests depend on it."
  }
 }

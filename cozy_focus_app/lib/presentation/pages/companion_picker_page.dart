@@ -241,6 +241,13 @@ class CompanionPickerPage extends ConsumerWidget {
     // offering an entry whose files are gone.
     ref.read(installedPacksProvider.notifier).rescan();
 
+    // The removal repaired the *selection* when the deleted pack was the selected
+    // one, but the adopted pet row is a second record of the same fact. Without
+    // this the app drew the fallback companion while the growth and dress pages
+    // still called it by the deleted pack's name — found on a device as
+    // 咪咪二号 的衣橱 above a picture of Mochi. Reloading reconciles the row.
+    await ref.read(growthControllerProvider.notifier).syncWithSelection();
+
     if (!context.mounted) return;
     if (!report.removed) {
       _tell(context, '没有找到这个伙伴，可能已经被删掉了。');

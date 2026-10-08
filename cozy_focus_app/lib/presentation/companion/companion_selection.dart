@@ -129,14 +129,35 @@ class CompanionSelection extends StateNotifier<CompanionId> {
 
   Future<void> _restore() async {
     final stored = await _store.read();
-    if (stored == null) return;
+    // Set on every path, including the ones that keep the default: "there is
+    // nothing stored" and "there is something unknown stored" are both answers,
+    // and a reader waiting on this needs either of them.
+    if (stored == null) {
+      _restored = true;
+      return;
+    }
     // The catalog is the authority on what exists; an unknown id is ignored
     // rather than trusted.
-    if (!_isKnown(stored)) return;
+    if (!_isKnown(stored)) {
+      _restored = true;
+      return;
+    }
     if (mounted) state = stored;
+    _restored = true;
   }
 
   bool _isKnown(CompanionId id) => _selectable.contains(id.value);
+
+  bool _restored = false;
+
+  /// Whether the stored selection has been read yet.
+  ///
+  /// False until [_restore] finishes, and `state` reads as the default until then.
+  /// Anything that *writes* based on the selection has to wait for this, or a slow
+  /// start would be read as "the user chose the default" — which is how a
+  /// reconciliation of the adopted pet would silently revert a user's companion.
+  /// Found while writing that reconciliation: a stored `cat` came back as `Mochi`.
+  bool get restored => _restored;
 
   /// Selects [id], persisting it. An unknown id is refused rather than stored.
   Future<bool> select(CompanionId id) async {
