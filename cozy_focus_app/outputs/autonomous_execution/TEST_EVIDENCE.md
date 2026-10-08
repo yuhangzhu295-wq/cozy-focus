@@ -3,6 +3,24 @@
 Raw command results, newest first. Every fix records its own test file and its
 reverse proof; every reverse proof records what failed and how.
 
+### Stage 2: the timing claims were re-proved, not inherited
+
+The brief asks that earlier PASS conclusions not be carried forward. Three of them
+were re-checked by **removing the guard and confirming the tests go red**, which is
+the only version of "verified" that means anything:
+
+| claim | mutation | what happened |
+|---|---|---|
+| an overrun countdown records its target, not the clock gap | `_endAtForCountdown(...)` → `now` | recorded **1500 → 5640 s**, reward **50 → 960 coins**; 2 red |
+| one session settles once | `changes() == 1` → always true | second `settle` returned `true`; coins **150 → 300**, XP **600 → 1200**; 3 red |
+| one session writes one memory | (the same mutation) | `companion_memory_test` went red with it |
+
+Idempotence rests on the `reward_ledger` primary key `{sessionId}` plus
+`INSERT OR IGNORE` and `SELECT changes()`, not on a comment.
+
+**And one real defect came out of it**: the same duration had three answers
+across the report screens. See ledger entry 13.
+
 ## 2026-10-09 — after the palette and clock work (HEAD 8ec787c)
 
 ```
