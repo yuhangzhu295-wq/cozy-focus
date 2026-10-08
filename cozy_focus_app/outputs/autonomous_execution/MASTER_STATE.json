@@ -34,7 +34,7 @@
 
   "current": {
     "stage": "STAGE_3_VISUAL_RESTORATION",
-    "subtask": "design 01 is closed: current-task card, hourly chart and duration selector are all built and device-verified. Next: design 01's 放松一下 row (the design draws it as a one-line row below the card, the app draws a bordered button inside the card), then the focus control row",
+    "subtask": "design 01 is COMPLETE — every element the board draws is now built and device-verified. Next: design 04's focus control row (S3.06), where the board draws four round controls and the app draws full-width buttons",
     "mode": "IN_PROGRESS"
   },
 
@@ -79,6 +79,7 @@
     "S3.04 home: the hourly focus chart — DONE, HourlyFocus + HourlyFocusChart, device-verified, 13 tests. The bucket size was measured (8 two-hour bars, 06:00-22:00, labels at their real clock positions) with tools/qa/chart_bars.py rather than guessed",
     "S3.03a home: the duration selector — DONE. The title now reads 选择专注时长 (no emoji), every card carries a leaf (#7ABB55), and the chosen card is filled solid #517C52 with white text instead of primaryLight inside a border. Device-verified",
     "S5.06 the home page now has its own test file (7 tests). It did have two tests in presentation_widgets_test.dart, which an earlier note of mine wrongly denied — corrected in the ledger rather than edited away",
+    "S3.03b home: 放松一下 is now its own card below 今天的专注, with the companion in its sleep pose, a subtitle and a chevron, instead of a second full-width button inside the focus card. Device-verified, 3 tests. DESIGN 01 IS NOW COMPLETE",
     "S7.01 five deliverables written with real content (01, 04, 07, 08, 09)"
   ],
 

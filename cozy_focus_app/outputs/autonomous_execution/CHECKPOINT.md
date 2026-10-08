@@ -4,18 +4,18 @@
 below; re-verify the git state before acting on it.
 
 ```
-at           2026-10-09T06:10:00+08:00
+at           2026-10-09T09:35:00+08:00
 branch       recovery/v4.2.1-rebuild
-HEAD         (advanced by this window — run `git log --oneline -20` and read it)
+HEAD         (advanced by this window — run `git log --oneline -24` and read it)
 remote HEAD  origin/recovery/v4.2.1-rebuild
-tests        1977/1977 green, analyze clean, format clean, APK builds
+tests        1980/1980 green, analyze clean, format clean, APK builds
 ```
 
 The previous checkpoint recorded `e8647f33a58cf4206499157cfd44298f7fadce0b`. This
 window added commits on top of it. **Do not reset to any recorded SHA** — read the
 log and continue from wherever HEAD actually is.
 
-## What this window did (eighteen commits)
+## What this window did (twenty-one commits)
 
 1. Finished `outputs/autonomous_execution/` (all seven files) and registered a
    recurring continuation schedule. `MASTER_STATE.json` → `continuation` states
@@ -47,20 +47,21 @@ log and continue from wherever HEAD actually is.
     card, and the chosen card filled solid rather than merely highlighted.
 11. The home page got its own test file. It already had two tests elsewhere, which
     an earlier note of mine wrongly denied; the correction is in the ledger.
+12. **Design 01 is complete.** Its last differing element, the 放松一下 row, moved
+    out of the focus card into its own card below 今天的专注, with the companion in
+    its sleep pose. Every element the board draws is now built and device-verified.
 
 ## The one thing to do next
 
-**Design 01's 放松一下 row.** The board draws it as a one-line row **below** the
-focus card — a small pet thumbnail, the title, `累了就休息一会儿吧`, and a chevron
-— where the app draws a bordered button **inside** the card, the same width as
-开始专注. It is the last element of design 01 still differing; the current-task
-card, the hourly chart and the duration selector are all built and
-device-verified.
+**Design 04's focus control row** (S3.06). The board draws four round controls —
+白噪音 / 暂停 / 记一下 / 完成 — in one row with the labels under the icons, where
+the app draws a full-width 记一下 button and two full-width buttons under it.
+白噪音 itself stays absent: there is no audio in the repo, and a control that plays
+nothing is exactly the fake control the contract forbids, so the row is three
+controls and a documented gap rather than four.
 
-Then the focus page's control row (S3.06): the design draws four round controls
-(白噪音 / 暂停 / 记一下 / 完成) where the app draws full-width buttons. 白噪音
-itself stays absent — there is no audio in the repo and a control that plays
-nothing is the fake control the contract forbids.
+Designs 01, 05 and 06 are complete. 02, 03 and 04 have audited rows with work
+still open; 08 and 10–16 are not audited yet.
 
 ## One open item that must not be quietly closed
 
