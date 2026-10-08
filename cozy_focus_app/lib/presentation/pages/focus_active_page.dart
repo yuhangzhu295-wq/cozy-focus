@@ -32,6 +32,15 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
   bool _showRestoreOverlay = false;
   bool _isRestoring = true;
 
+  /// Whether the capture sheet is on screen right now.
+  ///
+  /// A countdown can expire while the sheet is open, and the completion
+  /// navigation below is a `go` — it replaces the route stack, which takes the
+  /// sheet with it and loses whatever the user was in the middle of typing.
+  /// Found by walking the flow on a device: the thought went in, the timer ran
+  /// out, and the note was never saved. So the navigation waits for the sheet.
+  bool _captureSheetOpen = false;
+
   // --- Mochi's encouragement channel ---------------------------------------
   //
   // The engine decides *whether* Mochi speaks; this page only feeds it the real
@@ -226,13 +235,30 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
   /// The session is untouched: the timer keeps running behind the sheet, and its
   /// elapsed time comes from the clock rather than from the screen being
   /// visible, so a thought costs the user no focus time.
+  ///
+  /// It also survives the session ending underneath it. A countdown that expires
+  /// while the sheet is open is a finished session, not a cancelled thought, and
+  /// the two orderings must leave the same note behind — so the completion
+  /// navigation is deferred to here rather than run from build.
   Future<void> _captureDistraction() async {
     final sessionId = ref.read(focusSessionControllerProvider).session?.id;
-    final saved = await showDistractionCaptureSheet(
-      context,
-      sessionId: sessionId,
-    );
-    if (!mounted || saved == null) return;
+    String? saved;
+    _captureSheetOpen = true;
+    try {
+      saved = await showDistractionCaptureSheet(
+        context,
+        sessionId: sessionId,
+      );
+    } finally {
+      _captureSheetOpen = false;
+    }
+    if (!mounted) return;
+
+    if (ref.read(focusSessionControllerProvider).isCompleted) {
+      context.go('/focus/complete');
+      return;
+    }
+    if (saved == null) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('记下了，继续专注')),
     );
@@ -556,8 +582,10 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
       );
     }
 
-    // Auto-navigate when session completes
-    if (sessionState.isCompleted && mounted) {
+    // Auto-navigate when session completes — unless the capture sheet is open,
+    // in which case `_captureDistraction` takes over and navigates once the user
+    // has finished writing.
+    if (sessionState.isCompleted && mounted && !_captureSheetOpen) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.go('/focus/complete');
       });
