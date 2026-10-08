@@ -233,8 +233,17 @@ void main() {
           .read(craftControllerProvider.notifier)
           .placeItem('sofa', 0.5, 0.5);
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      // Bounded rather than a fixed pair of pumps. `ref.listen` reports the
+      // error on the build after the provider notifies, and under a full-suite
+      // run the notification can land a frame later than a fixed 400ms covers —
+      // which made this the only test in the suite that failed intermittently
+      // (twice in ten full runs, never once in ten runs of this file alone).
+      // The wait is what is flexible; the assertion is not.
+      var frames = 0;
+      while (find.byType(SnackBar).evaluate().isEmpty && frames < 20) {
+        await tester.pump(const Duration(milliseconds: 100));
+        frames++;
+      }
 
       expect(find.byType(SnackBar), findsOneWidget);
     });
