@@ -34,7 +34,7 @@
 
   "current": {
     "stage": "STAGE_3_VISUAL_RESTORATION",
-    "subtask": "design 01's current-task card and hourly chart are both built and device-verified. Next: S3.03a the duration selector, which the board draws as a solid dark-green card with a leaf above the number, where the app draws a light outlined pill",
+    "subtask": "design 01 is closed: current-task card, hourly chart and duration selector are all built and device-verified. Next: design 01's 放松一下 row (the design draws it as a one-line row below the card, the app draws a bordered button inside the card), then the focus control row",
     "mode": "IN_PROGRESS"
   },
 
@@ -77,6 +77,8 @@
     "S3.05a-e design 05 CLOSED: the four tags each draw their own icon (TaskCategory.iconName was dead data), selection is the brand green rather than the category colour, the count sits inside the field, and the field is four lines tall. 6 tests, all reverse-proved, device-verified",
     "S3.03 home: the current-task card the design puts under the greeting is missing — DONE, CurrentTaskCard, device-verified, 9 tests",
     "S3.04 home: the hourly focus chart — DONE, HourlyFocus + HourlyFocusChart, device-verified, 13 tests. The bucket size was measured (8 two-hour bars, 06:00-22:00, labels at their real clock positions) with tools/qa/chart_bars.py rather than guessed",
+    "S3.03a home: the duration selector — DONE. The title now reads 选择专注时长 (no emoji), every card carries a leaf (#7ABB55), and the chosen card is filled solid #517C52 with white text instead of primaryLight inside a border. Device-verified",
+    "S5.06 the home page now has its own test file (7 tests). It did have two tests in presentation_widgets_test.dart, which an earlier note of mine wrongly denied — corrected in the ledger rather than edited away",
     "S7.01 five deliverables written with real content (01, 04, 07, 08, 09)"
   ],
 
@@ -106,9 +108,9 @@
   ],
 
   "recent_test_evidence": {
-    "at": "2026-10-09T05:05:00+08:00",
+    "at": "2026-10-09T06:05:00+08:00",
     "command": "flutter test",
-    "result": "1957/1957 passed on 4 consecutive full runs",
+    "result": "1977/1977 passed",
     "note": "The flake is resolved and it was a product defect, not the harness: ReportsController's constructor called loadAllReports() without awaiting it while all three report pages already called the same method from initState, so every visit loaded twice and the constructor's round could land after a test's teardown closed the database. It failed with no exception text at all, just '+2 -1'. Removing the constructor's call took the suspect file from 8/10 clean to 12/12. An earlier fix to the room-placement test's fixed-frame wait addressed a real but different fragility.",
     "before_this_window": "6 tests were red at HEAD (e8647f33) and had been for a day, because the records screen read the wall clock while the tests seeded against an injected one. The 1931/1931 recorded in the previous version of this file was stale.",
     "analyze": "flutter analyze --fatal-infos: No issues found",

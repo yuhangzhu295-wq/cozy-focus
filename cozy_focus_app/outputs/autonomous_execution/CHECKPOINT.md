@@ -4,18 +4,18 @@
 below; re-verify the git state before acting on it.
 
 ```
-at           2026-10-09T05:10:00+08:00
+at           2026-10-09T06:10:00+08:00
 branch       recovery/v4.2.1-rebuild
-HEAD         (advanced by this window — run `git log --oneline -12` and read it)
+HEAD         (advanced by this window — run `git log --oneline -20` and read it)
 remote HEAD  origin/recovery/v4.2.1-rebuild
-tests        1957/1957 green, analyze clean, format clean, APK builds
+tests        1977/1977 green, analyze clean, format clean, APK builds
 ```
 
 The previous checkpoint recorded `e8647f33a58cf4206499157cfd44298f7fadce0b`. This
 window added commits on top of it. **Do not reset to any recorded SHA** — read the
 log and continue from wherever HEAD actually is.
 
-## What this window did (thirteen commits)
+## What this window did (eighteen commits)
 
 1. Finished `outputs/autonomous_execution/` (all seven files) and registered a
    recurring continuation schedule. `MASTER_STATE.json` → `continuation` states
@@ -35,18 +35,32 @@ log and continue from wherever HEAD actually is.
 5. **Design 05 closed** — four differences fixed and device-verified.
 6. **Design 01's current-task card** built and device-verified.
 7. Designs 07 and 09 audited (structural).
-8. One flaky test de-flaked.
+8. **The flake, and it was a product defect.** `ReportsController`'s constructor
+   fired an unawaited `loadAllReports()` while all three report pages already
+   called the same method from `initState` — every visit loaded twice, and the
+   constructor's round could land after a teardown closed the database. It failed
+   with no exception text at all, just `+2 -1`. I had already blamed the harness
+   once and fixed a fixed-frame wait, which was a real but different fragility.
+9. **Design 01's hourly chart** — the bucket size measured rather than guessed
+   (8 two-hour bars, 06:00-22:00, labels at their real clock positions).
+10. **Design 01's duration selector** — the design's own title, a leaf on every
+    card, and the chosen card filled solid rather than merely highlighted.
+11. The home page got its own test file. It already had two tests elsewhere, which
+    an earlier note of mine wrongly denied; the correction is in the ledger.
 
 ## The one thing to do next
 
-**Design 01's hourly focus chart** (`TASK_QUEUE.json` S3.04). The data is already
-on hand: `DayProgressSummary` carries the day's records, so this is a chart widget
-and a bucketing rule rather than a new query. The board's axis is labelled
-6/9/12/15/18/21.
+**Design 01's 放松一下 row.** The board draws it as a one-line row **below** the
+focus card — a small pet thumbnail, the title, `累了就休息一会儿吧`, and a chevron
+— where the app draws a bordered button **inside** the card, the same width as
+开始专注. It is the last element of design 01 still differing; the current-task
+card, the hourly chart and the duration selector are all built and
+device-verified.
 
-Then S3.03a, the duration selector: the board draws the selected duration as a
-solid dark-green card with a leaf above the number, where the app draws a light
-outlined pill.
+Then the focus page's control row (S3.06): the design draws four round controls
+(白噪音 / 暂停 / 记一下 / 完成) where the app draws full-width buttons. 白噪音
+itself stays absent — there is no audio in the repo and a control that plays
+nothing is the fake control the contract forbids.
 
 ## One open item that must not be quietly closed
 
