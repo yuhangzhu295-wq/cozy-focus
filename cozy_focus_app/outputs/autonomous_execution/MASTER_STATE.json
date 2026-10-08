@@ -1,0 +1,133 @@
+{
+  "program": "COZYFOCUS_2_0_FINAL_PRODUCT_QUALITY_PASS",
+  "project": "COZY_FOCUS",
+  "repo": "https://github.com/yuhangzhu295-wq/cozy-focus",
+  "branch": "recovery/v4.2.1-rebuild",
+  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
+  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
+  "updated_at": "2026-10-09T00:55:00+08:00",
+
+  "continuation": {
+    "question": "does this environment support automatic continuation of the work?",
+    "answer": "PARTIALLY — and the honest split matters.",
+    "supported": [
+      "Zcode has persistent scheduled automation that outlives a session and survives app restarts: CronCreate (recurring workspace schedule) and OffPeakCreate (idle-time queue). Both re-enter this project with a complete instruction, not a nudge.",
+      "A recurring hourly schedule is registered: automation-66406963-b307-4962-ba44-03f48f178c43, cron '0 * * * *', title 每小时继续 CozyFocus 2.0 最终质量验收.",
+      "The schedule's prompt carries a guard: if MASTER_STATE.updated_at is under 25 minutes old it reports 'another window appears active' and exits without editing, so a scheduled run cannot fight an open session for the same worktree."
+    ],
+    "not_supported": [
+      "Nothing available here extends one conversation's context window. When this window's budget runs out the window ends; it is not resumed mid-sentence.",
+      "Auto-compaction keeps a long session going, but it is not a continuation guarantee and must not be reported as one.",
+      "No mechanism can make a single run finish an unbounded program. Work is therefore cut into work units that each end at a committed, verified, resumable point."
+    ],
+    "explicitly_not_done": "No claim that automatic continuation is solved. Repeating a prompt to look busy is not continuation and was not used. The real mechanism is: every work unit ends committed and recorded, and the hourly schedule (or the owner) can pick the program up from CHECKPOINT.md at any time.",
+    "resume_entry_point": "outputs/autonomous_execution/RESUME_INSTRUCTIONS.md"
+  },
+
+  "git": {
+    "head": "e8647f33a58cf4206499157cfd44298f7fadce0b",
+    "remote_head": "e8647f33a58cf4206499157cfd44298f7fadce0b",
+    "head_matches_remote": true,
+    "worktree": "clean",
+    "last_verified_at": "2026-10-08T23:39:00+08:00"
+  },
+
+  "current": {
+    "stage": "STAGE_1_AUDIT_AND_STAGE_3_VISUAL",
+    "subtask": "S1.05 — design 05 audited and its palette finding fixed; page-level fixes for 05 not yet applied",
+    "mode": "IN_PROGRESS"
+  },
+
+  "status_vocabulary": [
+    "PENDING",
+    "IN_PROGRESS",
+    "IMPLEMENTED",
+    "TESTED",
+    "REVIEW_APPROVED",
+    "PASS",
+    "FAIL",
+    "BLOCKED_EXTERNAL",
+    "NOT_VERIFIED"
+  ],
+
+  "gates": {
+    "gate_a_business_correctness": "IN_PROGRESS",
+    "gate_b_visual_consistency": "IN_PROGRESS",
+    "gate_c_companion_and_room": "PENDING",
+    "gate_d_device_and_release": "PENDING"
+  },
+
+  "completed_this_program": [
+    "S0.01 dev pack extracted outside the repo and read in full (16 designs, 5 autopilot docs, animation plan, GitHub refs)",
+    "S0.02 board-vs-screen comparison tooling written (six detection criteria tried; boards are the reference of record)",
+    "S1.01 design 01 home audited",
+    "S1.02 design 02 task list audited",
+    "S1.03 design 03 today plan audited",
+    "S1.04 design 04 focus mode audited",
+    "S1.05 design 05 distraction capture audited against the device; five differences registered",
+    "S1.06 design 06 focus review structurally audited while reaching 05 (not pixel-level)",
+    "S3.01 the running screen now draws the design's ring (commit 05c0c4c, 4 tests, reverse-proved)",
+    "S3.02 the ring is sized from screen height so the controls stay on the smallest target (commit bec8026, 4 tests, reverse-proved)",
+    "S2.01 GLOBAL PALETTE: the primary green was a colour the designs do not contain. Measured across all 16 boards with tools/qa/palette_report.py — design primary #44714B covers 125,256 px on every board, the old #5E8D6D only 1,468 (anti-aliasing fringe). Changed one token; also fixes white-on-green contrast 3.81 -> 5.66 (was below WCAG AA). 6 tests, reverse-proved, device-verified at pixel level",
+    "S2.02 SPLIT CLOCK: RecordsController, ReportsController and progress_overview_page read DateTime.now() while the rest of the app reads FocusClock. This is why six tests were already red at HEAD and why one more passed vacuously. 3 guard tests on an ancient date, reverse-proved",
+    "S2.03 flaky test de-flaked: room_placement_toolbar P7 waited a fixed 400ms for a ref.listen callback; now bounded polling, assertion unchanged",
+    "S7.01 five deliverables written with real content (01, 04, 07, 08, 09)"
+  ],
+
+  "pending": [
+    "S1.07..S1.16 audit designs 07..16",
+    "S3.05a capture sheet: the four category chips all draw the same tag icon; TaskCategory.iconName is declared but never rendered anywhere",
+    "S3.05b capture sheet: the selected chip uses the category colour where design 05 draws the brand green",
+    "S3.05c capture sheet: the n/100 counter sits below the input box, the design puts it inside the bottom-right",
+    "S3.05d capture sheet: the input is about two lines tall, the design draws about four",
+    "S3.05e capture sheet a11y: the chip node announces '标签 生活' then '生活' again (missing excludeSemantics)",
+    "S3.03 home: the current-task card the design puts under the greeting is missing",
+    "S3.04 home: the hourly focus chart in 今天的专注 is missing",
+    "S3.05 today plan: rows are cards, the design draws a flat rail list",
+    "S3.06 focus: the control row is full-width buttons, the design draws four round controls",
+    "S3.07..S3.20 the remaining per-page visual diffs once audited",
+    "S2.* finish re-verifying the four known timing defects and unify the rules; the clock unification is done, the arithmetic ones are not",
+    "S4.* companion animation and room (room_sit pose, anchors, z-order, switching)",
+    "S5.* multi-size, accessibility, performance",
+    "S6.* golden flows A..H on the device",
+    "S7.* remaining deliverables (02, 03, 05, 06) and the final gate"
+  ],
+
+  "failed": [],
+
+  "dependencies": [
+    "S3 per-page fixes depend on that page's S1 audit",
+    "S2 has no dependency on S1/S3 and can run in any window",
+    "S4 depends on the device being usable (see BLOCKERS: emulator ANR under repeated resizes)",
+    "S6 depends on S2 and S3 being stable",
+    "S7 depends on all of the above"
+  ],
+
+  "recent_test_evidence": {
+    "at": "2026-10-09T01:05:00+08:00",
+    "command": "flutter test",
+    "result": "1940/1940 passed on 4 consecutive full runs; 2 earlier runs showed one failure in room_placement_toolbar P7, which was then de-flaked (bounded polling instead of a fixed 400ms wait)",
+    "note": "BEFORE this work unit the suite was NOT green at HEAD: 6 tests were red and had been for a day, because they depended on the wall clock agreeing with the date they were written on. The recorded 1931/1931 in the previous version of this file was stale.",
+    "analyze": "flutter analyze --fatal-infos: No issues found",
+    "format": "dart format --set-exit-if-changed .: 0 changed",
+    "apk": "flutter build apk --debug: built",
+    "diff_check": "clean"
+  },
+
+  "uncommitted": "none",
+
+  "next_instruction": "Continue Stage 1 from design 05: view 05_DISTRACTION_CAPTURE, capture the app's capture sheet with real data, write the matrix row, register any diff in the queue. Then 06..16 in order. Stage 2 may be interleaved when the emulator is unusable.",
+
+  "external_blockers": [
+    "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
+    "LAUNCHER_ICON: stock Flutter icon, no approved artwork",
+    "OWNER_VISUAL_GATE: owner approval only",
+    "TALKBACK: not installable on this emulator image (only accessibilitymenu), needs a real device",
+    "WHITE_NOISE_ASSETS: no audio in the repo; a toggle that plays nothing is forbidden by the contract",
+    "ROOM_SCENE_ART: designs 01/04/10 use a photographic room the repo has no asset for",
+    "ROOM_SIT_FRAMES: no pack ships a sustained sit pose",
+    "SOFT_SHIPPED_FRAMES: 4 of 147 shipped frames are below the pack builder's own admission rule"
+  ],
+
+  "final_gate": "NOT_REACHED"
+}

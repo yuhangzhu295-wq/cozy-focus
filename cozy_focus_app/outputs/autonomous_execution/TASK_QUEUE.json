@@ -1,0 +1,394 @@
+{
+  "queue_version": 1,
+  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
+  "updated_at": "2026-10-09T01:10:00+08:00",
+  "tasks": [
+    {
+      "id": "S1.01",
+      "stage": 1,
+      "title": "audit design 01 home",
+      "status": "TESTED",
+      "evidence": "01_VISUAL_MATRIX.md 01 行"
+    },
+    {
+      "id": "S1.02",
+      "stage": 1,
+      "title": "audit design 02 task list",
+      "status": "TESTED",
+      "evidence": "01_VISUAL_MATRIX.md 02 行"
+    },
+    {
+      "id": "S1.03",
+      "stage": 1,
+      "title": "audit design 03 today plan",
+      "status": "TESTED",
+      "evidence": "01_VISUAL_MATRIX.md 03 行"
+    },
+    {
+      "id": "S1.04",
+      "stage": 1,
+      "title": "audit design 04 focus mode",
+      "status": "TESTED",
+      "evidence": "01_VISUAL_MATRIX.md 04 行"
+    },
+    {
+      "id": "S1.05",
+      "stage": 1,
+      "title": "audit design 05 distraction capture",
+      "status": "TESTED",
+      "note": "audited against the device; five differences registered as S3.05a-e"
+    },
+    {
+      "id": "S1.06",
+      "stage": 1,
+      "title": "audit design 06 focus review",
+      "status": "TESTED",
+      "note": "structural audit only, done while reaching 05; pixel-level detail still open"
+    },
+    {
+      "id": "S1.07",
+      "stage": 1,
+      "title": "audit design 07 analytics lite",
+      "status": "PENDING"
+    },
+    {
+      "id": "S1.08",
+      "stage": 1,
+      "title": "audit design 08 free time",
+      "status": "PENDING"
+    },
+    {
+      "id": "S1.09",
+      "stage": 1,
+      "title": "audit design 09 timeline",
+      "status": "PENDING"
+    },
+    {
+      "id": "S1.10",
+      "stage": 1,
+      "title": "audit design 10 pet and room",
+      "status": "PENDING"
+    },
+    {
+      "id": "S1.11",
+      "stage": 1,
+      "title": "audit design 11 create task",
+      "status": "PENDING"
+    },
+    {
+      "id": "S1.12",
+      "stage": 1,
+      "title": "audit design 12 task detail",
+      "status": "PENDING"
+    },
+    {
+      "id": "S1.13",
+      "stage": 1,
+      "title": "audit design 13 distraction inbox",
+      "status": "PENDING"
+    },
+    {
+      "id": "S1.14",
+      "stage": 1,
+      "title": "audit design 14 schedule to today",
+      "status": "PENDING"
+    },
+    {
+      "id": "S1.15",
+      "stage": 1,
+      "title": "audit design 15 settings lite",
+      "status": "PENDING"
+    },
+    {
+      "id": "S1.16",
+      "stage": 1,
+      "title": "audit design 16 empty state",
+      "status": "PENDING"
+    },
+    {
+      "id": "S3.01",
+      "stage": 3,
+      "title": "running screen: draw the design's ring",
+      "status": "TESTED",
+      "commit": "05c0c4c"
+    },
+    {
+      "id": "S3.02",
+      "stage": 3,
+      "title": "ring sized from screen height so controls stay on screen",
+      "status": "TESTED",
+      "commit": "bec8026"
+    },
+    {
+      "id": "S3.03",
+      "stage": 3,
+      "title": "home: add the current-task card under the greeting",
+      "status": "PENDING",
+      "from": "S1.01"
+    },
+    {
+      "id": "S3.04",
+      "stage": 3,
+      "title": "home: add the hourly focus chart to 今天的专注",
+      "status": "PENDING",
+      "from": "S1.01"
+    },
+    {
+      "id": "S3.05",
+      "stage": 3,
+      "title": "today plan: flat rail rows instead of bordered cards",
+      "status": "PENDING",
+      "from": "S1.03",
+      "decision": "D3"
+    },
+    {
+      "id": "S3.06",
+      "stage": 3,
+      "title": "focus: four round controls instead of full-width buttons",
+      "status": "PENDING",
+      "from": "S1.04"
+    },
+    {
+      "id": "S3.07",
+      "stage": 3,
+      "title": "home: remove the duplicated encouragement card (B3)",
+      "status": "PENDING",
+      "from": "S1.01"
+    },
+    {
+      "id": "S3.08",
+      "stage": 3,
+      "title": "task list: verify the completed row's tint and check",
+      "status": "PENDING",
+      "from": "S1.02"
+    },
+    {
+      "id": "S2.01",
+      "stage": 2,
+      "title": "re-verify: a countdown that overran records the target",
+      "status": "PENDING"
+    },
+    {
+      "id": "S2.02",
+      "stage": 2,
+      "title": "re-verify: the early-finish dialog does not promise an unpaid minute",
+      "status": "PENDING"
+    },
+    {
+      "id": "S2.03",
+      "stage": 2,
+      "title": "re-verify: one duration convention across rows, timeline and totals",
+      "status": "PENDING"
+    },
+    {
+      "id": "S2.04",
+      "stage": 2,
+      "title": "re-verify: the calendar day total matches its rows",
+      "status": "PENDING"
+    },
+    {
+      "id": "S2.05",
+      "stage": 2,
+      "title": "settlement idempotence: one session, one reward",
+      "status": "PENDING"
+    },
+    {
+      "id": "S2.06",
+      "stage": 2,
+      "title": "timezone, pause, resume, early finish, cross-day, restart",
+      "status": "PENDING"
+    },
+    {
+      "id": "S2.07",
+      "stage": 2,
+      "title": "FocusRecord / RewardLedger / StatisticsEngine / task totals / timeline derive from one source",
+      "status": "PENDING"
+    },
+    {
+      "id": "S4.01",
+      "stage": 4,
+      "title": "companion states idle/focus/pause/celebrate/sleep/interact match business state",
+      "status": "PENDING"
+    },
+    {
+      "id": "S4.02",
+      "stage": 4,
+      "title": "room_sit pose, occlusion and z-order",
+      "status": "PENDING",
+      "blocked_by": "ROOM_SIT_FRAMES"
+    },
+    {
+      "id": "S4.03",
+      "stage": 4,
+      "title": "furniture anchors and sprite scale",
+      "status": "PENDING"
+    },
+    {
+      "id": "S4.04",
+      "stage": 4,
+      "title": "no flicker, no dropped frames, no double init on transition",
+      "status": "PENDING"
+    },
+    {
+      "id": "S5.01",
+      "stage": 5,
+      "title": "360x800 / 393x852 / 412x915 layout sweep",
+      "status": "PENDING"
+    },
+    {
+      "id": "S5.02",
+      "stage": 5,
+      "title": "large text and landscape",
+      "status": "PENDING"
+    },
+    {
+      "id": "S5.03",
+      "stage": 5,
+      "title": "accessible names on every screen",
+      "status": "PENDING"
+    },
+    {
+      "id": "S5.04",
+      "stage": 5,
+      "title": "cold/warm start, transitions, animation frame time, memory",
+      "status": "PENDING"
+    },
+    {
+      "id": "S5.05",
+      "stage": 5,
+      "title": "TalkBack pass",
+      "status": "BLOCKED_EXTERNAL",
+      "blocked_by": "TALKBACK"
+    },
+    {
+      "id": "S6.A",
+      "stage": 6,
+      "title": "Task -> Today Plan -> Focus -> Review -> Record -> Analytics",
+      "status": "PENDING"
+    },
+    {
+      "id": "S6.B",
+      "stage": 6,
+      "title": "Focus -> Distraction -> Inbox -> Convert Task",
+      "status": "PENDING"
+    },
+    {
+      "id": "S6.C",
+      "stage": 6,
+      "title": "Home -> Rest -> Timeline",
+      "status": "PENDING"
+    },
+    {
+      "id": "S6.D",
+      "stage": 6,
+      "title": "Focus -> Background -> Resume -> Complete -> Save -> Restart",
+      "status": "PENDING"
+    },
+    {
+      "id": "S6.E",
+      "stage": 6,
+      "title": "Companion Import -> Install -> Select -> Restart",
+      "status": "PENDING"
+    },
+    {
+      "id": "S6.F",
+      "stage": 6,
+      "title": "Growth -> Room -> Dress -> Inventory",
+      "status": "PENDING"
+    },
+    {
+      "id": "S6.G",
+      "stage": 6,
+      "title": "old database -> migration -> new database -> history preserved",
+      "status": "PENDING"
+    },
+    {
+      "id": "S6.H",
+      "stage": 6,
+      "title": "new user -> create task -> focus -> first record",
+      "status": "PENDING"
+    },
+    {
+      "id": "S7.01",
+      "stage": 7,
+      "title": "five deliverables with real content",
+      "status": "TESTED",
+      "commit": "e8647f3"
+    },
+    {
+      "id": "S7.02",
+      "stage": 7,
+      "title": "02_BEFORE_AFTER screenshots",
+      "status": "PENDING"
+    },
+    {
+      "id": "S7.03",
+      "stage": 7,
+      "title": "03_BUSINESS_FLOW_EVIDENCE.md",
+      "status": "PENDING"
+    },
+    {
+      "id": "S7.04",
+      "stage": 7,
+      "title": "05_COMPANION_QA.md",
+      "status": "PENDING"
+    },
+    {
+      "id": "S7.05",
+      "stage": 7,
+      "title": "06_DEVICE_QA.md",
+      "status": "PENDING"
+    },
+    {
+      "id": "S7.06",
+      "stage": 7,
+      "title": "final gate: the five commands plus the QA flows",
+      "status": "PENDING"
+    },
+    {
+      "id": "S2.01a",
+      "status": "TESTED",
+      "title": "the primary green is the one the designs use",
+      "note": "design primary #44714B covers 125,256 px across all 16 boards; the old #5E8D6D matched 1,468. Guarded by test/theme/primary_green_matches_design_test.dart (6 tests, reverse-proved). Also fixed white-on-green contrast 3.81 -> 5.66."
+    },
+    {
+      "id": "S2.01b",
+      "status": "TESTED",
+      "title": "records and reports read the app clock, not the wall clock",
+      "note": "RecordsController, ReportsController and the records page used DateTime.now(). Guarded by test/presentation/records_screen_uses_the_app_clock_test.dart on an ancient date so the calendar cannot defeat it. Reverse-proved."
+    },
+    {
+      "id": "S2.01c",
+      "status": "TESTED",
+      "title": "the intermittently red room placement test is stable",
+      "note": "bounded polling instead of a fixed 400ms wait; assertion unchanged"
+    },
+    {
+      "id": "S3.05a",
+      "status": "PENDING",
+      "title": "capture sheet: the four chips all draw the same icon",
+      "note": "TaskCategory.iconName (home/book/briefcase/more) is declared and rendered nowhere"
+    },
+    {
+      "id": "S3.05b",
+      "status": "PENDING",
+      "title": "capture sheet: the selected chip should be brand green, not the category colour"
+    },
+    {
+      "id": "S3.05c",
+      "status": "PENDING",
+      "title": "capture sheet: the n/100 counter belongs inside the input box"
+    },
+    {
+      "id": "S3.05d",
+      "status": "PENDING",
+      "title": "capture sheet: the input is two lines tall, the design draws about four"
+    },
+    {
+      "id": "S3.05e",
+      "status": "PENDING",
+      "title": "capture sheet a11y: the chip announces its label twice",
+      "note": "Semantics(label:) without excludeSemantics merges the child Text into the same node"
+    }
+  ]
+}

@@ -27,6 +27,35 @@
 
 - `presentation_widgets_test.dart` 的那条测试在 800×600 画布上直接 `tap`，控件此时在折线以下。修复：先 `ensureVisible` 再 `tap`。**断言未改动**，只是补上"滚动到控件"这一步（页面本身就是滚动视图）。
 
+### 4. 主色绿是设计图里不存在的颜色（全局）
+
+- **发现方式**：对照设计 05 的分心收集箱时，量到设计图的实心按钮是 `#446E4B`，实机是 `#5E8D6D`。为判断这是"一个按钮偏了"还是"整个调色板偏了"，写了 `tools/qa/palette_report.py` 把 16 张展板全部扫一遍。
+- **实测（这是判据）**：设计图主按钮的绿在 16 张展板上是 **`#44714B`，共 125,256 像素，每张都有**；而 `#5E8D6D` 全库只有 **1,468 像素**——那是深绿压在米色背景上的抗锯齿边缘，不是任何一处的填充。同法核对另外两个绿：`primaryLight #EAF2EB` 命中 162,685 像素、`primaryDark #4A7256` 命中 35,771 像素，**这两个是对的**。中性色同样吻合（设计图输入框底 `#FAF8F1` vs 实机 `#FBF8F2`），说明展板没有整体偏色，是这一个 token 漂了。
+- **根因**：`primarySage` 被当成主色用了 192 处（按钮、图标、强调文字、选中态），但它的值不是设计图的主绿。设计图里主绿只有一种，深浅由 `primaryLight` / `primaryDark` 承担。
+- **顺带修掉的对比度缺陷**：白字压旧绿 `#5E8D6D` 的对比度是 **3.81:1**，低于 WCAG AA 的 4.5——也就是说全 App 的实心按钮标签都不达标。换成 `#44714B` 后是 **5.66:1**。
+- **修复**：`AppColors.primarySage` → `#44714B`（一个 token，经 `colorScheme.primary` / `elevatedButtonTheme` 流到全部按钮与强调位）。同时把 `primaryDark` 的注释改成实话：它与 `primarySage` 亮度只差 3%，**不是** `primarySage` 的暗色变体，保留名字只是因为 70 处调用点已经这么读它。
+- **测试**：`test/theme/primary_green_matches_design_test.dart` 6 条（token 值、与浅色/背景的明度关系、白字对比度 ≥4.5、`colorScheme.primary` 与 `elevatedButtonTheme` 都指向它、`FilledButton` 真的用它绘制）。
+- **反向证明**：把 token 改回 `#5E8D6D` → 2 条红，其中对比度那条报 `Actual: <3.813527499569987>`，与手算的 3.815 一致。
+- **设备复验（像素级）**：装新包后截首页，主绿像素 `#5E8D6D` 120,297 → `#44714B` 121,370；同时 `timerInk`（22,479）与 `primaryDark`（2,789）像素数**一个没动**——只动了该动的那一个。
+
+### 5. 记录页与报告页读的是墙上时钟，不是 App 的时钟
+
+- **发现方式**：改完调色板跑全量测试，6 条与记录行有关的断言（时长文案、心情表情）全红，且**在 HEAD 上就是红的**——不是本次改动引起。逐层查下去，页面根本没有渲染出记录行。
+- **根因（两处，同一条病）**：`RecordsController.loadData()` 用 `DateTime.now()` 取"今天"、昨天和 365 天窗口，页面 `_buildTodayTab` / `_computeStreak` 也各读了一次墙上时钟；而全 App 其余 15 个控制器都走注入的 `FocusClock`。`ReportsController` 同样四处（周起始、月、年）。生产环境两者一致所以看不出来，**一旦时钟被替换，页面画出的窗口和数据就不重合**。
+- **为什么以前是绿的**：那几条测试用固定的 `FocusClock`（2026-09-08）播种记录。测试写下的那天，真实日期正好也是 2026-09-08，于是通过；日期一翻篇，记录掉到窗口外，断言就再也找不到东西。**这是会自己变红的测试**，不是环境问题。
+- **同一文件里还有一条一直绿的假绿**：`a record with no mood shows no mood mark at all` 断言 `findsNothing`，空屏也能满足它。修复后它才开始真正验证。
+- **还有一条断言把 Bug 当成了预期**：`phase3_records_reports_test.dart` 在固定 2026-09-08 时钟下播种 2026-09-08 的记录，却断言今天三项都是 `0`——那正是"页面忽略注入时钟"的表现。已按种子改成 25 分钟 / 1 次 / 连续 2 天，并在测试里写明为什么改。
+- **修复**：`RecordsController`、`ReportsController` 接收 `FocusClock`；`progress_overview_page` 的两处改走 `focusClockProvider`。
+- **测试**：`test/presentation/records_screen_uses_the_app_clock_test.dart` 3 条——用 **2001-03-05**（任何真实时钟都不会同意的一天）播种，页面必须显示该记录、连续天数必须是 2（播两天）、报告页必须开在 2001 年 3 月。选古早日期是为了让这条守卫**不会随着日期翻篇而失效**。
+- **反向证明**：把三处改回 `DateTime.now()` → 5 条红。
+
+### 6. 全量测试里有一条偶发红（夹具稳定性，非产品缺陷）
+
+- **发现方式**：连续跑 10 次全量，`room_placement_toolbar_test.dart` 的 "P7 — the stored error reaches the player as a SnackBar" 红了 2 次；单独跑该文件 10 次全绿。
+- **根因**：`ref.listen` 在 provider 通知后的下一帧才回调，测试原本只 `pump` 一帧 + 400ms。全量运行时有多个测试文件争 CPU，通知会晚一帧到达。
+- **修复**：把等待改成**有界轮询**（最多 20×100ms，找到即停），**断言不变**——SnackBar 不出现仍然失败。
+- **说明**：这是夹具的时间敏感性，不是"放置失败不提示"的产品缺陷（该行为此前已设备复验）。
+
 ## 本轮定位但**尚未修复**
 
 | 缺陷 | 证据 | 影响 |
