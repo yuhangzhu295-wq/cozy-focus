@@ -157,7 +157,18 @@ void main() {
       // Verify today's content
       expect(find.text('今日专注时长'), findsOneWidget);
       expect(find.text('专注次数'), findsOneWidget);
-      expect(find.text('0'), findsNWidgets(3));
+      // These three were `0`s before, and that was the bug rather than the
+      // expectation: the page drew its "today" from the wall clock, so under this
+      // fixed 2026-09-08 clock the record seeded on 2026-09-08 fell outside the
+      // window and every figure on a screen named "renders today records" read
+      // zero. A user who has focused today does not see 0 分钟.
+      //
+      // The figures now follow from what the test seeds against the injected
+      // clock: 1500s on 2026-09-08 is 25 分钟 and one session, and the streak is
+      // two because 2026-09-07 also has a session.
+      expect(find.text('25'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
       expect(find.text(r'$count'), findsNothing);
       expect(find.text(r'$streak'), findsNothing);
 

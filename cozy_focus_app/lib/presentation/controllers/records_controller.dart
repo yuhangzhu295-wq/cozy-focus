@@ -1,6 +1,7 @@
 ﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/focus_record.dart';
 import '../../domain/repositories/i_focus_record_repository.dart';
+import '../../domain/services/focus_clock.dart';
 import '../../domain/services/statistics_engine.dart';
 import 'providers.dart';
 
@@ -88,24 +89,41 @@ class RecordsState {
 class RecordsController extends StateNotifier<RecordsState> {
   final IFocusRecordRepository _recordRepo;
   final StatisticsEngine _statsEngine;
+  final FocusClock _clock;
   final String _userId;
 
   RecordsController({
     required IFocusRecordRepository recordRepo,
     required StatisticsEngine statsEngine,
+    required FocusClock clock,
     String userId = 'default_user',
     // Default kept for unit tests; production uses currentUserIdProvider.
   })  : _recordRepo = recordRepo,
         _statsEngine = statsEngine,
+        _clock = clock,
         _userId = userId,
-        super(RecordsState(
-          currentMonth: DateTime(DateTime.now().year, DateTime.now().month),
-          selectedCalendarDate: DateTime.now(),
-        ));
+        super(_initialState(clock));
+
+  /// The day the page opens on, taken from the injected clock rather than the
+  /// wall clock so that everything on this screen agrees about what "today" is.
+  static RecordsState _initialState(FocusClock clock) {
+    final now = clock.now();
+    return RecordsState(
+      currentMonth: DateTime(now.year, now.month),
+      selectedCalendarDate: now,
+    );
+  }
 
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true);
-    final now = DateTime.now();
+    // The app's clock, not DateTime.now(). This screen mixes a "today" summary,
+    // a yesterday comparison, a 365-day window and a calendar month, and it used
+    // to read the wall clock while the rest of the app read the injected clock.
+    // Nothing looked wrong in production, where the two agree — but under a
+    // substituted clock the rows landed outside the window the page had drawn,
+    // which is how six assertions about these rows went vacuous the moment the
+    // real date rolled over.
+    final now = _clock.now();
 
     // 1. Today summary
     final todaySummary = await _statsEngine.getDaySummary(_userId, now);
@@ -198,6 +216,7 @@ final recordsControllerProvider =
   return RecordsController(
     recordRepo: recordRepo,
     statsEngine: statsEngine,
+    clock: ref.watch(focusClockProvider),
     userId: userId,
   );
 });

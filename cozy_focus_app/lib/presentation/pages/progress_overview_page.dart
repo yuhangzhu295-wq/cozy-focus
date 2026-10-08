@@ -46,7 +46,10 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
 
   int _computeStreak(List<FocusRecord> records) {
     if (records.isEmpty) return 0;
-    final now = DateTime.now();
+    // The app's clock, not the wall clock. "Today" has to mean the same instant
+    // on every part of this screen, and it is what makes the screen testable
+    // under a substituted clock — see the note in RecordsController.loadData.
+    final now = ref.read(focusClockProvider).now();
     final today = DateTime(now.year, now.month, now.day);
     final days = <DateTime>{};
     for (final r in records) {
@@ -269,7 +272,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
     final count = state.todaySummary?.sessionCount ?? 0;
     final mins = sec ~/ 60;
     final streak = _computeStreak(state.allRecords);
-    final now = DateTime.now();
+    final now = ref.read(focusClockProvider).now();
     final todayRecs = state.allRecords
         .where((r) =>
             r.startAt.year == now.year &&

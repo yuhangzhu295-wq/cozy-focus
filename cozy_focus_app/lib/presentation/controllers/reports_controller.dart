@@ -1,6 +1,7 @@
 ﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/pet_models.dart';
 import '../../domain/repositories/i_pet_repository.dart';
+import '../../domain/services/focus_clock.dart';
 import '../../domain/services/statistics_engine.dart';
 import 'providers.dart';
 
@@ -91,20 +92,35 @@ class ReportsController extends StateNotifier<ReportsState> {
   final IPetRepository _petRepo;
   final String userId;
 
+  // The clock is only needed to open on the right period; every later move is
+  // relative to the state, so it is not kept as a field.
   ReportsController({
     required StatisticsEngine statsEngine,
     required IPetRepository petRepo,
+    required FocusClock clock,
     this.userId = 'default_user',
     // Default kept for unit tests; production uses currentUserIdProvider.
   })  : _statsEngine = statsEngine,
         _petRepo = petRepo,
-        super(ReportsState(
-          selectedWeekStart: _getMonday(DateTime.now()),
-          monthlyYear: DateTime.now().year,
-          monthlyMonth: DateTime.now().month,
-          yearlyYear: DateTime.now().year,
-        )) {
+        super(_initialState(clock)) {
     loadAllReports();
+  }
+
+  /// The week, month and year the reports open on, taken from the injected clock
+  /// rather than the wall clock.
+  ///
+  /// Same split as RecordsController had: these four reads used `DateTime.now()`
+  /// while every other "now" in the app comes from [FocusClock], so under a
+  /// substituted clock the reports opened on a period the rest of the screen did
+  /// not agree with.
+  static ReportsState _initialState(FocusClock clock) {
+    final now = clock.now();
+    return ReportsState(
+      selectedWeekStart: _getMonday(now),
+      monthlyYear: now.year,
+      monthlyMonth: now.month,
+      yearlyYear: now.year,
+    );
   }
 
   static DateTime _getMonday(DateTime d) {
@@ -219,5 +235,8 @@ final reportsControllerProvider =
   final petRepo = ref.watch(petRepositoryProvider);
   final userId = ref.watch(currentUserIdProvider);
   return ReportsController(
-      statsEngine: statsEngine, petRepo: petRepo, userId: userId);
+      statsEngine: statsEngine,
+      petRepo: petRepo,
+      clock: ref.watch(focusClockProvider),
+      userId: userId);
 });
