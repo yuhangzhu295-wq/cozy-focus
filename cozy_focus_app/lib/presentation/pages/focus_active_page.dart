@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -762,23 +763,19 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                               onChanged: _handleTimingModeChange,
                             ),
                             const SizedBox(height: 16),
-                            // Timer
-                            Semantics(
-                              readOnly: true,
-                              label:
-                                  '专注计时 $displayTime，当前${isPaused ? '已暂停' : '专注中'}',
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  displayTime,
-                                  style: const TextStyle(
-                                    fontSize: 68,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primaryDark,
-                                    letterSpacing: 2,
-                                  ),
-                                ),
-                              ),
+                            // Timer, inside the ring the design draws around it.
+                            FocusTimerRing(
+                              time: displayTime,
+                              // A countdown's ring drains with what is left, so
+                              // 25:00 on a 25 minute target is a full ring. An
+                              // open-ended mode has no fraction, and the ring
+                              // draws its track alone rather than inventing one.
+                              remaining: switch (_progressOf(sessionState)) {
+                                final double done => (1 - done).clamp(0.0, 1.0),
+                                null => null,
+                              },
+                              statusLabel: isPaused ? '已暂停' : '专注中',
+                              paused: isPaused,
                             ),
                             const SizedBox(height: 6),
                             Text(
@@ -1083,4 +1080,199 @@ class _TimingModeSwitch extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The ring the design draws around the running timer.
+///
+/// Reference 04 puts the number inside a large thin ring with a sprout at its
+/// top, and it is the screen's main visual — the number alone was the largest
+/// difference between the design and the app. A countdown's ring drains with what
+/// is left, so a full ring at the start means "all of it still to go"; an
+/// open-ended mode passes null and gets the track alone, because a ring that
+/// implies a fraction would be inventing one.
+///
+/// The sprout is drawn rather than imported: it is the app's own motif (it is in
+/// the palette's copy and on the pet's head) and it is a stem with two leaves,
+/// not a character, so no sprite asset is being faked.
+///
+/// Public so a test can read [remaining] off the widget: the painter is private
+/// and a painted ring leaves nothing else to assert on.
+class FocusTimerRing extends StatelessWidget {
+  const FocusTimerRing({
+    super.key,
+    required this.time,
+    required this.remaining,
+    required this.statusLabel,
+    required this.paused,
+  });
+
+  final String time;
+
+  /// What is left as a fraction of the target, or null when there is no target.
+  final double? remaining;
+
+  final String statusLabel;
+  final bool paused;
+
+  /// Reference 04 draws the ring about 230pt across on a 393pt-wide screen.
+  static const double _diameter = 224;
+  static const double _stroke = 6;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      readOnly: true,
+      label: '专注计时 $time，当前$statusLabel',
+      child: SizedBox(
+        width: _diameter,
+        height: _diameter,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            CustomPaint(
+              size: const Size.square(_diameter),
+              painter: _FocusRingPainter(
+                remaining: remaining,
+                track: AppColors.primaryLight,
+                arc: paused ? AppColors.textTertiary : AppColors.primarySage,
+                stroke: _stroke,
+              ),
+            ),
+            // The sprout sits on the ring's top, as the design draws it.
+            const Positioned(
+              top: -2,
+              child: CustomPaint(
+                size: Size(22, 22),
+                painter: _SproutPainter(color: AppColors.primarySage),
+              ),
+            ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    time,
+                    style: const TextStyle(
+                      fontSize: 46,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryDark,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  statusLabel,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FocusRingPainter extends CustomPainter {
+  const _FocusRingPainter({
+    required this.remaining,
+    required this.track,
+    required this.arc,
+    required this.stroke,
+  });
+
+  final double? remaining;
+  final Color track;
+  final Color arc;
+  final double stroke;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centre = size.center(Offset.zero);
+    final radius = (size.shortestSide - stroke) / 2;
+    final trackPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..color = track;
+    canvas.drawCircle(centre, radius, trackPaint);
+
+    final left = remaining;
+    if (left == null || left <= 0) return;
+    final fraction = left.clamp(0.0, 1.0);
+    final ring = Rect.fromCircle(center: centre, radius: radius);
+    // A full ring is a circle, not an arc: drawing 2pi with a round cap leaves
+    // the cap sticking out past where the sweep started, which reads as a small
+    // tail at the top.
+    if (fraction >= 0.999) {
+      canvas.drawCircle(
+        centre,
+        radius,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = stroke
+          ..color = arc,
+      );
+      return;
+    }
+    final arcPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..color = arc;
+    // From the top, clockwise, for what is left.
+    canvas.drawArc(ring, -math.pi / 2, fraction * 2 * math.pi, false, arcPaint);
+  }
+
+  @override
+  bool shouldRepaint(_FocusRingPainter old) =>
+      old.remaining != remaining || old.arc != arc || old.track != track;
+}
+
+/// A stem with two leaves: the app's sprout motif, at ring scale.
+class _SproutPainter extends CustomPainter {
+  const _SproutPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round
+      ..color = color;
+    final leaf = Paint()..color = color;
+
+    // Stem.
+    canvas.drawLine(Offset(w / 2, h * 0.95), Offset(w / 2, h * 0.45), stroke);
+    // Two leaves, mirrored.
+    for (final direction in const [-1.0, 1.0]) {
+      final path = Path()
+        ..moveTo(w / 2, h * 0.62)
+        ..quadraticBezierTo(
+          w / 2 + direction * w * 0.38,
+          h * 0.30,
+          w / 2 + direction * w * 0.06,
+          h * 0.10,
+        )
+        ..quadraticBezierTo(
+          w / 2 + direction * w * 0.02,
+          h * 0.40,
+          w / 2,
+          h * 0.62,
+        )
+        ..close();
+      canvas.drawPath(path, leaf);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SproutPainter old) => old.color != color;
 }
