@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../companion/companion_selection.dart';
 import '../../domain/services/statistics_engine.dart';
 import '../controllers/reports_controller.dart';
+import '../../domain/services/duration_text.dart';
 import '../theme/app_theme.dart';
 
 /// Screen 06: Weekly Report (06 周报)
@@ -116,8 +117,9 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
         '${DateFormat('M月d日').format(weekStart)} - ${DateFormat('M月d日').format(weekEnd)}';
 
     final totalSec = report?.totalSeconds ?? 0;
-    final totalHours = totalSec ~/ 3600;
-    final totalMins = (totalSec % 3600) ~/ 60;
+    final total = durationParts(totalSec);
+    final totalHours = total.hours;
+    final totalMins = total.minutes;
     final totalCount = report?.sessionCount ?? 0;
 
     final pctComp = comp?.durationChangePercentage;
@@ -713,17 +715,18 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
   /// follow the magnitude.
   String _formatShortDuration(int seconds) {
     if (seconds < 3600) {
-      final minutes = (seconds / 60).round();
-      return '$minutes 分钟';
+      return '${durationMinutes(seconds)} 分钟';
     }
     return '${(seconds / 3600).toStringAsFixed(1)}h';
   }
 
   /// `12h 30m` — the form reference 06 prints inside the ring.
+  ///
+  /// The shape is the reference's; the numbers come from [durationParts], so this
+  /// ring and the records screen cannot disagree about the same week.
   String _formatTotalDuration(int seconds) {
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
-    return '${hours}h ${minutes}m';
+    final parts = durationParts(seconds);
+    return '${parts.hours}h ${parts.minutes}m';
   }
 }
 

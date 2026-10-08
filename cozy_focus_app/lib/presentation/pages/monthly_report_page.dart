@@ -9,6 +9,7 @@ import '../companion/companion_selection.dart';
 import '../../domain/models/pet_models.dart';
 import '../../domain/services/statistics_engine.dart';
 import '../controllers/reports_controller.dart';
+import '../../domain/services/duration_text.dart';
 import '../theme/app_theme.dart';
 
 /// Screen 07: Monthly Report (07 月报)
@@ -100,8 +101,9 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
     final month = state.monthlyMonth;
 
     final totalSec = report?.totalSeconds ?? 0;
-    final totalHours = totalSec ~/ 3600;
-    final totalMins = (totalSec % 3600) ~/ 60;
+    final total = durationParts(totalSec);
+    final totalHours = total.hours;
+    final totalMins = total.minutes;
     final pctComp = comp?.durationChangePercentage;
 
     return Scaffold(

@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../companion/companion_selection.dart';
 import '../controllers/reports_controller.dart';
 import '../services/wrapped_export_service.dart';
+import '../../domain/services/duration_text.dart';
 import '../theme/app_theme.dart';
 
 /// Screen 08A: Yearly Wrapped / Share Page
@@ -114,8 +115,10 @@ class _YearlyWrappedSharePageState
     final petProg = state.petProgress;
     final year = state.yearlyYear;
 
-    final totalHours =
-        report != null ? (report.totalSeconds / 3600).toStringAsFixed(0) : '0';
+    // Whole hours, by the app's one rule. This used to round to the nearest
+    // hour on its own — 9,359 seconds is 2.6 hours and read `3` here against
+    // `2h 35m` on the weekly report, which is the same year counted twice.
+    final totalHours = '${durationParts(report?.totalSeconds ?? 0).hours}';
     final activeDays = report?.activeDaysCount ?? 0;
     final sessionCount = report?.sessionCount ?? 0;
     final petLevel = petProg?.level ?? 1;
