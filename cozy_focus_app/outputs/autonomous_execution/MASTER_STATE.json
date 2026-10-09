@@ -5,7 +5,7 @@
  "branch": "recovery/v4.2.1-rebuild",
  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
- "updated_at": "2026-10-10T05:05:30+08:00",
+ "updated_at": "2026-10-10T05:09:24+08:00",
  "continuation": {
   "question": "does this environment support automatic continuation of the work?",
   "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "57b187a14fe070c51705bd38214669aa143d92ca",
-  "remote_head": "57b187a14fe070c51705bd38214669aa143d92ca",
+  "head": "2526a466971019b6859e9d0c38220b2b1afc7d2d",
+  "remote_head": "2526a466971019b6859e9d0c38220b2b1afc7d2d",
   "head_matches_remote": true,
   "worktree": "dirty",
-  "last_verified_at": "2026-10-10T05:05:30+08:00",
+  "last_verified_at": "2026-10-10T05:09:24+08:00",
   "note": "Local and remote agree at bfab6df. Everything verified this window is pushed."
  },
  "current": {
   "stage": "STAGE_7_DELIVERABLES",
-  "subtask": "All nine deliverables exist. 03, 05, 06 and 02's index were written this unit, and 07 and 09 were rewritten because both still described an earlier state (1931 tests, Stage 5 not started). What remains for the final gate is one A-H re-walk on this build.",
+  "subtask": "Nine deliverables exist; 07 and 09 were rewritten because they described an earlier state. A final-build smoke pass over the six main screens is clean. The one thing the final gate still lacks is an A-H re-walk on this build, which is recorded as NOT_VERIFIED rather than inferred from the flows passing on their own commits.",
   "mode": "IN_PROGRESS"
  },
  "status_vocabulary": [
@@ -122,7 +122,7 @@
   "S7 depends on all of the above"
  ],
  "recent_test_evidence": {
-  "at": "2026-10-10T05:05:30+08:00",
+  "at": "2026-10-10T05:09:24+08:00",
   "command": "flutter test",
   "result": "2029/2029 passed, analyze clean, format clean, APK builds",
   "analyze": "flutter analyze --fatal-infos: No issues found",
@@ -130,7 +130,8 @@
   "apk": "flutter build apk --debug: built",
   "diff_check": "clean",
   "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0 (self-test ok), find_unlabelled_icon_buttons.py 0, audit_pack_geometry.py PASS",
-  "device": "411x914 dp emulator; flows C-H walked on their own commits; three sizes swept; thirty-one defects found and fixed in this pass"
+  "device": "411x914 dp emulator; flows C-H walked on their own commits; six main screens smoke-checked on the final build; three sizes swept; thirty-one defects found and fixed in this pass",
+  "known_tool_noise": "a11y_dump's substring rule flags legitimate repeats: '次' inside '专注次数', and '任务' followed by '还没有任务'. Both are phrasing, not doubled announcements. The tool's rule is about share-of-string, so it cannot tell them apart - each candidate has to be judged."
  },
  "uncommitted": "none",
  "next_instruction": "One A-H re-walk on the final build, then Stage 5's remaining large text and landscape. Performance and real-device verification stay NOT_VERIFIED; room_sit and TalkBack stay BLOCKED_EXTERNAL.",

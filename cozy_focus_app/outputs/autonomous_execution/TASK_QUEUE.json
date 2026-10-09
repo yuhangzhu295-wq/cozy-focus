@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T05:05:30+08:00",
+ "updated_at": "2026-10-10T05:09:24+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -400,8 +400,8 @@
    "stage": 7,
    "title": "final gate: the five commands plus the QA flows",
    "status": "NOT_VERIFIED",
-   "evidence": "the five commands pass (2029 tests, analyze clean, format clean, APK builds, diff check clean). What is missing is one A-H re-walk on the final build: the flows were each walked on the build as of their own commit, and the three commits since (defect 31's one-line label fix plus two documentation commits) are not covered by a re-walk.",
-   "note": "Not marked PASS, because 'each flow passed on an earlier build' is not 'the flows pass on this build'."
+   "evidence": "the five commands pass (2029 tests, analyze clean, format clean, APK builds, diff check clean). A final-build smoke pass was run over home, records, growth, room, dress and collection: zero RenderFlex overflow and no repeated node on any of them, and defect 30's fix holds ('插画' absent from the collection tree). What is still missing is one A-H re-walk on this build: each flow was walked on the build as of its own commit, and the three commits since are a one-line label fix plus documentation.",
+   "note": "The smoke pass is not a substitute for the re-walk and is not counted as one. Not marked PASS, because 'each flow passed on an earlier build' is not 'the flows pass on this build'."
   },
   {
    "id": "S2.01a",
@@ -596,6 +596,20 @@
    "title": "boards that must not be restored to fidelity",
    "status": "PASS",
    "evidence": "01_VISUAL_MATRIX.md '不能照做的展板': 13 (six switches), 15 (a sync list with counts and a timestamp), 10A (four outfits with previews). Each is a capability the app does not have; the app's explicit unavailable state is the correct implementation."
+  },
+  {
+   "id": "S7.06a",
+   "stage": 7,
+   "title": "final-build smoke over the six main screens",
+   "status": "PASS",
+   "evidence": "device, the installed build that carries defect 31's fix: home 29 nodes / records / growth 29 / room 24 / dress 14 / collection 26, each 'no node repeats itself' and zero RenderFlex overflow"
+  },
+  {
+   "id": "S7.06b",
+   "stage": 7,
+   "title": "one A-H re-walk on the final build",
+   "status": "NOT_VERIFIED",
+   "note": "next work unit"
   }
  ]
 }
