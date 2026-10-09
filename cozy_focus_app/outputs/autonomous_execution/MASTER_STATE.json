@@ -5,7 +5,7 @@
   "branch": "recovery/v4.2.1-rebuild",
   "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
   "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
-  "updated_at": "2026-10-09T13:32:48+08:00",
+  "updated_at": "2026-10-09T13:41:14+08:00",
   "continuation": {
     "question": "does this environment support automatic continuation of the work?",
     "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
     "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
   },
   "git": {
-    "head": "60b84e97e16d9d79d9bec52640167488c935eaf2",
+    "head": "5cd9da1d15c38a992f8f7fecc54f8abf7378998f",
     "remote_head": "e8647f33a58cf4206499157cfd44298f7fadce0b",
     "head_matches_remote": false,
     "worktree": "dirty",
-    "last_verified_at": "2026-10-09T13:32:48+08:00",
-    "note": "HEAD is 42 commits ahead of the remote; nothing has been pushed since e8647f3."
+    "last_verified_at": "2026-10-09T13:41:14+08:00",
+    "note": "HEAD is 43 commits ahead of the remote; nothing has been pushed since e8647f3."
   },
   "current": {
     "stage": "STAGE_3_VISUAL_RESTORATION",
-    "subtask": "Design 03's plan rows are done and device-verified, so designs 01, 03, 04, 05 and 06 are complete. Next in Stage 3: the task list's completed row (S3.08), then designs 02 and 08 and 10-16 still to audit",
+    "subtask": "S3.08 done. Next: audit designs 08 and 10-16 (Stage 1's remainder), then Stage 4 (companion and room), Stage 5's size sweep, Stage 6's golden flows and Stage 7's deliverables",
     "mode": "IN_PROGRESS"
   },
   "status_vocabulary": [
@@ -91,7 +91,9 @@
     "S5.03g ONE DELIBERATE NON-FIX, recorded rather than acted on: the collection cards read 多肉盆栽插画 / 多肉盆栽 / 未开放, which trips the detector. The card is drawn as a picture above a title and the same shape appears where the names differ, so it is the design, not a doubled label. The tool now prints candidates rather than verdicts and carries the reasoning",
     "S3.06 design 04's control row: FocusControlRow replaces a full-width 记一下 above two full-width buttons. The board carries the hierarchy in size and weight — 暂停 largest and the only filled circle — where every control used to be the same shape. Three controls, not four: 白噪音 has no audio behind it and a round button that plays nothing is the fake control the brief forbids. 6 tests, reverse-proved, device-verified",
     "S3.05 design 03's plan rows: one panel with hairlines and a rail, replacing a card each with a ten-pixel gap. The gap was the point — a rail cannot run through one, so the rows had to become one surface first. The rail fades from the dot's own colour to neutral, measured at #FAE8D4 under a #FDA23B dot and #ECE9E4 further down. Device-verified with three rows",
-    "S3.05a FOUND BUT NOT ACTED ON, deliberately: the design's category dots are 工作 #FDA23B, 学习 #FA6442, 生活 #FED355 against the app's catWork #E08373, catStudy #8BA4C8 (blue where the design draws red) and catLife #F0B367. A global change across every chip and dot, and the design disagrees with itself — the 工作 row's chip is green while its dot is orange. Marked NOT_VERIFIED rather than guessed"
+    "S3.05a FOUND BUT NOT ACTED ON, deliberately: the design's category dots are 工作 #FDA23B, 学习 #FA6442, 生活 #FED355 against the app's catWork #E08373, catStudy #8BA4C8 (blue where the design draws red) and catLife #F0B367. A global change across every chip and dot, and the design disagrees with itself — the 工作 row's chip is green while its dot is orange. Marked NOT_VERIFIED rather than guessed",
+    "S3.08 the task list's completed row verified on the device: a solid green check, a pale green row, the title at normal weight rather than struck through, and the chevron. Matches design 02",
+    "S3.05a CLOSED AS NOT A DEFECT: the design-03 dot colours looked wrong against the app's category palette, so I measured design 02's chips — 学习 is a pale blue chip with blue text, matching catStudy #8BA4C8. The dots in 03 are not category colours at all (the same category is green as a chip and orange as a dot in one board, and design 09's legend uses dot colour for the row kind). The app is self-consistent"
   ],
   "pending": [
     "S1.08, S1.10..S1.16 audit designs 08 and 10..16",
@@ -116,7 +118,7 @@
     "S7 depends on all of the above"
   ],
   "recent_test_evidence": {
-    "at": "2026-10-09T13:32:48+08:00",
+    "at": "2026-10-09T13:41:14+08:00",
     "command": "flutter test",
     "result": "1999/1999 passed, analyze clean, format clean, APK builds",
     "note": "The flake is resolved and it was a product defect, not the harness: ReportsController's constructor called loadAllReports() without awaiting it while all three report pages already called the same method from initState, so every visit loaded twice and the constructor's round could land after a test's teardown closed the database. It failed with no exception text at all, just '+2 -1'. Removing the constructor's call took the suspect file from 8/10 clean to 12/12. An earlier fix to the room-placement test's fixed-frame wait addressed a real but different fragility.",
