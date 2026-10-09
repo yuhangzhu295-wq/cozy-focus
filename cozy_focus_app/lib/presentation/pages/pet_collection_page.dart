@@ -623,9 +623,13 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
                           : AppColors.surfaceMuted,
                       child: Opacity(
                         opacity: isOwned ? 1 : 0.48,
-                        child: CozyFurnitureArtwork(
-                          itemId: item.id,
-                          size: 36,
+                        // The tile names the item below; the artwork's
+                        // own label would say it a second time.
+                        child: ExcludeSemantics(
+                          child: CozyFurnitureArtwork(
+                            itemId: item.id,
+                            size: 36,
+                          ),
                         ),
                       ),
                     ),
@@ -743,7 +747,11 @@ class _AcquisitionSheet extends StatelessWidget {
         children: [
           Row(
             children: [
-              CozyFurnitureArtwork(itemId: vm.itemId, size: 40),
+              // Named by the text beside it, so the artwork is decoration
+              // here rather than a second reading of the same name.
+              ExcludeSemantics(
+                child: CozyFurnitureArtwork(itemId: vm.itemId, size: 40),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(vm.itemName,

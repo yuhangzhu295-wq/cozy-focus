@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T03:59:48+08:00",
+ "updated_at": "2026-10-10T04:16:40+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -251,13 +251,16 @@
    "id": "S5.01",
    "stage": 5,
    "title": "360x800 / 393x852 / 412x915 layout sweep",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "device, three real overrides via wm size/wm density: 360x800 (density 480), 393x852 (density 440), 412x915 (density 420). At 360x800 - the tightest - home, records, growth, room, dress and collection were each visited with logcat cleared beforehand: zero RenderFlex overflow lines at every stop. The tree stayed complete and repeated nothing at each size.",
+   "note": "The sweep found defect 30 (the collection page announced each item's name twice)."
   },
   {
    "id": "S5.02",
    "stage": 5,
    "title": "large text and landscape",
-   "status": "PENDING"
+   "status": "NOT_VERIFIED",
+   "note": "large text and landscape were not exercised this window"
   },
   {
    "id": "S5.03",
@@ -535,6 +538,13 @@
    "title": "measure frame time and flicker",
    "status": "NOT_VERIFIED",
    "note": "needs a profile run on the emulator; not attempted this window"
+  },
+  {
+   "id": "S5.01a",
+   "stage": 5,
+   "title": "the collection page names each item once",
+   "status": "PASS",
+   "evidence": "defect 30; pet_collection_page_test; device: 插画 absent from the tree"
   }
  ]
 }

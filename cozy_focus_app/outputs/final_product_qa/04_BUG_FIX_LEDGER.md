@@ -380,6 +380,15 @@
 - **反向证明**：把 `taskId`/`taskName` 改回写死 → 红（`Expected: 'task-1' / Actual: <null>`）。
 - **设备复验（读的是数据库那一行，不是界面）**：修前 `('专注任务', None, 160)`；修后同一条路径写出 `('first-task', '6324ca25-…', 70)`，按任务分组的总时长也把它归到该任务下。
 
+### 30. 收藏图鉴把每个物件的名字念两遍（插画 + 名称）
+
+- **发现方式**：Stage 5 的 360×800 尺寸走查。收藏图鉴页的 `a11y_dump` 报出候选 `多肉盆栽插画\n多肉盆栽\n未开放`——**插画的标签里就含物件名**，旁边又画了一遍物件名。工具这次是抓到了的（子串占比规则），只是我先前把它当成"数据"放过了。
+- **根因**：`CozyFurnitureArtwork` 自带 `Semantics(image: true, label: '多肉盆栽插画')`（这个标签本身是对的——房间那类地方图是独立主体），但收藏图鉴的格子把它和 `Text('多肉盆栽')` 画在一起，于是同一个名字进了同一个节点两次。
+- **修复**：在**图鉴页的两处调用点**把插画包进 `ExcludeSemantics`（名字就在旁边，图在这里是装饰），不动 `CozyFurnitureArtwork` 自己的标签——房间那边仍然需要它。
+- **测试**：`pet_collection_page_test.dart` 增加一条：`find.bySemanticsLabel(RegExp('插画'))` 必须 `findsNothing`，且 `温馨布艺沙发` 仍能被念到。**原来那条断言 `find.text('温馨布艺沙发') findsOneWidget` 全程是绿的**——它找的是 Text，不是无障碍节点。
+- **反向证明**：把两处 `ExcludeSemantics` 去掉 → 红（`Found 10 widgets with element matching predicate`，正好是十件展品的插画标签）。
+- **设备复验**：360×800 下收藏图鉴页 `插画 in tree: False`，且 `no node repeats itself`。
+
 ## 本节原先列的"尚未修复"，现已全部落地
 
 写这张表的时候（缺陷 20 那一轮）下面四条确实还没做。**它们后来都做了**，所以这张表按当时状态读会误导人，改成结论：

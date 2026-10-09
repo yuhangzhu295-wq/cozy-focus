@@ -130,6 +130,26 @@ void main() {
       expect(find.byKey(const Key('cozy-furniture-sofa')), findsOneWidget);
     });
 
+    testWidgets('4b. names each item once, not twice', (tester) async {
+      // The tile draws the artwork above the item's name, and the artwork carries
+      // its own `Semantics(image: true, label: '…插画')`. A screen reader read
+      // '多肉盆栽插画，多肉盆栽，未开放'. Found by sweeping the collection page at
+      // 360x800 and reading the tree, where the repeat check flagged it.
+      final handle = tester.ensureSemantics();
+      await tester
+          .pumpWidget(createTestApp(container, const PetCollectionPage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.bySemanticsLabel(RegExp('插画')), findsNothing,
+          reason:
+              'every illustration here sits beside the name it would repeat');
+      expect(find.bySemanticsLabel(RegExp('温馨布艺沙发')), findsOneWidget,
+          reason: 'the item is still named by its own text');
+
+      handle.dispose();
+    });
+
     testWidgets(
         '4. Renders truthful empty inventory state without fake unlocked ownership',
         (tester) async {
