@@ -31,6 +31,17 @@ A repeat that is neither is data, and is left alone. `--self-test` runs the rule
 over the cases that must be caught and the cases that must not, so the
 discriminator is proved rather than assumed.
 
+## What it prints is a candidate, not a verdict
+
+The collection page's cards read `多肉盆栽插画 / 多肉盆栽 / 未开放` — the
+illustration's label, then the item's title, then its status. That trips the rule,
+and it is not a defect: the card is *drawn* as a picture above a title, and the
+same shape appears on every card, including ones where the two names differ
+(`小沙发插画 / 温馨布艺沙发`). Two items simply have a title that is a prefix of
+their illustration's label. Changing the shared artwork widget to silence a
+heuristic would have been the wrong direction, so it was left and written down
+instead.
+
 Usage:
     python tools/qa/a11y_dump.py
     python tools/qa/a11y_dump.py --all          # list every named node
@@ -180,7 +191,7 @@ def main() -> None:
         print("no node repeats itself")
         return
 
-    print(f"{len(offenders)} node(s) announce the same words more than once:\n")
+    print(f"{len(offenders)} candidate(s) — judge each, some are data:\n")
     for attribute, value, repeated in offenders:
         print(f"  {attribute}: {value!r}")
         print(f"      {repeated!r} appears twice")
