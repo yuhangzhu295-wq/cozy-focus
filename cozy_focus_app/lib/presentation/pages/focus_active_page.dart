@@ -16,6 +16,7 @@ import '../companion/companion_avatar.dart';
 import '../companion/pet_encouragement.dart';
 import '../companion/time_of_day.dart';
 import '../theme/app_theme.dart';
+import '../widgets/focus_control_row.dart';
 import '../widgets/distraction_capture_sheet.dart';
 
 /// Screen 03 / 03A / 03B / 03C: Active Focus — V4.1 visual redesign
@@ -843,105 +844,53 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
 
                             // Buttons
                             if (isPaused) ...[
-                              // 03A: full-width resume + text end
-                              SizedBox(
-                                width: double.infinity,
-                                height: 52,
-                                child: ElevatedButton.icon(
-                                  icon: const Icon(Icons.play_arrow_rounded,
-                                      size: 24),
-                                  label: const Text('继续专注',
-                                      style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold)),
+                              // 03A, in the board's shape: the control this
+                              // screen is for is the large filled one, and the
+                              // way out sits beside it rather than under it.
+                              FocusControlRow(controls: [
+                                FocusControl(
+                                  icon: Icons.play_arrow_rounded,
+                                  label: '继续专注',
+                                  primary: true,
                                   onPressed: () => _handlePauseResume(true),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              TextButton(
-                                onPressed: () => _showEarlyFinishDialog(
-                                    sessionState.elapsedSeconds),
-                                child: const Text('提前结束',
-                                    style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 15)),
-                              ),
-                            ] else ...[
-                              // 03: side-by-side pause + end
-                              // 记一下, next to the timer rather than in the
-                              // hero: it is the one control here that must be
-                              // reachable without looking away for long.
-                              SizedBox(
-                                width: double.infinity,
-                                height: 46,
-                                child: OutlinedButton.icon(
-                                  onPressed: _captureDistraction,
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.primaryDark,
-                                    side: const BorderSide(
-                                        color: AppColors.primarySage),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(AppRadius.pill),
-                                    ),
-                                  ),
-                                  icon: const Icon(Icons.edit_note_rounded,
-                                      size: 20),
-                                  label: const Text('记一下',
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700)),
+                                FocusControl(
+                                  icon: Icons.stop_rounded,
+                                  label: '提前结束',
+                                  onPressed: () => _showEarlyFinishDialog(
+                                      sessionState.elapsedSeconds),
                                 ),
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: 52,
-                                      child: ElevatedButton.icon(
-                                        icon: const Icon(Icons.pause_rounded,
-                                            size: 22),
-                                        // Deep focus does not pause, so the
-                                        // button says so and is disabled rather
-                                        // than being live and refused. The
-                                        // engine refuses it too — this is the
-                                        // visible half of one rule.
-                                        label: Text(
-                                            allowsPause ? '暂停' : '深度专注中',
-                                            style: const TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.bold)),
-                                        onPressed: allowsPause
-                                            ? () => _handlePauseResume(false)
-                                            : null,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: 52,
-                                      child: OutlinedButton(
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor:
-                                              AppColors.textSecondary,
-                                          side: const BorderSide(
-                                              color: AppColors.border),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                                AppRadius.pill),
-                                          ),
-                                        ),
-                                        onPressed: () => _showEarlyFinishDialog(
-                                            sessionState.elapsedSeconds),
-                                        child: const Text('提前结束',
-                                            style: TextStyle(fontSize: 15)),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              ]),
+                            ] else ...[
+                              // Design 04's row. 白噪音 is the board's first
+                              // control and is absent: there is no audio in the
+                              // repo, and a round button that plays nothing is
+                              // the fake control the brief forbids.
+                              FocusControlRow(controls: [
+                                FocusControl(
+                                  icon: Icons.edit_note_rounded,
+                                  label: '记一下',
+                                  onPressed: _captureDistraction,
+                                ),
+                                FocusControl(
+                                  icon: Icons.pause_rounded,
+                                  // Deep focus does not pause, so the control
+                                  // says so and is disabled rather than being
+                                  // live and refused. The engine refuses it too
+                                  // — this is the visible half of one rule.
+                                  label: allowsPause ? '暂停' : '深度专注中',
+                                  primary: true,
+                                  onPressed: allowsPause
+                                      ? () => _handlePauseResume(false)
+                                      : null,
+                                ),
+                                FocusControl(
+                                  icon: Icons.stop_rounded,
+                                  label: '提前结束',
+                                  onPressed: () => _showEarlyFinishDialog(
+                                      sessionState.elapsedSeconds),
+                                ),
+                              ]),
                             ],
                             const SizedBox(height: 24),
                           ],

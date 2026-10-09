@@ -264,17 +264,24 @@ void main() {
       expect(find.text('深度专注中'), findsOneWidget);
       expect(find.text('暂停'), findsNothing);
 
-      // `find.byType` matches the exact runtime type, and `ElevatedButton.icon`
-      // is a redirecting factory to a private subclass — so the ancestor is
-      // found by predicate rather than by type.
-      final button = tester.widget<ElevatedButton>(
-        find.ancestor(
-          of: find.text('深度专注中'),
-          matching: find.byWidgetPredicate((w) => w is ElevatedButton),
-        ),
+      // The control is a round one now, so the refusal shows up on its gesture
+      // rather than on an ElevatedButton's onPressed. The point is unchanged:
+      // unavailable, not live and then refused.
+      final control = tester.widget<GestureDetector>(
+        find
+            .ancestor(
+              of: find.text('深度专注中'),
+              matching: find.byType(GestureDetector),
+            )
+            .first,
       );
-      expect(button.onPressed, isNull,
+      expect(control.onTap, isNull,
           reason: 'the control is unavailable, not live and then refused');
+
+      // And it says so to a screen reader, which is the half a tap test misses.
+      final node = tester.getSemantics(find.text('深度专注中'));
+      expect(node.label, '深度专注中');
+      expect(node.hasFlag(SemanticsFlag.isEnabled), isFalse);
 
       // And the engine agrees, which is the half a widget test cannot fake.
       await expectLater(
