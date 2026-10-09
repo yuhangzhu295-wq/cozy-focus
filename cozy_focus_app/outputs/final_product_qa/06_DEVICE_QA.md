@@ -141,11 +141,17 @@
 
 **判据是"重复同样的操作会不会一直涨"**：第二、三遍分别是 154.6 与 153.6 MB，**没有继续增长**（还略降），Native Heap 也从 55.0 回落到 47.4 并停住，Java Heap 三遍都是 10.27 MB。所以第一遍的 +30 MB 是**图片解码缓存 + GC 落定**，不是泄漏。**三轮同循环未发现无界增长。**
 
-### 帧时间：`NOT_VERIFIED`，并说清为什么
+### 帧时间：`NOT_VERIFIED`，试过三种仪器，两种在这个环境里是瞎的
 
-`dumpsys gfxinfo` 对这个 App **是错的仪器**：它报 `Total frames rendered: 1`，因为它数的是 Android 平台视图的帧，而 Flutter 自己在 SurfaceView 上合成，帧不经过平台视图系统。拿它报"Janky frames 100%"会是**假结论**。
+不是"没测"，是**试了、都不行，并且说清为什么**——这是下一个人最需要的信息：
 
-要测 Flutter 的帧时间得用 `flutter run --profile` 挂 DevTools 的 timeline（或 `SurfaceFlinger --latency`）。**这一项没做**，而且即便做了，swiftshader 软件光栅下的帧时间也不代表真机。所以：**帧时间与卡顿 `NOT_VERIFIED`，原因是仪器不对 + 环境不代表真机**，不是"测过了没问题"。
+| 仪器 | 结果 |
+|---|---|
+| `dumpsys gfxinfo <pkg>` | `Total frames rendered: 1`，`Janky frames: 1 (100.00%)`。它数的是 **Android 平台视图**的帧；Flutter 在自己的 SurfaceView 上合成，帧不经过平台视图系统。**拿它报"卡顿 100%"是假结论。** |
+| `dumpsys SurfaceFlinger --latency "<layer>"` | 层名取到了（`SurfaceView[com.yuhangzhu295.cozyfocus/…]#1263`，刷新周期 16666666 ns = 60 Hz），但**129 行全是 0**，驱动了三下滚动也一样——这个层的 latency 缓冲在这个 App 上没有数据。 |
+| Flutter 自己的 timeline | 这才是对的仪器：`flutter run --profile` 挂 DevTools，或 `flutter drive` 里 `traceAction`。**本轮没做**，而且即便做了，swiftshader 软件光栅下的帧时间也不代表真机。 |
+
+**所以：帧时间与卡顿 `NOT_VERIFIED`，原因是"能用的平台仪器在这个环境里观察不到 Flutter 的帧 + 唯一对的仪器需要真机才有意义"。** 不编造数字。
 
 ## 7. 仍然开着的
 
@@ -153,6 +159,6 @@
 |---|---|
 | 大字号其余四屏 + 横屏 | `PASS` | 见第 2 节；范围写明——App 是竖屏设计的，横屏只验证"不坏"（渲染 + 可滚动 + 0 溢出），没有横屏设计稿可对照 |
 | 冷/热启动耗时、内存 | `PASS` | 见第 6 节：冷启动 ≈1.4 s（五次极差 8%）、暖启动 ≈95 ms；三轮同循环内存停住不涨。profile 构建 + 模拟器，绝对数字不代表真机 |
-| 帧时间 / 卡顿 | `NOT_VERIFIED` | `gfxinfo` 对 Flutter 是错的仪器（只数到 1 帧）；要挂 DevTools timeline，且 swiftshader 下的数字不代表真机 |
+| 帧时间 / 卡顿 | `NOT_VERIFIED` | 试了三种仪器：`gfxinfo` 只数到 1 帧（数的是平台视图）、`SurfaceFlinger --latency` 129 行全 0、唯一对的 Flutter timeline 本轮未做且 swiftshader 下不代表真机。详见第 6 节 |
 | TalkBack 实机走查 | `BLOCKED_EXTERNAL` |
 | 真机（非模拟器）验证 | 未做——全部结论都来自模拟器 |

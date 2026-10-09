@@ -621,7 +621,7 @@
    "stage": 5,
    "title": "frame time and jank",
    "status": "NOT_VERIFIED",
-   "evidence": "gfxinfo counts 1 frame for a Flutter app - wrong layer. Needs a DevTools timeline capture, and a GPU-backed device for the numbers to mean anything."
+   "evidence": "three instruments tried. gfxinfo counts 1 frame - it measures the platform view, not Flutter's compositing. SurfaceFlinger --latency on the app's SurfaceView layer (refresh 16666666 ns = 60 Hz) returns 129 all-zero rows even with driven scrolls. The instrument that would work is Flutter's own timeline over flutter run --profile (DevTools or a flutter drive traceAction), which was not run, and swiftshader frame times would not represent a real device anyway."
   },
   {
    "id": "S5.03c",
