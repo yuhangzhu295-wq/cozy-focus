@@ -1,7 +1,7 @@
 {
   "queue_version": 1,
   "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
-  "updated_at": "2026-10-09T12:14:34+08:00",
+  "updated_at": "2026-10-09T13:32:48+08:00",
   "tasks": [
     {
       "id": "S1.01",
@@ -141,9 +141,10 @@
       "id": "S3.05",
       "stage": 3,
       "title": "today plan: flat rail rows instead of bordered cards",
-      "status": "PENDING",
+      "status": "TESTED",
       "from": "S1.03",
-      "decision": "D3"
+      "decision": "D3",
+      "note": "DONE: one panel, hairline dividers, rail fading from the dot's colour. Device-verified with three rows. The category palette was measured here and left alone as NOT_VERIFIED — see ledger 16a"
     },
     {
       "id": "S3.06",
