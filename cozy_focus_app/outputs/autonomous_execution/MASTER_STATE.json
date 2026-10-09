@@ -5,7 +5,7 @@
   "branch": "recovery/v4.2.1-rebuild",
   "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
   "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
-  "updated_at": "2026-10-09T11:09:35+08:00",
+  "updated_at": "2026-10-09T12:14:34+08:00",
   "continuation": {
     "question": "does this environment support automatic continuation of the work?",
     "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
     "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
   },
   "git": {
-    "head": "784f063facf41d518cc0238612f549a11689e39e",
+    "head": "1638bd983f7b6de30de266941b8a04f269d5cf20",
     "remote_head": "e8647f33a58cf4206499157cfd44298f7fadce0b",
     "head_matches_remote": false,
     "worktree": "dirty",
-    "last_verified_at": "2026-10-09T11:09:35+08:00",
-    "note": "HEAD is 38 commits ahead of the remote; nothing has been pushed since e8647f3."
+    "last_verified_at": "2026-10-09T12:14:34+08:00",
+    "note": "HEAD is 40 commits ahead of the remote; nothing has been pushed since e8647f3."
   },
   "current": {
     "stage": "STAGE_3_VISUAL_RESTORATION",
-    "subtask": "S5.03 sweep is substantially done. Clean and device-verified: home, growth, room, the focus page, the capture sheet, the records hub (4 tabs), the today plan (3 tabs), settings, notifications, create task, all three report pages, the dress page, the collection page, the inventory page. Next: craft list/detail, the companion picker and import, the rest page, the focus setup/save/reward pages, and record detail",
+    "subtask": "Design 04's control row is built and device-verified, so designs 01, 04, 05 and 06 are now complete. Next in Stage 3: the today-plan rows (the board draws a flat rail, the app draws bordered cards) and the task list's completed row",
     "mode": "IN_PROGRESS"
   },
   "status_vocabulary": [
@@ -88,7 +88,8 @@
     "S5.03e swept and verified on the device this window: the room page (its 库存 and 制作工坊 buttons were among the seven that had no name), the growth page, home, the settings page and the notifications page. The detector's third false-positive class was found and fixed — a row title sharing a word with its own subtitle — and is now a self-test case",
     "CONTRACT CHECK on the settings rows, because 功能建设中 / 暂未启用 / 暂不可用 read like Coming Soon. They are not: only 通知 and 数据与同步 are clickable, both lead to real pages, and the notifications page states 不可配置 on every row with no toggle rendered at all. An explicit unavailable state, which the brief asks for, rather than a control that does nothing",
     "S5.03f second half of the sweep, all device-verified and clean: create task (19 named controls), the weekly / monthly / yearly report pages, the settings and notifications pages, the dress page, the collection page and the inventory page. No new defects — the seven unnamed buttons fixed earlier this session were the last real ones. The dress page holds the explicit unavailable state the contract requires (装扮系统未连接数据，暂无可用装扮，无法穿戴) with no mock catalog",
-    "S5.03g ONE DELIBERATE NON-FIX, recorded rather than acted on: the collection cards read 多肉盆栽插画 / 多肉盆栽 / 未开放, which trips the detector. The card is drawn as a picture above a title and the same shape appears where the names differ, so it is the design, not a doubled label. The tool now prints candidates rather than verdicts and carries the reasoning"
+    "S5.03g ONE DELIBERATE NON-FIX, recorded rather than acted on: the collection cards read 多肉盆栽插画 / 多肉盆栽 / 未开放, which trips the detector. The card is drawn as a picture above a title and the same shape appears where the names differ, so it is the design, not a doubled label. The tool now prints candidates rather than verdicts and carries the reasoning",
+    "S3.06 design 04's control row: FocusControlRow replaces a full-width 记一下 above two full-width buttons. The board carries the hierarchy in size and weight — 暂停 largest and the only filled circle — where every control used to be the same shape. Three controls, not four: 白噪音 has no audio behind it and a round button that plays nothing is the fake control the brief forbids. 6 tests, reverse-proved, device-verified"
   ],
   "pending": [
     "S1.08, S1.10..S1.16 audit designs 08 and 10..16",
@@ -113,9 +114,9 @@
     "S7 depends on all of the above"
   ],
   "recent_test_evidence": {
-    "at": "2026-10-09T11:09:35+08:00",
+    "at": "2026-10-09T12:14:34+08:00",
     "command": "flutter test",
-    "result": "1993/1993 passed, analyze clean, format clean, APK builds",
+    "result": "1999/1999 passed, analyze clean, format clean, APK builds",
     "note": "The flake is resolved and it was a product defect, not the harness: ReportsController's constructor called loadAllReports() without awaiting it while all three report pages already called the same method from initState, so every visit loaded twice and the constructor's round could land after a test's teardown closed the database. It failed with no exception text at all, just '+2 -1'. Removing the constructor's call took the suspect file from 8/10 clean to 12/12. An earlier fix to the room-placement test's fixed-frame wait addressed a real but different fragility.",
     "before_this_window": "6 tests were red at HEAD (e8647f33) and had been for a day, because the records screen read the wall clock while the tests seeded against an injected one. The 1931/1931 recorded in the previous version of this file was stale.",
     "analyze": "flutter analyze --fatal-infos: No issues found",
