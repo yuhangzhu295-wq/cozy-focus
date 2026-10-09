@@ -837,10 +837,8 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
   }
 
   /// The selected day's total, in the words the rows below use.
-  static String _dayTotalText(DayProgressSummary? summary) {
-    final seconds = summary?.totalSeconds ?? 0;
-    return seconds <= 0 ? '0 分钟' : formatDurationText(seconds);
-  }
+  static String _dayTotalText(DayProgressSummary? summary) =>
+      formatElapsedDuration(summary?.totalSeconds ?? 0);
 
   // ===== Record Row =====
   Widget _buildRecordRow(FocusRecord r) {

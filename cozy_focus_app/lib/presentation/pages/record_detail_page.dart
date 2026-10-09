@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../companion/companion_selection.dart';
 import '../../domain/models/focus_record.dart';
 import '../../domain/models/focus_review.dart';
+import '../../domain/services/duration_text.dart';
 import '../companion/companion_avatar.dart';
 import '../controllers/providers.dart';
 import '../controllers/records_controller.dart';
@@ -565,9 +566,12 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
     }
 
     final r = _record!;
-    final minutes = (r.durationSeconds / 60).floor();
-    // Fix: show '<1 分钟' for sessions under one minute
-    final displayMinutes = r.durationSeconds < 60 ? '<1' : '$minutes';
+    // The app's one rule for a past duration, not a floor of this screen's own.
+    // This page used to compute `(seconds / 60).floor()` and hand-roll a `<1`
+    // case, so a 90-second record read `1 分钟` here and `2 分钟` in the list
+    // that opened it — the same two-answers shape the list itself was fixed for,
+    // left behind on the screen one tap away.
+    final duration = formatElapsedDuration(r.durationSeconds);
     final timeStr =
         '${_formatDateTime(r.startAt)} - ${_formatDateTime(r.endAt)}';
 
@@ -703,7 +707,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                         ),
                         const Spacer(),
                         Text(
-                          '$displayMinutes 分钟',
+                          duration,
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,

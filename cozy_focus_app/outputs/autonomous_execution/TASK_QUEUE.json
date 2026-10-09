@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T06:29:45+08:00",
+ "updated_at": "2026-10-10T07:09:55+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -284,7 +284,8 @@
    "stage": 5,
    "title": "accessible names on every screen",
    "status": "TESTED",
-   "note": "swept and device-verified across the main screens. Fixed: 21 doubled labels, 3 doubled filters, 7 buttons named only by a tooltip. The detector itself was wrong three times and each correction is recorded with its self-test. Not yet swept: craft list/detail, companion picker/import, rest, focus setup/save/reward, record detail, the wrapped share page"
+   "note": "Two screens are still unswept and are NOT counted as passing: 安排到今日计划 (/records/tasks/:id/schedule) and 专注复盘 (/focus/save).",
+   "evidence": "the main screens were swept earlier (defects 20, 21, 22, 25, 26, 28, 30). This round swept the screens whose tree had never been read: record detail (found defect 32), weekly report, monthly report, inventory, craft list, craft detail, distraction inbox and focus setup - all clean, with one false-positive candidate on the craft list (the word 制作 in both a title and a sentence)."
   },
   {
    "id": "S5.04",
@@ -621,6 +622,20 @@
    "title": "frame time and jank",
    "status": "NOT_VERIFIED",
    "evidence": "gfxinfo counts 1 frame for a Flutter app - wrong layer. Needs a DevTools timeline capture, and a GPU-backed device for the numbers to mean anything."
+  },
+  {
+   "id": "S5.03c",
+   "stage": 5,
+   "title": "the record detail computes its own minutes",
+   "status": "PASS",
+   "evidence": "defect 32; two tests in record_detail_review_read_test; device reads 0 分钟"
+  },
+  {
+   "id": "S5.03d",
+   "stage": 5,
+   "title": "sweep 安排到今日计划 and 专注复盘",
+   "status": "NOT_VERIFIED",
+   "note": "not reached this round; not counted as passing"
   }
  ]
 }

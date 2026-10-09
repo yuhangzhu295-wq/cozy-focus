@@ -34,6 +34,19 @@ String formatDurationText(int seconds) {
   return '$hours 小时 $minutes 分钟';
 }
 
+/// A duration that has already happened, as a record or a day's total prints it.
+///
+/// [formatDurationText] answers 未设置 for zero because it also writes a task's
+/// *planned* length, where zero means "no length chosen". A record of zero
+/// seconds is not unset — it happened, and it was short — so it reads `0 分钟`.
+///
+/// That zero case lived as a local guard in two places and was missing from a
+/// third, which is how the record detail screen kept a formatter of its own and
+/// answered `1 分钟` where the list answered `2 分钟` for the same 90-second
+/// record. One function, so a past duration reads the same wherever it is written.
+String formatElapsedDuration(int seconds) =>
+    seconds <= 0 ? '0 分钟' : formatDurationText(seconds);
+
 /// The same duration split into the parts a report prints separately.
 ///
 /// `2h 35m` is the form design 06 uses inside its ring, so the report pages keep

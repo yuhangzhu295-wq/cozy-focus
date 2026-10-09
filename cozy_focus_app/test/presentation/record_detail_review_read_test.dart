@@ -63,6 +63,7 @@ void main() {
     String? gains,
     String? nextIntention,
     String? note,
+    int seconds = 25 * 60,
   }) async {
     await records.insert(FocusRecord(
       id: 'r1',
@@ -73,7 +74,7 @@ void main() {
       gains: gains,
       nextIntention: nextIntention,
       note: note,
-      durationSeconds: 25 * 60,
+      durationSeconds: seconds,
       startAt: DateTime(2026, 10, 8, 21),
       endAt: DateTime(2026, 10, 8, 21, 25),
       recordedAt: DateTime(2026, 10, 8, 21, 25),
@@ -169,6 +170,31 @@ void main() {
 
     expect(find.text('本次收获'), findsNothing);
     expect(find.text('下次继续'), findsNothing);
+  });
+
+  testWidgets('the length is the one the list that opened it shows',
+      (tester) async {
+    // A 90-second record reads `2 分钟` in the list, because the app's one rule
+    // rounds. This page computed `(seconds / 60).floor()` and hand-rolled a
+    // `<1 分钟` case, so it read `1 分钟` — the same two-answers shape the list
+    // itself had been fixed for, left behind one tap away. Found by opening a
+    // record on the device.
+    await record(seconds: 90);
+    await pump(tester, container());
+
+    expect(find.text('2 分钟'), findsOneWidget);
+    expect(find.text('1 分钟'), findsNothing,
+        reason: 'the list rounds 90 seconds to 2, so this screen must too');
+  });
+
+  testWidgets('and a sub-minute record is not called unset', (tester) async {
+    // `formatDurationText` answers 未设置 for zero, because it also writes a
+    // task's planned length. A record that happened is not unset.
+    await record(seconds: 20);
+    await pump(tester, container());
+
+    expect(find.text('0 分钟'), findsOneWidget);
+    expect(find.text('未设置'), findsNothing);
   });
 }
 
