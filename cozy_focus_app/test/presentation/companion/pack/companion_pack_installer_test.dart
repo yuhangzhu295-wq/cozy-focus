@@ -45,6 +45,7 @@ void main() {
   /// A manifest that passes the strict validator.
   Uint8List goodManifest() => Uint8List.fromList(utf8.encode(jsonEncode({
         'companionId': 'mimi',
+        'posePack': 'mimi',
         'canvas': {'width': 512, 'height': 512},
         'groundBaseline': 458,
         'centerAnchor': 255,

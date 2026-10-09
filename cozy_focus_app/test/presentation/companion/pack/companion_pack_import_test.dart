@@ -432,7 +432,16 @@ void main() {
 
     test('refuses an id that could escape the pack root', () async {
       final c = container();
-      final report = await install(c, archiveOf(id: '../evil'));
+      final report = await install(
+        c,
+        archiveOf(
+          id: '../evil',
+          // The pose pack is its own field, and `manifestFor` derives it from
+          // the id — which would make the pose-pack rule fire first and hide
+          // which rule this test is about.
+          manifest: manifestFor('../evil')..['posePack'] = 'evil_art',
+        ),
+      );
 
       expect(report.status, CompanionPackImportStatus.refused);
       expect(report.validation.codes, contains('unsafe_pack_id'));

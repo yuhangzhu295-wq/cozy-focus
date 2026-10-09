@@ -5,7 +5,7 @@
  "branch": "recovery/v4.2.1-rebuild",
  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
- "updated_at": "2026-10-10T01:04:28+08:00",
+ "updated_at": "2026-10-10T02:42:12+08:00",
  "continuation": {
   "question": "does this environment support automatic continuation of the work?",
   "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "ffc8c1e70f81b9adb3977d129f70f5256052d5cd",
-  "remote_head": "ffc8c1e70f81b9adb3977d129f70f5256052d5cd",
+  "head": "bc63aeac8fbabc3c28d6749395ed2c4e45416320",
+  "remote_head": "bc63aeac8fbabc3c28d6749395ed2c4e45416320",
   "head_matches_remote": true,
   "worktree": "dirty",
-  "last_verified_at": "2026-10-10T01:04:28+08:00",
+  "last_verified_at": "2026-10-10T02:42:12+08:00",
   "note": "Local and remote agree at bfab6df. Everything verified this window is pushed."
  },
  "current": {
   "stage": "STAGE_6_GOLDEN_FLOWS",
-  "subtask": "Golden Flow C PASS and Golden Flow D PASS, both walked on the device end to end and both found a real defect. D's defect was 23: design 03B draws 已恢复时长 as two lines and the app drew one. Next: Golden Flow E (companion import / install / select / restart).",
+  "subtask": "Golden Flows C, D and E are PASS, all walked on the device end to end. E found three defects: 24 (a pack the validator accepted but the loader drops), 25 (the card's exclusion hid its own menu from the accessibility tree) and 26 (the sprite renderer announced the state twice once a pack-backed companion was selected). Next: Golden Flow F.",
   "mode": "IN_PROGRESS"
  },
  "status_vocabulary": [
@@ -122,18 +122,19 @@
   "S7 depends on all of the above"
  ],
  "recent_test_evidence": {
-  "at": "2026-10-10T01:04:28+08:00",
+  "at": "2026-10-10T02:42:12+08:00",
   "command": "flutter test",
-  "result": "2014/2014 passed, analyze clean, format clean, APK builds",
-  "note": "2014 = 2013 + Test B2 for defect 23.",
+  "result": "2024/2024 passed, analyze clean, format clean, APK builds",
+  "note": "2024 = 2022 + 2 for the sprite avatar guard.",
   "analyze": "flutter analyze --fatal-infos: No issues found",
   "format": "dart format --set-exit-if-changed .: 0 changed",
   "apk": "flutter build apk --debug: built",
   "diff_check": "clean",
-  "device": "411x914 dp emulator; defect 23 re-verified on device after install"
+  "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0 (self-test ok), find_unlabelled_icon_buttons.py 0",
+  "device": "411x914 dp emulator; defects 24/25/26 verified on device after install"
  },
  "uncommitted": "none",
- "next_instruction": "Golden Flow E: companion import, install, select, restart, restore.",
+ "next_instruction": "Golden Flow F: growth, room, dress, inventory.",
  "external_blockers": [
   "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
   "LAUNCHER_ICON: stock Flutter icon, no approved artwork",

@@ -139,6 +139,9 @@ abstract final class CompanionPackInstallRules {
   /// An id reaches the filesystem, so anything that could mean something to a
   /// path — a separator, a dot, a space, a colon — is refused rather than
   /// escaped, and `..` cannot be spelled at all.
+  ///
+  /// The rule lives on [CompanionPackValidator] so the validator and the
+  /// installer cannot drift apart about what an id may be.
   static bool isSafePackId(String id) =>
-      RegExp(r'^[a-z0-9][a-z0-9_-]{0,63}$').hasMatch(id);
+      CompanionPackValidator.isSafePackId(id);
 }

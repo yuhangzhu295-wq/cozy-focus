@@ -203,10 +203,27 @@ class PlaceholderCompanionAvatar extends StatelessWidget {
             ),
           ),
         ],
+        // The wrapper supplies the whole name, so it excludes what it wraps —
+        // the rig under it names itself with the same string, and without this
+        // the node read `小猫 空闲\n小猫 空闲, 点一下会回应，长按可以摸摸头`.
+        // Excluding also drops the child's gestures, so both are mirrored here.
         Semantics(
+          excludeSemantics: true,
           button: controller != null,
           label: '$name $state',
           hint: controller != null ? '点一下会回应，长按可以摸摸头' : null,
+          onTap: controller != null
+              ? () {
+                  controller.triggerInteract();
+                  options.onTapReact?.call();
+                }
+              : null,
+          onLongPress: controller != null
+              ? () {
+                  controller.triggerStroke();
+                  options.onLongPressReact?.call();
+                }
+              : null,
           child: controller != null
               ? GestureDetector(
                   behavior: HitTestBehavior.opaque,

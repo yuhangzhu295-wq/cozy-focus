@@ -437,6 +437,29 @@ void main() {
       // Exactly one menu: the built-in three are part of the app, and offering
       // to delete them would promise something the app does not do.
       expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
+
+      // And it is reachable without sight.
+      //
+      // The card's own text is excluded so its name is not read twice, and the
+      // menu has to sit OUTSIDE that exclusion — `excludeSemantics` removes a
+      // subtree from the accessibility tree entirely, so an excluded menu is
+      // drawn, works by touch, and cannot be found by a screen reader. On a
+      // device the card was one node and `导出` appeared nowhere.
+      //
+      // The line above was green the whole time: it asserts the widget exists,
+      // which it did.
+      final handle = tester.ensureSemantics();
+      await tester.pump();
+
+      expect(find.bySemanticsLabel(RegExp('更多操作')), findsOneWidget,
+          reason: 'the menu must own a node, not be swallowed by the card');
+
+      // The card itself still says its name once.
+      expect(find.bySemanticsLabel('小豆'), findsOneWidget);
+
+      // Disposed here, not in a tear-down: the framework checks for live
+      // handles before tear-downs run.
+      handle.dispose();
     });
   });
 }

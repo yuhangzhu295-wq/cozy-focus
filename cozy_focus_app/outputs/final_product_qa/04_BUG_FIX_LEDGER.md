@@ -314,6 +314,41 @@
 - **反向证明**：把那一行条件改成恒假 → 只有 `Test B2` 红（`Found 0 widgets with text "10:00 – 10:12"`），其余 4 条仍绿。
 - **设备复验**：411×914 起 5 分钟专注 → HOME 50 秒 → 回前台，覆盖层读到 `已恢复时长 / 1 分钟 / 16:25 – 16:27 / 本次专注 / 05:00 / 目标 05:00`，左栏两行与设计一致。
 
+### 24. 导入的宠物包，装完却进不了伙伴列表
+
+- **发现方式**：走 Golden Flow E。用一个**从 App 自己的 `assets/companions/cat` 帧重建**的真实 `.cozy_pet`（不是手搓夹具，帧是仓库里的真图）走导入：预览页认了（`动作 13 / 13`、`帧 49`、`画布 512×512`），安装成功页说"小猫 已经住进来啦"，点"现在就换成它"，回伙伴列表——**列表里只有三个内置伙伴，没有刚装的那个，而且一个都没选中**。
+- **判据（文件系统，不是截图）**：`companion_packs/catpack/` 50 个文件在，`installed_packs.json` 里 `catpack` 在，`companion_selection.json` 是 `{"selectedCompanionId":"catpack"}`。所以"装上了、也选中了"，只是**列表画不出来**。
+- **根因（两层，同一个契约没在正确的一层检查）**：
+  1. `InstalledPackProfiles._runtimeFor` 有一句 `if (manifest.posePack.isEmpty) return null;` —— 视觉注册表按 `posePack` 给 provider 建索引，没有它就画不了，于是这个包被静默丢掉。
+  2. 而 `CompanionPackValidator` **从来没检查过 `posePack`**。所以一个包能通过校验、装到磁盘、被选成当前伙伴，然后在下次加载时被丢弃：列表什么都不选，伙伴也不存在。
+  - 旁证：仓库里 `companion_pack_import_test.dart` / `companion_import_page_test.dart` 的夹具**一直都写着 `'posePack': '${id}_art'`** —— 格式本来就要求它，只是校验漏了。
+- **修复**：校验器补上 `posePack` 检查（缺失/空白 → `missing_pose_pack`；不是合法 id → `unsafe_pose_pack`），导入页给两条新码配中文说明。同时把 `isSafePackId` 收敛到 `CompanionPackValidator` 一份实现，`CompanionPackInstallRules.isSafePackId` 改为委托——两份同样的规则正是这次"校验与加载各说各话"的成因。
+- **测试**：`refusal_message_names_the_action_test.dart` 增加"没有 posePack 的包必须被拒，而不是装了再被丢掉"（三例：缺失、空白、`../escape`）与"id 规则只有一份实现"。
+- **反向证明**：把 posePack 那段的两个条件改成恒假 → 只有那条红（`Expected: contains 'missing_pose_pack' / Actual: []`）。
+- **顺带修正的夹具**：`companion_pack_validator_test.dart` 与 `companion_pack_installer_test.dart` 的 `goodManifest()` 补上 `posePack`（它们本来就该是"能用的包"）；`companion_pack_import_test.dart` 的"id 逃逸"用例显式给一个合法 `posePack`，否则 pose 规则先命中、把这条测试本来要测的规则盖住。
+- **设备复验**：重装后重新导入，伙伴列表出现第四张卡：绿色描边、✓ 已选中、`导入的` 与 `动作 13 / 13` 两个标签、以及 `...` 菜单。重启 App 后首页读作 `和 小猫 一起`，选择仍在。
+
+### 25. 卡片把"导出/删除"菜单整个从无障碍树里抹掉了
+
+- **发现方式**：第 24 条修好后卡片能看见了，顺手读它的无障碍节点：整张卡只有一个节点 `小猫，已选择`，而 `导出` / `删除` 在整个树里**一次都不出现**（`'导出' in tree: False`）。菜单在截图里看得见、手指点得动——**只有屏幕阅读器找不到它**。
+- **根因**：卡片的 `Semantics(excludeSemantics: true, ...)` 把**整棵子树**排除，而 `_PackMenu`（`PopupMenuButton`）就在子树里。`excludeSemantics` 不是"别念文字"，是"这棵子树对无障碍不存在"。第 21 条修的是"名字留下了、按下没了"；这一条更重——**控件本身没了**。
+- **为什么没有测试拦住**：`multi_companion_test.dart` 里那条测试断言的是 `find.byIcon(Icons.more_horiz_rounded)` **widget 存在**，它一直绿。存在 ≠ 可达。
+- **修复**：外层 `Semantics` 不再 `excludeSemantics`，改为把卡片**自己的**内容（头像、名字、副标题、标签）分别包进 `ExcludeSemantics`，`_PackMenu` 留在排除之外。名字仍然只念一遍，菜单重新拥有自己的节点。
+- **测试**：同一条测试补两行断言——`find.bySemanticsLabel(RegExp('更多操作'))` 必须命中一个，`find.bySemanticsLabel('小豆')` 必须命中一个。
+- **反向证明**：把外层 `excludeSemantics: true` 加回去 → `Found 0 widgets with element matching predicate`（那条 `find.byIcon` 断言仍然通过）。正好说明旧断言对这个缺陷零覆盖。
+- **新扫描器**：`tools/find_excluded_controls.py`，找 `excludeSemantics: true` 子树里**无法被包装器镜像**的控件（`PopupMenuButton`/`IconButton`/`Switch`/`TextField`…，不含裸 `GestureDetector`——那是第 21 条那个扫描器的地盘）。带 `--self-test`，对 `lib/` 现在报 0。
+- **设备复验**：`更多操作` 节点出现在树里。
+
+### 26. 换成导入的伙伴后，首页头像把状态念了两遍
+
+- **发现方式**：第 24/25 条之后重开 App，首页无障碍树多出一个候选：`小猫 空闲\n小猫 空闲, 点一下会回应，长按可以摸摸头`。装包之前同一个位置读作单句 `Mochi 空闲, 点一下会回应，长按可以摸摸头`。
+- **根因**：装了一个带 sprite spec 的伙伴之后，首页头像从**骨架渲染器**换到了**精灵渲染器**。前者的包装器早就 `excludeSemantics`（`pet_avatar_widget.dart` 的注释里写着它修过同一件事），后者的包装器**没有**：精灵自己带 `semanticLabel: '$name $state'`，包装器 `label: '$name $state'` 又写一遍，两个合并成 `label\nlabel`，hint 再由 Android 桥接用 `, ` 接上。
+- **修复**：`companion_sprite_art.dart` 与 `placeholder_visual_providers.dart` 两处包装器都加 `excludeSemantics: true`，并把子树的 `onTap` / `onLongPress` **镜像**到包装器上——这是第 21 条学到的：排除了子树就等于拿掉了它的手势。
+- **测试**：`sprite_avatar_announces_once_test.dart` 2 条——渲染 `CompanionSpriteAvatar` 后 `find.bySemanticsLabel('小猫 空闲')` 必须**恰好命中一个**（合并后的 label 是 `小猫 空闲\n小猫 空闲`，精确匹配会落空），且 label 里状态词只出现一次。
+- **反向证明**：去掉 `excludeSemantics` → 两条都红（`Found 0 widgets with element matching predicate`）。
+- **扫描器为什么看不见它**：子节点不是 `Text`，字符串还是调用方拼的，`find_doubled_semantics_labels.py` 的文本规则结构上看不到。给它补了第三条规则（包装器有 `label`、没有 `excludeSemantics`、子树里另有 `semanticLabel:`）与 6 条 self-test；但**这一处是设备树先发现的**，工具只是事后补上了可静态检查的那一半——工具的自我警告仍然成立。
+- **设备复验**：冷启动后 10 秒与 22 秒两次读树都是 `no node repeats itself`。
+
 ## 本节原先列的"尚未修复"，现已全部落地
 
 写这张表的时候（缺陷 20 那一轮）下面四条确实还没做。**它们后来都做了**，所以这张表按当时状态读会误导人，改成结论：

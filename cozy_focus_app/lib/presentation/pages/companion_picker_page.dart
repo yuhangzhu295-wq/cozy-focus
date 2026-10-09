@@ -387,8 +387,16 @@ class _CompanionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The wrapper carries the card's name and its press; the card's own text is
+    // excluded so the name is not read twice.
+    //
+    // The overflow menu must stay OUTSIDE that exclusion. It is a second control
+    // with its own actions, and `excludeSemantics` removes a subtree from the
+    // accessibility tree *entirely* — so export and delete were drawn, worked by
+    // touch, and were unreachable for anyone using a screen reader. Found by
+    // reading the tree on a device: the card was one node and `导出` appeared
+    // nowhere.
     return Semantics(
-      excludeSemantics: true,
       onTap: onTap,
       button: true,
       selected: selected,
@@ -411,14 +419,16 @@ class _CompanionCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  width: 84,
-                  height: 84,
-                  child: Center(
-                    child: CompanionAvatar(
-                      companionId: companionId,
-                      size: 78,
-                      showStateBadge: false,
+                ExcludeSemantics(
+                  child: SizedBox(
+                    width: 84,
+                    height: 84,
+                    child: Center(
+                      child: CompanionAvatar(
+                        companionId: companionId,
+                        size: 78,
+                        showStateBadge: false,
+                      ),
                     ),
                   ),
                 ),
@@ -430,16 +440,20 @@ class _CompanionCard extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              profile.displayName,
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                            child: ExcludeSemantics(
+                              child: Text(
+                                profile.displayName,
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
                             ),
                           ),
-                          _SelectionMark(selected: selected),
+                          ExcludeSemantics(
+                            child: _SelectionMark(selected: selected),
+                          ),
                           if (onExport != null || onDelete != null)
                             _PackMenu(
                               displayName: profile.displayName,
@@ -449,30 +463,34 @@ class _CompanionCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        profile.tagline,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          height: 1.45,
-                          color: AppColors.textSecondary,
+                      ExcludeSemantics(
+                        child: Text(
+                          profile.tagline,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            height: 1.45,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          if (installed) const _TraitChip(label: '导入的'),
-                          // What this companion can actually do, against the
-                          // app's own action vocabulary. On the card rather than
-                          // only at import, because this list is where a user
-                          // decides which companion to live with.
-                          if (completeness != null)
-                            CompanionCompletenessBadge(
-                                completeness: completeness!),
-                          for (final trait in profile.traits)
-                            _TraitChip(label: trait),
-                        ],
+                      ExcludeSemantics(
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            if (installed) const _TraitChip(label: '导入的'),
+                            // What this companion can actually do, against the
+                            // app's own action vocabulary. On the card rather than
+                            // only at import, because this list is where a user
+                            // decides which companion to live with.
+                            if (completeness != null)
+                              CompanionCompletenessBadge(
+                                  completeness: completeness!),
+                            for (final trait in profile.traits)
+                              _TraitChip(label: trait),
+                          ],
+                        ),
                       ),
                     ],
                   ),

@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T01:04:28+08:00",
+ "updated_at": "2026-10-10T02:42:12+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -309,7 +309,9 @@
    "id": "S6.E",
    "stage": 6,
    "title": "Companion Import -> Install -> Select -> Restart",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "device 411x914: a real .cozy_pet rebuilt from the app's own cat frames -> 导入宠物包 -> preview 动作 13/13 帧 49 -> 安装 -> 现在就换成它 -> the fourth card appears (导入的, 动作 13/13, menu) and is selected -> restart -> home reads '和 小猫 一起', selection kept. Filesystem: companion_packs/catpack/ 50 files, installed_packs.json has catpack, companion_selection.json is {\"selectedCompanionId\":\"catpack\"}",
+   "note": "Found three real defects: 24 (a pack without posePack installed and was then dropped), 25 (the card's exclusion hid the export/delete menu from the tree), 26 (the sprite renderer announced the state twice)."
   },
   {
    "id": "S6.F",
@@ -445,6 +447,34 @@
    "title": "design 03B: the restore card's second line",
    "status": "PASS",
    "evidence": "defect 23; Test B2; device reads '已恢复时长 / 1 分钟 / 16:25 – 16:27'"
+  },
+  {
+   "id": "S6.E1",
+   "stage": 6,
+   "title": "the validator must ask for what the loader requires (posePack)",
+   "status": "PASS",
+   "evidence": "defect 24; 7 tests in refusal_message_names_the_action_test.dart"
+  },
+  {
+   "id": "S6.E2",
+   "stage": 6,
+   "title": "an exclusion must not hide a second control",
+   "status": "PASS",
+   "evidence": "defect 25; find_excluded_controls.py (0 on lib/) + multi_companion_test"
+  },
+  {
+   "id": "S6.E3",
+   "stage": 6,
+   "title": "the sprite renderer names the companion once",
+   "status": "PASS",
+   "evidence": "defect 26; sprite_avatar_announces_once_test.dart; device: no node repeats"
+  },
+  {
+   "id": "S6.F0",
+   "stage": 6,
+   "title": "growth, room, dress, inventory",
+   "status": "PENDING",
+   "note": "next work unit"
   }
  ]
 }

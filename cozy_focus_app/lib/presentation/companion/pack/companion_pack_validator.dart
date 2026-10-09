@@ -22,10 +22,19 @@ class PackViolation {
   /// What was wrong, naming the offending value.
   final String detail;
 
-  const PackViolation(this.code, this.detail);
+  /// The action this is about, when the violation is about one.
+  ///
+  /// The prose a person reads is chosen by [code] alone, and for the action
+  /// codes that sentence is the same whichever action it is about — so a pack
+  /// with thirteen malformed actions produced thirteen copies of one sentence
+  /// naming nothing. Carrying the id here lets the message say which action.
+  final String? actionId;
+
+  const PackViolation(this.code, this.detail, {this.actionId});
 
   @override
-  String toString() => '$code: $detail';
+  String toString() =>
+      actionId == null ? '$code: $detail' : '$code [action $actionId]: $detail';
 }
 
 /// The outcome of validating one pack.
@@ -98,6 +107,25 @@ abstract final class CompanionPackValidator {
               '"$expectedId"');
     }
 
+    // The runtime needs this and the validator used not to ask for it.
+    //
+    // `InstalledPackProfiles` drops a pack whose manifest declares no `posePack`
+    // (`if (manifest.posePack.isEmpty) return null;`) because the visual registry
+    // keys its providers by that string. Validating everything else and not this
+    // let a pack pass import, install, and become the selection — and then be
+    // dropped on the next load. The companion list showed nothing selected and
+    // the companion itself was nowhere, which is what a device walk found.
+    final posePack = manifest['posePack'];
+    if (posePack is! String || posePack.trim().isEmpty) {
+      reject(
+          'missing_pose_pack',
+          'posePack is absent or empty; the runtime cannot look up a provider '
+              'for this pack without it');
+    } else if (!isSafePackId(posePack)) {
+      reject(
+          'unsafe_pose_pack', 'posePack "$posePack" cannot be a provider key');
+    }
+
     // The nested shape, because it is the one the runtime already parses
     // (`CompanionActionManifest.fromJson`) and the one the shipped packs use. An
     // earlier version of this file invented top-level `canvasWidth`/`canvasHeight`
@@ -139,18 +167,22 @@ abstract final class CompanionPackValidator {
       final id = entry.key as String;
       final spec = entry.value;
       actionIds.add(id);
+      // Every refusal from here to the end of this iteration is about
+      // this action, so the message can name it.
+      void rejectAction(String code, String detail) =>
+          problems.add(PackViolation(code, detail, actionId: id));
 
       if (spec is! Map) {
-        reject('action_not_a_map', 'action "$id" is not an object');
+        rejectAction('action_not_a_map', 'action "$id" is not an object');
         continue;
       }
 
       final frames = spec['frames'];
       if (frames is! List || frames.isEmpty) {
-        reject('action_without_frames', 'action "$id" lists no frames');
+        rejectAction('action_without_frames', 'action "$id" lists no frames');
       } else {
         if (frames.length < minFramesPerAction) {
-          reject(
+          rejectAction(
               'action_too_short',
               'action "$id" has ${frames.length} frame(s); a still image is not '
                   'an animation');
@@ -158,7 +190,7 @@ abstract final class CompanionPackValidator {
         if (frames.length > maxFramesPerAction) {
           // Refused rather than trimmed: the player holds a whole sequence in
           // memory, so accepting this would install a pack that can exhaust it.
-          reject(
+          rejectAction(
               'action_too_long',
               'action "$id" has ${frames.length} frames, above the '
                   '$maxFramesPerAction a sequence may carry');
@@ -166,22 +198,24 @@ abstract final class CompanionPackValidator {
         final seen = <String>{};
         for (final frame in frames) {
           if (frame is! String || frame.trim().isEmpty) {
-            reject('invalid_frame_path', 'action "$id" has a non-string frame');
+            rejectAction(
+                'invalid_frame_path', 'action "$id" has a non-string frame');
             continue;
           }
           final unsafe = unsafePathReason(frame);
           if (unsafe != null) {
-            reject('unsafe_frame_path', 'action "$id" frame "$frame": $unsafe');
+            rejectAction(
+                'unsafe_frame_path', 'action "$id" frame "$frame": $unsafe');
             continue;
           }
           if (!availableFiles.contains(frame)) {
-            reject(
+            rejectAction(
                 'missing_frame_file',
                 'action "$id" references "$frame", which the pack does not '
                     'contain');
           }
           if (!seen.add(frame)) {
-            reject('duplicate_frame',
+            rejectAction('duplicate_frame',
                 'action "$id" lists "$frame" more than once');
           }
         }
@@ -189,12 +223,12 @@ abstract final class CompanionPackValidator {
 
       final fps = spec['fps'];
       if (fps is! int || fps <= 0) {
-        reject('invalid_fps', 'action "$id" has fps "$fps"');
+        rejectAction('invalid_fps', 'action "$id" has fps "$fps"');
       }
 
       final loopMode = spec['loopMode'];
       if (loopMode is! String || !loopModes.contains(loopMode)) {
-        reject(
+        rejectAction(
             'unknown_loop_mode',
             'action "$id" has loopMode "$loopMode"; the runtime plays '
                 '${loopModes.join(', ')}');
@@ -254,4 +288,13 @@ abstract final class CompanionPackValidator {
     if (path.contains('\u0000')) return 'null byte';
     return null;
   }
+
+  /// Whether [id] can be used as a pack id, a directory name and a provider key.
+  ///
+  /// One implementation, here, because this file is the leaf both callers can
+  /// read: `CompanionPackInstallRules` delegates to it. Two copies of a rule
+  /// like this is how the validator and the loader came to disagree about
+  /// `posePack` in the first place.
+  static bool isSafePackId(String id) =>
+      RegExp(r'^[a-z0-9][a-z0-9_-]{0,63}$').hasMatch(id);
 }

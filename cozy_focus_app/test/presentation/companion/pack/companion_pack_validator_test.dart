@@ -11,6 +11,11 @@ void main() {
   /// A pack that passes, used as the base for the single-fault cases below.
   Map<String, dynamic> goodManifest() => {
         'companionId': 'mimi',
+        // The runtime keys its visual providers by this, and drops a pack whose
+        // manifest does not declare it — so a pack without one installs and then
+        // cannot be drawn. The validator asks for it now; this fixture always
+        // meant to be a pack that works.
+        'posePack': 'mimi',
         'canvas': {'width': 512, 'height': 512},
         'groundBaseline': 458,
         'centerAnchor': 255,

@@ -680,7 +680,7 @@ class _RefusedView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              for (final violation in refusals.violations)
+              for (final line in summarisePackRefusals(refusals.violations))
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(
@@ -694,7 +694,7 @@ class _RefusedView extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          describePackRefusal(violation),
+                          renderPackRefusalLine(line),
                           style: const TextStyle(
                             fontSize: 13,
                             height: 1.5,
@@ -807,6 +807,68 @@ class _DoneView extends StatelessWidget {
 
 // ─────────────────────────── refusal, in plain words ────────────────────────
 
+/// One line of the refusal list, after the violations behind it are folded.
+class PackRefusalLine {
+  /// The sentence, chosen by the violation's code alone.
+  final String message;
+
+  /// The distinct actions this is about, in first-seen order.
+  final List<String> actions;
+
+  /// How many violations said this.
+  final int count;
+
+  const PackRefusalLine(this.message, this.actions, this.count);
+}
+
+/// Folds the violations into the sentences a person can act on.
+///
+/// The fault is the same sentence whichever action it lands on, so one sentence
+/// per fault — with the actions it covers named once — reads better than one
+/// line per action. A pack whose thirteen actions all omit `fps` and `loopMode`
+/// is twenty-six violations, two sentences, and two lists of names.
+///
+/// Distinct sentences keep their first-seen order.
+List<PackRefusalLine> summarisePackRefusals(List<PackViolation> violations) {
+  final order = <String>[];
+  final actions = <String, List<String>>{};
+  final counts = <String, int>{};
+
+  for (final violation in violations) {
+    final message = describePackRefusal(violation);
+    if (!counts.containsKey(message)) {
+      counts[message] = 0;
+      actions[message] = <String>[];
+      order.add(message);
+    }
+    counts[message] = counts[message]! + 1;
+    final action = violation.actionId;
+    if (action != null && !actions[message]!.contains(action)) {
+      actions[message]!.add(action);
+    }
+  }
+
+  return [
+    for (final message in order)
+      PackRefusalLine(message, actions[message]!, counts[message]!),
+  ];
+}
+
+/// How many action names a line lists before it summarises instead.
+const int _mostActionsNamed = 6;
+
+/// The line as it is shown: the sentence, then what it covers.
+String renderPackRefusalLine(PackRefusalLine line) {
+  if (line.actions.isEmpty) {
+    return line.count > 1 ? '${line.message}（${line.count} 处）' : line.message;
+  }
+  if (line.actions.length > _mostActionsNamed) {
+    final shown = line.actions.take(3).join('、');
+    return '${line.message}（${line.actions.length} 个动作，如 $shown 等）';
+  }
+  return '${line.message}（动作：${line.actions.join('、')}）';
+}
+
 /// A refusal code, said in the language the rest of the app speaks.
 ///
 /// The codes are stable and the details are English diagnostics, which is right
@@ -849,6 +911,10 @@ String describePackRefusal(PackViolation violation) {
       return '包里写的 id 和实际安装的名字对不上。';
     case 'unsafe_pack_id':
       return '这个伙伴的 id 不能用作目录名，装不了。';
+    case 'missing_pose_pack':
+      return '包里没写这个伙伴用什么姿势包（posePack），装进来 App 找不到该拿什么画它。';
+    case 'unsafe_pose_pack':
+      return '包里写的姿势包名字不能用，装进来 App 找不到该拿什么画它。';
     case 'pack_id_reserved':
       return '这个 id 是内置伙伴的名字，自定义的包不能用。';
     case 'pack_already_installed':

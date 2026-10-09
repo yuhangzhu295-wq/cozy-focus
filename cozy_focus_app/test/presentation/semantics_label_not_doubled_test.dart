@@ -39,15 +39,31 @@ import 'package:cozy_focus_app/presentation/widgets/distraction_capture_sheet.da
 void main() {
   group('no Semantics wrapper repeats the text it wraps', () {
     test('across the whole of lib/', () {
-      final offenders = _scanLib();
+      // Delegates to the scanner rather than reimplementing it.
+      //
+      // There used to be a Dart copy of this scan beside the Python one, and the
+      // copy was weaker: it only knew the `${name}` interpolation form, not the
+      // `$name` one — the exact shape that hid the rest page's four duration
+      // chips. Two implementations of one rule is how the validator and the pack
+      // loader came to disagree about `posePack`; one authority is cheaper.
+      final result = _runScanner(const []);
 
       expect(
-        offenders,
-        isEmpty,
-        reason: 'these wrappers will be announced twice:\n'
-            '${offenders.map((o) => '  $o').join('\n')}\n'
+        result.exitCode,
+        0,
+        reason: 'these wrappers will be announced twice:\n${result.stdout}\n'
             'Add excludeSemantics: true, or drop the redundant label.',
       );
+    });
+
+    test('and the scan can tell the shapes apart', () {
+      // A scanner that reports nothing looks exactly like a codebase with
+      // nothing wrong, so the scanner carries the cases it must discriminate
+      // and this asserts they still hold.
+      final result = _runScanner(const ['--self-test']);
+
+      expect(result.exitCode, 0, reason: result.stdout + result.stderr);
+      expect(result.stdout, contains('self-test: ok'));
     });
   });
 
@@ -110,126 +126,15 @@ void main() {
   });
 }
 
-/// Every `Semantics(` in lib/ that supplies a `label` repeating the text it wraps.
+/// Runs the scanner. It is the authority; this file does not reimplement it.
 ///
-/// Paren-aware rather than line-based: the wrapper and the `Text` it duplicates
-/// can be twenty lines apart, and a window heuristic would flag unrelated `Text`
-/// widgets that happen to sit inside the same card.
-List<String> _scanLib() {
-  final offenders = <String>[];
-  final root = Directory('lib');
-  if (!root.existsSync()) return offenders;
-
-  for (final entity in root.listSync(recursive: true)) {
-    if (entity is! File || !entity.path.endsWith('.dart')) continue;
-    if (entity.path.endsWith('.g.dart')) continue;
-    final source = entity.readAsStringSync();
-
-    for (final match in RegExp(r'(?<![\w.])Semantics\(').allMatches(source)) {
-      final open = match.end - 1;
-      final close = _matchParen(source, open);
-      if (close < 0) continue;
-      final body = source.substring(open + 1, close);
-
-      final label = _argument(body, 'label');
-      if (label == null || label.isEmpty) continue;
-      if (body.contains('excludeSemantics: true')) continue;
-
-      final wanted = _normalise(label);
-      if (wanted.isEmpty) continue;
-
-      for (final text in RegExp(r'(?<![\w.])Text\(\s*').allMatches(body)) {
-        final value = _normalise(_firstArgument(body, text.end));
-        if (value.isEmpty) continue;
-        if (value == wanted || wanted.contains('\${$value}')) {
-          final line = '\n'.allMatches(source.substring(0, open)).length + 1;
-          offenders.add('${entity.path}:$line  label $label / Text($value)');
-          break;
-        }
-      }
-    }
-  }
-  return offenders;
-}
-
-String _normalise(String expression) =>
-    expression.replaceAll(RegExp(r'\s+'), '');
-
-int _skipString(String source, int index) {
-  final quote = source[index];
-  if (source.startsWith(quote * 3, index)) {
-    final end = source.indexOf(quote * 3, index + 3);
-    return end < 0 ? source.length : end + 3;
-  }
-  var i = index + 1;
-  while (i < source.length) {
-    if (source[i] == r'\') {
-      i += 2;
-      continue;
-    }
-    if (source[i] == quote) return i + 1;
-    if (source[i] == '\n') return i;
-    i++;
-  }
-  return source.length;
-}
-
-int _matchParen(String source, int openIndex) {
-  var depth = 0;
-  var i = openIndex;
-  while (i < source.length) {
-    final ch = source[i];
-    if (ch == "'" || ch == '"') {
-      i = _skipString(source, i);
-      continue;
-    }
-    if (ch == '/' && i + 1 < source.length && source[i + 1] == '/') {
-      final nl = source.indexOf('\n', i);
-      i = nl < 0 ? source.length : nl;
-      continue;
-    }
-    if (ch == '(') {
-      depth++;
-    } else if (ch == ')') {
-      depth--;
-      if (depth == 0) return i;
-    }
-    i++;
-  }
-  return -1;
-}
-
-/// The value of the named argument, up to the next comma at depth zero.
-String? _argument(String body, String name) {
-  final match = RegExp('(?<![\\w.])$name\\s*:\\s*').firstMatch(body);
-  if (match == null) return null;
-  return _slice(body, match.end);
-}
-
-/// The first positional argument starting at [start].
-String _firstArgument(String body, int start) => _slice(body, start);
-
-String _slice(String body, int start) {
-  var depth = 0;
-  var i = start;
-  while (i < body.length) {
-    final ch = body[i];
-    if (ch == "'" || ch == '"') {
-      i = _skipString(body, i);
-      continue;
-    }
-    if (ch == '(' || ch == '[' || ch == '{') {
-      depth++;
-    } else if (ch == ')' || ch == ']' || ch == '}') {
-      if (depth == 0) break;
-      depth--;
-    } else if (ch == ',' && depth == 0) {
-      break;
-    }
-    i++;
-  }
-  return body.substring(start, i).trim();
-}
+/// `--self-test` makes the scanner check the cases it must discriminate — a
+/// scanner that reports nothing looks exactly like a codebase with nothing
+/// wrong.
+ProcessResult _runScanner(List<String> args) => Process.runSync(
+      'python',
+      ['tools/find_doubled_semantics_labels.py', ...args],
+    );
 
 class _FixedClock implements FocusClock {
   _FixedClock(this._now);
