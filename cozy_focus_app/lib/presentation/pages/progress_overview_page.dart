@@ -366,14 +366,10 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
   /// keeps what the user did with their time. A fourth tab would give the
   /// product two places to look for the same thing.
   Widget _buildTaskEntry(BuildContext context) {
-    // Only the ones still to do. This counted every task in the list while
-    // labelling the result 进行中, so finishing a task left the number where
-    // it was — the same mistake as the plan's own count, in a second place.
-    final open = ref
-        .watch(taskListControllerProvider)
-        .tasks
-        .where((task) => !task.isDone)
-        .length;
+    // From the controller's own count, not from the list on screen: that list is
+    // the tab the user last looked at, so leaving it on 已完成 made this read
+    // 还没有任务 while three tasks were open.
+    final open = ref.watch(taskListControllerProvider).openCount;
     return _navEntry(
       context: context,
       icon: Icons.checklist_rounded,

@@ -19,12 +19,21 @@ class TaskListState {
   /// every row, and a query per row is N queries for one page.
   final Map<String, ({int seconds, int sessions})> totals;
 
+  /// How many tasks are still to do, across every day.
+  ///
+  /// Loaded separately from [tasks] on purpose. `tasks` is the *filtered* list —
+  /// the tab the user last looked at — and the records hub's summary was reading
+  /// it, so leaving the list on 已完成 made the hub say 还没有任务 while three
+  /// tasks were open. A summary of the whole must not be a view of a part.
+  final int openCount;
+
   final String? error;
 
   const TaskListState({
     this.isLoading = false,
     this.filter = TaskFilter.today,
     this.tasks = const [],
+    this.openCount = 0,
     this.totals = const {},
     this.error,
   });
@@ -36,6 +45,7 @@ class TaskListState {
     TaskFilter? filter,
     List<Task>? tasks,
     Map<String, ({int seconds, int sessions})>? totals,
+    int? openCount,
     String? Function()? error,
   }) =>
       TaskListState(
@@ -43,6 +53,7 @@ class TaskListState {
         filter: filter ?? this.filter,
         tasks: tasks ?? this.tasks,
         totals: totals ?? this.totals,
+        openCount: openCount ?? this.openCount,
         error: error != null ? error() : this.error,
       );
 
@@ -66,11 +77,16 @@ class TaskListController extends StateNotifier<TaskListState> {
     state = state.copyWith(isLoading: true, error: () => null);
     try {
       final tasks = await _repo.findByFilter(_userId, state.filter);
+      // The whole, not the part on screen: the hub's summary is about the user's
+      // tasks, not about the tab they happen to be on.
+      final open =
+          (await _repo.findByFilter(_userId, TaskFilter.active)).length;
       final totals = await _focusTotals();
       if (mounted) {
         state = state.copyWith(
           isLoading: false,
           tasks: tasks,
+          openCount: open,
           totals: totals,
         );
       }
