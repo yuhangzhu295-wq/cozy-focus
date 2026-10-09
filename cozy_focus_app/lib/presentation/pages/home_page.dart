@@ -92,11 +92,21 @@ class _HomePageState extends ConsumerState<HomePage> {
       }
       return;
     }
+    // The card above the timer names a task, so the session belongs to it.
+    //
+    // It used to start a session with no task at all, under the generic name
+    // '专注任务' — so a user who read `当前任务 first-task` and pressed 开始专注 got
+    // a record filed under a name they never chose, and the task's own totals
+    // never moved. Found by walking the first-use flow on a device and reading
+    // the row it wrote: `task_id` was null while the card named a task.
+    final next = ref.read(todayPlanControllerProvider).next;
     await ref.read(focusSessionControllerProvider.notifier).startSession(
           userId: localMvpUserId,
           plannedSeconds: _selectedMinutes * 60,
           mode: FocusMode.focus,
-          taskName: '专注任务',
+          taskId: next?.schedule.taskId,
+          taskName: next?.title ?? '专注任务',
+          categoryId: next?.categoryId,
           categoryName: '学习',
         );
     if (mounted) context.go('/focus/active');

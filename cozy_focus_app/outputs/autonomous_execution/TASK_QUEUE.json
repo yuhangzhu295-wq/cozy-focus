@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T03:26:08+08:00",
+ "updated_at": "2026-10-10T03:56:35+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -325,13 +325,16 @@
    "id": "S6.G",
    "stage": 6,
    "title": "old database -> migration -> new database -> history preserved",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "device: the app's own database, its -wal replayed, minus the two post-v9 tables and with user_version rolled back to 9 (byte-identical after the push, checked) -> launched -> user_version 11, tables 17 -> 19 (rest_sessions + app_settings created), and every existing row preserved: focus_records 10, focus_sessions 10, tasks 5, pets 1, craft_recipes 8, pet_memories 7, reward_ledger 10. The records UI shows the migrated history."
   },
   {
    "id": "S6.H",
    "stage": 6,
    "title": "new user -> create task -> focus -> first record",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "device, after pm clear: honest empty states (今日计划 还没有安排 / 任务 还没有任务 / 今天还没有专注记录) -> 新建任务 first-task -> home shows 当前任务 first-task，1/1 -> 开始专注 -> 提前结束 -> 完成并返回首页 -> focus_records row ('first-task', taskId, 70) and reward_ledger row written",
+   "note": "Found defect 29: the session was not attributed to the task the card named."
   },
   {
    "id": "S7.01",
@@ -497,6 +500,21 @@
    "id": "S6.G0",
    "stage": 6,
    "title": "old database -> migration -> data integrity",
+   "status": "PASS",
+   "note": "next work unit",
+   "evidence": "same walk as S6.G"
+  },
+  {
+   "id": "S6.H1",
+   "stage": 6,
+   "title": "a session started from home belongs to the task the card names",
+   "status": "PASS",
+   "evidence": "defect 29; home_page_test; device row read back as ('first-task', id, 70)"
+  },
+  {
+   "id": "S6.REGRESSION",
+   "stage": 6,
+   "title": "A-H regression pass on the final build",
    "status": "PENDING",
    "note": "next work unit"
   }

@@ -5,7 +5,7 @@
  "branch": "recovery/v4.2.1-rebuild",
  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
- "updated_at": "2026-10-10T03:26:08+08:00",
+ "updated_at": "2026-10-10T03:56:35+08:00",
  "continuation": {
   "question": "does this environment support automatic continuation of the work?",
   "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "4a51da3598072a82814cc6dd14fe3d80f57628df",
-  "remote_head": "4a51da3598072a82814cc6dd14fe3d80f57628df",
+  "head": "35e57d23c7f8a6fb0fa1ff5a62dcd06629009b90",
+  "remote_head": "35e57d23c7f8a6fb0fa1ff5a62dcd06629009b90",
   "head_matches_remote": true,
   "worktree": "dirty",
-  "last_verified_at": "2026-10-10T03:26:08+08:00",
+  "last_verified_at": "2026-10-10T03:56:35+08:00",
   "note": "Local and remote agree at bfab6df. Everything verified this window is pushed."
  },
  "current": {
   "stage": "STAGE_6_GOLDEN_FLOWS",
-  "subtask": "Golden Flows C, D, E and F are PASS, all walked on the device. F found two defects: 27 (selection and adoption are two stores and the import flow only wrote one, so the app called the same companion 小猫 and Mochi at once) and 28 (the collection hero drew its title in a bubble beside the heading). Next: Golden Flow G, the old-database migration.",
+  "subtask": "Golden Flows C, D, E, F, G and H are PASS, all walked on the device. Twenty-nine user-visible defects have been found and fixed across this pass; the last four came from E, F and H. Next: a single A-H regression pass on the final build, then Stage 4, Stage 5, Stage 1's remaining designs and Stage 7's deliverables.",
   "mode": "IN_PROGRESS"
  },
  "status_vocabulary": [
@@ -122,19 +122,19 @@
   "S7 depends on all of the above"
  ],
  "recent_test_evidence": {
-  "at": "2026-10-10T03:26:08+08:00",
+  "at": "2026-10-10T03:56:35+08:00",
   "command": "flutter test",
-  "result": "2026/2026 passed, analyze clean, format clean, APK builds",
-  "note": "2026 = 2024 + 2 for the avatar-name guard.",
+  "result": "2027/2027 passed, analyze clean, format clean, APK builds",
+  "note": "2027 = 2026 + 1 for the task-attribution guard.",
   "analyze": "flutter analyze --fatal-infos: No issues found",
   "format": "dart format --set-exit-if-changed .: 0 changed",
   "apk": "flutter build apk --debug: built",
   "diff_check": "clean",
   "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0 (self-test ok), find_unlabelled_icon_buttons.py 0",
-  "device": "411x914 dp emulator; defects 27 and 28 verified on device after install"
+  "device": "411x914 dp emulator; flows C/D/E/F/G/H walked end to end; defect 29 verified by reading the focus_records row the new build wrote"
  },
  "uncommitted": "none",
- "next_instruction": "Golden Flow G: an old Drift database, migration, and data integrity.",
+ "next_instruction": "Re-walk Golden Flows A through H once on the final build, then Stage 4.",
  "external_blockers": [
   "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
   "LAUNCHER_ICON: stock Flutter icon, no approved artwork",

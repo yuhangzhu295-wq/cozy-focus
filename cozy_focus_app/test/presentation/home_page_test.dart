@@ -12,7 +12,9 @@ import 'package:cozy_focus_app/data/local/app_database.dart'
         FocusSession,
         FocusRecord,
         DistractionNote;
+import 'package:cozy_focus_app/domain/models/task.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
+import 'package:cozy_focus_app/presentation/controllers/focus_session_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
 import 'package:cozy_focus_app/presentation/pages/home_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
@@ -216,6 +218,48 @@ void main() {
 
       expect(find.text('0 分钟'), findsOneWidget);
       expect(find.text('完成 0 次专注'), findsOneWidget);
+    });
+
+    testWidgets('the session belongs to the task the card names',
+        (tester) async {
+      // The card above the timer names a task, so a session started from that
+      // same screen belongs to it. It used to start with no task at all, under
+      // the generic name '专注任务' — found by walking the first-use flow on a
+      // device and reading the row it wrote: the card said '当前任务 first-task'
+      // and the record's `task_id` was null, so the task's own totals never moved.
+      final tasks = container.read(taskRepositoryProvider);
+      await tasks.insert(Task(
+        id: 'task-1',
+        userId: 'default_user',
+        title: 'first-task',
+        estimatedSeconds: 25 * 60,
+        createdAt: DateTime(2026, 10, 9, 9),
+      ));
+      await tasks.schedule(
+        taskId: 'task-1',
+        userId: 'default_user',
+        startAt: DateTime(2026, 10, 9, 20),
+        plannedSeconds: 25 * 60,
+      );
+
+      await pumpHome(tester);
+      expect(find.text('first-task'), findsOneWidget,
+          reason: 'the card names the task before the timer starts');
+
+      await tester.tap(find.text('开始专注'));
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 150));
+      }
+
+      final session = container.read(focusSessionControllerProvider).session;
+      expect(session, isNotNull);
+      expect(session!.taskId, 'task-1');
+      expect(session.taskName, 'first-task');
+
+      // The session is still running, and its ticker outlives the widget tree.
+      await container
+          .read(focusSessionControllerProvider.notifier)
+          .cancelSession();
     });
   });
 }
