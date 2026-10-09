@@ -33,7 +33,7 @@
  },
  "current": {
   "stage": "STAGE_5_SIZES_AND_ACCESSIBILITY",
-  "subtask": "The accessibility sweep now covers the screens whose tree had never been read. It found defect 32: the record detail computed its own minutes with a floor while the app's one rule rounds, so a 90-second record read 2 分钟 in the list and 1 分钟 in the detail. Two screens (安排到今日计划, 专注复盘) are still unswept and are not counted as passing.",
+  "subtask": "Every reachable screen has now had its accessibility tree read. The supplementary sweep found defect 32 (the record detail computed its own minutes with a floor while the app's one rule rounds) and nothing else. Thirty-two defects found and fixed in this pass.",
   "mode": "IN_PROGRESS"
  },
  "status_vocabulary": [
@@ -132,10 +132,10 @@
   "diff_check": "clean",
   "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0 (self-test ok), find_unlabelled_icon_buttons.py 0, audit_pack_geometry.py PASS",
   "project_gate": "tools/cozy_gate.py: 12 PASS / 3 BLOCKED / 3 DEFERRED / 0 FAIL (UNIT 2029, INTEGRATION 51, GOLDEN_FLOW 6, MIGRATION 16, LIFECYCLE 80, ASSET 75, APK 32.0MB, AAB 50.5MB)",
-  "device": "411x914 dp emulator; all eight flows re-walked on the final build; three sizes swept; large text 1.4x; landscape; performance measured; the unvisited screens' trees swept; thirty-two defects found and fixed in this pass"
+  "device": "411x914 dp emulator; all eight flows re-walked on the final build; three sizes swept; large text 1.4x; landscape; performance measured; every reachable screen's tree read; thirty-two defects found and fixed in this pass"
  },
  "uncommitted": "none",
- "next_instruction": "Sweep 安排到今日计划 and 专注复盘. Everything else outstanding is the owner's or BLOCKED_EXTERNAL: OWNER_VISUAL_GATE, 6 product decisions, frame time (DevTools + a GPU-backed device), real-device verification, room_sit art, TalkBack, Flow video, release signing and the launcher icon.",
+ "next_instruction": "Nothing further is completable from here. Remaining: OWNER_VISUAL_GATE and 6 product decisions (the owner's), frame time (DevTools + a GPU-backed device), real-device verification, room_sit art, TalkBack, Flow video, release signing, the launcher icon.",
  "external_blockers": [
   "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
   "LAUNCHER_ICON: stock Flutter icon, no approved artwork",
