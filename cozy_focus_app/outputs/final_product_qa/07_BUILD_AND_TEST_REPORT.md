@@ -56,8 +56,37 @@ $ git diff --check
 - 反复改分辨率/安装后偶发系统 ANR，点击会落在对话框上。
 - 无障碍树**只报可见节点**，且**顺序不等于布局**——这两条各让我差点报出一个假缺陷。
 
+## 项目自己的产品门禁（`tools/cozy_gate.py`）
+
+五条命令之外，仓库里本来就有一个把**所有**门禁跑一遍并如实报告的脚本。本轮的运行结果：
+
+```
+FORMAT                 PASS     458 files, 0 changed
+ANALYZE                PASS     0 issues
+UNIT_TESTS             PASS     2029/2029 passed
+INTEGRATION_TESTS      PASS     51/51 passed
+GOLDEN_FLOW            PASS     6/6 passed
+MIGRATION              PASS     16/16 passed
+LIFECYCLE              PASS     80/80 passed
+ASSET_GATES            PASS     75/75 passed
+APK                    PASS     32.0 MB (budget 34 MB)
+AAB                    PASS     50.5 MB (budget 55 MB)
+DIFF_CHECK             PASS     no whitespace errors
+BEHAVIOR_AUTHORITY     PASS     BEHAVIOR_AUTHORITY_COUNT=1
+RELEASE_SIGNING        BLOCKED  android/key.properties is absent; no keystore invented
+LAUNCHER_ICON          BLOCKED  still the stock Flutter logo; no approved artwork
+FLOW_GENERATION        BLOCKED  no video surface reachable in Flow
+OWNER_VISUAL_GATE      DEFERRED REQUIRED, and never decided by a measurement
+DEVICE_MATRIX          DEFERRED driven by hand each time, not by this script
+PRODUCT_DECISIONS      DEFERRED 6 product choices left to the owner
+
+counts: {'PASS': 12, 'BLOCKED': 3, 'DEFERRED': 3}   FAIL: 0
+```
+
+**`OWNER_VISUAL_GATE` 这一行是本项目自己写下的判据**：它是 REQUIRED，且"**永远不由一次测量来判定**"。所以"16/16 展板自动视觉验收"这件事，本项目的门禁本身就不允许用测量代替——`01_VISUAL_MATRIX.md` 提供的是对照与测量，不是那道门禁。
+
 ## 未测量
 
 - 冷启动/热启动耗时、页面切换延迟、伙伴动画帧时间、滚动表现、内存增长：**未测量**。没有 profile run，不编造阈值。
-- 大字号只在 360×800 下跑完首页与记录两屏，其余四屏与横屏未试。
-- APK 体积（debug）不代表发布体积；release 签名缺失，见 `08_RELEASE_BLOCKERS.md`。
+- 真机（非模拟器）验证：**未做**。
+- APK 体积 32.0 MB / AAB 50.5 MB（都在预算内），但 release 签名缺失，见 `08_RELEASE_BLOCKERS.md`。

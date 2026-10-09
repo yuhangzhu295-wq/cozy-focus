@@ -1,19 +1,19 @@
 # Automated product gate
 
-Generated 2026-10-04 20:32:45 at `b911caab`. Local equals remote: **YES**.
+Generated 2026-10-10 06:18:21 at `c70290fa`. Local equals remote: **YES**.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| `FORMAT` | **PASS** | 270 files, 0 changed |
+| `FORMAT` | **PASS** | 458 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
-| `UNIT_TESTS` | **PASS** | 1202/1202 passed |
-| `INTEGRATION_TESTS` | **PASS** | 20/20 passed |
+| `UNIT_TESTS` | **PASS** | 2029/2029 passed |
+| `INTEGRATION_TESTS` | **PASS** | 51/51 passed |
 | `GOLDEN_FLOW` | **PASS** | 6/6 passed |
-| `MIGRATION` | **PASS** | 15/15 passed |
-| `LIFECYCLE` | **PASS** | 51/51 passed |
+| `MIGRATION` | **PASS** | 16/16 passed |
+| `LIFECYCLE` | **PASS** | 80/80 passed |
 | `ASSET_GATES` | **PASS** | 75/75 passed |
-| `APK` | **PASS** | 29.5 MB (budget 34 MB) |
-| `AAB` | **PASS** | 48.1 MB (budget 55 MB) |
+| `APK` | **PASS** | 32.0 MB (budget 34 MB) |
+| `AAB` | **PASS** | 50.5 MB (budget 55 MB) |
 | `DIFF_CHECK` | **PASS** | no whitespace errors |
 | `RELEASE_SIGNING` | **BLOCKED** | RELEASE_SIGNING = NOT_RECOVERED: android/key.properties is absent, and no keystore was invented. The build switches over with no code change the moment it appears. |
 | `LAUNCHER_ICON` | **BLOCKED** | still the stock Flutter logo (dominant colours 0,0,0 / 84,197,248 / 1,87,155); no approved artwork exists, so none was invented |

@@ -130,7 +130,9 @@
   "apk": "flutter build apk --debug: built",
   "diff_check": "clean",
   "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0 (self-test ok), find_unlabelled_icon_buttons.py 0, audit_pack_geometry.py PASS",
-  "device": "411x914 dp emulator; all eight flows re-walked on the final build; three sizes swept; large text at 1.4x over six screens; landscape checked; thirty-one defects found and fixed in this pass"
+  "device": "411x914 dp emulator; all eight flows re-walked on the final build; three sizes swept; large text at 1.4x over six screens; landscape checked; thirty-one defects found and fixed in this pass",
+  "project_gate": "tools/cozy_gate.py: 12 PASS / 3 BLOCKED / 3 DEFERRED / 0 FAIL (UNIT 2029, INTEGRATION 51, GOLDEN_FLOW 6, MIGRATION 16, LIFECYCLE 80, ASSET 75, APK 32.0MB, AAB 50.5MB)",
+  "owner_visual_gate": "the project's own gate declares OWNER_VISUAL_GATE REQUIRED and never decided by a measurement, so the 16-board matrix is a comparison, not that gate"
  },
  "uncommitted": "none",
  "next_instruction": "Nothing further is completable from here without the owner: performance and real-device verification need a profile run and hardware, room_sit needs art, TalkBack needs a build with it, release signing needs a keystore, and the launcher icon needs approval.",
