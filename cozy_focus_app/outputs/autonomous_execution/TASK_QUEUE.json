@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T05:01:20+08:00",
+ "updated_at": "2026-10-10T05:05:30+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -371,31 +371,37 @@
    "id": "S7.02",
    "stage": 7,
    "title": "02_BEFORE_AFTER screenshots",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "02_BEFORE_AFTER/README.md indexes the pairs; four before/after pairs exist and the file says so rather than implying more"
   },
   {
    "id": "S7.03",
    "stage": 7,
    "title": "03_BUSINESS_FLOW_EVIDENCE.md",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "03_BUSINESS_FLOW_EVIDENCE.md: C-H with the device evidence per step"
   },
   {
    "id": "S7.04",
    "stage": 7,
    "title": "05_COMPANION_QA.md",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "05_COMPANION_QA.md: states, the overlay decision, pack geometry, the four defects"
   },
   {
    "id": "S7.05",
    "stage": 7,
    "title": "06_DEVICE_QA.md",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "06_DEVICE_QA.md: sizes, large text, accessibility, migration pitfalls, blind spots"
   },
   {
    "id": "S7.06",
    "stage": 7,
    "title": "final gate: the five commands plus the QA flows",
-   "status": "PENDING"
+   "status": "NOT_VERIFIED",
+   "evidence": "the five commands pass (2029 tests, analyze clean, format clean, APK builds, diff check clean). What is missing is one A-H re-walk on the final build: the flows were each walked on the build as of their own commit, and the three commits since (defect 31's one-line label fix plus two documentation commits) are not covered by a re-walk.",
+   "note": "Not marked PASS, because 'each flow passed on an earlier build' is not 'the flows pass on this build'."
   },
   {
    "id": "S2.01a",
