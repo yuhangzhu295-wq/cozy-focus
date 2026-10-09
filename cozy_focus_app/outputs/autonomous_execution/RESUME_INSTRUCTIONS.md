@@ -21,6 +21,41 @@
 6. Update `MASTER_STATE.json` and `TASK_QUEUE.json` **after each work unit**, not
    at the end of the window.
 
+## Whether another window is working — ask the lease, not a timestamp
+
+The old check read `MASTER_STATE.updated_at` and skipped if it was under 25 minutes
+old. That is a proxy for "someone wrote recently", not "someone is working", and it
+gets the common case backwards: a window that finished a unit normally still looks
+active for the next 25 minutes, so the next window skips its turn, while a window
+that died mid-unit looks exactly the same as one that finished cleanly.
+
+```
+python tools/qa/lease.py status                  # what the current lease says
+python tools/qa/lease.py acquire --run-id <id> --stage <STAGE> --task <TASK>
+python tools/qa/lease.py heartbeat --run-id <id>
+python tools/qa/lease.py release --run-id <id>
+```
+
+The verdict is a function of owner, heartbeat and expiry, and names which of five
+situations you are in:
+
+| verdict | what it means | what to do |
+|---|---|---|
+| `FREE` | nothing has taken it | acquire |
+| `OWN` | this run already holds it | carry on |
+| `HELD` | another **live** window holds it | stop; do not write |
+| `RELEASED` | the last run ended cleanly | acquire |
+| `EXPIRED` | the last run stopped heartbeating | acquire; the tool records what it recovered |
+
+`acquire` exits 2 on `HELD` so a script cannot walk past it. The critical section
+is an exclusive create, which the filesystem makes atomic, so two windows cannot
+both acquire; a lock older than 30 seconds is a crash leftover and is broken with
+the fact written into the lease. `release` when a unit finishes normally — that is
+what stops the next window being made to wait for nothing.
+
+**Call `heartbeat` before anything that takes minutes** (a full `flutter test` run
+is about four minutes; a build plus tests can pass the TTL if you do not).
+
 ## What this environment can and cannot do about continuing
 
 **Can:** Zcode provides persistent automation that outlives a session — a recurring

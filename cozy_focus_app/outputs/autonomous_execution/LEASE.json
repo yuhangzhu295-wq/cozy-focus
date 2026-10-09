@@ -1,0 +1,15 @@
+{
+  "run_id": "sess-b08ccdf6",
+  "owner": "zcode",
+  "worktree": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-07\\new-chat\\cozy_focus_app",
+  "branch": "recovery/v4.2.1-rebuild",
+  "started_at": "2026-10-09T21:47:29+08:00",
+  "heartbeat_at": "2026-10-09T21:47:29+08:00",
+  "lease_expires_at": "2026-10-09T22:07:29+08:00",
+  "current_stage": "STAGE_6",
+  "current_task": "S6.C-rest",
+  "last_verified_commit": "bacb1ad1b6baaa4b431c477b82a416f92c2be2ed",
+  "released_at": null,
+  "recovered_from": null,
+  "previous_verdict": "RELEASED"
+}

@@ -1,6 +1,20 @@
 # CHECKPOINT — where to resume
 
 **Read this first.** It is the resume point, and it is only true as of the timestamp
+
+## Before touching anything: take the lease
+
+```
+python tools/qa/lease.py status
+python tools/qa/lease.py acquire --run-id <your id> --stage <STAGE> --task <TASK>
+```
+
+`HELD` means a live window is working — stop. `RELEASED` or `EXPIRED` means take
+it; `EXPIRED` additionally means the previous window died mid-unit, and the tool
+records what it was doing so you can pick it up. The old `updated_at` guard is
+retired: it made a cleanly finished window look busy for 25 minutes and a crashed
+one look identical to a finished one.
+
 below; re-verify the git state before acting on it.
 
 ```
