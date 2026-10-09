@@ -1,7 +1,7 @@
 {
   "queue_version": 1,
   "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
-  "updated_at": "2026-10-09T10:01:46+08:00",
+  "updated_at": "2026-10-09T10:07:38+08:00",
   "tasks": [
     {
       "id": "S1.01",
@@ -257,7 +257,7 @@
       "stage": 5,
       "title": "accessible names on every screen",
       "status": "IN_PROGRESS",
-      "note": "in progress. Swept clean: home, growth, room, the focus page, the capture sheet, the records hub (all four tabs) and the today plan (all three). Found and fixed: 21 doubled labels, the task list's three doubled filters, and seven buttons named only by a tooltip. The detector itself was corrected twice — it reported repeated data as defects, and it treated a tooltip as a name. Still to sweep: create task, settings, the report pages, the companion picker/dress/inventory"
+      "note": "clean and device-verified: home, growth, room, the focus page, the capture sheet, the records hub (4 tabs), the today plan (3 tabs), settings, notifications. Found and fixed 21 doubled labels, 3 doubled filters and 7 buttons named only by a tooltip. The detector was wrong three times and each correction is recorded. Remaining: create task, the report pages, companion picker/dress/inventory"
     },
     {
       "id": "S5.04",

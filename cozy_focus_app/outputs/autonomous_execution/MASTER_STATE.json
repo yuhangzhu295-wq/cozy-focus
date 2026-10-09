@@ -5,7 +5,7 @@
   "branch": "recovery/v4.2.1-rebuild",
   "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
   "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
-  "updated_at": "2026-10-09T10:01:46+08:00",
+  "updated_at": "2026-10-09T10:07:38+08:00",
   "continuation": {
     "question": "does this environment support automatic continuation of the work?",
     "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
     "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
   },
   "git": {
-    "head": "b81f517ef572b7d089e299277ec53ab9f14d64cb",
+    "head": "8b99eba241ec34d5395f42a763df44ac22620ae2",
     "remote_head": "e8647f33a58cf4206499157cfd44298f7fadce0b",
     "head_matches_remote": false,
     "worktree": "dirty",
-    "last_verified_at": "2026-10-09T10:01:46+08:00",
-    "note": "HEAD is 34 commits ahead of the remote; nothing has been pushed since e8647f3."
+    "last_verified_at": "2026-10-09T10:07:38+08:00",
+    "note": "HEAD is 36 commits ahead of the remote; nothing has been pushed since e8647f3."
   },
   "current": {
     "stage": "STAGE_3_VISUAL_RESTORATION",
-    "subtask": "S5.03 accessibility sweep is continuing. Three more defects fixed this window (the detector's own false positives, the task list's doubled filters, and seven buttons named by a tooltip). Next: the room page's two buttons on the device, then the create-task, settings and report screens",
+    "subtask": "S5.03 sweep: home, growth, room, the focus page, the capture sheet, the records hub (four tabs), the today plan (three tabs), settings and notifications are all clean and device-verified. Next: create task, the report pages, and the companion picker/dress/inventory",
     "mode": "IN_PROGRESS"
   },
   "status_vocabulary": [
@@ -84,7 +84,9 @@
     "S2.07 FIVE SOURCES AGREE: test/domain/five_sources_agree_test.dart asks the question against a real database — a 1,500 s session with a task, a 900 s one without, and a 45 s one, which is where rounding rules part company. The sharpest assertion is that the task total is strictly less than the day, so a query that forgot its task filter cannot pass by accident; dropping the filter gives 2445 against 1500",
     "S5.03b THE DETECTOR ITSELF WAS WRONG: it flagged any repeated word, and reported the timeline's 专注任务 and the statistics card's 1 小时 42 分钟 — both repeated data, not doubled labels. A doubled label is adjacent (a merged wrapper sits immediately before the text it repeats); list rows that share a word are not. The rule now compares neighbours only, with a self-test over the four real cases and the three false ones: 8/8",
     "S5.03c the task list announced every filter twice — 今天\\n今天, 进行中\\n进行中, 已完成\\n已完成. It survived the earlier sweep because the label is written _labels[filter] and the chip's text _labels[filter]!, and the scan compared the expressions literally; stripping a trailing ! found this one site and nothing else. Device-verified",
-    "S5.03d SEVEN BUTTONS NAMED BY A TOOLTIP, which is not a name. Measured in Flutter (label empty, the string in tooltip) and on the device (content-desc=\"\", no tooltip attribute in the tree at all). The scanner's own docstring had the rule backwards, so it reported zero problems across all seven. Six took a semanticLabel on the icon; the seventh needed its Semantics wrapper dropped, because that shape produces two nodes — a probe shows the named wrapper and the IconButton's own unnamed one"
+    "S5.03d SEVEN BUTTONS NAMED BY A TOOLTIP, which is not a name. Measured in Flutter (label empty, the string in tooltip) and on the device (content-desc=\"\", no tooltip attribute in the tree at all). The scanner's own docstring had the rule backwards, so it reported zero problems across all seven. Six took a semanticLabel on the icon; the seventh needed its Semantics wrapper dropped, because that shape produces two nodes — a probe shows the named wrapper and the IconButton's own unnamed one",
+    "S5.03e swept and verified on the device this window: the room page (its 库存 and 制作工坊 buttons were among the seven that had no name), the growth page, home, the settings page and the notifications page. The detector's third false-positive class was found and fixed — a row title sharing a word with its own subtitle — and is now a self-test case",
+    "CONTRACT CHECK on the settings rows, because 功能建设中 / 暂未启用 / 暂不可用 read like Coming Soon. They are not: only 通知 and 数据与同步 are clickable, both lead to real pages, and the notifications page states 不可配置 on every row with no toggle rendered at all. An explicit unavailable state, which the brief asks for, rather than a control that does nothing"
   ],
   "pending": [
     "S1.08, S1.10..S1.16 audit designs 08 and 10..16",
@@ -109,7 +111,7 @@
     "S7 depends on all of the above"
   ],
   "recent_test_evidence": {
-    "at": "2026-10-09T10:01:46+08:00",
+    "at": "2026-10-09T10:07:38+08:00",
     "command": "flutter test",
     "result": "1993/1993 passed, analyze clean, format clean, APK builds",
     "note": "The flake is resolved and it was a product defect, not the harness: ReportsController's constructor called loadAllReports() without awaiting it while all three report pages already called the same method from initState, so every visit loaded twice and the constructor's round could land after a test's teardown closed the database. It failed with no exception text at all, just '+2 -1'. Removing the constructor's call took the suspect file from 8/10 clean to 12/12. An earlier fix to the room-placement test's fixed-frame wait addressed a real but different fragility.",
