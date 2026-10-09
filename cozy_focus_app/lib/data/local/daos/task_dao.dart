@@ -295,6 +295,7 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
           schedule: _mapSchedule(row.readTable(taskSchedules)),
           title: row.readTable(tasks).title,
           categoryId: row.readTable(tasks).categoryId,
+          taskStatus: domain.TaskStatus.fromId(row.readTable(tasks).status),
         ),
     ];
   }

@@ -18,7 +18,9 @@ import '../models/task_schedule.dart';
 /// has been marked done stops being next, which is the signal that matters.
 PlannedTask? nextPlacement(List<PlannedTask> placements) {
   for (final placement in placements) {
-    if (placement.schedule.isPlanned) return placement;
+    // `isOutstanding`, not `schedule.isPlanned`: a task finished from the task
+    // list is not something to offer 开始 for.
+    if (placement.isOutstanding) return placement;
   }
   return null;
 }

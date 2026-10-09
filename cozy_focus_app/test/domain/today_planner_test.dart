@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:cozy_focus_app/domain/models/task.dart';
 import 'package:cozy_focus_app/domain/models/task_schedule.dart';
 import 'package:cozy_focus_app/domain/services/today_planner.dart';
 
@@ -20,6 +21,7 @@ void main() {
     int minutes = 25,
     String title = '写产品方案',
     TaskScheduleStatus status = TaskScheduleStatus.planned,
+    TaskStatus taskStatus = TaskStatus.open,
   }) {
     return PlannedTask(
       schedule: TaskSchedule(
@@ -33,6 +35,7 @@ void main() {
         createdAt: startAt,
       ),
       title: title,
+      taskStatus: taskStatus,
     );
   }
 
@@ -64,6 +67,33 @@ void main() {
           id: 'a',
           startAt: DateTime(2026, 10, 7, 9),
           status: TaskScheduleStatus.done,
+        ),
+      ];
+      expect(nextPlacement(day), isNull);
+    });
+
+    test('skips a placement whose task was finished from the task list', () {
+      // Two records of two facts: the placement is still 进行中 while the task
+      // itself is done. The plan used to read only the placement, so a task
+      // completed on the other screen kept being offered here with a 开始
+      // button.
+      final day = [
+        placed(
+          id: 'a',
+          startAt: DateTime(2026, 10, 7, 9),
+          taskStatus: TaskStatus.done,
+        ),
+        placed(id: 'b', startAt: DateTime(2026, 10, 7, 11)),
+      ];
+      expect(nextPlacement(day)!.schedule.id, 'b');
+    });
+
+    test('and is null when the only placement belongs to a finished task', () {
+      final day = [
+        placed(
+          id: 'a',
+          startAt: DateTime(2026, 10, 7, 9),
+          taskStatus: TaskStatus.done,
         ),
       ];
       expect(nextPlacement(day), isNull);

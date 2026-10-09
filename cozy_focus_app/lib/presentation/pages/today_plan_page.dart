@@ -498,7 +498,10 @@ class _PlanRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final done = !placement.schedule.isPlanned;
+    // Either record counts: a task finished from the task list is done here
+    // too, or the same row would read as unfinished on this screen and
+    // finished on the other.
+    final done = !placement.isOutstanding;
     final color = taskCategoryColor(placement.categoryId);
     final chip = TaskCategoryChip.maybe(placement.categoryId);
 

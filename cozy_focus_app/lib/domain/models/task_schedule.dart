@@ -1,6 +1,8 @@
 /// One task placed on one day.
 library;
 
+import 'task.dart';
+
 /// Where a placement is in its life.
 ///
 /// `planned` and `done` are what the product has; `skipped` exists because a
@@ -92,11 +94,22 @@ class PlannedTask {
   final String title;
   final String? categoryId;
 
+  /// Whether the task itself is finished, as opposed to this placement.
+  ///
+  /// Two different facts, and the screen needs both: a task marked done from the
+  /// task list used to keep being offered as 下一个任务 with a 开始 button, because
+  /// the plan only ever read the placement's own status.
+  final TaskStatus taskStatus;
+
   const PlannedTask({
     required this.schedule,
     required this.title,
     this.categoryId,
+    this.taskStatus = TaskStatus.open,
   });
+
+  /// Whether there is anything left to do here, from either record.
+  bool get isOutstanding => schedule.isPlanned && taskStatus != TaskStatus.done;
 
   @override
   String toString() => 'PlannedTask(${schedule.date} "$title")';
