@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T05:09:24+08:00",
+ "updated_at": "2026-10-10T06:03:01+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -399,9 +399,9 @@
    "id": "S7.06",
    "stage": 7,
    "title": "final gate: the five commands plus the QA flows",
-   "status": "NOT_VERIFIED",
-   "evidence": "the five commands pass (2029 tests, analyze clean, format clean, APK builds, diff check clean). A final-build smoke pass was run over home, records, growth, room, dress and collection: zero RenderFlex overflow and no repeated node on any of them, and defect 30's fix holds ('插画' absent from the collection tree). What is still missing is one A-H re-walk on this build: each flow was walked on the build as of its own commit, and the three commits since are a one-line label fix plus documentation.",
-   "note": "The smoke pass is not a substitute for the re-walk and is not counted as one. Not marked PASS, because 'each flow passed on an earlier build' is not 'the flows pass on this build'."
+   "status": "PASS",
+   "evidence": "the five commands pass (2029 tests, analyze clean, format clean, APK builds, diff check clean) and the A-H re-walk on this build is done (S7.06b).",
+   "note": "PASS for the engineering gate as scoped. It is not a human visual sign-off and not store readiness: performance and real-device verification are still NOT_VERIFIED, room_sit and TalkBack are BLOCKED_EXTERNAL, and release signing is missing."
   },
   {
    "id": "S2.01a",
@@ -608,8 +608,9 @@
    "id": "S7.06b",
    "stage": 7,
    "title": "one A-H re-walk on the final build",
-   "status": "NOT_VERIFIED",
-   "note": "next work unit"
+   "status": "PASS",
+   "note": "One false defect along the way, recorded in 06_DEVICE_QA.md: the capture sheet autofocuses its field, so the sheet sits mid-screen with the keyboard up and at the bottom with it down; reusing keyboard-up coordinates lands on the scrim and dismisses the sheet. It looked like '记一下 silently loses the note' twice. Re-taking the bounds made it save on the first try.",
+   "evidence": "all eight flows re-walked on the final build, from cleared data. A: the task detail reads 累计专注时长 16 分钟 / 共 3 次专注, matching the three records (5+8+3) and the day total - three sources agree. B: 分心箱 1 条待处理 and the note appears on the timeline as 快速记录. C: running rest reads 还剩 4 分钟 once, rest_sessions row (300 planned / 56 elapsed / cancelled), timeline 休息一下 1 分钟 · 提前结束. D: early-finish dialog, completion 02:39, record saved. E: catpack imports, the fourth card is selected with its menu node in the tree, and it survives a restart. F: growth/room/dress/collection, zero overflow, no repeats, 插画 absent. G: v9 -> v11 on device, 17 -> 19 tables, every row preserved. H: covered by the same session as A/B/C/D."
   }
  ]
 }
