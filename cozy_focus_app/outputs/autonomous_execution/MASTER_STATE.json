@@ -5,7 +5,7 @@
   "branch": "recovery/v4.2.1-rebuild",
   "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
   "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
-  "updated_at": "2026-10-09T20:46:22+08:00",
+  "updated_at": "2026-10-09T21:32:49+08:00",
   "continuation": {
     "question": "does this environment support automatic continuation of the work?",
     "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
     "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
   },
   "git": {
-    "head": "fbf505a528ec6dd9bb5c525cca4661b7533fd656",
+    "head": "bc2ad67778c7fe8766cf069d5141197870122c5a",
     "remote_head": "e8647f33a58cf4206499157cfd44298f7fadce0b",
     "head_matches_remote": false,
     "worktree": "dirty",
-    "last_verified_at": "2026-10-09T20:46:22+08:00",
-    "note": "HEAD is 49 commits ahead of the remote; nothing has been pushed since e8647f3."
+    "last_verified_at": "2026-10-09T21:32:49+08:00",
+    "note": "HEAD is 51 commits ahead of the remote; nothing has been pushed since e8647f3."
   },
   "current": {
     "stage": "STAGE_3_VISUAL_RESTORATION",
-    "subtask": "Golden Flow B walked (focus -> capture -> inbox -> convert) and it found defect 19, now fixed. Next: flows C-H, then Stage 4's companion and room work, the size sweep, the remaining audits and the deliverables",
+    "subtask": "Golden Flow C walked (home -> rest) and it found defect 20, now fixed: the rest page announced every preset twice, and the scan had been blind to it for two reasons. Next: the rest of flow C (the running rest and the timeline), then flows D-H",
     "mode": "IN_PROGRESS"
   },
   "status_vocabulary": [
@@ -96,7 +96,8 @@
     "S3.05a CLOSED AS NOT A DEFECT: the design-03 dot colours looked wrong against the app's category palette, so I measured design 02's chips — 学习 is a pale blue chip with blue text, matching catStudy #8BA4C8. The dots in 03 are not category colours at all (the same category is green as a chip and orange as a dot in one board, and design 09's legend uses dot colour for the row kind). The app is self-consistent",
     "S6.A Golden Flow A walked on the device and it FOUND A DEFECT: a task completed on the task list was still offered as 下一个任务 on the today plan, because Task.status and TaskSchedule.status record two facts and the plan read one. Fixed read-side (PlannedTask.taskStatus, isOutstanding) with the placement deliberately not rewritten, since whether finishing a task closes its placement is a product decision. 3 tests, 2 reverse-proved, device-verified",
     "S6.A-a defect 18, found by re-reading the records hub after fixing 17: the plan's remaining count lives on the controller's state, so the earlier fix missed it, and the hub's own task count read 进行中 while counting finished tasks too. Both now ask whether the task is done. The count had no test at all — which is exactly why fixing the row above it did not move it. 4 tests, 2 reverse-proved, device-verified",
-    "S6.B Golden Flow B walked on the device and it FOUND A DEFECT: the records hub's task count read the task list's *filtered* list, so leaving the list on 已完成 made the hub say 还没有任务 while four tasks were open. openCount now comes from the 进行中 filter whatever tab is on screen. The conversion itself worked — a real task appeared in 进行中 with its category"
+    "S6.B Golden Flow B walked on the device and it FOUND A DEFECT: the records hub's task count read the task list's *filtered* list, so leaving the list on 已完成 made the hub say 还没有任务 while four tasks were open. openCount now comes from the 进行中 filter whatever tab is on screen. The conversion itself worked — a real task appeared in 进行中 with its category",
+    "S6.C Golden Flow C found defect 20: the rest page's four preset chips each read 5 分钟\\n5\\n分钟. The static scan had missed it twice over — it treated a following CJK character as continuing a Dart identifier, and it double-prefixed the dollar when the child was Text('$minutes'). Both fixed, which also surfaced a second site on the schedule page (09:00\\n09:00). The scan is now at zero across lib/. This is the third time the scanner itself was wrong, and the third time the device tree was the authority"
   ],
   "pending": [
     "S1.08, S1.10..S1.16 audit designs 08 and 10..16",
@@ -121,9 +122,9 @@
     "S7 depends on all of the above"
   ],
   "recent_test_evidence": {
-    "at": "2026-10-09T20:46:22+08:00",
+    "at": "2026-10-09T21:32:49+08:00",
     "command": "flutter test",
-    "result": "2007/2007 passed, analyze clean, format clean, APK builds",
+    "result": "2008/2008 passed, analyze clean, format clean, APK builds",
     "note": "The flake is resolved and it was a product defect, not the harness: ReportsController's constructor called loadAllReports() without awaiting it while all three report pages already called the same method from initState, so every visit loaded twice and the constructor's round could land after a test's teardown closed the database. It failed with no exception text at all, just '+2 -1'. Removing the constructor's call took the suspect file from 8/10 clean to 12/12. An earlier fix to the room-placement test's fixed-frame wait addressed a real but different fragility.",
     "before_this_window": "6 tests were red at HEAD (e8647f33) and had been for a day, because the records screen read the wall clock while the tests seeded against an injected one. The 1931/1931 recorded in the previous version of this file was stale.",
     "analyze": "flutter analyze --fatal-infos: No issues found",

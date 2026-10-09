@@ -1,7 +1,7 @@
 {
   "queue_version": 1,
   "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
-  "updated_at": "2026-10-09T20:46:22+08:00",
+  "updated_at": "2026-10-09T21:32:49+08:00",
   "tasks": [
     {
       "id": "S1.01",
@@ -293,7 +293,8 @@
       "id": "S6.C",
       "stage": 6,
       "title": "Home -> Rest -> Timeline",
-      "status": "PENDING"
+      "status": "TESTED",
+      "note": "home -> rest walked; found and fixed defect 20 (every preset announced twice, and the scan was blind to it). The running rest and the timeline half of this flow are not walked yet"
     },
     {
       "id": "S6.D",
