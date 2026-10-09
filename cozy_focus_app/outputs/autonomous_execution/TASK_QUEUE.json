@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T06:08:07+08:00",
+ "updated_at": "2026-10-10T06:29:45+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -290,7 +290,9 @@
    "id": "S5.04",
    "stage": 5,
    "title": "cold/warm start, transitions, animation frame time, memory",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "profile build on the same emulator. Cold start 1465/1398/1480/1369/1420 ms - about 1.4 s with an 8% spread (the first two runs, 6355 and 3407 ms, were VM and page-cache warmup and are reported as such, not as steady state). Warm start 97/91/96 ms. Memory: 131.1 MB PSS fresh, 160.9 MB after a full drive, then 154.6 and 153.6 MB over two more identical cycles - it plateaus rather than climbing, and Native Heap comes back down to 47.4 MB with Java Heap flat at 10.27 MB, so the first drive's +30 MB is decode cache and GC settling, not a leak.",
+   "note": "Frame time is split out as NOT_VERIFIED: dumpsys gfxinfo is the wrong instrument for Flutter (it reported 'Total frames rendered: 1' because it counts the platform view, not Flutter's own compositing), so quoting its 'janky 100%' would be a false claim. The right instrument is a DevTools timeline over `flutter run --profile`, and swiftshader frame times would not represent a real device anyway."
   },
   {
    "id": "S5.05",
@@ -612,6 +614,13 @@
    "status": "PASS",
    "note": "One false defect along the way, recorded in 06_DEVICE_QA.md: the capture sheet autofocuses its field, so the sheet sits mid-screen with the keyboard up and at the bottom with it down; reusing keyboard-up coordinates lands on the scrim and dismisses the sheet. It looked like '记一下 silently loses the note' twice. Re-taking the bounds made it save on the first try.",
    "evidence": "all eight flows re-walked on the final build, from cleared data. A: the task detail reads 累计专注时长 16 分钟 / 共 3 次专注, matching the three records (5+8+3) and the day total - three sources agree. B: 分心箱 1 条待处理 and the note appears on the timeline as 快速记录. C: running rest reads 还剩 4 分钟 once, rest_sessions row (300 planned / 56 elapsed / cancelled), timeline 休息一下 1 分钟 · 提前结束. D: early-finish dialog, completion 02:39, record saved. E: catpack imports, the fourth card is selected with its menu node in the tree, and it survives a restart. F: growth/room/dress/collection, zero overflow, no repeats, 插画 absent. G: v9 -> v11 on device, 17 -> 19 tables, every row preserved. H: covered by the same session as A/B/C/D."
+  },
+  {
+   "id": "S5.04c",
+   "stage": 5,
+   "title": "frame time and jank",
+   "status": "NOT_VERIFIED",
+   "evidence": "gfxinfo counts 1 frame for a Flutter app - wrong layer. Needs a DevTools timeline capture, and a GPU-backed device for the numbers to mean anything."
   }
  ]
 }
