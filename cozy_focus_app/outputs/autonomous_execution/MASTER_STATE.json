@@ -5,7 +5,7 @@
   "branch": "recovery/v4.2.1-rebuild",
   "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
   "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
-  "updated_at": "2026-10-09T06:32:52+08:00",
+  "updated_at": "2026-10-09T10:01:46+08:00",
   "continuation": {
     "question": "does this environment support automatic continuation of the work?",
     "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
     "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
   },
   "git": {
-    "head": "0ecd347ed04ef85a0ce0c48f13948da2e47656b3",
+    "head": "b81f517ef572b7d089e299277ec53ab9f14d64cb",
     "remote_head": "e8647f33a58cf4206499157cfd44298f7fadce0b",
     "head_matches_remote": false,
     "worktree": "dirty",
-    "last_verified_at": "2026-10-09T06:32:52+08:00",
-    "note": "HEAD is 30 commits ahead of the remote. Nothing has been pushed since e8647f3; the earlier push authorisation covered the batch before that."
+    "last_verified_at": "2026-10-09T10:01:46+08:00",
+    "note": "HEAD is 34 commits ahead of the remote; nothing has been pushed since e8647f3."
   },
   "current": {
     "stage": "STAGE_3_VISUAL_RESTORATION",
-    "subtask": "Stage 2 is complete except for an end-to-end restart walk: the duration convention is unified, and the overrun, idempotence, memory, pause, cross-midnight and five-source claims each carry a mutation or a fix. Next: design 04's focus control row, or the restart walk",
+    "subtask": "S5.03 accessibility sweep is continuing. Three more defects fixed this window (the detector's own false positives, the task list's doubled filters, and seven buttons named by a tooltip). Next: the room page's two buttons on the device, then the create-task, settings and report screens",
     "mode": "IN_PROGRESS"
   },
   "status_vocabulary": [
@@ -81,7 +81,10 @@
     "S2.01/S2.05 RE-PROVED BY MUTATION, not inherited: removing _endAtForCountdown records 5640 s instead of 1500 and pays 960 coins instead of 50 — the original 94-minute defect reproduced exactly; making the settlement gate always true lets the second settle return true and doubles coins and XP. Idempotence rests on the reward_ledger primary key {sessionId} plus INSERT OR IGNORE and SELECT changes(), not on a comment",
     "S2.06 CROSS-MIDNIGHT: found by asking whether the two day-total queries agreed (they do — both filter on startAt) and then noticing the hourly chart I added last round broke that same convention by capping its window at 24:00, so a 23:30-00:30 session contributed half an hour to bars beside a card printing the full hour. Window now measures from the day's start and follows a session past midnight; hour 24 renders as 0. 2 tests, reverse-proved",
     "S2.06 PAUSE re-proved by mutation: dropping the pause subtraction in elapsedSecondsAt reads a 5-minute session as 1800 s instead of 1500 s, and takes the overrun-with-pause case red with it. The clock-safety file already covers NTP corrections, timezone changes and a user setting the clock back",
-    "S2.07 FIVE SOURCES AGREE: test/domain/five_sources_agree_test.dart asks the question against a real database — a 1,500 s session with a task, a 900 s one without, and a 45 s one, which is where rounding rules part company. The sharpest assertion is that the task total is strictly less than the day, so a query that forgot its task filter cannot pass by accident; dropping the filter gives 2445 against 1500"
+    "S2.07 FIVE SOURCES AGREE: test/domain/five_sources_agree_test.dart asks the question against a real database — a 1,500 s session with a task, a 900 s one without, and a 45 s one, which is where rounding rules part company. The sharpest assertion is that the task total is strictly less than the day, so a query that forgot its task filter cannot pass by accident; dropping the filter gives 2445 against 1500",
+    "S5.03b THE DETECTOR ITSELF WAS WRONG: it flagged any repeated word, and reported the timeline's 专注任务 and the statistics card's 1 小时 42 分钟 — both repeated data, not doubled labels. A doubled label is adjacent (a merged wrapper sits immediately before the text it repeats); list rows that share a word are not. The rule now compares neighbours only, with a self-test over the four real cases and the three false ones: 8/8",
+    "S5.03c the task list announced every filter twice — 今天\\n今天, 进行中\\n进行中, 已完成\\n已完成. It survived the earlier sweep because the label is written _labels[filter] and the chip's text _labels[filter]!, and the scan compared the expressions literally; stripping a trailing ! found this one site and nothing else. Device-verified",
+    "S5.03d SEVEN BUTTONS NAMED BY A TOOLTIP, which is not a name. Measured in Flutter (label empty, the string in tooltip) and on the device (content-desc=\"\", no tooltip attribute in the tree at all). The scanner's own docstring had the rule backwards, so it reported zero problems across all seven. Six took a semanticLabel on the icon; the seventh needed its Semantics wrapper dropped, because that shape produces two nodes — a probe shows the named wrapper and the IconButton's own unnamed one"
   ],
   "pending": [
     "S1.08, S1.10..S1.16 audit designs 08 and 10..16",
@@ -106,9 +109,9 @@
     "S7 depends on all of the above"
   ],
   "recent_test_evidence": {
-    "at": "2026-10-09T06:32:52+08:00",
+    "at": "2026-10-09T10:01:46+08:00",
     "command": "flutter test",
-    "result": "1993/1993 passed (verified in the previous window)",
+    "result": "1993/1993 passed, analyze clean, format clean, APK builds",
     "note": "The flake is resolved and it was a product defect, not the harness: ReportsController's constructor called loadAllReports() without awaiting it while all three report pages already called the same method from initState, so every visit loaded twice and the constructor's round could land after a test's teardown closed the database. It failed with no exception text at all, just '+2 -1'. Removing the constructor's call took the suspect file from 8/10 clean to 12/12. An earlier fix to the room-placement test's fixed-frame wait addressed a real but different fragility.",
     "before_this_window": "6 tests were red at HEAD (e8647f33) and had been for a day, because the records screen read the wall clock while the tests seeded against an injected one. The 1931/1931 recorded in the previous version of this file was stale.",
     "analyze": "flutter analyze --fatal-infos: No issues found",
