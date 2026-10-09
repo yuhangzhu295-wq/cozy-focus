@@ -126,6 +126,30 @@ void main() {
     }
   });
 
+  testWidgets('no unit is written twice', (tester) async {
+    // The 专注天数 card read `占全年 0%%`: `_dayPercentageLabel` already returns
+    // `0%` / `<1%` / `12%`, and the call site appended another one. Found by
+    // walking the yearly report on a device — nothing in the suite looked at the
+    // rendered text, only at whether the cards were the same height.
+    await pumpAt(tester, 412);
+
+    final texts = tester
+        .widgetList<Text>(find.descendant(
+          of: find.byType(IntrinsicHeight),
+          matching: find.byType(Text),
+        ))
+        .map((t) => t.data ?? '')
+        .toList();
+    expect(texts, isNotEmpty);
+
+    for (final text in texts) {
+      expect(text.contains('%%'), isFalse,
+          reason: '"$text" writes the percent sign twice');
+    }
+    expect(texts.any((t) => t.contains('占全年')), isTrue,
+        reason: 'the card this is about is on the screen');
+  });
+
   testWidgets('the three cards are the same height', (tester) async {
     // A label that needs a second line must not leave one card taller than the
     // others.

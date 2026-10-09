@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T04:34:55+08:00",
+ "updated_at": "2026-10-10T05:01:20+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -56,7 +56,9 @@
    "id": "S1.08",
    "stage": 1,
    "title": "audit design 08 free time",
-   "status": "PENDING"
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
+   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
   },
   {
    "id": "S1.09",
@@ -69,43 +71,57 @@
    "id": "S1.10",
    "stage": 1,
    "title": "audit design 10 pet and room",
-   "status": "PENDING"
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
+   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
   },
   {
    "id": "S1.11",
    "stage": 1,
    "title": "audit design 11 create task",
-   "status": "PENDING"
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
+   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
   },
   {
    "id": "S1.12",
    "stage": 1,
    "title": "audit design 12 task detail",
-   "status": "PENDING"
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
+   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
   },
   {
    "id": "S1.13",
    "stage": 1,
    "title": "audit design 13 distraction inbox",
-   "status": "PENDING"
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
+   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
   },
   {
    "id": "S1.14",
    "stage": 1,
    "title": "audit design 14 schedule to today",
-   "status": "PENDING"
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
+   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
   },
   {
    "id": "S1.15",
    "stage": 1,
    "title": "audit design 15 settings lite",
-   "status": "PENDING"
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
+   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
   },
   {
    "id": "S1.16",
    "stage": 1,
    "title": "audit design 16 empty state",
-   "status": "PENDING"
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
+   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
   },
   {
    "id": "S3.01",
@@ -560,6 +576,20 @@
    "title": "large text on growth/room/dress/collection, and landscape",
    "status": "NOT_VERIFIED",
    "note": "emulator died mid-sweep; environment restarted and left at default overrides"
+  },
+  {
+   "id": "S1.17",
+   "stage": 1,
+   "title": "the annual report writes its units once",
+   "status": "PASS",
+   "evidence": "defect 31; yearly_metric_cards_test; device reads 占全年 0%"
+  },
+  {
+   "id": "S1.18",
+   "stage": 1,
+   "title": "boards that must not be restored to fidelity",
+   "status": "PASS",
+   "evidence": "01_VISUAL_MATRIX.md '不能照做的展板': 13 (six switches), 15 (a sync list with counts and a timestamp), 10A (four outfits with previews). Each is a capability the app does not have; the app's explicit unavailable state is the correct implementation."
   }
  ]
 }

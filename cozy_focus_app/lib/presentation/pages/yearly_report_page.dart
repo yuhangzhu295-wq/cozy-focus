@@ -467,7 +467,10 @@ class _YearlyReportPageState extends ConsumerState<YearlyReportPage> {
               title: '专注天数',
               value: '$activeDays',
               unit: '天',
-              diffLabel: '占全年 $dayPercentage%',
+              // The helper already carries the unit — `0%`, `<1%`, `12%` — so
+              // appending another one printed `占全年 0%%` on every value.
+              // Found by walking the yearly report on a device.
+              diffLabel: '占全年 $dayPercentage',
               diffColor: AppColors.accentPeach,
             ),
           ),
