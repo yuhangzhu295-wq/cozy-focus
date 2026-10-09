@@ -146,15 +146,48 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
                           ),
                           const SizedBox(height: 18),
                         ],
-                        for (final placement in state.placements) ...[
-                          _PlanRow(
-                            placement: placement,
-                            onOpen: () => _open(context, placement),
-                            onLongPress: () =>
-                                _placementActions(context, placement),
+                        // One panel with hairlines between the rows, as the
+                        // board draws it, rather than a card each. The rail runs
+                        // through them, and a rail cannot run through a gap.
+                        // A Material so the rows' InkWells have something to
+                        // paint their splash on; the border sits in a Container
+                        // inside it, because Material has no border of its own.
+                        Material(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          clipBehavior: Clip.antiAlias,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Column(
+                              children: [
+                                for (var i = 0;
+                                    i < state.placements.length;
+                                    i++) ...[
+                                  if (i > 0)
+                                    // Inset to the title column, so the hairline
+                                    // starts where the rail is rather than cutting
+                                    // across it.
+                                    const Divider(
+                                      height: 1,
+                                      thickness: 1,
+                                      indent: 60,
+                                      color: AppColors.border,
+                                    ),
+                                  _PlanRow(
+                                    placement: state.placements[i],
+                                    onOpen: () =>
+                                        _open(context, state.placements[i]),
+                                    onLongPress: () => _placementActions(
+                                        context, state.placements[i]),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 10),
-                        ],
+                        ),
                       ],
                     ],
                   ),
@@ -469,21 +502,20 @@ class _PlanRow extends StatelessWidget {
     final color = taskCategoryColor(placement.categoryId);
     final chip = TaskCategoryChip.maybe(placement.categoryId);
 
-    return Material(
-      color: done ? AppColors.primaryLight : AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: InkWell(
-        onTap: onOpen,
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.border),
-          ),
+    // No card of its own any more: the rows share one panel, so this draws a
+    // row and the rail that runs through it.
+    return InkWell(
+      onTap: onOpen,
+      onLongPress: onLongPress,
+      child: Container(
+        color: done ? AppColors.primaryLight : null,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        // The rail has to span the row's own height, whatever it is, which is
+        // what IntrinsicHeight is for — a two-line row and a one-line row must
+        // both be crossed by it.
+        child: IntrinsicHeight(
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
                 width: 46,
@@ -496,15 +528,53 @@ class _PlanRow extends StatelessWidget {
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 4, right: 12),
-                child: Container(
-                  width: 9,
-                  height: 9,
-                  decoration:
-                      BoxDecoration(color: color, shape: BoxShape.circle),
+              // The rail, in the row's own category colour at the weight the
+              // board draws it — measured at #FAE5D7 against a #FDFCF8 panel,
+              // which is this colour at about a fifth.
+              SizedBox(
+                width: 20,
+                child: Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    Positioned.fill(
+                      child: Center(
+                        child: SizedBox(
+                          width: 2,
+                          // The rail leaves the dot in the dot's own colour and
+                          // fades out on the way to the next one. Measured off
+                          // the board: `#FAE8D4` just under the `#FDA23B` dot —
+                          // that colour at about a fifth — and `#ECE9E4` further
+                          // down, which is the panel's own hairline grey. A flat
+                          // tint at that weight is all but invisible, which is
+                          // what it looked like before the gradient.
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  color.withValues(alpha: 0.30),
+                                  color.withValues(alpha: 0.08),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration:
+                            BoxDecoration(color: color, shape: BoxShape.circle),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
