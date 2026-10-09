@@ -28,9 +28,9 @@
 | Golden Flow | PASS | **A–H 全部在最终包上重走**；A 的任务累计 16 分钟与三条记录、当日总时长三处一致；G 的 v9→v11 数据全保留 |
 | 设计审计 | PASS | 16 张展板全部入 `01_VISUAL_MATRIX.md`，含"不能照做的展板"一节 |
 | 设备验证 | PASS（范围写明） | 411×914 dp 模拟器；三尺寸扫查；大字号 1.4× 六屏；横屏渲染不坏。**真机未验证** |
-| 性能 | NOT_VERIFIED | 没做 profile run；帧时间与内存未测 |
+| 性能 | 部分 | **启动与内存 PASS**（冷启动 ≈1.4 s、暖启动 ≈95 ms；三轮同循环内存停住不涨）；**帧时间 `NOT_VERIFIED`**（`gfxinfo` 对 Flutter 是错的仪器，只数到 1 帧；swiftshader 下的数字也不代表真机） |
 | 真机 | NOT_VERIFIED | 全部结论来自模拟器 |
-| 所有者人工验收 | NOT_VERIFIED | 需所有者本人 |
+| 所有者人工验收 | NOT_VERIFIED | 需所有者本人；本项目门禁把 `OWNER_VISUAL_GATE` 定为 REQUIRED 且"永不由测量判定" |
 | 可发布 | FAIL | release 签名缺失（会静默用 debug 签名）；启动图标未批准；见 `08_RELEASE_BLOCKERS.md` |
 
 ## 逐 Stage
@@ -73,7 +73,8 @@
 | `room_sit` 姿态的遮挡与 z 序 | `BLOCKED_EXTERNAL` | 美术在仓库里不存在；**禁止自造美术** |
 | TalkBack 实机走查 | `BLOCKED_EXTERNAL` | 本环境镜像装不了 TalkBack |
 | 大字号其余四屏 + 横屏 | `PASS` | 1.4× 六屏全清；横屏渲染 + 可滚动 + 0 溢出。上一轮崩的原因是"字号覆盖叠在 density 覆盖上"，这一轮先复位 density 就没崩 |
-| 冷/热启动、转场、帧时间、内存 | `NOT_VERIFIED` | 没做 profile run |
+| 帧时间 / 卡顿 | `NOT_VERIFIED` | `dumpsys gfxinfo` 对 Flutter 是错的仪器（只数到 1 帧，它数的是平台视图）；要挂 DevTools timeline，且 swiftshader 下的数字不代表真机 |
+| 冷/热启动、内存 | `PASS` | 冷启动 ≈1.4 s（五次极差 8%）、暖启动 ≈95 ms；内存三轮同循环停住不涨。profile 构建 + 模拟器 |
 | 真机验证 | `NOT_VERIFIED` | 全部结论来自模拟器 |
 | release 签名与启动图标 | `FAIL` | 见 `08_RELEASE_BLOCKERS.md` |
 | 设计里画了、App 没有的能力 | 记为待定 | 13 的系统通知、15 的云端同步、10A 的装扮目录、10 的"最近成长"事件流与 Bond 属性。**这些是功能新增，不是视觉修复**，需要产品决定 |

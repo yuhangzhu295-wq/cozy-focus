@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-10 06:18:21",
-  "head": "c70290fa7158df0cba8e0e9d5c788e2f18a554d5",
-  "remote_head": "c70290fa7158df0cba8e0e9d5c788e2f18a554d5",
+  "generated_at": "2026-10-10 06:37:34",
+  "head": "3b67881ba5d27b858b3cd702840d26224100e88e",
+  "remote_head": "3b67881ba5d27b858b3cd702840d26224100e88e",
   "local_equals_remote": true,
   "counts": {
     "PASS": 12,
@@ -19,19 +19,19 @@
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 11.2
+      "seconds": 12.4
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
       "evidence": "2029/2029 passed",
-      "seconds": 147.9
+      "seconds": 145.0
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "51/51 passed",
-      "seconds": 13.3
+      "seconds": 14.9
     },
     {
       "gate": "GOLDEN_FLOW",
@@ -43,31 +43,31 @@
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 9.1
+      "seconds": 9.8
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "80/80 passed",
-      "seconds": 11.9
+      "seconds": 12.0
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 8.5
+      "seconds": 8.7
     },
     {
       "gate": "APK",
       "status": "PASS",
       "evidence": "32.0 MB (budget 34 MB)",
-      "seconds": 92.6
+      "seconds": 11.1
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "50.5 MB (budget 55 MB)",
-      "seconds": 37.2
+      "seconds": 9.1
     },
     {
       "gate": "DIFF_CHECK",
@@ -109,7 +109,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 4.2
+      "seconds": 4.0
     },
     {
       "gate": "FLOW_GENERATION",

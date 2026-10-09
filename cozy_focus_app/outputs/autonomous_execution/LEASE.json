@@ -8,8 +8,8 @@
   "lease_expires_at": "2026-10-10T06:40:03+08:00",
   "current_stage": "STAGE_5_PERFORMANCE",
   "current_task": "S5.04-profile",
-  "last_verified_commit": "3dd432630085c2f7d4eaa45798116f296e4e34c0",
-  "released_at": null,
+  "last_verified_commit": "3b67881ba5d27b858b3cd702840d26224100e88e",
+  "released_at": "2026-10-10T06:39:32+08:00",
   "recovered_from": null,
   "previous_verdict": "OWN"
 }
