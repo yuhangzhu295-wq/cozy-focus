@@ -6,6 +6,7 @@ import '../companion/mochi_pose_spec.dart';
 import '../controllers/pet_motion_controller.dart';
 import 'pet_idle_fallback_view.dart';
 import 'rive_pet_adapter.dart';
+import '../companion/runtime/companion_manifest_data.dart';
 
 /// Unified presentation abstraction for Mochi motion.
 /// Ships the Flutter fallback renderer and exposes a renderer-neutral optional
@@ -22,6 +23,12 @@ class PetMotionView extends StatelessWidget {
   final double? craftProgress;
   final bool showStateBadge;
 
+  /// The name the status card and the avatar label use.
+  ///
+  /// Required: see [PetIdleFallbackView.companionName] for why a default is the
+  /// wrong shape here.
+  final String companionName;
+
   /// Presentation-only growth profile; see [PetIdleFallbackView.growthProfile].
   final MochiGrowthProfile? growthProfile;
 
@@ -37,6 +44,7 @@ class PetMotionView extends StatelessWidget {
   const PetMotionView({
     super.key,
     required this.visualState,
+    this.companionName = CompanionManifestData.defaultDisplayName,
     this.size = 140,
     this.controller,
     this.scheduler,
@@ -64,6 +72,7 @@ class PetMotionView extends StatelessWidget {
     Widget buildContent(PetVisualState activeState) {
       final fallbackView = PetIdleFallbackView(
         visualState: activeState,
+        companionName: companionName,
         size: size,
         controller: controller,
         scheduler: scheduler,

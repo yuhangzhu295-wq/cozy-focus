@@ -357,7 +357,11 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
         children: [
           CompanionAvatar(
             size: 56,
-            message: _unlockMessage ?? '${pet.name} 的收藏屋 🌱',
+            // Only the unlock message. It used to fall back to the page title,
+            // which drew the same words in a bubble directly beside the heading
+            // — twice on screen, and one merged announcement in the
+            // accessibility tree reading `小猫 的收藏屋 🌱\n小猫 空闲\n小猫 的收藏屋`.
+            message: _unlockMessage,
             // `null` outside an unlock, so the presentation mapper keeps
             // deciding and there is no previous state to remember.
             visualStateOverride: _unlockCelebration,

@@ -349,6 +349,28 @@
 - **扫描器为什么看不见它**：子节点不是 `Text`，字符串还是调用方拼的，`find_doubled_semantics_labels.py` 的文本规则结构上看不到。给它补了第三条规则（包装器有 `label`、没有 `excludeSemantics`、子树里另有 `semanticLabel:`）与 6 条 self-test；但**这一处是设备树先发现的**，工具只是事后补上了可静态检查的那一半——工具的自我警告仍然成立。
 - **设备复验**：冷启动后 10 秒与 22 秒两次读树都是 `no node repeats itself`。
 
+### 27. 换成导入的伙伴之后，App 同时叫它两个名字
+
+- **发现方式**：走 Golden Flow F。首页读作 `和 小猫 一起`、成长页读作 `小猫 正在陪伴你成长`，而**装扮页**读作 `Mochi 的衣橱` / `Mochi 试衣间 🌱` / `Mochi`——同一个 App 对同一个伙伴两个名字。
+- **根因（两个存储，一个动作只写了一个）**：`_useIt`（导入成功页的"现在就换成它"）只调 `companionSelectionProvider.select()`，而伙伴列表里那个"确定伙伴"调的是 `growthController.adoptCompanion()`。前者是显示偏好，后者写 `pets` 表的 `name` / `character_id`。页面各读一边：读 selection 的说"小猫"，读 `growthState.pet.name` 的说"Mochi"。**`companionDisplayNameProvider` 的注释里写着"选了猫就不能还叫 Mochi"，但这条路径没走它。**
+- **判据（SQLite，不是截图）**：修之前 `pets` 行是 `character_id='mochi'`、`name='Mochi'`，而 `companion_selection.json` 是 `catpack`。修完再点一次"确定伙伴"后 `pets` 行变成 `character_id='catpack'`、`species='cat'`、`name='小猫'`。
+- **修复**：`_useIt` 与"确定伙伴"做同样两件事（select + adopt）。另外把 `PetAvatarWidget` 的状态标签从写死的 `'Mochi 空闲'…`（8 个状态）改成参数 `companionName`，由生产路径传 `options.displayName`；`PetMotionView` 与 `PetIdleFallbackView` 同理；`FurnitureUsePanel` 的两句文案改读 `companionDisplayNameProvider`；`pet_encouragement` 里 5 条把自己叫作 "Mochi" 的台词改成第一人称（这个表其余台词本来就是第一人称，改完反而更一致）。
+- **测试**：`avatar_names_the_selected_companion_test.dart` 2 条——**驱动生产 provider**（`MochiVisualProvider`）而不是单独渲染 widget，因为要证明的性质是"运行时把选中的名字传下去了"，不是"widget 收得到名字"；第二条断言内置伙伴仍然叫 Mochi（默认值不是谎言）。
+- **反向证明**：去掉 `mochi_visual_provider` 里的 `companionName: options.displayName` → 第一条红（label 回落到默认 `Mochi 空闲`），第二条仍绿。正是要证明的区分度。
+- **默认值这件事要说清楚**：三个 widget 的参数**有默认值**（内置伙伴的名字），不是 `required`。原因是测试里有约 180 处渲染它们的地方并不关心名字，`required` 会带来 180 处纯噪声改动；真正要挡的是"生产路径忘了传"，所以由上面那条驱动生产 provider 的测试来挡。这一点在代码注释里写明。
+- **设备复验**：装扮页三处全部变 `小猫 的衣橱` / `小猫 试衣间 🌱` / `小猫`；`pets` 表已按上面的判据核对。
+
+### 28. 收藏图鉴的标题说了两遍（气泡 + 标题并排）
+
+- **发现方式**：读收藏图鉴页的无障碍树，第一个节点是一长串：`小猫 的收藏屋 🌱\n小猫 空闲\n小猫 的收藏屋\n陪伴伙伴 · 专注点滴收藏, 点一下会回应，长按可以摸摸头`。截图确认：头像的对话气泡和右边的标题**并排写着同一句话**。
+- **根因**：`CompanionAvatar(message: _unlockMessage ?? '${pet.name} 的收藏屋 🌱', ...)`——气泡在没有解锁消息时回落到**页面标题**。视觉上重复，无障碍上并进同一个节点。
+- **修复**：气泡只在真的有解锁消息时出现（`message: _unlockMessage`）。
+- **测试**：`pet_collection_page_test.dart` 增加一条 `find.textContaining('的收藏屋 🌱')` 必须 `findsNothing`。**原来那条 `find.text('可可 的收藏屋') findsOneWidget` 全程是绿的**——气泡带一个 🌱，是另一个字符串。
+- **反向证明**：把回落加回去 → 只有新断言红（`Found 1 widget with text containing 的收藏屋 🌱`）。
+- **顺带修正三条把代理当判据的断言**：`collection_unlock_test.dart` 里三处用 `find.text('可可 的收藏屋 🌱')` 当作"安静态"的代理。那句文本正是被删掉的回落，所以改成直接断言要表达的东西：标题还在、气泡不在。**这三条测试的主断言（`visualStateOverride isNull`）一个字没动。**
+- **设备复验**：收藏图鉴页标题现在只出现一次。
+- **一条没有犯的错**：我先从无障碍树的顺序推断"图鉴是单列列表、设计图是四列网格"，准备当成缺陷报。截图一看**就是四列网格**——无障碍树的顺序不等于布局。**没看画面就下结论会把对的界面改坏**。
+
 ## 本节原先列的"尚未修复"，现已全部落地
 
 写这张表的时候（缺陷 20 那一轮）下面四条确实还没做。**它们后来都做了**，所以这张表按当时状态读会误导人，改成结论：

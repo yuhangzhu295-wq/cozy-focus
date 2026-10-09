@@ -65,6 +65,11 @@ class FurnitureUsePanel extends ConsumerWidget {
     final availability = ref.watch(companionAvailabilityProvider)(
       ref.watch(companionSelectionProvider).value,
     );
+    // The panel names the companion, so it asks which one is selected. Both
+    // lines used to say "Mochi", which was wrong as soon as the selected
+    // companion was an imported one.
+    final companionName = ref.watch(companionDisplayNameProvider);
+
     final offerable = entity == null
         ? const <FurnitureAction>[]
         : [
@@ -80,8 +85,8 @@ class FurnitureUsePanel extends ConsumerWidget {
           children: [
             Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            const Text('这件家具暂时不能让 Mochi 使用',
-                style: TextStyle(fontSize: 12, color: Color(0xFF9A8F80))),
+            Text('这件家具暂时不能让 $companionName 使用',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF9A8F80))),
           ],
         ),
       );
@@ -114,7 +119,8 @@ class FurnitureUsePanel extends ConsumerWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final action in offerable) _actionChip(action),
+              for (final action in offerable)
+                _actionChip(action, companionName),
             ],
           ),
           if (offerable.isEmpty)
@@ -127,7 +133,7 @@ class FurnitureUsePanel extends ConsumerWidget {
     );
   }
 
-  Widget _actionChip(FurnitureAction action) {
+  Widget _actionChip(FurnitureAction action, String companionName) {
     final effect = describeEffect(action.effect);
     return GestureDetector(
       onTap: () => onUse(action),
@@ -142,7 +148,7 @@ class FurnitureUsePanel extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('让 Mochi ${action.label}',
+            Text('让 $companionName ${action.label}',
                 style:
                     const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             if (effect.isNotEmpty) ...[

@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T02:42:12+08:00",
+ "updated_at": "2026-10-10T03:26:08+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -317,7 +317,9 @@
    "id": "S6.F",
    "stage": 6,
    "title": "Growth -> Room -> Dress -> Inventory",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "device 411x914: 成长 (Lv.8, 700 XP, 140 分钟, 心情 100/100) -> 房间 (小猫 的小房间, stats, room empty state '房间空空的，先去制作些家具吧' + 前往制作工坊; 摆放家具 opens '库存中没有可摆放的家具') -> 装扮 (explicit unavailable state, no fake catalog) -> 图鉴 (0/8, 4-column grid, 未收集/未开放) -> 库存/制作工坊 reachable",
+   "note": "Found two defects: 27 (the app called the same companion 小猫 and Mochi at once) and 28 (the collection hero said its title twice)."
   },
   {
    "id": "S6.G",
@@ -473,6 +475,28 @@
    "id": "S6.F0",
    "stage": 6,
    "title": "growth, room, dress, inventory",
+   "status": "PASS",
+   "note": "next work unit",
+   "evidence": "same walk as S6.F"
+  },
+  {
+   "id": "S6.F1",
+   "stage": 6,
+   "title": "one companion, one name: selection and adoption agree",
+   "status": "PASS",
+   "evidence": "defect 27; avatar_names_the_selected_companion_test.dart; pets row checked"
+  },
+  {
+   "id": "S6.F2",
+   "stage": 6,
+   "title": "the collection hero names itself once",
+   "status": "PASS",
+   "evidence": "defect 28; pet_collection_page_test; device tree reads the title once"
+  },
+  {
+   "id": "S6.G0",
+   "stage": 6,
+   "title": "old database -> migration -> data integrity",
    "status": "PENDING",
    "note": "next work unit"
   }

@@ -14,6 +14,7 @@ import '../companion/mochi_layered_renderer.dart';
 import '../theme/app_theme.dart';
 import 'pet_interaction_spec.dart';
 import 'pet_motion_spec.dart';
+import '../companion/runtime/companion_manifest_data.dart';
 
 /// Truthful Flutter idle-motion fallback renderer for Mochi.
 /// Implements:
@@ -81,9 +82,17 @@ class PetIdleFallbackView extends StatefulWidget {
   /// that passes nothing gets exactly the previous behaviour.
   final MochiPoseSpec? poseSpec;
 
+  /// The name the status card uses.
+  ///
+  /// Required, like `PetAvatarWidget.companionName`: these labels were the
+  /// literal `'Mochi 专注中'`, which was wrong the moment the selected companion
+  /// was not Mochi. Found on a device with an imported companion selected.
+  final String companionName;
+
   const PetIdleFallbackView({
     super.key,
     required this.visualState,
+    this.companionName = CompanionManifestData.defaultDisplayName,
     this.size = 140,
     this.controller,
     this.scheduler,
@@ -2065,21 +2074,22 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
   }
 
   _StateVisualConfig _getConfig(PetVisualState state) {
+    final name = widget.companionName;
     switch (state) {
       case PetVisualState.focus:
-        return const _StateVisualConfig(
-          label: 'Mochi 专注中',
-          bgTint: Color(0xFFE8F2EC),
+        return _StateVisualConfig(
+          label: '$name 专注中',
+          bgTint: const Color(0xFFE8F2EC),
           borderColor: AppColors.primarySage,
           iconColor: AppColors.primaryDark,
           stateIcon: Icons.menu_book_rounded,
         );
       case PetVisualState.pause:
-        return const _StateVisualConfig(
-          label: 'Mochi 休息中',
-          bgTint: Color(0xFFFBF4E8),
+        return _StateVisualConfig(
+          label: '$name 休息中',
+          bgTint: const Color(0xFFFBF4E8),
           borderColor: AppColors.accentGold,
-          iconColor: Color(0xFFB57D1B),
+          iconColor: const Color(0xFFB57D1B),
           stateIcon: Icons.coffee_rounded,
         );
       case PetVisualState.celebrate:
@@ -2091,29 +2101,29 @@ class PetIdleFallbackViewState extends State<PetIdleFallbackView>
           stateIcon: Icons.star_rounded,
         );
       case PetVisualState.sleep:
-        return const _StateVisualConfig(
-          label: '晚安 Mochi',
-          bgTint: Color(0xFFEBF0F5),
-          borderColor: Color(0xFF8CA1B3),
-          iconColor: Color(0xFF5A7285),
+        return _StateVisualConfig(
+          label: '晚安 $name',
+          bgTint: const Color(0xFFEBF0F5),
+          borderColor: const Color(0xFF8CA1B3),
+          iconColor: const Color(0xFF5A7285),
           stateIcon: Icons.bedtime_rounded,
         );
       case PetVisualState.craft:
-        return const _StateVisualConfig(
-          label: 'Mochi 制作中',
-          bgTint: Color(0xFFF4EBE3),
-          borderColor: Color(0xFFB38260),
-          iconColor: Color(0xFF8C5C3A),
+        return _StateVisualConfig(
+          label: '$name 制作中',
+          bgTint: const Color(0xFFF4EBE3),
+          borderColor: const Color(0xFFB38260),
+          iconColor: const Color(0xFF8C5C3A),
           stateIcon: Icons.handyman_rounded,
         );
       case PetVisualState.greeting:
       case PetVisualState.idle:
       case PetVisualState.interact:
-        return const _StateVisualConfig(
-          label: 'Mochi 陪伴中',
-          bgTint: Color(0xFFF7F2EA),
-          borderColor: Color(0xFFC7BCAB),
-          iconColor: Color(0xFF7A6E5D),
+        return _StateVisualConfig(
+          label: '$name 陪伴中',
+          bgTint: const Color(0xFFF7F2EA),
+          borderColor: const Color(0xFFC7BCAB),
+          iconColor: const Color(0xFF7A6E5D),
           stateIcon: Icons.favorite_rounded,
         );
     }

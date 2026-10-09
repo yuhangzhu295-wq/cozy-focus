@@ -13,6 +13,7 @@ import '../companion/pack/companion_pack_root.dart';
 import '../companion/pack/installed_packs_provider.dart';
 import '../companion/runtime/companion_id.dart';
 import '../companion/runtime/companion_manifest_data.dart';
+import '../controllers/growth_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/companion_completeness.dart';
 
@@ -202,10 +203,25 @@ class _CompanionImportPageState extends ConsumerState<CompanionImportPage> {
     });
   }
 
+  /// Switches to the pack that was just installed.
+  ///
+  /// Two things, not one. The selection is what every page reads for the
+  /// companion's name; adopting is what the growth domain reads for the pet's own
+  /// row, and the two are not the same store. Doing only the first left the app
+  /// calling the companion two names — the home page said 小猫 while the dress
+  /// page, which reads the adopted pet, still said Mochi. A device walk found it
+  /// right after installing a pack and pressing this.
   Future<void> _useIt() async {
     final id = _installedId;
     if (id == null) return;
-    await ref.read(companionSelectionProvider.notifier).select(CompanionId(id));
+    final companionId = CompanionId(id);
+    await ref.read(companionSelectionProvider.notifier).select(companionId);
+    final profile = ref.read(companionCatalogProvider).profileFor(companionId);
+    await ref.read(growthControllerProvider.notifier).adoptCompanion(
+          characterId: companionId.value,
+          species: profile.species,
+          name: profile.displayName,
+        );
     if (mounted) context.pop();
   }
 

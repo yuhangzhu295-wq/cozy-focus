@@ -218,14 +218,18 @@ abstract final class PetEncouragementCopy {
   /// Every category, with one variant per growth stage in stage order.
   static const Map<PetMessageKind, List<String>> table = {
     PetMessageKind.startEncouragement: [
-      '开始啦。Mochi 陪你。',
+      // The companion speaks in the first person, as it does in most lines here.
+      // These five used to say "Mochi", which was right until the user selected a
+      // companion that is not Mochi — after which a cat on screen said
+      // "Mochi 陪你". Naming nothing is both correct and consistent with the rest.
+      '开始啦。我陪着你。',
       '已经开始了，慢慢来就好。',
       '开头最难，你已经跨过去了。',
       '开始了。这段时间，我们各自专心。',
     ],
     PetMessageKind.focusCompanion: [
-      'Mochi 在旁边。',
-      'Mochi 在这里，不吵你。',
+      '我在旁边。',
+      '我在这里，不吵你。',
       '我也在做我的事，就在你旁边。',
       '不用管我，专心做你的就好。',
     ],
@@ -256,13 +260,13 @@ abstract final class PetEncouragementCopy {
     PetMessageKind.lateNightCare: [
       '很晚啦，早点睡。',
       '夜深了，做完这段就去休息吧。',
-      '很晚了。Mochi 陪你把这段收尾，然后去睡好吗？',
+      '很晚了。我陪你把这段收尾，然后去睡好吗？',
       '这个点还在，我陪着。但这段结束，就去睡吧。',
     ],
     PetMessageKind.returnGreeting: [
       '回来啦！',
       '回来啦，我在的。',
-      '好久不见，Mochi 一直在。',
+      '好久不见，我一直都在。',
       '你回来了。我一直在这儿。',
     ],
     PetMessageKind.petTouchResponse: [

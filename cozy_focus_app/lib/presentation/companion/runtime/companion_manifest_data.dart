@@ -32,6 +32,15 @@ abstract final class CompanionManifestData {
   /// The companion a fresh install starts with.
   static const CompanionId defaultProfileId = CompanionId.dog;
 
+  /// That companion's name, for a widget that has no provider in scope.
+  ///
+  /// A fallback, not the answer: production reads the *selected* companion's
+  /// name. The avatar's state labels used to be the literal `'Mochi 空闲'`, which
+  /// was wrong the moment the user selected a companion that is not Mochi — a cat
+  /// on screen announced as Mochi. The name is a parameter now; this is only what
+  /// a widget rendered without a provider scope falls back to.
+  static const String defaultDisplayName = 'Mochi';
+
   /// `context id → slot id → recipe`.
   static final Map<CompanionBaseContext, Map<String, BehaviorRecipe>>
       contextRecipes = {

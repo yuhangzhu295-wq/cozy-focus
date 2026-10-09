@@ -219,7 +219,11 @@ void main() {
           tester.widget<CompanionAvatar>(find.byType(CompanionAvatar));
       expect(avatar.visualStateOverride, isNull,
           reason: 'loading the page is not an unlock');
-      expect(find.text('可可 的收藏屋 🌱'), findsOneWidget);
+      expect(find.text('可可 的收藏屋'), findsOneWidget,
+          reason: 'the page still names itself');
+      expect(find.textContaining('的收藏屋 🌱'), findsNothing,
+          reason: 'a quiet page shows no bubble; the bubble is only the '
+              'unlock message');
     });
 
     testWidgets('a real later unlock does celebrate', (tester) async {
@@ -266,7 +270,11 @@ void main() {
       expect(avatar.visualStateOverride, isNull,
           reason:
               'the celebration must not become a state the page is stuck in');
-      expect(find.text('可可 的收藏屋 🌱'), findsOneWidget);
+      expect(find.text('可可 的收藏屋'), findsOneWidget,
+          reason: 'the page still names itself');
+      expect(find.textContaining('的收藏屋 🌱'), findsNothing,
+          reason: 'a quiet page shows no bubble; the bubble is only the '
+              'unlock message');
     });
 
     testWidgets('the celebration reaches the pet, not just the parameter',
@@ -354,7 +362,11 @@ void main() {
       await pumpPage(tester);
 
       expect(overrideOn(tester), isNull);
-      expect(find.text('可可 的收藏屋 🌱'), findsOneWidget);
+      expect(find.text('可可 的收藏屋'), findsOneWidget,
+          reason: 'the page still names itself');
+      expect(find.textContaining('的收藏屋 🌱'), findsNothing,
+          reason: 'a quiet page shows no bubble; the bubble is only the '
+              'unlock message');
     });
 
     testWidgets('the first ever visit is a baseline even with items owned',

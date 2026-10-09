@@ -160,6 +160,7 @@ class _MochiPoseAvatar extends ConsumerWidget {
 
     return PetAvatarWidget(
       visualState: visualStateFor(intent.baseContext),
+      companionName: options.displayName,
       size: options.size,
       message: options.message,
       controller: options.controller,

@@ -177,6 +177,13 @@ void main() {
       expect(find.text('可可 的收藏屋'), findsOneWidget);
       expect(find.text('1 / 8'), findsOneWidget);
       expect(find.text('已拥有 x2'), findsOneWidget);
+
+      // And the title is said once, not twice. The avatar's speech bubble used
+      // to fall back to the page title, so the same words were drawn in a bubble
+      // directly beside the heading — and merged into one announcement in the
+      // accessibility tree. The line above was green the whole time: the bubble
+      // carried a trailing 🌱, so it was a different string.
+      expect(find.textContaining('的收藏屋 🌱'), findsNothing);
     });
 
     testWidgets('6. Bottom navigation has exactly 3 items with 成长 selected',

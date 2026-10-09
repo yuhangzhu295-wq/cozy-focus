@@ -10,6 +10,7 @@ import '../animations/pet_motion_view.dart';
 import '../animations/rive_pet_adapter.dart';
 import '../controllers/pet_motion_controller.dart';
 import '../theme/app_theme.dart';
+import '../companion/runtime/companion_manifest_data.dart';
 
 /// Centralized Pet presentation widget for Mochi.
 /// Preserves full compatibility with Phase 2-5 callers:
@@ -60,6 +61,14 @@ class PetAvatarWidget extends StatelessWidget {
   /// the rig is what is being drawn.
   final CompanionActionSpec? spriteSpec;
 
+  /// The name the state label and the badge use.
+  ///
+  /// Required rather than defaulted, because the wrong answer is invisible: the
+  /// labels used to be the literal `'Mochi 空闲'`, which was right until the user
+  /// selected a companion that is not Mochi — after which the app announced
+  /// "Mochi 空闲" over a picture of a cat. Found on a device.
+  final String companionName;
+
   /// Overrides the generated state label.
   ///
   /// [PetVisualState] has no "in the room" value, so a page that knows the
@@ -81,6 +90,7 @@ class PetAvatarWidget extends StatelessWidget {
   const PetAvatarWidget({
     super.key,
     required this.visualState,
+    this.companionName = CompanionManifestData.defaultDisplayName,
     this.size = 140,
     this.message,
     this.controller,
@@ -104,21 +114,21 @@ class PetAvatarWidget extends StatelessWidget {
   String _petSemanticLabel(PetVisualState state) {
     switch (state) {
       case PetVisualState.idle:
-        return 'Mochi 空闲';
+        return '$companionName 空闲';
       case PetVisualState.focus:
-        return 'Mochi 专注中';
+        return '$companionName 专注中';
       case PetVisualState.craft:
-        return 'Mochi 制作中';
+        return '$companionName 制作中';
       case PetVisualState.pause:
-        return 'Mochi 暂停中';
+        return '$companionName 暂停中';
       case PetVisualState.celebrate:
-        return 'Mochi 庆祝中';
+        return '$companionName 庆祝中';
       case PetVisualState.sleep:
-        return 'Mochi 休息中';
+        return '$companionName 休息中';
       case PetVisualState.greeting:
-        return 'Mochi 打招呼';
+        return '$companionName 打招呼';
       case PetVisualState.interact:
-        return 'Mochi 互动中';
+        return '$companionName 互动中';
     }
   }
 
@@ -300,6 +310,7 @@ class PetAvatarWidget extends StatelessWidget {
     }
     return PetMotionView(
       visualState: activeState,
+      companionName: companionName,
       size: size,
       controller: controller,
       scheduler: scheduler,
