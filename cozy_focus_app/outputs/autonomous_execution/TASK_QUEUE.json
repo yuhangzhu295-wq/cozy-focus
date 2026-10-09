@@ -174,8 +174,10 @@
    "id": "S3.07",
    "stage": 3,
    "title": "home: remove the duplicated encouragement card (B3)",
-   "status": "PENDING",
-   "from": "S1.01"
+   "status": "PASS",
+   "from": "S1.01",
+   "evidence": "the hero carried a bordered encouragement card under the gear (每一次专注 / 都是在靠近 / 想要的自己). Reference 01 (devpack set) draws the greeting and the scene and nothing else there; the note it came from is a pinned paper note inside the illustration on the older v4.1 board, not a UI card. Removed. Guard: the home page test asserts the settings entry is present and no text containing 想要的自己. Reverse proof: re-adding the card reddens only that test. Device: the tree now reads 和 小猫 一起 / 专注吧 / 设置 / 专注当下… with no card.",
+   "note": "found while correcting the matrix design set: the app was rendering a v4.1 element against a devpack spec"
   },
   {
    "id": "S3.08",

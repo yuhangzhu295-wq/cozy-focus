@@ -195,6 +195,21 @@ void main() {
   });
 
   group('the cards design 01 draws', () {
+    testWidgets('and the hero holds the settings entry, not a second headline',
+        (tester) async {
+      // The hero's top-right used to carry a bordered encouragement card
+      // (`每一次专注 / 都是在靠近 / 想要的自己`) under the gear. Reference 01 draws
+      // the greeting and the scene and nothing else there — the note it once
+      // came from is a pinned paper note *inside the illustration* on the older
+      // v4.1 board, not a UI card. Found while correcting the matrix's design
+      // set: the app was rendering a v4.1 element against a devpack spec.
+      await pumpHome(tester);
+
+      expect(find.bySemanticsLabel('设置'), findsOneWidget);
+      expect(find.textContaining('想要的自己'), findsNothing,
+          reason: 'the design puts no encouragement card in the hero');
+    });
+
     testWidgets('carries the hourly distribution', (tester) async {
       await pumpHome(tester);
 

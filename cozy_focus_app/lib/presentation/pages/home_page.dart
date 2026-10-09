@@ -241,27 +241,6 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           ),
           Positioned(
-            top: topInset + 44,
-            right: 16,
-            child: Container(
-              width: 110,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.accentGoldLight,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Text(
-                '每一次专注\n都是在靠近\n想要的自己 💚',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
-                  height: 1.5,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
             // Reference 01 centres the pet on the screen; constraining the
             // right edge instead pulled it 49dp off-centre.
             top: topInset + _heroPetCentre - _heroPetSize / 2,
