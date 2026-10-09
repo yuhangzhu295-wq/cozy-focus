@@ -5,7 +5,7 @@
  "branch": "recovery/v4.2.1-rebuild",
  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
- "updated_at": "2026-10-10T07:09:55+08:00",
+ "updated_at": "2026-10-10T07:42:31+08:00",
  "continuation": {
   "question": "does this environment support automatic continuation of the work?",
   "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "ecaf912321a3e8dd7053806a4cbceb5e0ddad314",
-  "remote_head": "ecaf912321a3e8dd7053806a4cbceb5e0ddad314",
+  "head": "5f22f20411c9f04b2bebf3b0588afe5ac5cbbfa5",
+  "remote_head": "5f22f20411c9f04b2bebf3b0588afe5ac5cbbfa5",
   "head_matches_remote": true,
   "worktree": "dirty",
-  "last_verified_at": "2026-10-10T07:09:55+08:00",
+  "last_verified_at": "2026-10-10T07:42:31+08:00",
   "note": "Local and remote agree at bfab6df. Everything verified this window is pushed."
  },
  "current": {
-  "stage": "STAGE_5_SIZES_AND_ACCESSIBILITY",
-  "subtask": "Every reachable screen has now had its accessibility tree read. The supplementary sweep found defect 32 (the record detail computed its own minutes with a floor while the app's one rule rounds) and nothing else. Thirty-two defects found and fixed in this pass.",
+  "stage": "STAGE_1_VISUAL_MATRIX",
+  "subtask": "Stage 1 is now complete against the RIGHT design set. The program's 16 are the devpack's 01_FINAL_16_DESIGNS (per 01_DESIGN_TO_CODE_MAP.md), not the repo's v4.1 set; earlier matrix sections used the repo set and their numbering was wrong, now corrected and relabelled. Boards 08 and 10-16 are audited against the devpack boards.",
   "mode": "IN_PROGRESS"
  },
  "status_vocabulary": [
@@ -122,20 +122,19 @@
   "S7 depends on all of the above"
  ],
  "recent_test_evidence": {
-  "at": "2026-10-10T07:09:55+08:00",
+  "at": "2026-10-10T07:42:31+08:00",
   "command": "flutter test",
   "result": "2031/2031 passed, analyze clean, format clean, APK builds",
-  "note": "2031 = 2029 + 2 for the elapsed-duration guard.",
   "analyze": "flutter analyze --fatal-infos: No issues found",
   "format": "dart format --set-exit-if-changed .: 0 changed",
   "apk": "flutter build apk --debug: built",
   "diff_check": "clean",
   "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0 (self-test ok), find_unlabelled_icon_buttons.py 0, audit_pack_geometry.py PASS",
-  "project_gate": "tools/cozy_gate.py: 12 PASS / 3 BLOCKED / 3 DEFERRED / 0 FAIL (UNIT 2029, INTEGRATION 51, GOLDEN_FLOW 6, MIGRATION 16, LIFECYCLE 80, ASSET 75, APK 32.0MB, AAB 50.5MB)",
-  "device": "411x914 dp emulator; all eight flows re-walked on the final build; three sizes swept; large text 1.4x; landscape; performance measured; every reachable screen's tree read; thirty-two defects found and fixed in this pass"
+  "project_gate": "tools/cozy_gate.py: 12 PASS / 3 BLOCKED / 3 DEFERRED / 0 FAIL",
+  "device": "411x914 dp emulator; A-H re-walked on the final build; three sizes; large text; landscape; performance measured; every reachable screen's tree read"
  },
  "uncommitted": "none",
- "next_instruction": "Nothing further is completable from here. Remaining: OWNER_VISUAL_GATE and 6 product decisions (the owner's), frame time (DevTools + a GPU-backed device), real-device verification, room_sit art, TalkBack, Flow video, release signing, the launcher icon.",
+ "next_instruction": "Stage 3's remaining PENDING rows: S3.07 (the home page's extra encouragement card), and S3.05b/c/d (capture sheet details) - each needs checking against the device first, because the queue may be stale. Everything else outstanding is the owner's or BLOCKED_EXTERNAL.",
  "external_blockers": [
   "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
   "LAUNCHER_ICON: stock Flutter icon, no approved artwork",

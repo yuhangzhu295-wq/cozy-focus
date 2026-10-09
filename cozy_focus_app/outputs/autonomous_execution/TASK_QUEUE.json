@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T07:09:55+08:00",
+ "updated_at": "2026-10-10T07:42:31+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -57,8 +57,8 @@
    "stage": 1,
    "title": "audit design 08 free time",
    "status": "TESTED",
-   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
-   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
+   "evidence": "01_VISUAL_MATRIX.md, the devpack-set sections for 08 and 10-16, each row measured against the device or the source",
+   "note": "the program's 16 designs are the devpack's 01_FINAL_16_DESIGNS set (01_DESIGN_TO_CODE_MAP.md), not docs/cozy_focus_v4_1/designs/pages/. The two are different generations: the devpack's 01_HOME_OPTIMIZED draws the current-task card and the hourly chart, the repo's 01_首页 does not. Earlier sections of 01_VISUAL_MATRIX.md used the repo set and their numbering was wrong; they are now labelled as the v4.1 set and the devpack boards 08, 10-16 are audited in a new section."
   },
   {
    "id": "S1.09",
@@ -72,56 +72,56 @@
    "stage": 1,
    "title": "audit design 10 pet and room",
    "status": "TESTED",
-   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
-   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
+   "evidence": "01_VISUAL_MATRIX.md, the devpack-set sections for 08 and 10-16, each row measured against the device or the source",
+   "note": "the program's 16 designs are the devpack's 01_FINAL_16_DESIGNS set (01_DESIGN_TO_CODE_MAP.md), not docs/cozy_focus_v4_1/designs/pages/. The two are different generations: the devpack's 01_HOME_OPTIMIZED draws the current-task card and the hourly chart, the repo's 01_首页 does not. Earlier sections of 01_VISUAL_MATRIX.md used the repo set and their numbering was wrong; they are now labelled as the v4.1 set and the devpack boards 08, 10-16 are audited in a new section."
   },
   {
    "id": "S1.11",
    "stage": 1,
    "title": "audit design 11 create task",
    "status": "TESTED",
-   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
-   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
+   "evidence": "01_VISUAL_MATRIX.md, the devpack-set sections for 08 and 10-16, each row measured against the device or the source",
+   "note": "the program's 16 designs are the devpack's 01_FINAL_16_DESIGNS set (01_DESIGN_TO_CODE_MAP.md), not docs/cozy_focus_v4_1/designs/pages/. The two are different generations: the devpack's 01_HOME_OPTIMIZED draws the current-task card and the hourly chart, the repo's 01_首页 does not. Earlier sections of 01_VISUAL_MATRIX.md used the repo set and their numbering was wrong; they are now labelled as the v4.1 set and the devpack boards 08, 10-16 are audited in a new section."
   },
   {
    "id": "S1.12",
    "stage": 1,
    "title": "audit design 12 task detail",
    "status": "TESTED",
-   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
-   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
+   "evidence": "01_VISUAL_MATRIX.md, the devpack-set sections for 08 and 10-16, each row measured against the device or the source",
+   "note": "the program's 16 designs are the devpack's 01_FINAL_16_DESIGNS set (01_DESIGN_TO_CODE_MAP.md), not docs/cozy_focus_v4_1/designs/pages/. The two are different generations: the devpack's 01_HOME_OPTIMIZED draws the current-task card and the hourly chart, the repo's 01_首页 does not. Earlier sections of 01_VISUAL_MATRIX.md used the repo set and their numbering was wrong; they are now labelled as the v4.1 set and the devpack boards 08, 10-16 are audited in a new section."
   },
   {
    "id": "S1.13",
    "stage": 1,
    "title": "audit design 13 distraction inbox",
    "status": "TESTED",
-   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
-   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
+   "evidence": "01_VISUAL_MATRIX.md, the devpack-set sections for 08 and 10-16, each row measured against the device or the source",
+   "note": "the program's 16 designs are the devpack's 01_FINAL_16_DESIGNS set (01_DESIGN_TO_CODE_MAP.md), not docs/cozy_focus_v4_1/designs/pages/. The two are different generations: the devpack's 01_HOME_OPTIMIZED draws the current-task card and the hourly chart, the repo's 01_首页 does not. Earlier sections of 01_VISUAL_MATRIX.md used the repo set and their numbering was wrong; they are now labelled as the v4.1 set and the devpack boards 08, 10-16 are audited in a new section."
   },
   {
    "id": "S1.14",
    "stage": 1,
    "title": "audit design 14 schedule to today",
    "status": "TESTED",
-   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
-   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
+   "evidence": "01_VISUAL_MATRIX.md, the devpack-set sections for 08 and 10-16, each row measured against the device or the source",
+   "note": "the program's 16 designs are the devpack's 01_FINAL_16_DESIGNS set (01_DESIGN_TO_CODE_MAP.md), not docs/cozy_focus_v4_1/designs/pages/. The two are different generations: the devpack's 01_HOME_OPTIMIZED draws the current-task card and the hourly chart, the repo's 01_首页 does not. Earlier sections of 01_VISUAL_MATRIX.md used the repo set and their numbering was wrong; they are now labelled as the v4.1 set and the devpack boards 08, 10-16 are audited in a new section."
   },
   {
    "id": "S1.15",
    "stage": 1,
    "title": "audit design 15 settings lite",
    "status": "TESTED",
-   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
-   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
+   "evidence": "01_VISUAL_MATRIX.md, the devpack-set sections for 08 and 10-16, each row measured against the device or the source",
+   "note": "the program's 16 designs are the devpack's 01_FINAL_16_DESIGNS set (01_DESIGN_TO_CODE_MAP.md), not docs/cozy_focus_v4_1/designs/pages/. The two are different generations: the devpack's 01_HOME_OPTIMIZED draws the current-task card and the hourly chart, the repo's 01_首页 does not. Earlier sections of 01_VISUAL_MATRIX.md used the repo set and their numbering was wrong; they are now labelled as the v4.1 set and the devpack boards 08, 10-16 are audited in a new section."
   },
   {
    "id": "S1.16",
    "stage": 1,
    "title": "audit design 16 empty state",
    "status": "TESTED",
-   "evidence": "01_VISUAL_MATRIX.md: the 08/08A, 10/10A/10B and 12/13/14/15 sections, each row measured against the device",
-   "note": "The audit's main output is the section '不能照做的展板': boards 13, 15 and 10A draw working controls for features the app does not have, so restoring them would mean fabricating switches, a sync list and an outfit catalogue."
+   "evidence": "01_VISUAL_MATRIX.md, the devpack-set sections for 08 and 10-16, each row measured against the device or the source",
+   "note": "the program's 16 designs are the devpack's 01_FINAL_16_DESIGNS set (01_DESIGN_TO_CODE_MAP.md), not docs/cozy_focus_v4_1/designs/pages/. The two are different generations: the devpack's 01_HOME_OPTIMIZED draws the current-task card and the hourly chart, the repo's 01_首页 does not. Earlier sections of 01_VISUAL_MATRIX.md used the repo set and their numbering was wrong; they are now labelled as the v4.1 set and the devpack boards 08, 10-16 are audited in a new section."
   },
   {
    "id": "S3.01",
@@ -637,6 +637,27 @@
    "status": "PASS",
    "note": "",
    "evidence": "schedule-to-today 17 nodes and focus review 30 nodes, both no repeats"
+  },
+  {
+   "id": "S1.19",
+   "stage": 1,
+   "title": "the matrix was auditing the wrong design set",
+   "status": "PASS",
+   "evidence": "the program's 16 designs are the devpack's 01_FINAL_16_DESIGNS set (01_DESIGN_TO_CODE_MAP.md), not docs/cozy_focus_v4_1/designs/pages/. The two are different generations: the devpack's 01_HOME_OPTIMIZED draws the current-task card and the hourly chart, the repo's 01_首页 does not. Earlier sections of 01_VISUAL_MATRIX.md used the repo set and their numbering was wrong; they are now labelled as the v4.1 set and the devpack boards 08, 10-16 are audited in a new section."
+  },
+  {
+   "id": "S1.20",
+   "stage": 1,
+   "title": "subtasks have no creation path, so design 12's progress card is unreachable",
+   "status": "NOT_VERIFIED",
+   "evidence": "the card exists (_ProgressCard, rendered only when hasSubtasks) but nothing in the app calls insertSubtask - it is repository-layer only. The design draws 2/3 as a main element, so the product expects subtasks and no screen creates them. Needs a product decision, not an invented UI."
+  },
+  {
+   "id": "S1.21",
+   "stage": 1,
+   "title": "design 10's 最近解锁 section and the 3-tile stat rule",
+   "status": "NOT_VERIFIED",
+   "evidence": "the design draws 最近解锁 with 查看全部 and three dated unlock cards, and annotates '只保留最关键的 3 项数据'; the app has no unlock list and shows four tiles (the extra is 心情指数). Needs an unlock-event source; the app has craft_jobs but no path that renders 'which item, unlocked when'."
   }
  ]
 }
