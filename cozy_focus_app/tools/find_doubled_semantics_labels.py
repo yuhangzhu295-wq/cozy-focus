@@ -127,12 +127,19 @@ def _arg_value(body: str, name: str) -> str | None:
 def _normalise(expression: str) -> str:
     """Strip what does not change which value an expression names.
 
-    Whitespace, and a trailing `!`. The task list's filter chips are written
-    `label: _labels[filter]` over `Text(_labels[filter]!)`, and the null-assertion
-    was enough to hide three doubled labels from this scan while the device tree
-    showed all three — `今天`, `进行中` and `已完成`, each announced twice.
+    Whitespace, a trailing `!`, and the surrounding quotes. Each of the three was
+    needed to see something the device tree was showing:
+
+    * whitespace, because formatting moves it;
+    * a trailing `!` — the task list's filter chips are `label: _labels[filter]`
+      over `Text(_labels[filter]!)`, and the null-assertion hid three doubled
+      labels;
+    * the quotes — the rest page's duration chips are `label: '$minutes 分钟'`
+      over `Text('$minutes')`, and because the unit lives inside the label's own
+      string the quotes sit in different places, so the substring was never
+      found even though a screen reader hears `5 分钟, 5, 分钟`.
     """
-    return re.sub(r"\s+", "", expression).rstrip("!")
+    return re.sub(r"\s+", "", expression).rstrip("!").strip("'\"")
 
 
 def _has_plain(haystack: str, needle: str) -> bool:
@@ -140,14 +147,23 @@ def _has_plain(haystack: str, needle: str) -> bool:
 
     The trailing character must not continue the identifier, so `$displayTime`
     matches while `$displayTimeRemaining` does not.
+
+    Only **ASCII** characters count as continuing an identifier, which is the
+    whole point of spelling it out. `str.isalnum()` is true for CJK, so
+    `'$minutes 分钟'` looked like one long name and the rest page's four duration
+    chips — `5 分钟 / 5 / 分钟` — went unflagged until the device tree showed
+    them. A Dart identifier cannot contain 分.
     """
+    def continues(ch: str) -> bool:
+        return ch == "_" or ("a" <= ch <= "z") or ("A" <= ch <= "Z") or ch.isdigit()
+
     start = 0
     while True:
         at = haystack.find(needle, start)
         if at < 0:
             return False
         after = haystack[at + len(needle) : at + len(needle) + 1]
-        if not after or not (after.isalnum() or after == "_"):
+        if not after or not continues(after):
             return True
         start = at + 1
 
@@ -208,7 +224,15 @@ def scan(path: Path) -> list[tuple[int, int, str, str]]:
             # check that only looked for `${...}`, and the device tree showed the
             # timer announcing itself three times.
             braced = "${" + normalised_value + "}"
-            plain = "$" + normalised_value
+            # The child may be the expression itself (`Text(displayTime)`) or the
+            # interpolation of it (`Text('$minutes')`). Prefixing the second one
+            # again gives `$$minutes`, which is in nothing — that is how the rest
+            # page's four duration chips stayed hidden.
+            plain = (
+                normalised_value
+                if normalised_value.startswith("$")
+                else "$" + normalised_value
+            )
             if normalised_value == wanted or braced in wanted or _has_plain(
                 wanted, plain
             ):

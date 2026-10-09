@@ -235,6 +235,10 @@ class _PresetTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       key: ValueKey('rest_preset_$minutes'),
+      // The wrapper supplies the whole name, so it excludes the chip's own
+      // number and unit. Without this the device tree read `5 分钟\n5\n分钟` —
+      // the value and the unit said again — on all four chips.
+      excludeSemantics: true,
       button: true,
       selected: selected,
       label: '$minutes 分钟',

@@ -557,6 +557,10 @@ class _SlotChips extends StatelessWidget {
           final label = '${slot.hour.toString().padLeft(2, '0')}:'
               '${slot.minute.toString().padLeft(2, '0')}';
           return Semantics(
+            // The wrapper supplies the whole name — including the 推荐 marker on
+            // the first slot — so it excludes the time text it wraps. Without
+            // this the device tree read `09:00\n09:00`, and `09:00 推荐\n09:00`.
+            excludeSemantics: true,
             button: true,
             selected: active,
             label: index == 0 ? '$label 推荐' : label,

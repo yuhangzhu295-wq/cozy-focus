@@ -133,6 +133,43 @@ void main() {
     expect(right[0].dx, right[1].dx);
     expect(left[0].dx, lessThan(right[0].dx));
   });
+
+  testWidgets('each preset announces its length once', (tester) async {
+    // The device tree read `5 分钟\n5\n分钟` on all four: the wrapper supplied
+    // the name and the chip's own number and unit were merged into the same
+    // node. The two tests above were green throughout — they measure where the
+    // chips are, not what they say.
+    final router = GoRouter(
+      initialLocation: '/rest',
+      routes: [
+        GoRoute(path: '/rest', builder: (context, state) => const RestPage()),
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const Scaffold(body: Text('home')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          theme: AppTheme.lightTheme,
+          routerConfig: router,
+        ),
+      ),
+    );
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 150));
+    }
+
+    for (final minutes in RestSession.presets) {
+      final node = tester.getSemantics(
+        find.byKey(ValueKey('rest_preset_$minutes')),
+      );
+      expect(node.label, '$minutes 分钟', reason: '$minutes');
+    }
+  });
 }
 
 class _FixedClock implements FocusClock {
