@@ -5,7 +5,7 @@
  "branch": "recovery/v4.2.1-rebuild",
  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
- "updated_at": "2026-10-10T04:16:40+08:00",
+ "updated_at": "2026-10-10T04:34:55+08:00",
  "continuation": {
   "question": "does this environment support automatic continuation of the work?",
   "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "a233d0c18d8f2f51dd7a2211eff3988926bba6cd",
-  "remote_head": "a233d0c18d8f2f51dd7a2211eff3988926bba6cd",
+  "head": "f7a2ad479dced8c0e5b56e4fec1a63ec90199b23",
+  "remote_head": "f7a2ad479dced8c0e5b56e4fec1a63ec90199b23",
   "head_matches_remote": true,
   "worktree": "dirty",
-  "last_verified_at": "2026-10-10T04:16:40+08:00",
+  "last_verified_at": "2026-10-10T04:34:55+08:00",
   "note": "Local and remote agree at bfab6df. Everything verified this window is pushed."
  },
  "current": {
   "stage": "STAGE_5_SIZES_AND_ACCESSIBILITY",
-  "subtask": "The three-size sweep is done and clean: 360x800, 393x852 and 412x915, with home, records, growth, room, dress and collection each visited at 360x800 and zero overflow. It found defect 30, the thirtieth: the collection page announced every item's name twice. Large text and landscape are NOT_VERIFIED; TalkBack is BLOCKED_EXTERNAL.",
+  "subtask": "The three-size sweep is PASS and clean, and it found defect 30. Large text ran on two of six stops before the emulator process died twice; the two it reached were clean. Landscape was not attempted. Both are NOT_VERIFIED, not passes.",
   "mode": "IN_PROGRESS"
  },
  "status_vocabulary": [
@@ -122,19 +122,18 @@
   "S7 depends on all of the above"
  ],
  "recent_test_evidence": {
-  "at": "2026-10-10T04:16:40+08:00",
+  "at": "2026-10-10T04:34:55+08:00",
   "command": "flutter test",
   "result": "2028/2028 passed, analyze clean, format clean, APK builds",
-  "note": "2028 = 2027 + 1 for the collection-name guard.",
   "analyze": "flutter analyze --fatal-infos: No issues found",
   "format": "dart format --set-exit-if-changed .: 0 changed",
   "apk": "flutter build apk --debug: built",
   "diff_check": "clean",
   "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0 (self-test ok), find_unlabelled_icon_buttons.py 0, audit_pack_geometry.py PASS",
-  "device": "411x914 dp emulator; flows C-H walked; three sizes swept; thirty defects found and fixed across this pass"
+  "device": "411x914 dp emulator; flows C-H walked end to end; three sizes swept clean; thirty defects found and fixed in this pass. The emulator process died twice during the large-text sweep and was restarted with its overrides reset."
  },
  "uncommitted": "none",
- "next_instruction": "Stage 5's large text and landscape, then Stage 1's remaining designs, then Stage 7's deliverables and the final gate.",
+ "next_instruction": "Re-run the large-text sweep with the emulator's overrides applied one at a time, then Stage 1's remaining designs, then Stage 7's deliverables and the final gate.",
  "external_blockers": [
   "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
   "LAUNCHER_ICON: stock Flutter icon, no approved artwork",

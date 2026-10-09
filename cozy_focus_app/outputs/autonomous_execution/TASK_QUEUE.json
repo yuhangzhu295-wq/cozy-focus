@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T04:16:40+08:00",
+ "updated_at": "2026-10-10T04:34:55+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -260,7 +260,8 @@
    "stage": 5,
    "title": "large text and landscape",
    "status": "NOT_VERIFIED",
-   "note": "large text and landscape were not exercised this window"
+   "note": "Diagnosis rather than repetition: both deaths came after `settings put system font_scale 1.3` on an AVD already carrying a wm density override. The AVD has hw.gpu.enabled=no and runs on -gpu swiftshader_indirect, so the software rasteriser is doing the text relayout for every frame. Restarting the emulator cleared it (density and font_scale reset to the defaults, device up). Landscape was not attempted at all. This is NOT a pass.",
+   "evidence": "PARTIAL, and the part that ran is clean: at 360x800 dp with the system font_scale at 1.3, the home page and the records page both rendered with zero RenderFlex overflow and a complete tree. The growth, room, dress and collection stops did NOT run: the emulator process died twice in a row, the second time mid-sweep."
   },
   {
    "id": "S5.03",
@@ -545,6 +546,20 @@
    "title": "the collection page names each item once",
    "status": "PASS",
    "evidence": "defect 30; pet_collection_page_test; device: 插画 absent from the tree"
+  },
+  {
+   "id": "S5.02a",
+   "stage": 5,
+   "title": "large text at 360x800 on home and records",
+   "status": "PASS",
+   "evidence": "font_scale 1.3, zero overflow on both stops before the emulator died"
+  },
+  {
+   "id": "S5.02b",
+   "stage": 5,
+   "title": "large text on growth/room/dress/collection, and landscape",
+   "status": "NOT_VERIFIED",
+   "note": "emulator died mid-sweep; environment restarted and left at default overrides"
   }
  ]
 }
