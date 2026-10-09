@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T00:05:38+08:00",
+ "updated_at": "2026-10-10T01:04:28+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -301,7 +301,9 @@
    "id": "S6.D",
    "stage": 6,
    "title": "Focus -> Background -> Resume -> Complete -> Save -> Restart",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "device 411x914: 5 分钟 -> 开始专注 -> 专注计时 04:47 -> HOME 45s -> 回前台 '已恢复专注状态' (已恢复时长 1 分钟) -> 恢复专注 -> 01:41 继续 -> 暂停 01:54 冻结 18s 不动 -> 继续专注 -> 倒计时走完 -> '专注完成' 05:00 +10 专注币 +25 XP -> 填 note -> 完成并返回首页 -> SQLite focus_records=9 duration_seconds=300 note='device-walk-flowD' -> force-stop + relaunch -> 记录页 '16:09 – 16:15' 与 3 次/34 分钟都在",
+   "note": "wall 382s - 82s paused = 300s recorded, i.e. the pause is not paid for."
   },
   {
    "id": "S6.E",
@@ -433,8 +435,16 @@
    "id": "S6.D0",
    "stage": 6,
    "title": "focus: start, background, resume, pause, complete, save, restart",
-   "status": "PENDING",
-   "note": "next work unit"
+   "status": "PASS",
+   "note": "next work unit",
+   "evidence": "same walk as S6.D"
+  },
+  {
+   "id": "S3.09",
+   "stage": 3,
+   "title": "design 03B: the restore card's second line",
+   "status": "PASS",
+   "evidence": "defect 23; Test B2; device reads '已恢复时长 / 1 分钟 / 16:25 – 16:27'"
   }
  ]
 }

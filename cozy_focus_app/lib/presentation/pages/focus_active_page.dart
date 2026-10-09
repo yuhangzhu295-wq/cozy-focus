@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../companion/companion_selection.dart';
 import '../../domain/growth/mochi_growth_profile.dart';
 import '../../domain/models/enums.dart';
@@ -213,6 +214,9 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
     return '$m:$s';
   }
 
+  /// A wall-clock time as `HH:mm`, for the restore card's `10:24 – 10:36`.
+  String _clock(DateTime at) => DateFormat('HH:mm').format(at);
+
   /// Switches the running session's timing mode.
   ///
   /// The engine refuses two cases — a countdown target already in the past, and
@@ -386,6 +390,7 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
     final elapsed = sessionState.elapsedSeconds;
     final planned = sessionState.session?.plannedSeconds ?? 0;
     final elapsedMin = (elapsed / 60).floor();
+    final startedAt = sessionState.session?.startAt;
 
     return SafeArea(
       child: Column(
@@ -461,6 +466,17 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                             color: AppColors.primaryDark,
                           ),
                         ),
+                        // The design's left card is a two-line block: the length
+                        // that was recovered, and the clock span it covers. The
+                        // span is start + elapsed rather than start + now, so it
+                        // stays the focused time and does not count a pause.
+                        if (startedAt != null)
+                          Text(
+                            '${_clock(startedAt)} – '
+                            '${_clock(startedAt.add(Duration(seconds: elapsed)))}',
+                            style: const TextStyle(
+                                fontSize: 11, color: AppColors.textSecondary),
+                          ),
                       ],
                     ),
                   ),

@@ -151,6 +151,44 @@ void main() {
           .cancelSession();
     });
 
+    testWidgets('Test B2: the restore card names the span it recovered',
+        (tester) async {
+      // Design 03B draws the left card as two lines: `已恢复时长 / 12 分钟` and
+      // `10:24 – 10:36`. The app rendered only the first. A device walk found
+      // it; Test B above was green the whole time because it asserts the
+      // overlay appeared, not what the card says.
+      setScreenSize(tester);
+
+      final engine = container.read(focusSessionEngineProvider);
+      await engine.start(
+        userId: 'default_user',
+        plannedSeconds: 1500,
+        mode: FocusMode.focus,
+      );
+
+      await tester
+          .pumpWidget(createTestApp(container, const FocusActivePage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Twelve focused minutes, so the span is unambiguous.
+      testClock.advance(const Duration(minutes: 12));
+      await tester.pump(const Duration(seconds: 1));
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('已恢复专注状态'), findsOneWidget);
+      expect(find.text('12 分钟'), findsOneWidget);
+      // Start 10:00 + 12 focused minutes.
+      expect(find.text('10:00 – 10:12'), findsOneWidget);
+
+      await container
+          .read(focusSessionControllerProvider.notifier)
+          .cancelSession();
+    });
+
     testWidgets('Test C: Normal running screen binds to sessionState.petState',
         (tester) async {
       setScreenSize(tester);
