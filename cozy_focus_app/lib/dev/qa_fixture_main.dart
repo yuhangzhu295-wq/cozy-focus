@@ -28,6 +28,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../presentation/app_localization.dart';
 import '../presentation/controllers/providers.dart';
 import '../presentation/navigation/app_router.dart';
 import '../presentation/theme/app_theme.dart';
@@ -84,6 +85,9 @@ class _QaFixtureApp extends StatelessWidget {
       title: 'Cozy Focus (QA fixture)',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      locale: appLocale,
+      supportedLocales: appSupportedLocales,
+      localizationsDelegates: appLocalizationsDelegates,
       routerConfig: appRouter,
     );
   }

@@ -291,18 +291,36 @@
 - **门槛**：`flutter analyze --fatal-infos` 无问题；`dart format --set-exit-if-changed` 0 改动；`git diff --check` 干净；全量 **2009 绿**；`flutter build apk --debug` 成功；扫描器复扫 0。
 - **元教训**：无障碍的"说得对"和"按得动"是**两个独立属性**，一条断言只覆盖一个。改无障碍时，设备树要**同时**看 label 和 clickable——只看一个就会在另一个上静默回归。
 
-## 本轮定位但**尚未修复**
+### 22. 中文 App 里 Material 组件说英文（返回键、日期/时间选择器、Tab 序号）
 
-| 缺陷 | 证据 | 影响 |
+- **发现方式**：走 Golden Flow C 到时间线（`/records/today`）时，无障碍树第一行是 `Back`。而两屏之外的休息页是 `返回`——同一个 App 两个答案。
+- **根因**：`MaterialApp.router` **没有** `locale` / `supportedLocales` / `localizationsDelegates`，Flutter 回落到 `DefaultMaterialLocalizations`（只有英文）。受影响的不止返回键：
+  - 12 个页面用的是 Material 的 `BackButton`（名字取自 `MaterialLocalizations.backButtonTooltip`），另有页面是手写 `IconButton` + `semanticLabel: '返回'`——所以是"有的页面对有的页面错"。
+  - `showDatePicker`（今日计划、安排到今日计划）与 `showTimePicker` 全是英文：月份名、`SELECT DATE`、`OK` / `CANCEL`。
+  - 底部三个 Tab 的朗读是 `Tab 1 of 3`。
+  - 这些**都不会**出现在"看自己写的文案"的截图里，只有设备树能看到。
+- **修复**：`pubspec.yaml` 加 `flutter_localizations`（SDK 依赖，随之把 `intl` 从 `^0.19.0` 提到 `^0.20.2`——`flutter_localizations` 依赖 `intl 0.20.2`，这是版本求解的硬要求，不是顺手升级）；新增 `lib/presentation/app_localization.dart` 暴露 `appLocale = Locale('zh')` / `appSupportedLocales` / `appLocalizationsDelegates`（Material + Widgets + Cupertino 三个 delegate），`main.dart` 与 `dev/qa_fixture_main.dart` 都接上——QA 夹具和正式入口必须同一套，否则走查看到的和用户看到的不是同一个 App。
+- **测试**：`test/presentation/material_localizations_are_chinese_test.dart` 4 条——locale 常量；`backButtonTooltip == '返回'` 且 `okButtonLabel == '确定'`；**真的渲染一个 `BackButton` 并断言 `find.byTooltip('返回')` 命中、`find.byTooltip('Back')` 不命中**（用的是 12 个页面那个具体 widget，不是等价物）；`showDatePicker` 打开后是 `确定` / `取消` 且没有 `OK`。
+- **反向证明**：把 `appLocalizationsDelegates` 清空 → 4 条里 3 条红（`Found 0 widgets with widget matching predicate`、`Found 0 widgets with text "确定"`）。第一条只断言 locale 常量，所以它不红——这条测试不覆盖 delegate。
+- **设备复验**：重装后 `/records/today` 返回键 `返回`（原 `Back`）；底部 Tab 由 `Tab 1 of 3` 变 `第 1 个标签，共 3 个`；日期选择器整屏中文（`关闭` / `选择日期 10月9日周五` / `选择年份 2026年10月` / `2026年10月9日星期五, 今天` / `取消`）。
+- **元教训**：这一条不在任何设计图里，也不在"自己写的字符串"里，所以对照设计图和读代码都发现不了。**本地化是设备树才能读出来的属性**——和 20/21 同源。
+
+## 本节原先列的"尚未修复"，现已全部落地
+
+写这张表的时候（缺陷 20 那一轮）下面四条确实还没做。**它们后来都做了**，所以这张表按当时状态读会误导人，改成结论：
+
+| 原列项 | 现在 | 证据 |
 |---|---|---|
-| 首页缺"当前任务"卡片 | 设计 01 在问候语正下方放了 `○ 写产品方案 [专注中] / 2/3 · 预计 90 分钟 / ›`；实机首页无此卡片 | 设计图首页最显眼的新入口缺失 |
-| 首页"今天的专注"缺按小时柱状图 | 设计 01 有柱状图与轴 `6 9 12 15 18 21`；实机显示环形 + 连续天数 | 缺少一个信息层级；实机把连续天数放在了设计图没放的位置 |
-| 今日计划的行样式与设计不同 | 设计 03 是带竖直连接线的平铺行；实机是白卡片 + 描边 | 视觉差异（实现的「时间线」分段另有轨道视图） |
-| 专注页控制区布局与设计不同 | 设计 04 是四个圆形按钮一行（白噪音/暂停/记一下/完成）；实机是整宽按钮 | 视觉差异；`白噪音` 因无音频素材**不应**照做（契约禁止假开关） |
+| 首页缺"当前任务"卡片 | 已实现 | 设备树 `当前任务 Alpha，2/3 · 预计 25 分钟`；`S3.03 TESTED` |
+| 首页"今天的专注"缺按小时柱状图 | 已实现 | `S3.04 TESTED`；设备树 `今天的专注分布：4 点到 22 点，最集中的两小时有 25 分钟` |
+| 今日计划的行样式与设计不同 | 已改为设计里的平铺轨道行 | `S3.05 TESTED` |
+| 专注页控制区布局与设计不同 | 已改为四个圆形控件 | `S3.06 TESTED`；`白噪音` 因无音频素材**不照做**（契约禁止假开关） |
+
+## 仍然开着的（未修复，非本轮）
 
 ## 此前各轮已修（守卫仍在，本轮未重跑）
 
-`flutter test` 全绿（1931）覆盖以下守卫，但按任务书要求"不直接继承 PASS 结论"，Stage 2 需重新验收：
+`flutter test` 全绿（写这段时是 1931，现在是 2013）覆盖以下守卫，但按任务书要求"不直接继承 PASS 结论"，Stage 2 需重新验收：
 
 | 缺陷 | 守卫测试 |
 |---|---|

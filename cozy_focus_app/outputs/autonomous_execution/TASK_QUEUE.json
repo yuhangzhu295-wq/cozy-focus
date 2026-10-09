@@ -1,418 +1,440 @@
 {
-  "queue_version": 1,
-  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
-  "updated_at": "2026-10-09T21:32:49+08:00",
-  "tasks": [
-    {
-      "id": "S1.01",
-      "stage": 1,
-      "title": "audit design 01 home",
-      "status": "TESTED",
-      "evidence": "01_VISUAL_MATRIX.md 01 行"
-    },
-    {
-      "id": "S1.02",
-      "stage": 1,
-      "title": "audit design 02 task list",
-      "status": "TESTED",
-      "evidence": "01_VISUAL_MATRIX.md 02 行"
-    },
-    {
-      "id": "S1.03",
-      "stage": 1,
-      "title": "audit design 03 today plan",
-      "status": "TESTED",
-      "evidence": "01_VISUAL_MATRIX.md 03 行"
-    },
-    {
-      "id": "S1.04",
-      "stage": 1,
-      "title": "audit design 04 focus mode",
-      "status": "TESTED",
-      "evidence": "01_VISUAL_MATRIX.md 04 行"
-    },
-    {
-      "id": "S1.05",
-      "stage": 1,
-      "title": "audit design 05 distraction capture",
-      "status": "TESTED",
-      "note": "audited against the device; five differences registered as S3.05a-e"
-    },
-    {
-      "id": "S1.06",
-      "stage": 1,
-      "title": "audit design 06 focus review",
-      "status": "TESTED",
-      "note": "structural audit only, done while reaching 05; pixel-level detail still open"
-    },
-    {
-      "id": "S1.07",
-      "stage": 1,
-      "title": "audit design 07 analytics lite",
-      "status": "TESTED",
-      "note": "structural audit only; every element the design draws exists, pixel detail not yet compared"
-    },
-    {
-      "id": "S1.08",
-      "stage": 1,
-      "title": "audit design 08 free time",
-      "status": "PENDING"
-    },
-    {
-      "id": "S1.09",
-      "stage": 1,
-      "title": "audit design 09 timeline",
-      "status": "TESTED",
-      "note": "structural audit; the design's legend has five kinds and the app models four"
-    },
-    {
-      "id": "S1.10",
-      "stage": 1,
-      "title": "audit design 10 pet and room",
-      "status": "PENDING"
-    },
-    {
-      "id": "S1.11",
-      "stage": 1,
-      "title": "audit design 11 create task",
-      "status": "PENDING"
-    },
-    {
-      "id": "S1.12",
-      "stage": 1,
-      "title": "audit design 12 task detail",
-      "status": "PENDING"
-    },
-    {
-      "id": "S1.13",
-      "stage": 1,
-      "title": "audit design 13 distraction inbox",
-      "status": "PENDING"
-    },
-    {
-      "id": "S1.14",
-      "stage": 1,
-      "title": "audit design 14 schedule to today",
-      "status": "PENDING"
-    },
-    {
-      "id": "S1.15",
-      "stage": 1,
-      "title": "audit design 15 settings lite",
-      "status": "PENDING"
-    },
-    {
-      "id": "S1.16",
-      "stage": 1,
-      "title": "audit design 16 empty state",
-      "status": "PENDING"
-    },
-    {
-      "id": "S3.01",
-      "stage": 3,
-      "title": "running screen: draw the design's ring",
-      "status": "TESTED",
-      "commit": "05c0c4c"
-    },
-    {
-      "id": "S3.02",
-      "stage": 3,
-      "title": "ring sized from screen height so controls stay on screen",
-      "status": "TESTED",
-      "commit": "bec8026"
-    },
-    {
-      "id": "S3.03",
-      "stage": 3,
-      "title": "home: add the current-task card under the greeting",
-      "status": "TESTED",
-      "from": "S1.01",
-      "note": "DONE: CurrentTaskCard, device-verified, 9 tests"
-    },
-    {
-      "id": "S3.04",
-      "stage": 3,
-      "title": "home: add the hourly focus chart to 今天的专注",
-      "status": "TESTED",
-      "from": "S1.01",
-      "note": "DONE: HourlyFocus + HourlyFocusChart, device-verified, 15 tests"
-    },
-    {
-      "id": "S3.05",
-      "stage": 3,
-      "title": "today plan: flat rail rows instead of bordered cards",
-      "status": "TESTED",
-      "from": "S1.03",
-      "decision": "D3",
-      "note": "DONE: one panel, hairline dividers, rail fading from the dot's colour. Device-verified with three rows. The category palette was measured here and left alone as NOT_VERIFIED — see ledger 16a"
-    },
-    {
-      "id": "S3.06",
-      "stage": 3,
-      "title": "focus: four round controls instead of full-width buttons",
-      "status": "TESTED",
-      "from": "S1.04",
-      "note": "DONE: FocusControlRow, three round controls with 暂停 as the largest filled one. 白噪音 is a documented gap, not a fake control. 6 tests, reverse-proved, device-verified"
-    },
-    {
-      "id": "S3.07",
-      "stage": 3,
-      "title": "home: remove the duplicated encouragement card (B3)",
-      "status": "PENDING",
-      "from": "S1.01"
-    },
-    {
-      "id": "S3.08",
-      "stage": 3,
-      "title": "task list: verify the completed row's tint and check",
-      "status": "TESTED",
-      "from": "S1.02",
-      "note": "DONE and device-verified: solid green check, pale green row, title not struck through, chevron. Matches design 02"
-    },
-    {
-      "id": "S2.01",
-      "stage": 2,
-      "title": "re-verify: a countdown that overran records the target",
-      "status": "TESTED",
-      "note": "re-proved by mutation: removing the guard records 5640 s instead of 1500 s and pays 960 coins instead of 50"
-    },
-    {
-      "id": "S2.02",
-      "stage": 2,
-      "title": "re-verify: the early-finish dialog does not promise an unpaid minute",
-      "status": "TESTED",
-      "note": "guard present and green; the dialog floors like the reward does"
-    },
-    {
-      "id": "S2.03",
-      "stage": 2,
-      "title": "re-verify: one duration convention across rows, timeline and totals",
-      "status": "TESTED",
-      "note": "DEFECT FOUND AND FIXED: three conventions became one. See ledger entry 13"
-    },
-    {
-      "id": "S2.04",
-      "stage": 2,
-      "title": "re-verify: the calendar day total matches its rows",
-      "status": "TESTED",
-      "note": "guard present and green (calendar_day_total_test)"
-    },
-    {
-      "id": "S2.05",
-      "stage": 2,
-      "title": "settlement idempotence: one session, one reward",
-      "status": "TESTED",
-      "note": "re-proved by mutation: the reward_ledger primary key plus changes() is what makes it idempotent"
-    },
-    {
-      "id": "S2.06",
-      "stage": 2,
-      "title": "timezone, pause, resume, early finish, cross-day, restart",
-      "status": "TESTED",
-      "note": "pause, cross-midnight and the clock-safety cases are done or guarded; an end-to-end restart walk on the device is still outstanding"
-    },
-    {
-      "id": "S2.07",
-      "stage": 2,
-      "title": "FocusRecord / RewardLedger / StatisticsEngine / task totals / timeline derive from one source",
-      "status": "TESTED",
-      "note": "five surfaces checked against a real database in five_sources_agree_test.dart; the sharpest assertion (task total strictly less than the day) is reverse-proved. The duration convention inside this was a real defect, fixed"
-    },
-    {
-      "id": "S4.01",
-      "stage": 4,
-      "title": "companion states idle/focus/pause/celebrate/sleep/interact match business state",
-      "status": "PENDING"
-    },
-    {
-      "id": "S4.02",
-      "stage": 4,
-      "title": "room_sit pose, occlusion and z-order",
-      "status": "PENDING",
-      "blocked_by": "ROOM_SIT_FRAMES"
-    },
-    {
-      "id": "S4.03",
-      "stage": 4,
-      "title": "furniture anchors and sprite scale",
-      "status": "PENDING"
-    },
-    {
-      "id": "S4.04",
-      "stage": 4,
-      "title": "no flicker, no dropped frames, no double init on transition",
-      "status": "PENDING"
-    },
-    {
-      "id": "S5.01",
-      "stage": 5,
-      "title": "360x800 / 393x852 / 412x915 layout sweep",
-      "status": "PENDING"
-    },
-    {
-      "id": "S5.02",
-      "stage": 5,
-      "title": "large text and landscape",
-      "status": "PENDING"
-    },
-    {
-      "id": "S5.03",
-      "stage": 5,
-      "title": "accessible names on every screen",
-      "status": "TESTED",
-      "note": "swept and device-verified across the main screens. Fixed: 21 doubled labels, 3 doubled filters, 7 buttons named only by a tooltip. The detector itself was wrong three times and each correction is recorded with its self-test. Not yet swept: craft list/detail, companion picker/import, rest, focus setup/save/reward, record detail, the wrapped share page"
-    },
-    {
-      "id": "S5.04",
-      "stage": 5,
-      "title": "cold/warm start, transitions, animation frame time, memory",
-      "status": "PENDING"
-    },
-    {
-      "id": "S5.05",
-      "stage": 5,
-      "title": "TalkBack pass",
-      "status": "BLOCKED_EXTERNAL",
-      "blocked_by": "TALKBACK"
-    },
-    {
-      "id": "S6.A",
-      "stage": 6,
-      "title": "Task -> Today Plan -> Focus -> Review -> Record -> Analytics",
-      "status": "TESTED",
-      "note": "walked on the device; found and fixed defect 17 (a finished task stayed the next task) and then 18 (two counts that ignored it). Both device-verified"
-    },
-    {
-      "id": "S6.B",
-      "stage": 6,
-      "title": "Focus -> Distraction -> Inbox -> Convert Task",
-      "status": "TESTED",
-      "note": "walked on the device; found and fixed defect 19 (the hub's task count followed the last tab viewed). The convert-to-task action itself works and produced a real task"
-    },
-    {
-      "id": "S6.C",
-      "stage": 6,
-      "title": "Home -> Rest -> Timeline",
-      "status": "TESTED",
-      "note": "home -> rest walked; found and fixed defect 20 (every preset announced twice, and the scan was blind to it). The running rest and the timeline half of this flow are not walked yet"
-    },
-    {
-      "id": "S6.D",
-      "stage": 6,
-      "title": "Focus -> Background -> Resume -> Complete -> Save -> Restart",
-      "status": "PENDING"
-    },
-    {
-      "id": "S6.E",
-      "stage": 6,
-      "title": "Companion Import -> Install -> Select -> Restart",
-      "status": "PENDING"
-    },
-    {
-      "id": "S6.F",
-      "stage": 6,
-      "title": "Growth -> Room -> Dress -> Inventory",
-      "status": "PENDING"
-    },
-    {
-      "id": "S6.G",
-      "stage": 6,
-      "title": "old database -> migration -> new database -> history preserved",
-      "status": "PENDING"
-    },
-    {
-      "id": "S6.H",
-      "stage": 6,
-      "title": "new user -> create task -> focus -> first record",
-      "status": "PENDING"
-    },
-    {
-      "id": "S7.01",
-      "stage": 7,
-      "title": "five deliverables with real content",
-      "status": "TESTED",
-      "commit": "e8647f3"
-    },
-    {
-      "id": "S7.02",
-      "stage": 7,
-      "title": "02_BEFORE_AFTER screenshots",
-      "status": "PENDING"
-    },
-    {
-      "id": "S7.03",
-      "stage": 7,
-      "title": "03_BUSINESS_FLOW_EVIDENCE.md",
-      "status": "PENDING"
-    },
-    {
-      "id": "S7.04",
-      "stage": 7,
-      "title": "05_COMPANION_QA.md",
-      "status": "PENDING"
-    },
-    {
-      "id": "S7.05",
-      "stage": 7,
-      "title": "06_DEVICE_QA.md",
-      "status": "PENDING"
-    },
-    {
-      "id": "S7.06",
-      "stage": 7,
-      "title": "final gate: the five commands plus the QA flows",
-      "status": "PENDING"
-    },
-    {
-      "id": "S2.01a",
-      "status": "TESTED",
-      "title": "the primary green is the one the designs use",
-      "note": "design primary #44714B covers 125,256 px across all 16 boards; the old #5E8D6D matched 1,468. Guarded by test/theme/primary_green_matches_design_test.dart (6 tests, reverse-proved). Also fixed white-on-green contrast 3.81 -> 5.66."
-    },
-    {
-      "id": "S2.01b",
-      "status": "TESTED",
-      "title": "records and reports read the app clock, not the wall clock",
-      "note": "RecordsController, ReportsController and the records page used DateTime.now(). Guarded by test/presentation/records_screen_uses_the_app_clock_test.dart on an ancient date so the calendar cannot defeat it. Reverse-proved."
-    },
-    {
-      "id": "S2.01c",
-      "status": "TESTED",
-      "title": "the intermittently red room placement test is stable",
-      "note": "bounded polling instead of a fixed 400ms wait; assertion unchanged"
-    },
-    {
-      "id": "S3.05a",
-      "status": "PASS",
-      "title": "capture sheet: the four chips all draw the same icon",
-      "note": "CLOSED as not a defect. Design 02's 学习 chip is blue, matching catStudy; design 03's dots are not category colours — the same category is green as a chip and orange as a dot in one board. The app is self-consistent"
-    },
-    {
-      "id": "S3.05b",
-      "status": "PENDING",
-      "title": "capture sheet: the selected chip should be brand green, not the category colour"
-    },
-    {
-      "id": "S3.05c",
-      "status": "PENDING",
-      "title": "capture sheet: the n/100 counter belongs inside the input box"
-    },
-    {
-      "id": "S3.05d",
-      "status": "PENDING",
-      "title": "capture sheet: the input is two lines tall, the design draws about four"
-    },
-    {
-      "id": "S3.05e",
-      "status": "TESTED",
-      "title": "capture sheet a11y: the chip announces its label twice",
-      "note": "fixed with excludeSemantics: true, and the same defect was found in 20 more places"
-    },
-    {
-      "id": "S1.09a",
-      "status": "NOT_VERIFIED",
-      "title": "timeline: the design's day has non-task events the app has no source for",
-      "note": "design 09 shows 08:00 起床 / 12:00 午休 / 18:00 自由时间 with a 用餐·生活 dot, and its legend names five kinds; TimelineKind models four and '用餐' appears nowhere in the repo. Two readings, both needing a product decision: a life-event source, or drawing 生活-category plan rows in that colour. Not changed."
-    }
-  ]
+ "queue_version": 1,
+ "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
+ "updated_at": "2026-10-10T00:05:38+08:00",
+ "tasks": [
+  {
+   "id": "S1.01",
+   "stage": 1,
+   "title": "audit design 01 home",
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md 01 行"
+  },
+  {
+   "id": "S1.02",
+   "stage": 1,
+   "title": "audit design 02 task list",
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md 02 行"
+  },
+  {
+   "id": "S1.03",
+   "stage": 1,
+   "title": "audit design 03 today plan",
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md 03 行"
+  },
+  {
+   "id": "S1.04",
+   "stage": 1,
+   "title": "audit design 04 focus mode",
+   "status": "TESTED",
+   "evidence": "01_VISUAL_MATRIX.md 04 行"
+  },
+  {
+   "id": "S1.05",
+   "stage": 1,
+   "title": "audit design 05 distraction capture",
+   "status": "TESTED",
+   "note": "audited against the device; five differences registered as S3.05a-e"
+  },
+  {
+   "id": "S1.06",
+   "stage": 1,
+   "title": "audit design 06 focus review",
+   "status": "TESTED",
+   "note": "structural audit only, done while reaching 05; pixel-level detail still open"
+  },
+  {
+   "id": "S1.07",
+   "stage": 1,
+   "title": "audit design 07 analytics lite",
+   "status": "TESTED",
+   "note": "structural audit only; every element the design draws exists, pixel detail not yet compared"
+  },
+  {
+   "id": "S1.08",
+   "stage": 1,
+   "title": "audit design 08 free time",
+   "status": "PENDING"
+  },
+  {
+   "id": "S1.09",
+   "stage": 1,
+   "title": "audit design 09 timeline",
+   "status": "TESTED",
+   "note": "structural audit; the design's legend has five kinds and the app models four"
+  },
+  {
+   "id": "S1.10",
+   "stage": 1,
+   "title": "audit design 10 pet and room",
+   "status": "PENDING"
+  },
+  {
+   "id": "S1.11",
+   "stage": 1,
+   "title": "audit design 11 create task",
+   "status": "PENDING"
+  },
+  {
+   "id": "S1.12",
+   "stage": 1,
+   "title": "audit design 12 task detail",
+   "status": "PENDING"
+  },
+  {
+   "id": "S1.13",
+   "stage": 1,
+   "title": "audit design 13 distraction inbox",
+   "status": "PENDING"
+  },
+  {
+   "id": "S1.14",
+   "stage": 1,
+   "title": "audit design 14 schedule to today",
+   "status": "PENDING"
+  },
+  {
+   "id": "S1.15",
+   "stage": 1,
+   "title": "audit design 15 settings lite",
+   "status": "PENDING"
+  },
+  {
+   "id": "S1.16",
+   "stage": 1,
+   "title": "audit design 16 empty state",
+   "status": "PENDING"
+  },
+  {
+   "id": "S3.01",
+   "stage": 3,
+   "title": "running screen: draw the design's ring",
+   "status": "TESTED",
+   "commit": "05c0c4c"
+  },
+  {
+   "id": "S3.02",
+   "stage": 3,
+   "title": "ring sized from screen height so controls stay on screen",
+   "status": "TESTED",
+   "commit": "bec8026"
+  },
+  {
+   "id": "S3.03",
+   "stage": 3,
+   "title": "home: add the current-task card under the greeting",
+   "status": "TESTED",
+   "from": "S1.01",
+   "note": "DONE: CurrentTaskCard, device-verified, 9 tests"
+  },
+  {
+   "id": "S3.04",
+   "stage": 3,
+   "title": "home: add the hourly focus chart to 今天的专注",
+   "status": "TESTED",
+   "from": "S1.01",
+   "note": "DONE: HourlyFocus + HourlyFocusChart, device-verified, 15 tests"
+  },
+  {
+   "id": "S3.05",
+   "stage": 3,
+   "title": "today plan: flat rail rows instead of bordered cards",
+   "status": "TESTED",
+   "from": "S1.03",
+   "decision": "D3",
+   "note": "DONE: one panel, hairline dividers, rail fading from the dot's colour. Device-verified with three rows. The category palette was measured here and left alone as NOT_VERIFIED — see ledger 16a"
+  },
+  {
+   "id": "S3.06",
+   "stage": 3,
+   "title": "focus: four round controls instead of full-width buttons",
+   "status": "TESTED",
+   "from": "S1.04",
+   "note": "DONE: FocusControlRow, three round controls with 暂停 as the largest filled one. 白噪音 is a documented gap, not a fake control. 6 tests, reverse-proved, device-verified"
+  },
+  {
+   "id": "S3.07",
+   "stage": 3,
+   "title": "home: remove the duplicated encouragement card (B3)",
+   "status": "PENDING",
+   "from": "S1.01"
+  },
+  {
+   "id": "S3.08",
+   "stage": 3,
+   "title": "task list: verify the completed row's tint and check",
+   "status": "TESTED",
+   "from": "S1.02",
+   "note": "DONE and device-verified: solid green check, pale green row, title not struck through, chevron. Matches design 02"
+  },
+  {
+   "id": "S2.01",
+   "stage": 2,
+   "title": "re-verify: a countdown that overran records the target",
+   "status": "TESTED",
+   "note": "re-proved by mutation: removing the guard records 5640 s instead of 1500 s and pays 960 coins instead of 50"
+  },
+  {
+   "id": "S2.02",
+   "stage": 2,
+   "title": "re-verify: the early-finish dialog does not promise an unpaid minute",
+   "status": "TESTED",
+   "note": "guard present and green; the dialog floors like the reward does"
+  },
+  {
+   "id": "S2.03",
+   "stage": 2,
+   "title": "re-verify: one duration convention across rows, timeline and totals",
+   "status": "TESTED",
+   "note": "DEFECT FOUND AND FIXED: three conventions became one. See ledger entry 13"
+  },
+  {
+   "id": "S2.04",
+   "stage": 2,
+   "title": "re-verify: the calendar day total matches its rows",
+   "status": "TESTED",
+   "note": "guard present and green (calendar_day_total_test)"
+  },
+  {
+   "id": "S2.05",
+   "stage": 2,
+   "title": "settlement idempotence: one session, one reward",
+   "status": "TESTED",
+   "note": "re-proved by mutation: the reward_ledger primary key plus changes() is what makes it idempotent"
+  },
+  {
+   "id": "S2.06",
+   "stage": 2,
+   "title": "timezone, pause, resume, early finish, cross-day, restart",
+   "status": "TESTED",
+   "note": "pause, cross-midnight and the clock-safety cases are done or guarded; an end-to-end restart walk on the device is still outstanding"
+  },
+  {
+   "id": "S2.07",
+   "stage": 2,
+   "title": "FocusRecord / RewardLedger / StatisticsEngine / task totals / timeline derive from one source",
+   "status": "TESTED",
+   "note": "five surfaces checked against a real database in five_sources_agree_test.dart; the sharpest assertion (task total strictly less than the day) is reverse-proved. The duration convention inside this was a real defect, fixed"
+  },
+  {
+   "id": "S4.01",
+   "stage": 4,
+   "title": "companion states idle/focus/pause/celebrate/sleep/interact match business state",
+   "status": "PENDING"
+  },
+  {
+   "id": "S4.02",
+   "stage": 4,
+   "title": "room_sit pose, occlusion and z-order",
+   "status": "PENDING",
+   "blocked_by": "ROOM_SIT_FRAMES"
+  },
+  {
+   "id": "S4.03",
+   "stage": 4,
+   "title": "furniture anchors and sprite scale",
+   "status": "PENDING"
+  },
+  {
+   "id": "S4.04",
+   "stage": 4,
+   "title": "no flicker, no dropped frames, no double init on transition",
+   "status": "PENDING"
+  },
+  {
+   "id": "S5.01",
+   "stage": 5,
+   "title": "360x800 / 393x852 / 412x915 layout sweep",
+   "status": "PENDING"
+  },
+  {
+   "id": "S5.02",
+   "stage": 5,
+   "title": "large text and landscape",
+   "status": "PENDING"
+  },
+  {
+   "id": "S5.03",
+   "stage": 5,
+   "title": "accessible names on every screen",
+   "status": "TESTED",
+   "note": "swept and device-verified across the main screens. Fixed: 21 doubled labels, 3 doubled filters, 7 buttons named only by a tooltip. The detector itself was wrong three times and each correction is recorded with its self-test. Not yet swept: craft list/detail, companion picker/import, rest, focus setup/save/reward, record detail, the wrapped share page"
+  },
+  {
+   "id": "S5.04",
+   "stage": 5,
+   "title": "cold/warm start, transitions, animation frame time, memory",
+   "status": "PENDING"
+  },
+  {
+   "id": "S5.05",
+   "stage": 5,
+   "title": "TalkBack pass",
+   "status": "BLOCKED_EXTERNAL",
+   "blocked_by": "TALKBACK"
+  },
+  {
+   "id": "S6.A",
+   "stage": 6,
+   "title": "Task -> Today Plan -> Focus -> Review -> Record -> Analytics",
+   "status": "TESTED",
+   "note": "walked on the device; found and fixed defect 17 (a finished task stayed the next task) and then 18 (two counts that ignored it). Both device-verified"
+  },
+  {
+   "id": "S6.B",
+   "stage": 6,
+   "title": "Focus -> Distraction -> Inbox -> Convert Task",
+   "status": "TESTED",
+   "note": "walked on the device; found and fixed defect 19 (the hub's task count followed the last tab viewed). The convert-to-task action itself works and produced a real task"
+  },
+  {
+   "id": "S6.C",
+   "stage": 6,
+   "title": "Home -> Rest -> Timeline",
+   "status": "PASS",
+   "note": "The a11y regression of defect 20 was re-verified inside this same walk, as required.",
+   "evidence": "device, 411x914 dp, app reinstalled and restarted mid-flow: 首页 -> 放松一下 -> 5 分钟 (clickable=true) -> 开始休息 -> running reads '还剩 N 分钟' exactly once -> 结束休息 -> SQLite rest_sessions row (planned 300s, elapsed 128s, status cancelled) -> 记录/今日计划/时间线 shows '15:43 休息一下 2 分钟 · 提前结束' -> force-stop + relaunch -> still there"
+  },
+  {
+   "id": "S6.D",
+   "stage": 6,
+   "title": "Focus -> Background -> Resume -> Complete -> Save -> Restart",
+   "status": "PENDING"
+  },
+  {
+   "id": "S6.E",
+   "stage": 6,
+   "title": "Companion Import -> Install -> Select -> Restart",
+   "status": "PENDING"
+  },
+  {
+   "id": "S6.F",
+   "stage": 6,
+   "title": "Growth -> Room -> Dress -> Inventory",
+   "status": "PENDING"
+  },
+  {
+   "id": "S6.G",
+   "stage": 6,
+   "title": "old database -> migration -> new database -> history preserved",
+   "status": "PENDING"
+  },
+  {
+   "id": "S6.H",
+   "stage": 6,
+   "title": "new user -> create task -> focus -> first record",
+   "status": "PENDING"
+  },
+  {
+   "id": "S7.01",
+   "stage": 7,
+   "title": "five deliverables with real content",
+   "status": "TESTED",
+   "commit": "e8647f3"
+  },
+  {
+   "id": "S7.02",
+   "stage": 7,
+   "title": "02_BEFORE_AFTER screenshots",
+   "status": "PENDING"
+  },
+  {
+   "id": "S7.03",
+   "stage": 7,
+   "title": "03_BUSINESS_FLOW_EVIDENCE.md",
+   "status": "PENDING"
+  },
+  {
+   "id": "S7.04",
+   "stage": 7,
+   "title": "05_COMPANION_QA.md",
+   "status": "PENDING"
+  },
+  {
+   "id": "S7.05",
+   "stage": 7,
+   "title": "06_DEVICE_QA.md",
+   "status": "PENDING"
+  },
+  {
+   "id": "S7.06",
+   "stage": 7,
+   "title": "final gate: the five commands plus the QA flows",
+   "status": "PENDING"
+  },
+  {
+   "id": "S2.01a",
+   "status": "TESTED",
+   "title": "the primary green is the one the designs use",
+   "note": "design primary #44714B covers 125,256 px across all 16 boards; the old #5E8D6D matched 1,468. Guarded by test/theme/primary_green_matches_design_test.dart (6 tests, reverse-proved). Also fixed white-on-green contrast 3.81 -> 5.66."
+  },
+  {
+   "id": "S2.01b",
+   "status": "TESTED",
+   "title": "records and reports read the app clock, not the wall clock",
+   "note": "RecordsController, ReportsController and the records page used DateTime.now(). Guarded by test/presentation/records_screen_uses_the_app_clock_test.dart on an ancient date so the calendar cannot defeat it. Reverse-proved."
+  },
+  {
+   "id": "S2.01c",
+   "status": "TESTED",
+   "title": "the intermittently red room placement test is stable",
+   "note": "bounded polling instead of a fixed 400ms wait; assertion unchanged"
+  },
+  {
+   "id": "S3.05a",
+   "status": "PASS",
+   "title": "capture sheet: the four chips all draw the same icon",
+   "note": "CLOSED as not a defect. Design 02's 学习 chip is blue, matching catStudy; design 03's dots are not category colours — the same category is green as a chip and orange as a dot in one board. The app is self-consistent"
+  },
+  {
+   "id": "S3.05b",
+   "status": "PENDING",
+   "title": "capture sheet: the selected chip should be brand green, not the category colour"
+  },
+  {
+   "id": "S3.05c",
+   "status": "PENDING",
+   "title": "capture sheet: the n/100 counter belongs inside the input box"
+  },
+  {
+   "id": "S3.05d",
+   "status": "PENDING",
+   "title": "capture sheet: the input is two lines tall, the design draws about four"
+  },
+  {
+   "id": "S3.05e",
+   "status": "TESTED",
+   "title": "capture sheet a11y: the chip announces its label twice",
+   "note": "fixed with excludeSemantics: true, and the same defect was found in 20 more places"
+  },
+  {
+   "id": "S1.09a",
+   "status": "NOT_VERIFIED",
+   "title": "timeline: the design's day has non-task events the app has no source for",
+   "note": "design 09 shows 08:00 起床 / 12:00 午休 / 18:00 自由时间 with a 用餐·生活 dot, and its legend names five kinds; TimelineKind models four and '用餐' appears nowhere in the repo. Two readings, both needing a product decision: a life-event source, or drawing 生活-category plan rows in that colour. Not changed."
+  },
+  {
+   "id": "S6.C1",
+   "stage": 6,
+   "title": "a named wrapper must keep the press it excluded",
+   "status": "PASS",
+   "evidence": "defect 21; tools/find_excluded_tap_actions.py found 25 sites in 18 files; rest_preset_grid_test asserts SemanticsData.hasAction(tap); reverse-proved by removing the mirrored onTap (only that test reddens)"
+  },
+  {
+   "id": "S6.C2",
+   "stage": 6,
+   "title": "Material widgets speak the app's language",
+   "status": "PASS",
+   "evidence": "defect 22; material_localizations_are_chinese_test.dart 4 tests, reverse-proved 3/4; device: back is 返回, tabs are 第 N 个标签, date picker is fully Chinese"
+  },
+  {
+   "id": "S6.D0",
+   "stage": 6,
+   "title": "focus: start, background, resume, pause, complete, save, restart",
+   "status": "PENDING",
+   "note": "next work unit"
+  }
+ ]
 }
