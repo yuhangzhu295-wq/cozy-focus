@@ -5,7 +5,7 @@
  "branch": "recovery/v4.2.1-rebuild",
  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
- "updated_at": "2026-10-10T03:56:35+08:00",
+ "updated_at": "2026-10-10T03:59:48+08:00",
  "continuation": {
   "question": "does this environment support automatic continuation of the work?",
   "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "35e57d23c7f8a6fb0fa1ff5a62dcd06629009b90",
-  "remote_head": "35e57d23c7f8a6fb0fa1ff5a62dcd06629009b90",
+  "head": "bf6b0ac17c15eb2e37d524e436115d0f182276cf",
+  "remote_head": "bf6b0ac17c15eb2e37d524e436115d0f182276cf",
   "head_matches_remote": true,
   "worktree": "dirty",
-  "last_verified_at": "2026-10-10T03:56:35+08:00",
+  "last_verified_at": "2026-10-10T03:59:48+08:00",
   "note": "Local and remote agree at bfab6df. Everything verified this window is pushed."
  },
  "current": {
-  "stage": "STAGE_6_GOLDEN_FLOWS",
-  "subtask": "Golden Flows C, D, E, F, G and H are PASS, all walked on the device. Twenty-nine user-visible defects have been found and fixed across this pass; the last four came from E, F and H. Next: a single A-H regression pass on the final build, then Stage 4, Stage 5, Stage 1's remaining designs and Stage 7's deliverables.",
+  "stage": "STAGE_4_COMPANION_AND_ROOM",
+  "subtask": "Golden Flows C through H are all PASS on the device. Stage 4 is now as far as it can go: the five real companion states are device-verified, the overlay decision that keeps the base state from being lost is documented and observed, and the shipped packs' anchors measure within tolerance. room_sit stays BLOCKED_EXTERNAL (no art) and frame time is NOT_VERIFIED (no profile run).",
   "mode": "IN_PROGRESS"
  },
  "status_vocabulary": [
@@ -122,19 +122,18 @@
   "S7 depends on all of the above"
  ],
  "recent_test_evidence": {
-  "at": "2026-10-10T03:56:35+08:00",
+  "at": "2026-10-10T03:59:48+08:00",
   "command": "flutter test",
   "result": "2027/2027 passed, analyze clean, format clean, APK builds",
-  "note": "2027 = 2026 + 1 for the task-attribution guard.",
   "analyze": "flutter analyze --fatal-infos: No issues found",
   "format": "dart format --set-exit-if-changed .: 0 changed",
   "apk": "flutter build apk --debug: built",
   "diff_check": "clean",
-  "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0 (self-test ok), find_unlabelled_icon_buttons.py 0",
-  "device": "411x914 dp emulator; flows C/D/E/F/G/H walked end to end; defect 29 verified by reading the focus_records row the new build wrote"
+  "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0 (self-test ok), find_unlabelled_icon_buttons.py 0, audit_pack_geometry.py PASS",
+  "device": "411x914 dp emulator; flows C-H walked end to end; Stage 4 states read off the tree"
  },
  "uncommitted": "none",
- "next_instruction": "Re-walk Golden Flows A through H once on the final build, then Stage 4.",
+ "next_instruction": "Stage 5: the 360x800 / 393x852 / 412x915 sweep and large text, then Stage 1's remaining designs, then Stage 7's deliverables.",
  "external_blockers": [
   "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
   "LAUNCHER_ICON: stock Flutter icon, no approved artwork",

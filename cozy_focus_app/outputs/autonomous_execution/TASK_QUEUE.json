@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T03:56:35+08:00",
+ "updated_at": "2026-10-10T03:59:48+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -222,26 +222,30 @@
    "id": "S4.01",
    "stage": 4,
    "title": "companion states idle/focus/pause/celebrate/sleep/interact match business state",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "device, each state read off the accessibility tree while the business state was real: idle -> 'Mochi 空闲' on home; focus -> 'Mochi 专注中' on the running page; pause -> 'Mochi 暂停中' in the early-finish dialog; sleep -> 'Mochi 休息中' on the rest page; celebrate -> 'Mochi 庆祝中' on the completion page. interact is deliberately NOT a state: pet_interaction_spec.dart documents it as a time-bounded overlay so the base state cannot be lost, and tapping the idle pet on the device left the label at 空闲 rather than switching it."
   },
   {
    "id": "S4.02",
    "stage": 4,
    "title": "room_sit pose, occlusion and z-order",
-   "status": "PENDING",
-   "blocked_by": "ROOM_SIT_FRAMES"
+   "status": "BLOCKED_EXTERNAL",
+   "blocked_by": "ROOM_SIT_FRAMES",
+   "evidence": "the room_sit pose art does not exist in the shipped packs; inventing it is forbidden, and the pose has nothing to occlude or z-order without it"
   },
   {
    "id": "S4.03",
    "stage": 4,
    "title": "furniture anchors and sprite scale",
-   "status": "PENDING"
+   "status": "PASS",
+   "evidence": "tools/audit_pack_geometry.py over the shipped packs: cat, dog and rabbit each 49 frames, mean baseline 458 and mean centre 255 against a contract of 458/255 with a 2px tolerance, worst deviation 1.0px. Scale comes from the declared 512x512 canvas and the runtime `size`, not from per-frame pixels."
   },
   {
    "id": "S4.04",
    "stage": 4,
    "title": "no flicker, no dropped frames, no double init on transition",
-   "status": "PENDING"
+   "status": "NOT_VERIFIED",
+   "evidence": "the double-init half is covered by companion_avatar_runtime_test.dart (the LateInitializationError regression and the install-while-mounted refresh). Frame time and flicker were NOT measured - no profile run was taken, so this is not a PASS."
   },
   {
    "id": "S5.01",
@@ -517,6 +521,20 @@
    "title": "A-H regression pass on the final build",
    "status": "PENDING",
    "note": "next work unit"
+  },
+  {
+   "id": "S4.04a",
+   "stage": 4,
+   "title": "no double init on transition",
+   "status": "PASS",
+   "evidence": "companion_avatar_runtime_test.dart, the registry/director refresh group"
+  },
+  {
+   "id": "S4.04b",
+   "stage": 4,
+   "title": "measure frame time and flicker",
+   "status": "NOT_VERIFIED",
+   "note": "needs a profile run on the emulator; not attempted this window"
   }
  ]
 }
