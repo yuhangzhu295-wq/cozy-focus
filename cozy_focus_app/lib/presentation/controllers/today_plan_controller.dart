@@ -35,7 +35,10 @@ class TodayPlanState {
   PlannedTask? get next => nextPlacement(placements);
 
   /// How many placements are still to do, for the header's count.
-  int get remaining => placements.where((p) => p.schedule.isPlanned).length;
+  // `isOutstanding`, not `schedule.isPlanned`: a task finished from the task
+  // list is not still to do, and this count is read by the records hub as well
+  // as by the plan.
+  int get remaining => placements.where((p) => p.isOutstanding).length;
 
   /// The planned seconds for the whole day.
   int get plannedSeconds => placements.fold(

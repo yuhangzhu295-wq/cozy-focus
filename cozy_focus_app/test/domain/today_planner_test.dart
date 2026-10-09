@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cozy_focus_app/domain/models/task.dart';
 import 'package:cozy_focus_app/domain/models/task_schedule.dart';
 import 'package:cozy_focus_app/domain/services/today_planner.dart';
+import 'package:cozy_focus_app/presentation/controllers/today_plan_controller.dart';
 
 /// P2 — the two decisions the today view makes, tested without a database.
 ///
@@ -97,6 +98,65 @@ void main() {
         ),
       ];
       expect(nextPlacement(day), isNull);
+    });
+
+    group('the remaining count', () {
+      // Read by the records hub as well as by the plan, so a task finished on one
+      // screen left both saying 3 项待完成. Nothing asserted it, which is how the
+      // row above it was fixed without this moving.
+      TodayPlanState stateOf(List<PlannedTask> day) => TodayPlanState(
+            day: DateTime(2026, 10, 7),
+            placements: day,
+          );
+
+      test('counts what is still outstanding', () {
+        final day = [
+          placed(id: 'a', startAt: DateTime(2026, 10, 7, 9)),
+          placed(id: 'b', startAt: DateTime(2026, 10, 7, 11)),
+        ];
+        expect(stateOf(day).remaining, 2);
+      });
+
+      test('drops a placement marked done', () {
+        final day = [
+          placed(
+            id: 'a',
+            startAt: DateTime(2026, 10, 7, 9),
+            status: TaskScheduleStatus.done,
+          ),
+          placed(id: 'b', startAt: DateTime(2026, 10, 7, 11)),
+        ];
+        expect(stateOf(day).remaining, 1);
+      });
+
+      test('and drops one whose task was finished elsewhere', () {
+        final day = [
+          placed(
+            id: 'a',
+            startAt: DateTime(2026, 10, 7, 9),
+            taskStatus: TaskStatus.done,
+          ),
+          placed(id: 'b', startAt: DateTime(2026, 10, 7, 11)),
+        ];
+        expect(stateOf(day).remaining, 1,
+            reason: 'the hub said 3 项待完成 after one of the three was finished');
+      });
+
+      test('is zero when everything is finished', () {
+        final day = [
+          placed(
+            id: 'a',
+            startAt: DateTime(2026, 10, 7, 9),
+            taskStatus: TaskStatus.done,
+          ),
+          placed(
+            id: 'b',
+            startAt: DateTime(2026, 10, 7, 11),
+            status: TaskScheduleStatus.done,
+          ),
+        ];
+        expect(stateOf(day).remaining, 0);
+      });
     });
 
     test('does not move on because the clock passed a start time', () {
