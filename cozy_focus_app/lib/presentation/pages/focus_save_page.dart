@@ -281,6 +281,9 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                               ),
                               child: Semantics(
                                 excludeSemantics: true,
+                                onTap: () => setState(
+                                  () => _mood = _mood == mood ? null : mood,
+                                ),
                                 key: ValueKey('review_mood_${mood.id}'),
                                 button: true,
                                 selected: _mood == mood,
@@ -383,6 +386,9 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                         for (final gain in FocusGain.values)
                           Semantics(
                             excludeSemantics: true,
+                            onTap: () => setState(() {
+                              if (!_gains.remove(gain)) _gains.add(gain);
+                            }),
                             key: ValueKey('review_gain_${gain.id}'),
                             button: true,
                             selected: _gains.contains(gain),

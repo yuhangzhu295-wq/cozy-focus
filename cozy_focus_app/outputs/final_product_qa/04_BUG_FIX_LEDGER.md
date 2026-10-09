@@ -274,6 +274,23 @@
 - **设备复验**：411×914 进休息页，无障碍树 `no node repeats itself`（此前是 4 个候选）。扫描器现在对 `lib/` 报 0。
 - **元教训**：这是本项目第三次"扫描器本身错了"。前两次是"把重复数据当重复标签"和"把 tooltip 当名字"。三次都是**设备树是权威，工具只是辅助**。
 
+### 21. 修第 20 条的那个改法，把 25 处的"能按"一起改没了
+
+- **发现方式**：修完第 20 条后按流程回设备复验运行中的休息页，无障碍树里 `5 分钟` 这类 chip 变成 `clickable=false`——一个看着像按钮、点得动的按钮，屏幕阅读器找不到它的"按下"动作。
+- **根因**：`Semantics(excludeSemantics: true, label: X, child: <带 onTap 的子树>)` 会**连同子树的 tap action 一起排除**。包装器提供了名字，就只剩名字。这是我自己上一步引入的。
+- **先量后改**：写了 `test/presentation/_probe_tap_test.dart` 把三种写法并排测出来，而不是推理：
+  ```
+  SHAPE a  label=A  button=true  tapAction=false   ← 我上一步交付的写法
+  SHAPE b  label=B  button=true  tapAction=true    ← 包装器自己也有 onTap
+  SHAPE c  label=C  button=true  tapAction=true    ← 只把文字 ExcludeSemantics 包起来
+  ```
+- **扫描**：`tools/find_excluded_tap_actions.py` 找出**18 个文件 25 处**同形状（`excludeSemantics: true` 且子树里才有唯一的 tap）。
+- **修复**：`tools/qa/_give_taps_back.py` 把这 25 处的子树动作**镜像**到包装器上（保留 `excludeSemantics`，因为名字不能丢）。
+- **测试**：`rest_preset_grid_test.dart` 增加 1 条"而且每个还按得动"，断言 `SemanticsData.hasAction(SemanticsAction.tap)`。上一条（只断言名字）在整个过程中一直是绿的——**名字对了不等于按钮还在**。
+- **反向证明**：去掉 `rest_page.dart:242` 那行镜像 `onTap` → 只有这一条红（`names itself and cannot be pressed`），其余三条仍绿。这正是要证明的：原有的名字断言对这个缺陷零覆盖。
+- **门槛**：`flutter analyze --fatal-infos` 无问题；`dart format --set-exit-if-changed` 0 改动；`git diff --check` 干净；全量 **2009 绿**；`flutter build apk --debug` 成功；扫描器复扫 0。
+- **元教训**：无障碍的"说得对"和"按得动"是**两个独立属性**，一条断言只覆盖一个。改无障碍时，设备树要**同时**看 label 和 clickable——只看一个就会在另一个上静默回归。
+
 ## 本轮定位但**尚未修复**
 
 | 缺陷 | 证据 | 影响 |

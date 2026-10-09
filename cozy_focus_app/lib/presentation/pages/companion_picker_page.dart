@@ -317,6 +317,7 @@ class _ImportBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Semantics(
         excludeSemantics: true,
+        onTap: onImport,
         button: true,
         label: '导入宠物包',
         child: Material(
@@ -388,6 +389,7 @@ class _CompanionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       excludeSemantics: true,
+      onTap: onTap,
       button: true,
       selected: selected,
       label: '${profile.displayName}${selected ? '，已选择' : ''}',

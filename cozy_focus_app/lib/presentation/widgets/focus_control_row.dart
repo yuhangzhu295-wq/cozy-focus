@@ -90,6 +90,7 @@ class _Control extends StatelessWidget {
 
     return Semantics(
       excludeSemantics: true,
+      onTap: control.onPressed,
       button: true,
       enabled: enabled,
       label: control.label,

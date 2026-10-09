@@ -538,6 +538,7 @@ class _ModeSegments extends StatelessWidget {
             Expanded(
               child: Semantics(
                 excludeSemantics: true,
+                onTap: () => onChanged(option),
                 key: ValueKey('setup_mode_${option.id}'),
                 button: true,
                 selected: option == mode,

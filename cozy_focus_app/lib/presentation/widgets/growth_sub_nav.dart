@@ -89,6 +89,7 @@ class _Pill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       excludeSemantics: true,
+      onTap: active ? null : onTap,
       selected: active,
       button: true,
       label: label,

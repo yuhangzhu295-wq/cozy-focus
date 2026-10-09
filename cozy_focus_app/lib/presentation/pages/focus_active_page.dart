@@ -991,6 +991,7 @@ class _TimingModeSwitch extends StatelessWidget {
             Expanded(
               child: Semantics(
                 excludeSemantics: true,
+                onTap: option == mode ? null : () => onChanged(option),
                 key: ValueKey('focus_mode_${option.id}'),
                 button: true,
                 selected: option == mode,

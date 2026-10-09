@@ -271,6 +271,7 @@ class _TagChip extends StatelessWidget {
     final tint = selected ? AppColors.primaryDark : AppColors.textSecondary;
     return Semantics(
       excludeSemantics: true,
+      onTap: onTap,
       button: true,
       selected: selected,
       label: '标签 ${category.label}',

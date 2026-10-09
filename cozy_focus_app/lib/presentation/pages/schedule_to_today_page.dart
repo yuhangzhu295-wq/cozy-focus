@@ -494,6 +494,7 @@ class _DateField extends StatelessWidget {
 
     return Semantics(
       excludeSemantics: true,
+      onTap: onPick,
       button: true,
       label: '选择日期 $label',
       child: Material(
@@ -561,6 +562,7 @@ class _SlotChips extends StatelessWidget {
             // the first slot — so it excludes the time text it wraps. Without
             // this the device tree read `09:00\n09:00`, and `09:00 推荐\n09:00`.
             excludeSemantics: true,
+            onTap: () => onPick(slot),
             button: true,
             selected: active,
             label: index == 0 ? '$label 推荐' : label,
@@ -635,6 +637,7 @@ class _StartTimeField extends StatelessWidget {
     final minute = start.minute.toString().padLeft(2, '0');
     return Semantics(
       excludeSemantics: true,
+      onTap: onPick,
       button: true,
       label: '开始时间 $hour:$minute',
       child: Material(
@@ -726,6 +729,7 @@ class _DurationChips extends StatelessWidget {
   }) {
     return Semantics(
       excludeSemantics: true,
+      onTap: onTap,
       button: true,
       selected: active,
       label: label,

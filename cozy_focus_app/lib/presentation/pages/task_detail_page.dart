@@ -359,6 +359,7 @@ class _ProgressCard extends StatelessWidget {
           for (final subtask in progress.subtasks)
             Semantics(
               excludeSemantics: true,
+              onTap: () => onToggle(subtask),
               button: true,
               label: '${subtask.isDone ? '取消完成' : '完成'} ${subtask.title}',
               child: InkWell(

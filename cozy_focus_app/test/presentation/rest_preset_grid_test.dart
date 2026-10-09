@@ -1,5 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -168,6 +169,47 @@ void main() {
         find.byKey(ValueKey('rest_preset_$minutes')),
       );
       expect(node.label, '$minutes 分钟', reason: '$minutes');
+    }
+  });
+
+  testWidgets('and each one is still pressable', (tester) async {
+    // The fix for the test above was `excludeSemantics: true`, which also drops
+    // the child's *tap action*: the wrapper kept the name and lost the press, so
+    // the device tree showed `clickable=false` on a chip that looks like and
+    // behaves like a button. The name assertion above stayed green throughout.
+    final router = GoRouter(
+      initialLocation: '/rest',
+      routes: [
+        GoRoute(path: '/rest', builder: (context, state) => const RestPage()),
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const Scaffold(body: Text('home')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          theme: AppTheme.lightTheme,
+          routerConfig: router,
+        ),
+      ),
+    );
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 150));
+    }
+
+    for (final minutes in RestSession.presets) {
+      final data = tester
+          .getSemantics(find.byKey(ValueKey('rest_preset_$minutes')))
+          .getSemanticsData();
+      expect(
+        data.hasAction(SemanticsAction.tap),
+        isTrue,
+        reason: '$minutes 分钟 names itself and cannot be pressed',
+      );
     }
   });
 }

@@ -239,6 +239,7 @@ class _PresetTile extends StatelessWidget {
       // number and unit. Without this the device tree read `5 分钟\n5\n分钟` —
       // the value and the unit said again — on all four chips.
       excludeSemantics: true,
+      onTap: () => onPick(minutes),
       button: true,
       selected: selected,
       label: '$minutes 分钟',
@@ -321,6 +322,12 @@ class _RunningCard extends StatelessWidget {
               const SizedBox(height: 8),
               Semantics(
                 readOnly: true,
+                // The wrapper supplies the whole phrase, so it excludes the figure
+                // it wraps. Without this the device tree read
+                // `还剩 4 分钟\n4 分钟` — and no text comparison can catch this
+                // shape, because the label and the child reach the same value
+                // through different expressions.
+                excludeSemantics: true,
                 label: done
                     ? '休息了 ${formatDurationText(state.elapsedSeconds)}'
                     : '还剩 ${formatDurationText(state.remainingSeconds)}',

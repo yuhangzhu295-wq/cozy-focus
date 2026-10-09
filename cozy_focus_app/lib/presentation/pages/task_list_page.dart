@@ -142,6 +142,7 @@ class _FilterTabs extends StatelessWidget {
                 // and the null-assertion was enough to hide the match from the
                 // scan while the device showed it plainly.
                 excludeSemantics: true,
+                onTap: () => onChanged(filter),
                 button: true,
                 selected: filter == active,
                 label: _labels[filter],

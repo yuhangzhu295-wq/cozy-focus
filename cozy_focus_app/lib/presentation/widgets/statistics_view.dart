@@ -158,6 +158,7 @@ class _KindSelector extends StatelessWidget {
             Expanded(
               child: Semantics(
                 excludeSemantics: true,
+                onTap: () => onChanged(option),
                 key: ValueKey('stats_range_${option.id}'),
                 button: true,
                 selected: option == kind,

@@ -413,6 +413,7 @@ class _ChoiceChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       excludeSemantics: true,
+      onTap: onTap,
       button: true,
       selected: selected,
       label: label,

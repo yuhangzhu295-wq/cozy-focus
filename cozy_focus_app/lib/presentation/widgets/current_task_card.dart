@@ -85,6 +85,7 @@ class CurrentTaskCard extends StatelessWidget {
       // it wraps is excluded — otherwise the badge and the subtitle would be
       // read out again after it.
       excludeSemantics: true,
+      onTap: onTap,
       button: true,
       label: [
         '当前任务 $title',

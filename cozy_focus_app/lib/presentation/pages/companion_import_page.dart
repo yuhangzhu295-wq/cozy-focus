@@ -604,6 +604,7 @@ class _SpeciesChip extends StatelessWidget {
     final label = _labels[species] ?? species;
     return Semantics(
       excludeSemantics: true,
+      onTap: onTap,
       button: true,
       selected: selected,
       label: label,

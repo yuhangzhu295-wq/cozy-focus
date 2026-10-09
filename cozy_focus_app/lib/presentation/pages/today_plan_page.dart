@@ -378,6 +378,7 @@ class _Segments extends StatelessWidget {
     return Expanded(
       child: Semantics(
         excludeSemantics: true,
+        onTap: onTap,
         key: ValueKey(key),
         button: true,
         selected: active,

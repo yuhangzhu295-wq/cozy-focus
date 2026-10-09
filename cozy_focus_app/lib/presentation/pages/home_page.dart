@@ -532,6 +532,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _buildRestRow(BuildContext context) {
     return Semantics(
       excludeSemantics: true,
+      onTap: () => context.push('/rest'),
       button: true,
       label: '放松一下，累了就休息一会儿吧',
       child: GestureDetector(
@@ -820,6 +821,7 @@ class _DurationChip extends StatelessWidget {
 
     return Semantics(
       excludeSemantics: true,
+      onTap: onTap,
       selected: selected,
       button: true,
       label: '$minutes 分钟',
