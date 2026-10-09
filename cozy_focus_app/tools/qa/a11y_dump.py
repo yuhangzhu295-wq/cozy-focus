@@ -74,6 +74,11 @@ SELF_TEST: list[tuple[str, bool]] = [
     ),
     ("25 分钟", False),
     ("", False),
+    # A row title and its own subtitle sharing a word. 通知 is two characters
+    # inside a twenty-four character sentence — a word appearing, not a label
+    # repeated. The ratio below is what separates this from the real case above,
+    # where 24:47 is a third of the label that repeats it.
+    ("通知\n专注结束与休息提醒（当前版本尚未接入系统通知）", False),
 ]
 
 
@@ -96,10 +101,19 @@ def segments(value: str) -> list[str]:
     return [part.strip() for part in value.split("\n") if part.strip()]
 
 
+# A part this small a fraction of a longer one is a word appearing inside a
+# sentence, not a label repeating itself. The real case is 24:47 inside
+# `专注计时 24:47，当前专注中` — five characters of fifteen; the false one is
+# 通知 inside a twenty-four character subtitle. A fifth separates them with room
+# to spare, and the number is here rather than buried in the comparison so the
+# next person can see what it is doing.
+_SUBSTRING_SHARE = 0.2
+
+
 def repeats_itself(parts: list[str]) -> str | None:
     """The words this node says more than once, or None when it is just data.
 
-    Only **neighbouring** segments are compared, and that is the whole trick. A
+    Only **neighbouring** segments are compared, and that is most of the trick. A
     merged label sits immediately in front of the text it repeats, so the two are
     adjacent; two rows of a list that happen to share a task name are not. An
     earlier version compared every pair and flagged the legend's `专注` because it
@@ -109,10 +123,13 @@ def repeats_itself(parts: list[str]) -> str | None:
         first, second = parts[i], parts[i + 1]
         if first == second:
             return first
-        if len(first) > len(second) and second in first:
-            return second
-        if len(second) > len(first) and first in second:
-            return first
+        shorter, longer = (
+            (first, second) if len(first) <= len(second) else (second, first)
+        )
+        if not shorter or shorter not in longer:
+            continue
+        if len(shorter) >= len(longer) * _SUBSTRING_SHARE:
+            return shorter
     return None
 
 
