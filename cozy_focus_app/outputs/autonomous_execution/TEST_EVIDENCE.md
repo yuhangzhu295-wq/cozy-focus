@@ -3,6 +3,15 @@
 Raw command results, newest first. Every fix records its own test file and its
 reverse proof; every reverse proof records what failed and how.
 
+## 2026-10-09 — Golden Flow A found a cross-screen defect
+
+Walking 任务 → 今日计划 → 专注 → 回顾 → 记录 → 统计 on the device turned up
+defect 17: a task completed on the task list was still offered as 下一个任务 on the
+today plan, because the plan read the placement's status and the task list writes
+the task's. Fixed on the read side, with the placement deliberately not rewritten.
+
+**2001/2001 passed** after it, analyze clean, format clean, APK builds.
+
 ### Stage 2: the timing claims were re-proved, not inherited
 
 The brief asks that earlier PASS conclusions not be carried forward. Three of them

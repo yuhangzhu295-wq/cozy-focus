@@ -1,7 +1,7 @@
 {
   "queue_version": 1,
   "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
-  "updated_at": "2026-10-09T13:41:14+08:00",
+  "updated_at": "2026-10-09T14:01:05+08:00",
   "tasks": [
     {
       "id": "S1.01",
@@ -279,7 +279,8 @@
       "id": "S6.A",
       "stage": 6,
       "title": "Task -> Today Plan -> Focus -> Review -> Record -> Analytics",
-      "status": "PENDING"
+      "status": "TESTED",
+      "note": "walked on the device; found and fixed defect 17 (a task finished on the task list stayed the next task on the plan). Device-verified after the fix"
     },
     {
       "id": "S6.B",
