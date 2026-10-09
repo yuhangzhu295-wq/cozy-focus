@@ -1,7 +1,7 @@
 {
   "queue_version": 1,
   "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
-  "updated_at": "2026-10-09T20:03:00+08:00",
+  "updated_at": "2026-10-09T20:46:22+08:00",
   "tasks": [
     {
       "id": "S1.01",
@@ -286,7 +286,8 @@
       "id": "S6.B",
       "stage": 6,
       "title": "Focus -> Distraction -> Inbox -> Convert Task",
-      "status": "PENDING"
+      "status": "TESTED",
+      "note": "walked on the device; found and fixed defect 19 (the hub's task count followed the last tab viewed). The convert-to-task action itself works and produced a real task"
     },
     {
       "id": "S6.C",
