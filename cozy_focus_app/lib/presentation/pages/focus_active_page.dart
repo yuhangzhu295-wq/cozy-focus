@@ -17,6 +17,7 @@ import '../companion/companion_avatar.dart';
 import '../companion/pet_encouragement.dart';
 import '../companion/time_of_day.dart';
 import '../theme/app_theme.dart';
+import '../widgets/cozy_room_backdrop.dart';
 import '../widgets/focus_control_row.dart';
 import '../widgets/distraction_capture_sheet.dart';
 
@@ -649,18 +650,13 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.backgroundWarm,
-                        AppColors.background,
-                      ],
-                    ),
-                  ),
-                ),
+                // Board 04 puts the running session in the same room the home
+                // screen opens in. Same painter, shallower desk line: this
+                // screen has no cards over the scene, so the room carries more
+                // of it and the pet stands on the desk rather than on a flat
+                // band. Slightly dimmed, because the timer has to stay the
+                // brightest thing on the screen.
+                const CozyRoomBackdrop(deskLine: 0.52, dim: 0.06),
                 // Top left title
                 Positioned(
                   top: 52,
@@ -668,9 +664,15 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        isPaused ? '已暂停 🌱' : '专注中 🌱',
-                        style: const TextStyle(
+                      // The screen's name, not its state. Board 04 titles this
+                      // screen 专注 and lets the ring say 专注中; making the
+                      // title state-dependent made the page say 已暂停 twice, in
+                      // the header and on the ring, which is the doubled
+                      // announcement this project has already had to fix more
+                      // than once.
+                      const Text(
+                        '专注',
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
@@ -680,7 +682,7 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                       Text(
                         isPaused
                             ? '休息一下也很好，\n慢下来，是为了走更远的路。'
-                            : '和 $companionName 一起，\n把美好的事情做好。',
+                            : '和 $companionName 一起，\n每一次投入，都在靠近更好的自己',
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
@@ -688,34 +690,6 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                         ),
                       ),
                     ],
-                  ),
-                ),
-                // Sticky note – top right
-                Positioned(
-                  right: 20,
-                  top: 52,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      isPaused ? '好好休息\n也是专注\n的一部分 ♡' : '每一次专注\n都是在靠近\n更好的自己 ♡',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.primaryDark,
-                          height: 1.4),
-                    ),
                   ),
                 ),
                 // Pet avatar
@@ -793,14 +767,6 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                               },
                               statusLabel: isPaused ? '已暂停' : '专注中',
                               paused: isPaused,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              isPaused
-                                  ? '暂停不会清零，可以随时继续'
-                                  : '保持专注，$companionName 正在陪着你',
-                              style: const TextStyle(
-                                  fontSize: 13, color: AppColors.textSecondary),
                             ),
 
                             // Reference 03 shows the active craft job here:
