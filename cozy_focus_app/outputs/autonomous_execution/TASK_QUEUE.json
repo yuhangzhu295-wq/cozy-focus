@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T07:42:31+08:00",
+ "updated_at": "2026-10-10T08:50:25+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -463,7 +463,7 @@
    "id": "S1.09a",
    "status": "NOT_VERIFIED",
    "title": "timeline: the design's day has non-task events the app has no source for",
-   "note": "design 09 shows 08:00 起床 / 12:00 午休 / 18:00 自由时间 with a 用餐·生活 dot, and its legend names five kinds; TimelineKind models four and '用餐' appears nowhere in the repo. Two readings, both needing a product decision: a life-event source, or drawing 生活-category plan rows in that colour. Not changed."
+   "note": "design 09 draws 08:00 起床 / 12:00 午休 / 18:00 自由时间 with a 用餐·生活 dot and names five legend kinds; TimelineKind models four. Two readings, but only one is legal: (a) drawing life events from nothing is FORBIDDEN by the NO-FAKE-PAGE contract, so that option is settled, not pending - it should not have been left on the table beside (b). What remains is (b), colouring 生活-category plan rows distinctly: the app does have TaskCategory(id: 'life'), and a plan row already carries its category as a subtitle, so (b) is buildable - but it reinterprets the legend (plan becomes two kinds) and that is the owner's call. The row stays NOT_VERIFIED on (b) alone."
   },
   {
    "id": "S6.C1",
@@ -556,8 +556,9 @@
    "id": "S6.REGRESSION",
    "stage": 6,
    "title": "A-H regression pass on the final build",
-   "status": "PENDING",
-   "note": "next work unit"
+   "status": "PASS",
+   "note": "duplicate row - this is the same eight-flow walk recorded as S7.06b",
+   "evidence": "see S7.06b: all eight flows re-walked on the final build from cleared data. No separate pass was run for this row."
   },
   {
    "id": "S4.04a",
@@ -663,9 +664,17 @@
   {
    "id": "S1.21",
    "stage": 1,
-   "title": "design 10's 最近解锁 section and the 3-tile stat rule",
+   "title": "design 10's 最近解锁 section",
+   "status": "IMPLEMENTED",
+   "evidence": "defects 33/34. CraftUnlock + CraftController.recentUnlocksFrom(jobs, recipes) + the standalone recentCraftUnlocksProvider + _buildRecentUnlocks (absent when empty - no shelf for things that have not happened). mochi_growth_page_test.dart test 6 at a 1080x2400 viewport, because a sliver outside the viewport is never built and a narrow one would go green on nothing. Reverse-proved: removing the sliver turns it red. Device: 最近解锁 + 查看全部 > + 书架 10月6日 / 小床 10月2日, newest first, in 02_BEFORE_AFTER/after/growth_recent_unlocks_device.png. Waiting on the independent review of the three files.",
+   "note": "the '3 tiles only' half is split out to S1.21a; this row is the unlock list"
+  },
+  {
+   "id": "S1.21a",
+   "stage": 1,
+   "title": "design 10 annotates '只保留最关键的 3 项数据' but the app draws four tiles",
    "status": "NOT_VERIFIED",
-   "evidence": "the design draws 最近解锁 with 查看全部 and three dated unlock cards, and annotates '只保留最关键的 3 项数据'; the app has no unlock list and shows four tiles (the extra is 心情指数). Needs an unlock-event source; the app has craft_jobs but no path that renders 'which item, unlocked when'."
+   "note": "the fourth is 心情指数, which is wired to real data. The annotation does not name which three. Deleting a working tile to match a number is a product decision, not a defect fix. Left for the owner."
   }
  ]
 }

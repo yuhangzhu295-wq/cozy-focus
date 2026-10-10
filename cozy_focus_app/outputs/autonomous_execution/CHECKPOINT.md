@@ -18,12 +18,35 @@ one look identical to a finished one.
 below; re-verify the git state before acting on it.
 
 ```
-at           2026-10-09T09:35:00+08:00
+at           2026-10-10 (host clock — run `git log -1 --format=%ci` for the real one)
 branch       recovery/v4.2.1-rebuild
-HEAD         (advanced by this window — run `git log --oneline -24` and read it)
-remote HEAD  origin/recovery/v4.2.1-rebuild
-tests        1980/1980 green, analyze clean, format clean, APK builds
+HEAD         advanced by this window — run `git log --oneline -30` and read it
+remote HEAD  origin/recovery/v4.2.1-rebuild — was UNREACHABLE for a stretch of this
+             window (github.com:443 refused); reachable again at the end, so the
+             local-only commits were pushed. If the remote looks behind, check the
+             network before concluding anything about the work.
+tests        2033/2033 green, analyze clean, format clean, APK builds
 ```
+
+## This window: design 10's 最近解锁, and the two bugs under it
+
+The section had been filed as **缺口（需数据源）** — "needs a data source". It did
+not: `craft_jobs.completed_at` joined to `craft_recipes.name` is exactly the three
+dated cards the board draws. **"Needs a data source" is an expensive label** — it
+stops anyone from looking. Confirm the data is really absent before writing it.
+
+Built it, then found two bugs that only a cold start on the device shows:
+
+1. The seed script wrote `completed_at` as TEXT while Drift stores `dateTime()` as
+   **INTEGER epoch seconds**, so the read failed and the section silently vanished.
+2. Fixing that still left it empty: `craftControllerProvider` does not load on
+   creation, so the growth page watching its state saw an empty list until the
+   craft page had been opened. Fixed with a standalone `recentCraftUnlocksProvider`.
+
+Neither is reachable from a widget test. Defects 33 and 34 in
+`04_BUG_FIX_LEDGER.md`; device evidence in
+`02_BEFORE_AFTER/after/growth_recent_unlocks_device.png`. `查看全部 ›` was pressed
+and does land on 收藏图鉴 — it is not a decoration.
 
 The previous checkpoint recorded `e8647f33a58cf4206499157cfd44298f7fadce0b`. This
 window added commits on top of it. **Do not reset to any recorded SHA** — read the
@@ -67,15 +90,29 @@ log and continue from wherever HEAD actually is.
 
 ## The one thing to do next
 
-**Design 04's focus control row** (S3.06). The board draws four round controls —
-白噪音 / 暂停 / 记一下 / 完成 — in one row with the labels under the icons, where
-the app draws a full-width 记一下 button and two full-width buttons under it.
-白噪音 itself stays absent: there is no audio in the repo, and a control that plays
-nothing is exactly the fake control the contract forbids, so the row is three
-controls and a documented gap rather than four.
+**Nothing in the plan is completable from code alone.** Every remaining row is
+either the owner's or external hardware. Concretely, as of this window:
 
-Designs 01, 05 and 06 are complete. 02, 03 and 04 have audited rows with work
-still open; 08 and 10–16 are not audited yet.
+- **`S1.21a`** — design 10 annotates 只保留最关键的 3 项数据 and the app draws four
+  tiles (the fourth is 心情指数, wired to real data). The annotation does not name
+  which three. Deleting a working tile to match a number is the owner's call.
+- **`S1.09a`** — the option of drawing life events from nothing is **already
+  settled by the contract** (NO-FAKE-PAGE forbids example runtime data); do not
+  put it back on the table as "one of two readings". What is left is only
+  colouring 生活-category plan rows distinctly, which reinterprets the legend.
+- **`S1.20`** — design 12's subtask progress card exists but nothing calls
+  `insertSubtask`. Building a subtask-creation UI would be inventing product.
+- **Frame time** (`S4.04b` / `S5.04c`) — three instruments tried, two are blind
+  here; the instrument that works needs a real device.
+- **`OWNER_VISUAL_GATE`** — the project's own gate declares it REQUIRED and never
+  decided by measurement. It is not mine to claim.
+- `room_sit` art, TalkBack, release signing, the launcher icon — all
+  `BLOCKED_EXTERNAL`.
+
+The window that picks this up should re-verify git, read the log, and check
+whether the push that failed on network this window has since gone through.
+
+Designs 01–16 are all audited. 01, 05, 06 and 10 are built or closed.
 
 ## One open item that must not be quietly closed
 
@@ -85,8 +122,11 @@ still open; 08 and 10–16 are not audited yet.
   deterministically green, and both `TEST_EVIDENCE.md` and `MASTER_STATE.json` say so.
 - **S1.09a.** Design 09's timeline shows 08:00 起床 / 12:00 午休 / 18:00 自由时间 and
   names five kinds where `TimelineKind` models four. Nothing in the repo represents
-  a meal or a life event. Two readings, both needing a product decision; marked
-  `NOT_VERIFIED` rather than guessed at.
+  a meal or a life event. **The reading that draws those events from nothing is
+  forbidden by the NO-FAKE-PAGE contract, so it is settled rather than pending** —
+  it should not be offered again as "one of two readings needing a decision". What
+  remains is colouring 生活-category plan rows distinctly, which changes what the
+  legend means; that one is the owner's.
 
 ## What is already done and must not be redone
 

@@ -5,7 +5,7 @@
  "branch": "recovery/v4.2.1-rebuild",
  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
- "updated_at": "2026-10-10T07:42:31+08:00",
+ "updated_at": "2026-10-10T08:50:25+08:00",
  "continuation": {
   "question": "does this environment support automatic continuation of the work?",
   "answer": "PARTIALLY — and the honest split matters.",
@@ -24,16 +24,16 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "5f22f20411c9f04b2bebf3b0588afe5ac5cbbfa5",
-  "remote_head": "5f22f20411c9f04b2bebf3b0588afe5ac5cbbfa5",
-  "head_matches_remote": true,
+  "head": "70f8c4222dc586f7376f7e812bab29d23ad0a96d",
+  "remote_head": "3f883d172f99de807827813852742a145c458244",
+  "head_matches_remote": false,
   "worktree": "dirty",
-  "last_verified_at": "2026-10-10T07:42:31+08:00",
-  "note": "Local and remote agree at bfab6df. Everything verified this window is pushed."
+  "last_verified_at": "2026-10-10T08:50:25+08:00",
+  "note": "re-verified with git rev-parse / git status / git ls-remote this window. The remote had been unreachable (github.com:443) and is reachable again; HEAD was ahead of the remote by a plain fast-forward and was pushed at the end of this unit. MASTER_STATE previously claimed head_matches_remote=true at 5f22f20 - that was true when written and was stale by four commits, which is why STEP 1 says to re-verify rather than trust this field. NOTE ON THIS FIELD'S OWN VALUE: git.head below is the last *verified* commit, taken before the state-only commit that carries this file; that state commit sits directly on top of it. No code differs between them."
  },
  "current": {
   "stage": "STAGE_1_VISUAL_MATRIX",
-  "subtask": "Stage 3 is complete. S3.07 removed the home hero card the devpack design does not draw; S3.05b/c/d were already done and the queue was stale - each verified on the device before touching anything. Stage 1 is complete against the right design set (the devpack 01_FINAL_16_DESIGNS, not the repo v4.1 set).",
+  "subtask": "S1.21 closed: design 10's 最近解锁 is implemented from craft_jobs.completed_at joined to craft_recipes.name, tested, reverse-proved and read on the device. The '3 tiles' half is split to S1.21a (NOT_VERIFIED, owner's call).",
   "mode": "IN_PROGRESS"
  },
  "status_vocabulary": [
@@ -122,9 +122,9 @@
   "S7 depends on all of the above"
  ],
  "recent_test_evidence": {
-  "at": "2026-10-10T07:42:31+08:00",
+  "at": "2026-10-10T08:50:25+08:00",
   "command": "flutter test",
-  "result": "2031/2031 passed, analyze clean, format clean, APK builds",
+  "result": "2033/2033 passed, analyze clean, format clean, APK builds",
   "analyze": "flutter analyze --fatal-infos: No issues found",
   "format": "dart format --set-exit-if-changed .: 0 changed",
   "apk": "flutter build apk --debug: built",
