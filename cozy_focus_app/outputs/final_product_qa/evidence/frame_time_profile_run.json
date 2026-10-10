@@ -1,0 +1,32 @@
+{
+  "device": "1080x2337",
+  "dpr": 2.625,
+  "frames_observed": 691,
+  "frames_before_scroll": 357,
+  "build_n": 691,
+  "build_p50_us": 1786,
+  "build_p90_us": 3826,
+  "build_p99_us": 8922,
+  "build_max_us": 350568,
+  "build_steady_n": 661,
+  "build_steady_p50_us": 1744,
+  "build_steady_p90_us": 3650,
+  "build_steady_p99_us": 7160,
+  "build_steady_max_us": 15222,
+  "raster_n": 691,
+  "raster_p50_us": 21672,
+  "raster_p90_us": 34835,
+  "raster_p99_us": 58194,
+  "raster_max_us": 975621,
+  "total_n": 691,
+  "total_p50_us": 30515,
+  "total_p90_us": 54484,
+  "total_p99_us": 143793,
+  "total_max_us": 1511579,
+  "late_build_frames": 1,
+  "late_build_fraction": 0.001447178002894356,
+  "late_build_indices": [
+    1
+  ],
+  "late_build_after_warmup": 0
+}

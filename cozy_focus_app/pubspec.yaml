@@ -47,6 +47,11 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # For the frame-time harness under integration_test/. That measurement is
+  # device-side by necessity: `flutter test` runs on a fake clock, so any frame
+  # timing taken there is a number with no meaning. Only the profile run reports.
+  integration_test:
+    sdk: flutter
   flutter_lints: ^4.0.0
   drift_dev: ^2.22.1
   build_runner: ^2.4.14

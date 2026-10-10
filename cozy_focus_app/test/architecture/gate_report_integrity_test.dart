@@ -139,12 +139,16 @@ void main() {
   test('a standing gate does not claim to have measured anything', () {
     // The other half of the same honesty rule. These gates report an owner or
     // external state; they cannot be re-run and must not imply otherwise.
+    //
+    // DEVICE_MATRIX used to be on this list and is deliberately not any more:
+    // its frame-time row is now a real, re-runnable measurement, so "cannot be
+    // re-run" stopped being true of it. It is checked by the next test instead,
+    // which is stricter than this one - it requires the numbers when it passes.
     final byName = {
       for (final g in gates) (g as Map)['gate'] as String: g,
     };
     for (final name in const [
       'OWNER_VISUAL_GATE',
-      'DEVICE_MATRIX',
       'PRODUCT_DECISIONS',
       'FLOW_GENERATION',
     ]) {
@@ -152,6 +156,43 @@ void main() {
       expect(evidence, isNot(contains('measured')),
           reason: '$name reports a standing state, so it must not claim a '
               'measurement it did not take: $evidence');
+    }
+  });
+
+  test('DEVICE_MATRIX either measures the frame time or says why it did not',
+      () {
+    // This row moved from "a standing state" to "a measurement when it can run".
+    // Both halves have to be honest: a DEFERRED row must name the flag and the
+    // reason, and a row that ran must carry the numbers it decided from -
+    // otherwise it is back to reciting.
+    final row =
+        gates.firstWhere((g) => (g as Map)['gate'] == 'DEVICE_MATRIX') as Map;
+    final status = row['status'] as String;
+    final evidence = row['evidence'] as String;
+
+    if (status == 'PASS' || status == 'FAIL') {
+      // FAIL is a legitimate outcome here: the measurement ran and found late
+      // frames. What is not legitimate is deciding without saying what was
+      // measured.
+      expect(evidence, contains('FRAME_TIME'),
+          reason: 'a DEVICE_MATRIX that ran must carry the measurement: '
+              '$evidence');
+      expect(evidence, contains('frames over the 16.67 ms budget'),
+          reason: 'the decision must name the budget it decided against: '
+              '$evidence');
+      expect(evidence, contains('NOT TRANSFERABLE'),
+          reason: 'the raster caveat must travel with the numbers, or the '
+              'numbers get quoted as a phone result: $evidence');
+    } else {
+      expect(status, 'DEFERRED',
+          reason: 'DEVICE_MATRIX is either measured or deferred with a reason, '
+              'never NOT_TESTED or BLOCKED for a missing device: $status');
+      expect(evidence, contains('--with-device'),
+          reason: 'a deferred DEVICE_MATRIX must say how to make it run: '
+              '$evidence');
+      expect(evidence, contains('still driven by hand'),
+          reason: 'the harness covers one row of the matrix, and the row must '
+              'not imply it covers the rest: $evidence');
     }
   });
 }
