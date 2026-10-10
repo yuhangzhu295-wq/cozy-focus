@@ -77,6 +77,32 @@ void main() {
     await db.close();
   });
 
+  /// One adopted pet with the given totals, so a test exercises the page's
+  /// data-backed branch instead of the empty state.
+  Future<void> seedPet({
+    required int totalFocusMinutes,
+    int happiness = 92,
+  }) async {
+    final petRepo = container.read(petRepositoryProvider);
+    await petRepo.savePet(Pet(
+      id: 'pet_mochi_1',
+      userId: localMvpUserId,
+      characterId: 'mochi',
+      species: PetSpecies.dog,
+      name: 'Mochi',
+      adoptedAt: clock.now(),
+    ));
+    await petRepo.savePetProgress(PetProgress(
+      id: 'prog_mochi_1',
+      petId: 'pet_mochi_1',
+      level: 3,
+      experiencePoints: 245,
+      totalFocusMinutes: totalFocusMinutes,
+      happinessScore: happiness,
+      updatedAt: clock.now(),
+    ));
+  }
+
   group('Phase 5: Growth > Mochi Page Tests', () {
     testWidgets('1. Shows truthful empty state when no pet exists',
         (tester) async {
@@ -131,14 +157,18 @@ void main() {
       expect(find.text('经验值 (XP)'), findsOneWidget);
       expect(find.text('45 / 100 XP (总计 245 XP)'), findsOneWidget);
 
-      // Attribute cards
+      // Attribute cards. Three of them: design 10 annotates 只保留最关键的 3 项
+      // 数据 and then names them. The fourth tile was 心情指数 and printed the
+      // same happinessScore that the next assertion covers on the 幸福感 card, so
+      // it is asserted *absent* rather than quietly deleted from this list.
       expect(find.text('成长属性'), findsOneWidget);
       expect(find.text('Lv.3'), findsOneWidget);
       expect(find.text('245 XP'), findsOneWidget);
       expect(find.text('120 分钟'), findsOneWidget);
-      expect(find.text('92 / 100'), findsOneWidget);
+      expect(find.text('心情指数'), findsNothing);
+      expect(find.text('92 / 100'), findsNothing);
 
-      // Scroll to reveal happiness card
+      // Scroll to reveal happiness card — the value the dropped tile carried
       await tester.scrollUntilVisible(find.text('幸福感'), 100);
       expect(find.text('幸福感'), findsOneWidget);
       expect(find.text('92%'), findsOneWidget);
@@ -248,7 +278,10 @@ void main() {
       expect(find.text('Lv.1'), findsOneWidget);
       expect(find.text('0 XP'), findsOneWidget);
       expect(find.text('0 分钟'), findsOneWidget);
-      expect(find.text('0 / 100'), findsOneWidget);
+      // The 心情指数 tile is gone (design 10 names three tiles, and the 幸福感
+      // card below shows this same number), so the tile text must be absent. The
+      // value itself is asserted on the card, two lines down.
+      expect(find.text('0 / 100'), findsNothing);
 
       await tester.scrollUntilVisible(find.text('0%'), 100);
       expect(find.text('0%'), findsOneWidget);
@@ -359,6 +392,87 @@ void main() {
       expect(find.text(recipe.name), findsOneWidget);
       expect(find.text('10月2日'), findsOneWidget);
       expect(find.text('查看全部 >'), findsOneWidget);
+    });
+
+    testWidgets('7. The stat row is the board\'s three tiles, on one line',
+        (tester) async {
+      await seedPet(totalFocusMinutes: 120);
+
+      await tester
+          .pumpWidget(createTestApp(container, const MochiGrowthPage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // The board annotates 只保留最关键的 3 项数据 and names the three.
+      expect(find.text('当前等级'), findsOneWidget);
+      expect(find.text('累计经验'), findsOneWidget);
+      expect(find.text('陪伴专注'), findsOneWidget);
+      // ...and the row holds nothing else. This is the assertion that fails if
+      // the fourth tile comes back.
+      expect(find.text('心情指数'), findsNothing);
+
+      // One row, not two rows of two. The board draws the three side by side, so
+      // their vertical centres share a line; a 2x2 grid would put two of them on
+      // a second line and only this catches that.
+      final centres = ['当前等级', '累计经验', '陪伴专注']
+          .map((t) => tester.getCenter(find.text(t)).dy)
+          .toList();
+      expect(centres[0], closeTo(centres[1], 1.0),
+          reason: 'the three tiles must share one row');
+      expect(centres[1], closeTo(centres[2], 1.0),
+          reason: 'the three tiles must share one row');
+
+      // And the number the dropped tile carried is still on the page, once.
+      await tester.scrollUntilVisible(find.text('幸福感'), 100);
+      expect(find.text('92%'), findsOneWidget);
+    });
+
+    testWidgets('8. Three tiles survive 360dp and a value longer than the tile',
+        (tester) async {
+      // 360dp is the narrowest width this app is checked at, and three tiles
+      // across it is the case the fourth tile never had to survive. The board's
+      // own example value is 8 小时 35 分, so a long value is expected here
+      // rather than hypothetical.
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await seedPet(totalFocusMinutes: 12345);
+
+      await tester
+          .pumpWidget(createTestApp(container, const MochiGrowthPage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // An overflow is reported as an exception during pump. Taking it here
+      // makes the failure name the overflow instead of surfacing later as an
+      // unrelated assertion error. This is the assertion that found the XP row
+      // overflowing at this width.
+      expect(tester.takeException(), isNull,
+          reason: 'three tiles at 360dp must not overflow');
+
+      // Still the full value: shrunk to fit rather than clipped or ellipsised,
+      // because a truncated number is a wrong number.
+      expect(find.text('12345 分钟'), findsOneWidget);
+
+      // And the XP line stays ONE line. A Flexible alone stops the overflow by
+      // letting the text wrap, which is why this assertion is here: the board
+      // draws that line whole, and a wrapped line makes the card grow. The test
+      // font is about 1.7x wider than a real one, so this is the case that
+      // wraps without a FittedBox. Two lines at fontSize 12 is roughly 29px.
+      final xpLine = tester.getSize(find.text('45 / 100 XP (总计 245 XP)'));
+      expect(xpLine.height, lessThan(20),
+          reason: 'the XP line must stay one line rather than wrap');
+
+      // And the three are still on one line at this width.
+      final centres = ['当前等级', '累计经验', '陪伴专注']
+          .map((t) => tester.getCenter(find.text(t)).dy)
+          .toList();
+      expect(centres[0], closeTo(centres[1], 1.0));
+      expect(centres[1], closeTo(centres[2], 1.0));
     });
   });
 }

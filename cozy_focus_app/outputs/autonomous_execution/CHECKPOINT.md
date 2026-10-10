@@ -71,6 +71,30 @@ subagent provider. So `S1.21` and the harness stay below `PASS` — the rule is 
 an implementer does not approve its own code, and no reviewer exists right now.
 **Retry the review first thing; two rows are waiting on it.**
 
+## S1.21a: the fourth tile was a duplicate, and the 360dp test found a real overflow
+
+Design 10 annotates 只保留最关键的 3 项数据 **and names them** — 当前等级 / 累计经验 /
+陪伴时长. An earlier note recorded that the annotation "does not name which three",
+which was simply wrong; this was never a choice between unnamed candidates.
+
+The fourth tile was 心情指数, rendering `progress.happinessScore` — the same number
+the 幸福感 card on that page already renders. So the page printed one value twice.
+The tile is gone, the remaining three are one row with the icon above the label as
+the board draws them, and the level-title caption line is a recorded gap
+(`S1.21b`) because the board gives one example title and the rest cannot be
+derived without inventing content.
+
+The 360dp test written for that change then failed on something else:
+`A RenderFlex overflowed by 94 pixels on the right` at `mochi_growth_page.dart:223`
+— the XP card's `spaceBetween` Row of two unbounded `Text`s. **The app's own data
+never triggers it** (its totals are small), which is why several 360dp sweeps
+reported PASS. It also forced a second fix: the three tiles were unequal height,
+so their titles sat on three different lines. Both are defects 35 and 36, both
+reverse-proved, both device-checked at 360dp and 411dp.
+
+**Lesson worth keeping:** the only real defect this round that no walkthrough would
+have found came from a boundary test written for an unrelated change.
+
 ## This window: design 10's 最近解锁, and the two bugs under it
 
 The section had been filed as **缺口（需数据源）** — "needs a data source". It did

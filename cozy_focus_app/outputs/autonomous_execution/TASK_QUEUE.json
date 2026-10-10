@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T10:11:01+08:00",
+ "updated_at": "2026-10-10T10:52:51+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -674,9 +674,10 @@
   {
    "id": "S1.21a",
    "stage": 1,
-   "title": "design 10 annotates '只保留最关键的 3 项数据' but the app draws four tiles",
-   "status": "NOT_VERIFIED",
-   "note": "the fourth is 心情指数, which is wired to real data. The annotation does not name which three. Deleting a working tile to match a number is a product decision, not a defect fix. Left for the owner."
+   "title": "design 10's stat row: the board names three tiles and the app drew four",
+   "status": "TESTED",
+   "note": "the fourth is 心情指数, which is wired to real data. The annotation does not name which three. Deleting a working tile to match a number is a product decision, not a defect fix. Left for the owner.",
+   "evidence": "defects 35/36. The board annotates 只保留最关键的 3 项数据 AND names them - 当前等级 / 累计经验 / 陪伴时长 - so the earlier note that it 'does not name which three' was wrong and this was never a choice between unnamed candidates. The fourth tile was 心情指数, which rendered progress.happinessScore; the 幸福感 card on the same page renders that same number, so the page printed one value twice. The tile is gone and the three remaining ones are one row with the icon above the label, as the board draws them. mochi_growth_page_test.dart tests 7 and 8; reverse-proved by putting the fourth tile back (Found 1 widget with text 心情指数). Device: 411dp and 360dp, evidence/growth_three_tiles_*.png. Waiting on independent review."
   },
   {
    "id": "S4.04c",
@@ -691,6 +692,13 @@
    "title": "a re-runnable device measurement, so the device matrix is not hand-driven",
    "status": "TESTED",
    "evidence": "integration_test/frame_time_test.dart + test_driver/perf_driver.dart, wired into tools/cozy_gate.py as DEVICE_MATRIX behind --with-device. The gate used to recite a hard-coded DEFERRED saying a re-runnable matrix 'would need an unattended driver'; it now takes the measurement when a device is attached and states the reason when not. gate_report_integrity_test.dart had DEVICE_MATRIX on its 'must never claim a measurement' list; that premise stopped being true, so the row moved to a stricter test that requires the numbers when it runs. The rest of the matrix is still hand-driven and the gate says so."
+  },
+  {
+   "id": "S1.21b",
+   "stage": 1,
+   "title": "design 10's stat tiles each carry a caption line the app does not draw",
+   "status": "NOT_VERIFIED",
+   "note": "the board's tiles read 当前等级 / Lv.3 / 萌芽伙伴, 累计经验 / 320 / 经验值, 陪伴时长 / 8小时35分 / 和 Mochi 一起. Two of those captions are labels this app could derive, but the first needs a level-title table, and the board gives exactly one example (Lv.3 = 萌芽伙伴) from which the rest cannot be derived. Inventing the other titles would be inventing content, so none were invented. The caption row is a visible gap rather than a silent one."
   }
  ]
 }
