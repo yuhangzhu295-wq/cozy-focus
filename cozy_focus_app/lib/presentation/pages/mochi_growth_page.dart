@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/pet_models.dart';
+import '../controllers/craft_controller.dart';
 import '../controllers/growth_controller.dart';
 import '../theme/app_theme.dart';
 import '../companion/companion_avatar.dart';
 import '../companion/companion_selection.dart';
+import '../widgets/cozy_furniture_artwork.dart';
 import '../widgets/growth_sub_nav.dart';
 import '../widgets/app_bottom_nav.dart';
 
@@ -70,6 +72,9 @@ class MochiGrowthPage extends ConsumerWidget {
         ),
         SliverToBoxAdapter(
           child: _buildGrowthStatsGrid(progress),
+        ),
+        SliverToBoxAdapter(
+          child: _buildRecentUnlocks(context, ref),
         ),
         SliverToBoxAdapter(
           child: _buildHappinessCard(progress),
@@ -317,6 +322,87 @@ class MochiGrowthPage extends ConsumerWidget {
                   iconColor: AppColors.accentPeach,
                 ),
               ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Design 10's 最近解锁: the last three finished crafts, newest first.
+  ///
+  /// Only rendered when something has actually been unlocked. The board draws it
+  /// populated; an empty frame would be a shelf for achievements that have not
+  /// happened, which is the thing the contract forbids. The artwork is the app's
+  /// own furniture renderer for the item the recipe produces — the board's three
+  /// item names are its own and are not in this catalogue.
+  Widget _buildRecentUnlocks(BuildContext context, WidgetRef ref) {
+    final unlocks = ref.watch(recentCraftUnlocksProvider).valueOrNull ??
+        const <CraftUnlock>[];
+    if (unlocks.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  '最近解锁',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.go('/growth/collection'),
+                child: const Text('查看全部 >',
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              for (final unlock in unlocks) ...[
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        CozyFurnitureArtwork(itemId: unlock.itemId, size: 44),
+                        const SizedBox(height: 6),
+                        Text(
+                          unlock.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${unlock.at.month}月${unlock.at.day}日',
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
             ],
           ),
         ],

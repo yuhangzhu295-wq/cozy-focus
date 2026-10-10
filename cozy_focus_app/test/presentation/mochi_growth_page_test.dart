@@ -13,9 +13,11 @@ import 'package:cozy_focus_app/data/local/app_database.dart'
         CraftRecipe,
         InventoryItem,
         RoomItem;
+import 'package:cozy_focus_app/domain/models/craft_models.dart';
 import 'package:cozy_focus_app/domain/models/enums.dart';
 import 'package:cozy_focus_app/domain/models/pet_models.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
+import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
 import 'package:cozy_focus_app/presentation/navigation/app_router.dart';
 import 'package:cozy_focus_app/presentation/pages/mochi_growth_page.dart';
@@ -289,6 +291,74 @@ void main() {
       expect(navFinder, findsOneWidget);
       final BottomNavigationBar nav = tester.widget(navFinder);
       expect(nav.currentIndex, equals(2));
+    });
+
+    testWidgets('6. 最近解锁 lists finished crafts, and stays away when none',
+        (tester) async {
+      // Design 10 draws 最近解锁 with three dated cards. It is derived from
+      // finished craft jobs, so it must be absent — not empty — when nothing has
+      // finished, and must name the recipe and its date when something has.
+      final petRepo = container.read(petRepositoryProvider);
+      await petRepo.savePet(Pet(
+        id: 'pet_1',
+        userId: localMvpUserId,
+        characterId: 'mochi',
+        species: PetSpecies.dog,
+        name: 'Mochi',
+        adoptedAt: clock.now(),
+      ));
+      await petRepo.savePetProgress(PetProgress(
+        id: 'prog_1',
+        petId: 'pet_1',
+        level: 3,
+        experiencePoints: 245,
+        totalFocusMinutes: 120,
+        happinessScore: 92,
+        updatedAt: clock.now(),
+      ));
+
+      // A tall surface: the section sits below the hero and the stats grid, and
+      // a sliver outside the viewport is not built at all.
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester
+          .pumpWidget(createTestApp(container, const MochiGrowthPage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('最近解锁'), findsNothing,
+          reason: 'nothing has been crafted, so there is nothing to list');
+
+      final craftRepo = container.read(craftRepositoryProvider);
+      final recipe = (await craftRepo.findAllRecipes()).first;
+      await craftRepo.saveJob(CraftJob(
+        id: 'job_1',
+        userId: localMvpUserId,
+        recipeId: recipe.id,
+        status: CraftJobStatus.completed,
+        progressSeconds: recipe.requiredMinutes * 60,
+        startedAt: DateTime(2026, 10, 2, 9),
+        completedAt: DateTime(2026, 10, 2, 10),
+        rewardClaimed: true,
+      ));
+
+      // The section's own provider reads the database, so re-read it now that
+      // there is something to find.
+      container.invalidate(recentCraftUnlocksProvider);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+          await container.read(recentCraftUnlocksProvider.future), isNotEmpty,
+          reason: 'the provider should see the finished craft');
+      expect(find.text('最近解锁'), findsOneWidget);
+      expect(find.text(recipe.name), findsOneWidget);
+      expect(find.text('10月2日'), findsOneWidget);
+      expect(find.text('查看全部 >'), findsOneWidget);
     });
   });
 }

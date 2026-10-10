@@ -1,6 +1,7 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/models/craft_models.dart';
+import '../../domain/models/enums.dart';
 import '../../domain/repositories/i_craft_repository.dart';
 import '../../domain/services/craft_engine.dart';
 import '../../domain/services/focus_clock.dart';
@@ -12,6 +13,14 @@ class CraftState {
   final CraftRecipe? activeRecipe;
   final List<InventoryItem> inventory;
   final List<RoomItem> roomItems;
+
+  /// The crafts that finished, newest first — design 10's 最近解锁.
+  ///
+  /// Derived from `craft_jobs` rows whose status is `completed`, joined to the
+  /// recipe that produced them. Nothing here is invented: if no craft has
+  /// finished the list is empty, and the section does not render.
+  final List<CraftUnlock> recentUnlocks;
+
   final bool isLoading;
   final String? error;
 
@@ -21,6 +30,7 @@ class CraftState {
     this.activeRecipe,
     this.inventory = const [],
     this.roomItems = const [],
+    this.recentUnlocks = const [],
     this.isLoading = false,
     this.error,
   });
@@ -31,6 +41,7 @@ class CraftState {
     CraftRecipe? activeRecipe,
     List<InventoryItem>? inventory,
     List<RoomItem>? roomItems,
+    List<CraftUnlock>? recentUnlocks,
     bool? isLoading,
     String? error,
     bool clearActiveJob = false,
@@ -42,10 +53,23 @@ class CraftState {
       activeRecipe: clearActiveJob ? null : (activeRecipe ?? this.activeRecipe),
       inventory: inventory ?? this.inventory,
       roomItems: roomItems ?? this.roomItems,
+      recentUnlocks: recentUnlocks ?? this.recentUnlocks,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
     );
   }
+}
+
+/// One finished craft: what it was, and when it finished.
+class CraftUnlock {
+  final String name;
+  final DateTime at;
+
+  /// The item the recipe produces, so the row can draw the app's own artwork for
+  /// it rather than a placeholder.
+  final String itemId;
+
+  const CraftUnlock(this.name, this.at, this.itemId);
 }
 
 class CraftController extends StateNotifier<CraftState> {
@@ -73,18 +97,44 @@ class CraftController extends StateNotifier<CraftState> {
       final active = await _engine.getActiveCraftJob(_userId);
       final inventory = await _repo.findInventory(_userId);
       final roomItems = await _repo.findRoomItems(_userId);
+      final jobs = await _repo.findJobsByUser(_userId);
       state = state.copyWith(
         recipes: recipes,
         activeJob: active?.job,
         activeRecipe: active?.recipe,
         inventory: inventory,
         roomItems: roomItems,
+        recentUnlocks: recentUnlocksFrom(jobs, recipes),
         isLoading: false,
         clearActiveJob: active == null,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  /// The last three finished crafts, newest first.
+  ///
+  /// A finished job whose recipe is no longer in the catalogue is skipped rather
+  /// than given a placeholder name: the row's whole content is what was unlocked,
+  /// and a row that cannot say what it was is worse than no row.
+  static List<CraftUnlock> recentUnlocksFrom(
+    List<CraftJob> jobs,
+    List<CraftRecipe> recipes,
+  ) {
+    final byId = {for (final recipe in recipes) recipe.id: recipe};
+    final unlocks = <CraftUnlock>[
+      for (final job in jobs)
+        if (job.status == CraftJobStatus.completed &&
+            job.completedAt != null &&
+            byId[job.recipeId] != null)
+          CraftUnlock(
+            byId[job.recipeId]!.name,
+            job.completedAt!,
+            byId[job.recipeId]!.outputItemId,
+          ),
+    ]..sort((a, b) => b.at.compareTo(a.at));
+    return unlocks.take(3).toList(growable: false);
   }
 
   Future<void> startJob(String recipeId) async {
@@ -295,6 +345,22 @@ class CraftController extends StateNotifier<CraftState> {
     } catch (_) {}
   }
 }
+
+/// Design 10's 最近解锁, loaded on its own.
+///
+/// A provider of its own because the growth page must not depend on the craft
+/// page having been opened first: [craftControllerProvider] does not load on
+/// creation, so watching its state alone showed an empty shelf on a fresh launch
+/// even when crafts had finished. Found on the device, where the section stayed
+/// absent with two finished jobs in the database.
+final recentCraftUnlocksProvider =
+    FutureProvider<List<CraftUnlock>>((ref) async {
+  final repo = ref.watch(craftRepositoryProvider);
+  final userId = ref.watch(currentUserIdProvider);
+  final recipes = await repo.findAllRecipes();
+  final jobs = await repo.findJobsByUser(userId);
+  return CraftController.recentUnlocksFrom(jobs, recipes);
+});
 
 final craftControllerProvider =
     StateNotifierProvider<CraftController, CraftState>((ref) {
