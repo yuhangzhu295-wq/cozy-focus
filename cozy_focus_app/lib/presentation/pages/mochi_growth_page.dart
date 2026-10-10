@@ -6,6 +6,7 @@ import '../controllers/craft_controller.dart';
 import '../controllers/growth_controller.dart';
 import '../theme/app_theme.dart';
 import '../companion/companion_avatar.dart';
+import '../widgets/cozy_room_backdrop.dart';
 import '../companion/companion_selection.dart';
 import '../widgets/cozy_furniture_artwork.dart';
 import '../widgets/growth_sub_nav.dart';
@@ -181,96 +182,114 @@ class MochiGrowthPage extends ConsumerWidget {
     final currentLevelXp = xp % xpPerLevel;
     final xpRatio = (currentLevelXp / xpPerLevel).clamp(0.0, 1.0);
 
-    return Container(
-      color: AppColors.backgroundWarm,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      child: Column(
-        children: [
-          CompanionAvatar(
-            size: 160,
-            message: '$petName 正在陪伴你成长 🌱',
-          ),
-          const SizedBox(height: 16),
-          Text(
-            petName,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Lv.$level 伙伴',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primarySage,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    // Board 10 puts Mochi in the room, on a rug, with the wall and the window
+    // behind it - the same painter the home and focus screens use. The desk
+    // line sits under the pet rather than across the middle, so the pet reads
+    // as standing in the room instead of floating on a band.
+    return Stack(
+      children: [
+        // The scene covers the PET's band only, not the name, the level and the
+        // XP card below it. Behind the whole hero the rug landed under the
+        // name and the text read as written on a mat.
+        const Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 196,
+          child: CozyRoomBackdrop(deskLine: 0.74),
+        ),
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            children: [
+              // No message bubble: board 10 gives this hero to the room and the
+              // pet, and the line it used to say - 'Mochi 正在陪伴你成长' with a
+              // sprout - is on no board.
+              const CompanionAvatar(size: 160),
+              const SizedBox(height: 16),
+              Text(
+                petName,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Lv.$level 伙伴',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primarySage,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '经验值 (XP)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    // The right-hand side carries a total that grows with the
-                    // player, and it used to be an unbounded Text in a
-                    // spaceBetween Row: nothing could shrink, so a long total on
-                    // a narrow screen overflowed. A 360dp test found it; the
-                    // app's own data never did, because its totals are small.
-                    // Scaled down rather than ellipsised - a truncated XP total
-                    // is a wrong number.
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          '$currentLevelXp / $xpPerLevel XP (总计 $xp XP)',
-                          style: const TextStyle(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          '经验值 (XP)',
+                          style: TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
                           ),
+                        ),
+                        // The right-hand side carries a total that grows with the
+                        // player, and it used to be an unbounded Text in a
+                        // spaceBetween Row: nothing could shrink, so a long total on
+                        // a narrow screen overflowed. A 360dp test found it; the
+                        // app's own data never did, because its totals are small.
+                        // Scaled down rather than ellipsised - a truncated XP total
+                        // is a wrong number.
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              '$currentLevelXp / $xpPerLevel XP (总计 $xp XP)',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      child: LinearProgressIndicator(
+                        value: xpRatio,
+                        minHeight: 8,
+                        backgroundColor: AppColors.primaryLight,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.primarySage,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  child: LinearProgressIndicator(
-                    value: xpRatio,
-                    minHeight: 8,
-                    backgroundColor: AppColors.primaryLight,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.primarySage,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

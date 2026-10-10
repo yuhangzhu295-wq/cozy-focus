@@ -151,7 +151,10 @@ void main() {
       expect(find.text('成长'), findsWidgets);
       expect(find.text('Mochi'), findsWidgets);
       expect(find.text('Lv.3 伙伴'), findsOneWidget);
-      expect(find.text('Mochi 正在陪伴你成长 🌱'), findsOneWidget);
+      // Board 10 gives this hero to the room and the pet, with no message
+      // bubble. The line that used to sit here is asserted absent rather
+      // than quietly dropped from the list.
+      expect(find.textContaining('正在陪伴你成长'), findsNothing);
 
       // XP progress bar text
       expect(find.text('经验值 (XP)'), findsOneWidget);
