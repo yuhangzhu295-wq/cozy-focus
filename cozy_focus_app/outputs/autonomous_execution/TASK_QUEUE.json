@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T10:55:15+08:00",
+ "updated_at": "2026-10-10T11:09:29+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -660,9 +660,9 @@
   {
    "id": "S1.20",
    "stage": 1,
-   "title": "subtasks have no creation path, so design 12's progress card is unreachable",
-   "status": "NOT_VERIFIED",
-   "evidence": "the card exists (_ProgressCard, rendered only when hasSubtasks) but nothing in the app calls insertSubtask - it is repository-layer only. The design draws 2/3 as a main element, so the product expects subtasks and no screen creates them. Needs a product decision, not an invented UI."
+   "title": "subtasks had no creation path, so design 12's progress card was unreachable",
+   "status": "TESTED",
+   "evidence": "defects 37/38. The table, the DAO, TaskDetailController.addSubtask and the card's rows were all built and tested at the repository and domain layers, and NOTHING in the UI ever called addSubtask - so the card could only render for data no screen could create. The page had no widget test at all, which is why it went unnoticed. Added a 添加子任务 row to the task detail page, deliberately outside the progress card (the card is hidden when there is nothing to count, so an entrance inside it could never add the first one). New file test/presentation/task_detail_subtask_test.dart, 6 tests, the page's first widget tests; reverse-proved by removing the row. Device: created a task, added a subtask, card appeared at 0 / 1 with the row labelled 完成 draft outline. Writing that test also surfaced defect 38: both prompts on the page disposed their TextEditingController the moment showDialog returned, while the route was still animating out - the note editor had the same bug and no test. Fixed by moving the controller into the dialog widget. Waiting on independent review."
   },
   {
    "id": "S1.21",
@@ -700,6 +700,13 @@
    "title": "design 10's stat tiles each carry a caption line the app does not draw",
    "status": "NOT_VERIFIED",
    "note": "the board's tiles read 当前等级 / Lv.3 / 萌芽伙伴, 累计经验 / 320 / 经验值, 陪伴时长 / 8小时35分 / 和 Mochi 一起. Two of those captions are labels this app could derive, but the first needs a level-title table, and the board gives exactly one example (Lv.3 = 萌芽伙伴) from which the rest cannot be derived. Inventing the other titles would be inventing content, so none were invented. The caption row is a visible gap rather than a silent one."
+  },
+  {
+   "id": "S1.20b",
+   "stage": 1,
+   "title": "design 12's 任务进度 card draws a bar and 2 / 3, with no list and no add row",
+   "status": "NOT_VERIFIED",
+   "note": "the board's card is a bare progress bar with the fraction; the app's card also lists the subtasks with a tick on each, and the app adds a 添加子任务 row the board does not draw. Both additions are what make the fraction mean anything - a fraction with no way to see or change its parts is a number about nothing - but they are additions, and they are recorded as such rather than presented as fidelity."
   }
  ]
 }

@@ -168,6 +168,12 @@ class _Body extends ConsumerWidget {
           const SizedBox(height: 12),
         ],
 
+        // The way in. Deliberately outside the card above, which is hidden until
+        // there is something to count - an entrance inside it could never add
+        // the first subtask.
+        _AddSubtaskRow(onTap: () => _addSubtask(context, controller)),
+        const SizedBox(height: 12),
+
         IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -274,32 +280,164 @@ class _Body extends ConsumerWidget {
     TaskDetailController controller,
     Task task,
   ) async {
-    final text = TextEditingController(text: task.note ?? '');
     final saved = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('任务备注'),
-        content: TextField(
-          controller: text,
-          maxLines: 4,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: '记录任务的具体内容、目标或注意事项'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(text.text),
-            child: const Text('保存'),
-          ),
-        ],
+      builder: (dialogContext) => _TextPromptDialog(
+        title: '任务备注',
+        hint: '记录任务的具体内容、目标或注意事项',
+        initial: task.note ?? '',
+        maxLines: 4,
       ),
     );
-    text.dispose();
     if (saved == null) return;
     await controller.updateNote(saved.trim().isEmpty ? null : saved.trim());
+  }
+
+  /// Adds one subtask.
+  ///
+  /// The board draws the 任务进度 card with 2 / 3 in it, but no way to say what
+  /// the three are — and until this existed, nothing in the app called
+  /// `addSubtask` at all. The card, its rows and its controller method were all
+  /// built and tested and unreachable, which made them a card that could never
+  /// render. This is the missing entrance, not a new feature: everything below
+  /// it already existed.
+  Future<void> _addSubtask(
+    BuildContext context,
+    TaskDetailController controller,
+  ) async {
+    final saved = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => const _TextPromptDialog(
+        title: '添加子任务',
+        hint: '这一步要做什么',
+        confirmLabel: '添加',
+      ),
+    );
+
+    // A blank title is not a subtask. Letting it through would put an unnamed
+    // row in the progress count and move the fraction for nothing.
+    final title = saved?.trim() ?? '';
+    if (title.isEmpty) return;
+    await controller.addSubtask(title);
+  }
+}
+
+/// A one-field dialog that owns its own [TextEditingController].
+///
+/// The controller has to be disposed with the dialog, not after `showDialog`
+/// returns. The route is still animating out when that future completes, the
+/// `TextField` rebuilds once more on the way, and a controller disposed at that
+/// point throws `A TextEditingController was used after being disposed` — in
+/// debug it is a red screen, and in release it is a controller read after
+/// disposal.
+///
+/// Both prompts on this page used to create and dispose their controller around
+/// the `showDialog` call. The subtask prompt is what surfaced it, because the
+/// note editor had no test at all; both are fixed by this widget, and the note
+/// editor now has a test that would have caught it.
+class _TextPromptDialog extends StatefulWidget {
+  final String title;
+  final String hint;
+  final String initial;
+  final String confirmLabel;
+  final int maxLines;
+
+  const _TextPromptDialog({
+    required this.title,
+    required this.hint,
+    this.initial = '',
+    this.confirmLabel = '保存',
+    this.maxLines = 1,
+  });
+
+  @override
+  State<_TextPromptDialog> createState() => _TextPromptDialogState();
+}
+
+class _TextPromptDialogState extends State<_TextPromptDialog> {
+  late final TextEditingController _text =
+      TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _text,
+        maxLines: widget.maxLines,
+        autofocus: true,
+        decoration: InputDecoration(hintText: widget.hint),
+        // A single-line prompt can be confirmed from the keyboard; a multiline
+        // one cannot, because Enter has to insert a newline there.
+        onSubmitted: widget.maxLines == 1
+            ? (value) => Navigator.of(context).pop(value)
+            : null,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(_text.text),
+          child: Text(widget.confirmLabel),
+        ),
+      ],
+    );
+  }
+}
+
+/// The entrance to the subtask list: one row, tapping it asks for the title.
+///
+/// A row rather than a permanent text field, because the board's 任务详情 draws
+/// no field on the page and an always-open input would be chrome the design does
+/// not have. The label is the row's own text, so a screen reader reads the same
+/// words the eye does and the tap stays on the row.
+class _AddSubtaskRow extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddSubtaskRow({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: const Row(
+            children: [
+              Icon(
+                Icons.add_rounded,
+                size: 18,
+                color: AppColors.primarySage,
+              ),
+              SizedBox(width: 8),
+              Text(
+                '添加子任务',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
