@@ -21,10 +21,13 @@ below; re-verify the git state before acting on it.
 at           2026-10-10 (host clock — run `git log -1 --format=%ci` for the real one)
 branch       recovery/v4.2.1-rebuild
 HEAD         advanced by this window — run `git log --oneline -30` and read it
-remote HEAD  origin/recovery/v4.2.1-rebuild — was UNREACHABLE for a stretch of this
-             window (github.com:443 refused); reachable again at the end, so the
-             local-only commits were pushed. If the remote looks behind, check the
-             network before concluding anything about the work.
+remote HEAD  origin/recovery/v4.2.1-rebuild — **the network is the unstable thing
+             here, not the work.** github.com:443 refused for a stretch, then came
+             back and took 3f883d1..8f40968 as a plain fast-forward (local and remote
+             confirmed equal at 8f40968), then went down again across three retries.
+             So exactly ONE commit is local-only: `b48ebf8`, the re-run product-gate
+             record. No code differs between it and 8f40968. **Re-check the network
+             and push it before drawing any conclusion about the remote.**
 tests        2033/2033 green, analyze clean, format clean, APK builds
 ```
 
