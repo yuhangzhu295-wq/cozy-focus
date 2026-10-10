@@ -114,7 +114,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.textContaining('和 Mochi 一起'), findsOneWidget);
+      // The hero greeting is the clock's, not a constant: the test clock is
+      // fixed at 10:00, the morning band. It replaced a fixed 和 Mochi
+      // 一起 / 专注吧！ pair that read the same at 7am and 11pm.
+      expect(find.text('早上好'), findsOneWidget);
       // The design's own words for this card. It used to read `专注时长` with a
       // sprout emoji in front; the board reads `选择专注时长` and carries no
       // leading glyph, so the label moved with the design.
@@ -213,7 +216,7 @@ void main() {
       final avatarFinder = heroPetFinder(tester);
       expect(avatarFinder, findsOneWidget);
 
-      final headlineFinder = find.text('专注当下，\n让更好的自己慢慢长大。');
+      final headlineFinder = find.text('今天也辛苦了，\n一起专注一会儿吧。');
       expect(headlineFinder, findsOneWidget);
 
       // Measure the companion's rendered box rather than a specific renderer:
@@ -272,7 +275,7 @@ void main() {
       final avatarWidget = tester.widget<PetAvatarWidget>(avatarFinder);
       expect(avatarWidget.message, isNull);
 
-      final headlineFinder = find.text('专注当下，\n让更好的自己慢慢长大。');
+      final headlineFinder = find.text('今天也辛苦了，\n一起专注一会儿吧。');
       expect(headlineFinder, findsOneWidget);
 
       final petFinder = heroPetFinder(tester);
@@ -284,7 +287,7 @@ void main() {
     });
 
     testWidgets(
-        'Screen 01: HomePage handles null PetProgress with 264 hero band',
+        'Screen 01: HomePage handles null PetProgress with the 340 hero band',
         (tester) async {
       const homeState = HomeUIState(
         petProgress: null,
@@ -320,13 +323,13 @@ void main() {
       // contributes no status-bar inset.
       final heroFinder = find
           .ancestor(
-            of: find.text('和 Mochi 一起'),
+            of: find.text('早上好'),
             matching: find.byType(SizedBox),
           )
           .first;
       final heroWidget = tester.widget<SizedBox>(heroFinder);
-      expect(heroWidget.height, equals(264));
-      expect(tester.getSize(heroFinder).height, equals(264));
+      expect(heroWidget.height, equals(340));
+      expect(tester.getSize(heroFinder).height, equals(340));
     });
 
     testWidgets('Screen 02: FocusSetupPage renders categories and mode options',

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../companion/companion_selection.dart';
 import '../../domain/models/enums.dart';
 import '../../domain/models/focus_record.dart';
 import '../../domain/models/task_schedule.dart';
@@ -16,7 +15,9 @@ import '../../core/auth/current_user.dart';
 import '../theme/app_theme.dart';
 import '../companion/companion_avatar.dart';
 import '../companion/companion_business_state.dart';
+import '../companion/time_of_day.dart';
 import '../widgets/app_bottom_nav.dart';
+import '../widgets/cozy_room_backdrop.dart';
 import '../widgets/current_task_card.dart';
 import '../widgets/hourly_focus_chart.dart';
 
@@ -154,28 +155,31 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  /// Height of the hero *below* the status bar.
+  /// Height of the hero band below the status bar.
   ///
-  /// Reference 01 measures 311.25pt from the top of the page to the focus
-  /// panel's margin box, with roughly 47pt of that spent on the status bar, so
-  /// the usable band is ~264dp. Keeping the two apart is what lets the hero
-  /// paint behind the status bar without moving the pet or the headline.
-  static const double _heroContentHeight = 264;
+  /// Raised from 264 to 340 when the room went in. Board 01's scene runs from
+  /// under the status bar to the top of the 当前任务 card, which measures about
+  /// 357dp — the earlier 264 was the height of a *flat colour band*, and it is
+  /// why the room could not be drawn: a scene needs somewhere to stand. The card
+  /// below still overlaps the hero's lower edge, as the board draws it.
+  static const double _heroContentHeight = 340;
 
   /// Vertical centre of the pet, measured from the top of the hero band.
   ///
-  /// Reference 01 puts the pet's visible band at 132-257pt, i.e. a centre at
-  /// 194.5pt. [CompanionAvatar] centres the character inside a square box, so
-  /// the box has to be offset by half its own height to land the *character*
-  /// there rather than the box.
-  static const double _heroPetCentre = 194.5;
+  /// The pet keeps the size board 01 gives it (~190pt across) and sits lower in
+  /// the taller band so that its feet land on the desk rather than in the air.
+  static const double _heroPetCentre = 214;
 
   /// Approved pet footprint width. Reference 01 draws Mochi ~190pt wide across
   /// the hero, which is also the width the layered renderer uses elsewhere.
   static const double _heroPetSize = 190;
 
+  /// Where the desk surface starts, as a fraction of the hero band. Chosen so
+  /// the woven mat lands under the pet's feet: with a 340dp band this puts the
+  /// desk line at ~245dp and the mat at ~273dp, just below the pet's lower body.
+  static const double _heroDeskLine = 0.72;
+
   Widget _buildHeroArea(BuildContext context) {
-    final companionName = ref.watch(companionDisplayNameProvider);
     final topInset = MediaQuery.paddingOf(context).top;
 
     return SizedBox(
@@ -186,10 +190,13 @@ class _HomePageState extends ConsumerState<HomePage> {
       height: topInset + _heroContentHeight,
       child: Stack(
         children: [
-          Container(
-            decoration: const BoxDecoration(
-              color: AppColors.backgroundWarm,
-            ),
+          // The room, drawn rather than photographed. Board 01 puts Mochi in a
+          // warm interior - wall, window light, a shelf with plants, a wooden
+          // desk - and this project had recorded that as BLOCKED_EXTERNAL for
+          // several passes because the repo has no such *photograph*. It has a
+          // procedural art pipeline, so the scene is a painter.
+          const Positioned.fill(
+            child: CozyRoomBackdrop(deskLine: _heroDeskLine),
           ),
           Positioned(
             top: topInset + 8,
@@ -198,46 +205,65 @@ class _HomePageState extends ConsumerState<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '和 $companionName 一起',
+                  _greetingFor(ref.watch(focusClockProvider).now()),
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 26,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                     height: 1.15,
                   ),
                 ),
+                const SizedBox(height: 4),
                 const Text(
-                  '专注吧！🌱',
+                  '今天也辛苦了，\n一起专注一会儿吧。',
                   style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primarySage,
-                    height: 1.15,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  '专注当下，\n让更好的自己慢慢长大。',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    height: 1.3,
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                    height: 1.35,
                   ),
                 ),
               ],
             ),
           ),
           Positioned(
-            top: topInset + 4,
-            right: 16,
-            child: IconButton(
-              icon: const Icon(
-                Icons.settings_outlined,
-                semanticLabel: '设置',
+            top: topInset + 6,
+            right: 14,
+            child: DecoratedBox(
+              // Board 01 puts a small round chip in this corner rather than a
+              // bare glyph. On a drawn scene a bare glyph reads as an icon that
+              // landed on the window by accident; the chip reads as a control
+              // that belongs there.
+              //
+              // The board's chip is a leaf, not a gear, and that difference is
+              // kept deliberately: this button is the only route to 设置 in the
+              // whole app — the growth page's own header has no gear — so
+              // redrawing it as a leaf would make settings unreachable, which is
+              // a P0 in exchange for a P2. The icon stays a gear because a gear
+              // is what the control does.
+              decoration: BoxDecoration(
+                color: AppColors.surface.withValues(alpha: 0.72),
+                shape: BoxShape.circle,
               ),
-              color: AppColors.textSecondary,
-              tooltip: '设置',
-              onPressed: () => context.push('/settings'),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.settings_outlined,
+                  semanticLabel: '设置',
+                ),
+                iconSize: 18,
+                // A 34dp chip around an 18dp glyph, with the padding left in so
+                // the tap target stays usable. The board's corner button is
+                // small; a default 48dp IconButton read as a white disc sitting
+                // on the window.
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(
+                  minWidth: 34,
+                  minHeight: 34,
+                ),
+                visualDensity: VisualDensity.compact,
+                color: AppColors.textPrimary,
+                tooltip: '设置',
+                onPressed: () => context.push('/settings'),
+              ),
             ),
           ),
           Positioned(
@@ -594,7 +620,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     int sessionCount,
     List<FocusRecord> todayRecords,
   ) {
-    final companionName = ref.watch(companionDisplayNameProvider);
     final progress = (todaySeconds / (240 * 60)).clamp(0.0, 1.0);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -754,27 +779,6 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            // Reference 01 sets this banner at 340.67pt wide by 36.67pt tall
-            // with the sentence on a single line. At 12dp the same sentence
-            // wrapped, which is what made the card 14dp too tall.
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Text(
-              '🌱 小小的坚持，会让 $companionName 和你一起，遇见更棒的明天。💚',
-              style: const TextStyle(
-                fontSize: 11,
-                height: _kLineHeight,
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
         ],
       ),
     );
@@ -896,3 +900,21 @@ class _StepButton extends StatelessWidget {
     );
   }
 }
+
+/// The home greeting, from the clock rather than from a constant.
+///
+/// Board 01 opens with 下午好 and a second line, which is a greeting that depends
+/// on when the screen is opened. The bands come from [TimeOfDaySpec], the
+/// resolver the companion already uses for its own time-of-day behaviour, so the
+/// greeting and the pet agree about what time it is instead of each deciding.
+///
+/// This replaced a fixed 和 Mochi 一起 / 专注吧！ headline. That headline was the
+/// same at 7am and 11pm, and it named the companion in a line the companion is
+/// already the subject of — the kind of copy the visual brief calls out as filler.
+String _greetingFor(DateTime now) => switch (TimeOfDayResolver.resolve(now)) {
+      TimeOfDayBand.morning => '早上好',
+      TimeOfDayBand.midday => '中午好',
+      TimeOfDayBand.afternoon => '下午好',
+      TimeOfDayBand.evening => '晚上好',
+      TimeOfDayBand.lateNight => '夜深了',
+    };
