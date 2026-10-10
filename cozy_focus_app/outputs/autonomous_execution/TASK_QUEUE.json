@@ -434,18 +434,24 @@
   },
   {
    "id": "S3.05b",
-   "status": "PENDING",
-   "title": "capture sheet: the selected chip should be brand green, not the category colour"
+   "status": "PASS",
+   "title": "capture sheet: the selected chip should be brand green, not the category colour",
+   "evidence": "measured on the device: the selected 生活 chip fill samples #EAF2EB (primaryLight, the brand tint) and an unselected chip samples #FBF8F2 (the surface). It is the brand colour, not catLife #F0B367. The source says the same thing: \"Selection is the brand green, not the category colour.\"",
+   "note": "queue entry was stale: verified against the device before changing anything"
   },
   {
    "id": "S3.05c",
-   "status": "PENDING",
-   "title": "capture sheet: the n/100 counter belongs inside the input box"
+   "status": "PASS",
+   "title": "capture sheet: the n/100 counter belongs inside the input box",
+   "evidence": "the counter renders inside the input box at its bottom-right (screenshot 02_BEFORE_AFTER/s305_sheet.png), matching design 05; the built-in Flutter counter is switched off with an empty counterText, which the source comments explain.",
+   "note": "queue entry was stale: verified against the device before changing anything"
   },
   {
    "id": "S3.05d",
-   "status": "PENDING",
-   "title": "capture sheet: the input is two lines tall, the design draws about four"
+   "status": "PASS",
+   "title": "capture sheet: the input is two lines tall, the design draws about four",
+   "evidence": "the input box is about four lines tall in the same screenshot, matching the design. No measurement beyond the screenshot was needed because the difference the queue described (two lines) is not there.",
+   "note": "queue entry was stale: verified against the device before changing anything"
   },
   {
    "id": "S3.05e",

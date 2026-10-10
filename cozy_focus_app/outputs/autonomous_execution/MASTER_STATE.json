@@ -33,7 +33,7 @@
  },
  "current": {
   "stage": "STAGE_1_VISUAL_MATRIX",
-  "subtask": "Stage 1 is now complete against the RIGHT design set. The program's 16 are the devpack's 01_FINAL_16_DESIGNS (per 01_DESIGN_TO_CODE_MAP.md), not the repo's v4.1 set; earlier matrix sections used the repo set and their numbering was wrong, now corrected and relabelled. Boards 08 and 10-16 are audited against the devpack boards.",
+  "subtask": "Stage 3 is complete. S3.07 removed the home hero card the devpack design does not draw; S3.05b/c/d were already done and the queue was stale - each verified on the device before touching anything. Stage 1 is complete against the right design set (the devpack 01_FINAL_16_DESIGNS, not the repo v4.1 set).",
   "mode": "IN_PROGRESS"
  },
  "status_vocabulary": [
@@ -134,7 +134,7 @@
   "device": "411x914 dp emulator; A-H re-walked on the final build; three sizes; large text; landscape; performance measured; every reachable screen's tree read"
  },
  "uncommitted": "none",
- "next_instruction": "Stage 3's remaining PENDING rows: S3.07 (the home page's extra encouragement card), and S3.05b/c/d (capture sheet details) - each needs checking against the device first, because the queue may be stale. Everything else outstanding is the owner's or BLOCKED_EXTERNAL.",
+ "next_instruction": "Nothing in Stage 1, 2, 3, 5, 6 or 7 is completable from here. Remaining: the owner (OWNER_VISUAL_GATE, 6 product decisions), a GPU-backed device (frame time, real-device), and the external blocks (room_sit art, TalkBack, Flow video, release signing, launcher icon).",
  "external_blockers": [
   "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
   "LAUNCHER_ICON: stock Flutter icon, no approved artwork",
