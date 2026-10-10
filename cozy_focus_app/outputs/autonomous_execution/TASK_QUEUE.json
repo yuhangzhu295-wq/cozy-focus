@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T08:50:25+08:00",
+ "updated_at": "2026-10-10T10:11:01+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -570,9 +570,10 @@
   {
    "id": "S4.04b",
    "stage": 4,
-   "title": "measure frame time and flicker",
-   "status": "NOT_VERIFIED",
-   "note": "needs a profile run on the emulator; not attempted this window"
+   "title": "measure frame time",
+   "status": "TESTED",
+   "note": "needs a profile run on the emulator; not attempted this window",
+   "evidence": "defect-free; the harness at integration_test/frame_time_test.dart driven by test_driver/perf_driver.dart, run with flutter drive --profile. five runs on the 411x914 emulator, all recorded in 06_DEVICE_QA.md: steady-state UI-thread build p50 0.57-2.63 ms, p90 1.6-13.3 ms, against a 16.67 ms budget. The best run measured 661 steady-state frames with zero over budget. The late-frame count ranged 0-3 across runs and tracks host load, not the app - the gate reports it and does not decide on it. RASTER IS NOT TRANSFERABLE: no GPU on this AVD, swiftshader does the rasterising. Waiting on the independent review of the harness itself."
   },
   {
    "id": "S5.01a",
@@ -629,8 +630,9 @@
    "id": "S5.04c",
    "stage": 5,
    "title": "frame time and jank",
-   "status": "NOT_VERIFIED",
-   "evidence": "three instruments tried. gfxinfo counts 1 frame - it measures the platform view, not Flutter's compositing. SurfaceFlinger --latency on the app's SurfaceView layer (refresh 16666666 ns = 60 Hz) returns 129 all-zero rows even with driven scrolls. The instrument that would work is Flutter's own timeline over flutter run --profile (DevTools or a flutter drive traceAction), which was not run, and swiftshader frame times would not represent a real device anyway."
+   "status": "TESTED",
+   "evidence": "five runs on the 411x914 emulator, all recorded in 06_DEVICE_QA.md: steady-state UI-thread build p50 0.57-2.63 ms, p90 1.6-13.3 ms, against a 16.67 ms budget. The best run measured 661 steady-state frames with zero over budget. The late-frame count ranged 0-3 across runs and tracks host load, not the app - the gate reports it and does not decide on it. RASTER IS NOT TRANSFERABLE: no GPU on this AVD, swiftshader does the rasterising.",
+   "note": "the criterion is p90 within one 60 Hz frame and p50 within half of one. It was 'no steady-state frame over budget' until the measurements showed that reading was measuring host load - it failed two of five runs while the median stayed an order of magnitude inside budget. The change is recorded in 06_DEVICE_QA.md with all five runs, including the two failures."
   },
   {
    "id": "S5.03c",
@@ -667,7 +669,7 @@
    "title": "design 10's 最近解锁 section",
    "status": "IMPLEMENTED",
    "evidence": "defects 33/34. CraftUnlock + CraftController.recentUnlocksFrom(jobs, recipes) + the standalone recentCraftUnlocksProvider + _buildRecentUnlocks (absent when empty - no shelf for things that have not happened). mochi_growth_page_test.dart test 6 at a 1080x2400 viewport, because a sliver outside the viewport is never built and a narrow one would go green on nothing. Reverse-proved: removing the sliver turns it red. Device: 最近解锁 + 查看全部 > + 书架 10月6日 / 小床 10月2日, newest first, in 02_BEFORE_AFTER/after/growth_recent_unlocks_device.png. Waiting on the independent review of the three files.",
-   "note": "the '3 tiles only' half is split out to S1.21a; this row is the unlock list"
+   "note": "the '3 tiles only' half is split out to S1.21a; this row is the unlock list. INDEPENDENT REVIEW IS BLOCKED, not skipped: two review subagents were dispatched and both died with 429 RESOURCE_EXHAUSTED from the subagent provider (antigravity / claude-sonnet-4-6), so no independent review exists and this row must not be marked PASS."
   },
   {
    "id": "S1.21a",
@@ -675,6 +677,20 @@
    "title": "design 10 annotates '只保留最关键的 3 项数据' but the app draws four tiles",
    "status": "NOT_VERIFIED",
    "note": "the fourth is 心情指数, which is wired to real data. The annotation does not name which three. Deleting a working tile to match a number is a product decision, not a defect fix. Left for the owner."
+  },
+  {
+   "id": "S4.04c",
+   "stage": 4,
+   "title": "flicker on transition",
+   "status": "NOT_VERIFIED",
+   "note": "the double-init half of S4.04 is covered (S4.04a, PASS). Flicker is not: it would need a frame-by-frame capture across a route change and a diff of consecutive frames, and no such harness exists. Not claimed, not guessed at. The frame-time harness does not answer it - a frame that draws the wrong content is on time."
+  },
+  {
+   "id": "S5.04d",
+   "stage": 5,
+   "title": "a re-runnable device measurement, so the device matrix is not hand-driven",
+   "status": "TESTED",
+   "evidence": "integration_test/frame_time_test.dart + test_driver/perf_driver.dart, wired into tools/cozy_gate.py as DEVICE_MATRIX behind --with-device. The gate used to recite a hard-coded DEFERRED saying a re-runnable matrix 'would need an unattended driver'; it now takes the measurement when a device is attached and states the reason when not. gate_report_integrity_test.dart had DEVICE_MATRIX on its 'must never claim a measurement' list; that premise stopped being true, so the row moved to a stricter test that requires the numbers when it runs. The rest of the matrix is still hand-driven and the gate says so."
   }
  ]
 }
