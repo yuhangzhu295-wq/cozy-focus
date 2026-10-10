@@ -158,9 +158,33 @@ bar in the header OVER the room with a pencil to rename, and draws a caption lin
 stat value. The app has them below the room, has no rename entry, and has no level-title
 table for the captions (`S1.21b`).
 
+### P3 房间页 — done, committed `caf55f2`
+
+The room page drew its own scene - a mint rectangle with a white cross for a window,
+a flat band for a floor - which read as a placeholder beside the three screens now
+using `CozyRoomBackdrop`. It uses the same painter and the placeholder is deleted.
+
+**The floor line is the finding.** The painter's desk line is 0.70 because that is where
+`floorAnchor.y` is, the anchor the pet and every floor-standing item are placed
+against; the old painter drew its floor at 0.64, so the pet stood 6% of the room's
+height below the floor. Drawn line and placement anchor are one number now.
+
+### Raster/room depth, and the image-generation question
+
+`CozyRoomBackdrop` now paints far elements (wall shading, window glow, shelf, plants)
+into a blurred layer and near ones (desk, mat, mug, books) sharp, with a bloom and a
+vignette. That is what makes it read as a room rather than coloured rectangles.
+
+**Image generation was probed, not assumed** - `tools/qa/probe_image_generation.py`.
+Volcano Ark is reachable but the key is an AKLT access-key id (401, format); OpenAI's
+key is rejected (401). So there is no generation path, and the room stays drawn. The
+boards' rooms are photographic renders with real wood grain and depth of field; a
+vector painter gets the mood and the layering, not the pixels. Reaching the boards
+exactly needs a working generation key, supplied art, or accepting the illustration.
+
 ### Still to do in this pass
 
-房间页 (P3 剩余), P4 任务列表/新建/详情, P5 今日计划/安排/时间线,
+P4 任务列表/新建/详情, P5 今日计划/安排/时间线,
 P6 分心箱/复盘/自由时间, P7 统计/设置/空状态. Each page: run → screenshot → compare to
 the board → fix → re-screenshot → test → next. The boards for the page are in
 `_devpack_v2/CozyFocus_2_0_Zxode_DevPack_v2/01_FINAL_16_DESIGNS/`; crop with
