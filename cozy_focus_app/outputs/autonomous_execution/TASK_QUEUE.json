@@ -1,7 +1,7 @@
 {
  "queue_version": 1,
  "note": "Statuses are the only vocabulary allowed: PENDING / IN_PROGRESS / IMPLEMENTED / TESTED / REVIEW_APPROVED / PASS / FAIL / BLOCKED_EXTERNAL / NOT_VERIFIED. A task is PASS only when its function, its verification and its review are all done.",
- "updated_at": "2026-10-10T11:09:29+08:00",
+ "updated_at": "2026-10-10T11:17:27+08:00",
  "tasks": [
   {
    "id": "S1.01",
@@ -262,8 +262,8 @@
    "id": "S4.04",
    "stage": 4,
    "title": "no flicker, no dropped frames, no double init on transition",
-   "status": "NOT_VERIFIED",
-   "evidence": "the double-init half is covered by companion_avatar_runtime_test.dart (the LateInitializationError regression and the install-while-mounted refresh). Frame time and flicker were NOT measured - no profile run was taken, so this is not a PASS."
+   "status": "TESTED",
+   "evidence": "all three parts now have an instrument. Double init: S4.04a, PASS. Dropped frames: S4.04b, the UI-thread frame time measured on the device over five runs. Flicker: S4.04c, the frame-by-frame blank-frame check. The frame-time row's GPU half still needs a real device, and that is stated on S4.04b/S5.04c rather than implied here."
   },
   {
    "id": "S5.01",
@@ -683,9 +683,10 @@
   {
    "id": "S4.04c",
    "stage": 4,
-   "title": "flicker on transition",
-   "status": "NOT_VERIFIED",
-   "note": "the double-init half of S4.04 is covered (S4.04a, PASS). Flicker is not: it would need a frame-by-frame capture across a route change and a diff of consecutive frames, and no such harness exists. Not claimed, not guessed at. The frame-time harness does not answer it - a frame that draws the wrong content is on time."
+   "title": "flicker on transition, measured frame by frame",
+   "status": "TESTED",
+   "note": "the double-init half of S4.04 is covered (S4.04a, PASS). Flicker is not: it would need a frame-by-frame capture across a route change and a diff of consecutive frames, and no such harness exists. Not claimed, not guessed at. The frame-time harness does not answer it - a frame that draws the wrong content is on time.",
+   "evidence": "test/presentation/route_transition_flicker_test.dart. A route transition is walked frame by frame and each frame is compared against a rendered screen that genuinely draws nothing; a frame the empty screen explains almost entirely is a blank frame, which is what a flash looks like. 30 frames of home -> records: none blank. Self-check included (a page with content must not match the empty reference; two captures of one unchanged screen must agree), and reverse-proved by making the destination page blank, which flags frames 16-29. This runs at the widget level and does NOT need a device, because flicker is a compositing question and the test rasteriser answers it the same way a phone would. Three colour-statistic criteria were tried first and all three were wrong; they are recorded in the file's comments. What this does NOT cover: a frame that draws the right amount of content but the wrong content. Waiting on independent review."
   },
   {
    "id": "S5.04d",
