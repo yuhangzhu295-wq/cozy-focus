@@ -5,7 +5,7 @@
  "branch": "recovery/v4.2.1-rebuild",
  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
- "updated_at": "2026-10-10T10:25:11+08:00",
+ "updated_at": "2026-10-10T11:30:50+08:00",
  "continuation": {
   "question": "does this environment support automatic continuation of the work?",
   "answer": "PARTIALLY — and the honest split matters.",
@@ -24,18 +24,18 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "fa56849f72e86ca7f472be13795ac896ae0269f4",
+  "head": "764d8e4ffd029cf23e556a1fc44b8722af508062",
   "remote_head": "fa56849f72e86ca7f472be13795ac896ae0269f4",
   "head_matches_remote": true,
   "worktree": "dirty",
-  "last_verified_at": "2026-10-10T10:25:11+08:00",
+  "last_verified_at": "2026-10-10T11:30:50+08:00",
   "note": "Local and remote agree. The frame-time harness (4db76d5) and the QA/state commit (fa56849) reached origin after the connection had dropped several times; the push reported 'Everything up-to-date' and `git ls-remote` was then read directly to confirm the remote ref equals local HEAD, because 'Everything up-to-date' is the one message that looks the same whether the push landed or the ref was never read. The state commit carrying this file sits on top of the SHA recorded here.",
   "remote_reachable_at_last_check": false
  },
  "current": {
   "stage": "STAGE_1_VISUAL_MATRIX",
-  "subtask": "Frame time is measured. A re-runnable device harness now exists (integration_test/ + test_driver/, wired into the gate as DEVICE_MATRIX behind --with-device) and the gate reports 13 PASS / 3 BLOCKED / 2 DEFERRED / 0 FAIL. The UI-thread numbers have an order of magnitude of headroom; raster time still needs a real GPU.",
-  "mode": "IN_PROGRESS"
+  "subtask": "One-shot completion run. The hourly CozyFocus automation was deleted at the owner's request and no new schedule was created. Four units closed: S1.21a (the fourth stat tile was a duplicate of the 幸福感 card), S1.09a (resolved as not a defect - board 09's own prose names four kinds and the app renders four), S1.20 (the subtask card had no way in, and both dialogs on that page used a disposed controller), S4.04c (flicker measured frame by frame, no device needed). Defects 35-38. A new scanner for the 'built but unreachable' class then found deleteSubtask, which was the other half of the same card.",
+  "mode": "ONE_SHOT_COMPLETION"
  },
  "status_vocabulary": [
   "PENDING",
@@ -103,12 +103,13 @@
   "S6.C Golden Flow C found defect 20: the rest page's four preset chips each read 5 分钟\\n5\\n分钟. The static scan had missed it twice over — it treated a following CJK character as continuing a Dart identifier, and it double-prefixed the dollar when the child was Text('$minutes'). Both fixed, which also surfaced a second site on the schedule page (09:00\\n09:00). The scan is now at zero across lib/. This is the third time the scanner itself was wrong, and the third time the device tree was the authority"
  ],
  "pending": [
-  "S1.21 independent review - BLOCKED: the subagent provider returned 429 RESOURCE_EXHAUSTED for both attempts. Retry when quota recovers.",
-  "S1.21a design 10 annotates '3 data tiles' and the app draws four - the fourth is 心情指数 on real data. Owner's call.",
-  "S1.20 design 12's subtask progress card has no creation path. Owner's call.",
-  "S1.09a design 09's life events - the 'invent them' reading is already forbidden by the contract; only the 生活-category recolouring is left, and it reinterprets the legend. Owner's call.",
-  "S4.04c flicker on transition - NOT_VERIFIED, needs a frame-diff harness that does not exist yet.",
-  "Raster/GPU frame time - needs a device with a real GPU."
+  "S1.21 and this session's other code are IMPLEMENTED/TESTED, NOT PASS: no independent review could be obtained. See REVIEW_SUBAGENTS in external_blockers for the exact provider message.",
+  "S1.21b design 10's stat tiles each carry a caption line the app does not draw; two captions are derivable labels but the first needs a level-title table, and the board supplies exactly one example (Lv.3 = 萌芽伙伴). Content, not layout - none invented.",
+  "S1.20b the app's 任务进度 card lists its subtasks and offers an add row where the board draws a bare bar. Those additions are what make the fraction mean anything, but they are additions and are recorded as such.",
+  "S1.22 cancelSession has no UI call site. Wiring it would let a started focus session stop existing without a record, which decides what the ledger treats as a fact - not an ordinary decision.",
+  "OWNER_VISUAL_GATE - the owner's, never decided by a measurement.",
+  "GPU/raster frame time - needs a device with a real GPU.",
+  "S4.02 room_sit art and S5.05 TalkBack - BLOCKED_EXTERNAL."
  ],
  "failed": [],
  "dependencies": [
@@ -119,19 +120,19 @@
   "S7 depends on all of the above"
  ],
  "recent_test_evidence": {
-  "at": "2026-10-10T10:11:01+08:00",
+  "at": "2026-10-10T11:30:50+08:00",
   "command": "flutter test",
-  "result": "2034/2034 unit, analyze clean, format clean, APK builds",
+  "result": "2045/2045 unit, analyze clean, format clean, APK builds",
   "analyze": "flutter analyze --fatal-infos: No issues found",
   "format": "dart format --set-exit-if-changed .: 0 changed",
   "apk": "flutter build apk --debug: built",
   "diff_check": "clean",
-  "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0 (self-test ok), find_unlabelled_icon_buttons.py 0, audit_pack_geometry.py PASS",
+  "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0, find_unlabelled_icon_buttons.py 0, and the new find_uncalled_controller_methods.py 1 (self-test 4/4) - that one reports a question, not a defect",
   "project_gate": "tools/cozy_gate.py --full --with-device: 13 PASS / 3 BLOCKED / 2 DEFERRED / 0 FAIL",
   "device": "411x914 emulator; frame time measured over five runs (see 06_DEVICE_QA.md); A-H re-walked on the final build; three sizes; large text; landscape"
  },
  "uncommitted": "none",
- "next_instruction": "Nothing left in the queue is completable from code alone. The frame-time harness closed the last measurable engineering item. What remains is the owner (OWNER_VISUAL_GATE, 6 product decisions, S1.21a/S1.20/S1.09a), a device with a real GPU (raster frame time), and the standing external blocks. Independent review of this window's code is blocked on subagent provider quota - retry it first, because two rows are waiting on it.",
+ "next_instruction": "Independent review is the only thing standing between the queue and PASS on roughly forty rows. Retry it first once the subagent quota resets (about 66 hours from 2026-10-10). Everything else left is the owner's (OWNER_VISUAL_GATE, S1.21b's level titles, S1.20b, S1.22), a GPU-backed device, or the standing external blocks. Also check whether the last push went through: github.com:443 was refusing again at the end of this run.",
  "external_blockers": [
   "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
   "LAUNCHER_ICON: stock Flutter icon, no approved artwork",
@@ -141,8 +142,8 @@
   "ROOM_SCENE_ART: designs 01/04/10 use a photographic room the repo has no asset for",
   "ROOM_SIT_FRAMES: no pack ships a sustained sit pose",
   "SOFT_SHIPPED_FRAMES: 4 of 147 shipped frames are below the pack builder's own admission rule",
-  "REVIEW_SUBAGENTS: the subagent provider is returning 429 RESOURCE_EXHAUSTED, so independent review of this window's code could not be obtained. This blocks PASS on S1.21 and on the frame-time harness - not because the code is unverified, but because the rule is that an implementer does not approve its own code.",
-  "RASTER_FRAME_TIME: this AVD has hw.gpu.enabled=no and Flutter falls back to swiftshader; raster timings here describe a software rasteriser, so GPU frame time needs a real device."
+  "RASTER_FRAME_TIME: this AVD has hw.gpu.enabled=no and Flutter falls back to swiftshader; raster timings here describe a software rasteriser.",
+  "REVIEW_SUBAGENTS: NO independent review is obtainable right now. Eight agent types were tried and every one failed to run: code-reviewer and general-purpose and Explore all hit the antigravity provider, which answered 'Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 65h51m22s.'; architecture-reviewer and final-gate route to chatgpt.com, which this network cannot reach (dial tcp timeout); local-private and deep-reasoner have no provider configured (provider-not-found); quick-scout starts but needs a reasoning level. This blocks PASS on every unit this session produced, not because the code is unverified - each unit has a targeted test, a reverse proof and a device check where a device showed it - but because the rule is that an implementer does not approve its own code. Retry after the quota window."
  ],
  "final_gate": "NOT_REACHED"
 }
