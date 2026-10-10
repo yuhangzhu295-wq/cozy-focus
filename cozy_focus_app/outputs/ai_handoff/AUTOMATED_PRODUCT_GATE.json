@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-10-10 10:08:12",
-  "head": "f4bc36be74e28fe9d75432cb1416a5024bdb3692",
-  "remote_head": "f4bc36be74e28fe9d75432cb1416a5024bdb3692",
-  "local_equals_remote": true,
+  "generated_at": "2026-10-10 11:39:37",
+  "head": "764d8e4ffd029cf23e556a1fc44b8722af508062",
+  "remote_head": "ed6eeca80580f8290cd3ba33fd1985777aae706c",
+  "local_equals_remote": false,
   "counts": {
     "PASS": 13,
     "BLOCKED": 3,
@@ -12,74 +12,74 @@
     {
       "gate": "FORMAT",
       "status": "PASS",
-      "evidence": "458 files, 0 changed",
-      "seconds": 3.0
+      "evidence": "460 files, 0 changed",
+      "seconds": 7.4
     },
     {
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 8.2
+      "seconds": 31.0
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
-      "evidence": "2034/2034 passed",
-      "seconds": 150.2
+      "evidence": "2045/2045 passed",
+      "seconds": 177.1
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "51/51 passed",
-      "seconds": 14.3
+      "seconds": 13.5
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 4.2
+      "seconds": 4.0
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 11.3
+      "seconds": 9.5
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "81/81 passed",
-      "seconds": 19.8
+      "seconds": 11.6
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 12.6
+      "seconds": 9.5
     },
     {
       "gate": "DEVICE_MATRIX",
       "status": "PASS",
-      "evidence": "FRAME_TIME 691 frames on emulator-5554, 661 after the 30-frame startup warmup; steady-state UI-thread build p50 1744 us / p90 3650 us / p99 7160 us; frames over the 16.67 ms budget after the warmup: 0. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
-      "seconds": 114.1
+      "evidence": "FRAME_TIME 693 frames on emulator-5554, 663 after the 30-frame startup warmup; steady-state UI-thread build p50 1728 us / p90 7239 us / p99 25501 us; frames over the 16.67 ms budget after the warmup: 24. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
+      "seconds": 127.9
     },
     {
       "gate": "APK",
       "status": "PASS",
       "evidence": "32.0 MB (budget 34 MB)",
-      "seconds": 12.7
+      "seconds": 129.0
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "50.5 MB (budget 55 MB)",
-      "seconds": 7.4
+      "seconds": 20.5
     },
     {
       "gate": "DIFF_CHECK",
       "status": "PASS",
       "evidence": "no whitespace errors",
-      "seconds": 0.1
+      "seconds": 0.2
     },
     {
       "gate": "RELEASE_SIGNING",
@@ -109,7 +109,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 5.1
+      "seconds": 9.1
     },
     {
       "gate": "FLOW_GENERATION",
