@@ -95,6 +95,49 @@ reverse-proved, both device-checked at 360dp and 411dp.
 **Lesson worth keeping:** the only real defect this round that no walkthrough would
 have found came from a boundary test written for an unrelated change.
 
+## VISUAL PASS (in progress) — read this before the sections below
+
+The owner issued a follow-up brief: the boards are the **target**, not reference
+material, and anything previously parked as `BLOCKED_EXTERNAL` for missing art must
+be **attempted** with code, procedural drawing or existing assets rather than
+recorded and left. Priority order P1 首页 → P2 专注进行页 → P3 成长/Mochi/房间 → P4–P7.
+No new scheduled tasks. Bottom nav stays 首页 / 记录 / 成长.
+
+### P1 首页 — done, committed `fc45fe0`
+
+The room is **drawn**, not photographed: `lib/presentation/widgets/cozy_room_backdrop.dart`
+paints wall, window with light, a shelf with two plants, a wooden desk and a woven
+mat. The `BLOCKED_EXTERNAL` note said "the repo has no asset for a photographic
+room", which was true of a photograph and false of the requirement — every piece of
+art this app owns is already procedural. **This is the pattern to reuse for the room
+page and the focus page: paint it, do not wait for a file.**
+
+The hero band went **264dp → 340dp**; that is what made a scene possible rather than
+decorative. Three things that said what the board does not say were removed: the
+fixed headline (now a clock-based greeting from `TimeOfDayResolver`), a green
+encouragement banner with a sprout and a heart that is on no board, and a bare
+settings glyph that now sits in the board's round chip.
+
+Two deliberate non-copies, both with reasons in the code: the chip keeps a **gear**
+rather than the board's leaf, because that button is the app's only route to 设置
+(a P0 traded for a P2); and the 当前任务 card stays absent when nothing is planned,
+because the board's version is drawn with data the app does not have.
+
+Evidence: `evidence/home_room_top.png`, `evidence/home_room_bottom.png`.
+Tests: 2045 green. The two headline-clearance tests keep their geometry assertion.
+
+### Still to do in this pass
+
+P2 专注进行页, P3 成长/Mochi/房间, P4 任务列表/新建/详情, P5 今日计划/安排/时间线,
+P6 分心箱/复盘/自由时间, P7 统计/设置/空状态. Each page: run → screenshot → compare to
+the board → fix → re-screenshot → test → next. The boards for the page are in
+`_devpack_v2/CozyFocus_2_0_Zxode_DevPack_v2/01_FINAL_16_DESIGNS/`; crop with
+`tools/qa/crop_board.py <stem> x y w h --scale 3`.
+
+**Still no independent visual reviewer**: every subagent provider is unavailable
+(see REVIEW_SUBAGENTS in MASTER_STATE). Judge against the board by screenshot, and
+say in the evidence that the comparison was mine rather than an independent one.
+
 ## This window: design 10's 最近解锁, and the two bugs under it
 
 The section had been filed as **缺口（需数据源）** — "needs a data source". It did
