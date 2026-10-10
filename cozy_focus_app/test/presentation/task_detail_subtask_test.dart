@@ -197,6 +197,46 @@ void main() {
     expect(find.text('1 / 2'), findsOneWidget);
   });
 
+  testWidgets('a subtask can be removed, and the fraction follows',
+      (tester) async {
+    // `deleteSubtask` was built and unreachable, the same shape as the card
+    // itself: a subtask could be added and never removed, so a mistyped one
+    // stayed in the list and in the fraction for good.
+    //
+    // Disposed at the end of the body rather than in addTearDown: the framework
+    // verifies handles before tearDowns run, so a handle released there is
+    // reported as still active.
+    final semantics = tester.ensureSemantics();
+
+    await seedTask();
+    final c = container();
+    await pump(tester, c);
+
+    await addSubtask(tester, '第一步');
+    await addSubtask(tester, '第二步');
+    expect(find.text('0 / 2'), findsOneWidget);
+
+    // Found by its accessible name, because the control is an icon and the name
+    // is the only thing that says what it deletes.
+    await tester.tap(find.bySemanticsLabel('删除 第一步'));
+    await tester.pumpAndSettle();
+
+    final rows = await repo.subtasksFor(taskId);
+    expect(rows, hasLength(1));
+    expect(rows.single.title, '第二步');
+    expect(find.text('0 / 1'), findsOneWidget);
+    expect(find.text('第一步'), findsNothing);
+
+    // Removing the last one puts the card back out of sight: its visibility is
+    // derived from the count, not remembered.
+    await tester.tap(find.bySemanticsLabel('删除 第二步'));
+    await tester.pumpAndSettle();
+    expect(await repo.subtasksFor(taskId), isEmpty);
+    expect(find.text('任务进度'), findsNothing);
+
+    semantics.dispose();
+  });
+
   testWidgets('the note editor saves, and does not read a disposed controller',
       (tester) async {
     await seedTask();

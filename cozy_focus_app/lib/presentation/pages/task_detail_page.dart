@@ -164,7 +164,14 @@ class _Body extends ConsumerWidget {
         // Progress, only when there is something to count. A `0 / 0` bar would
         // be a progress indicator for a thing that has no progress.
         if (progress.hasSubtasks) ...[
-          _ProgressCard(progress: progress, onToggle: controller.toggleSubtask),
+          _ProgressCard(
+            progress: progress,
+            onToggle: controller.toggleSubtask,
+            // `deleteSubtask` was built and unreachable, the same shape as the
+            // card itself: a subtask could be added and never removed, so a typo
+            // stayed in the list and in the fraction for good.
+            onDelete: (subtask) => controller.deleteSubtask(subtask.id),
+          ),
           const SizedBox(height: 12),
         ],
 
@@ -444,8 +451,13 @@ class _AddSubtaskRow extends StatelessWidget {
 class _ProgressCard extends StatelessWidget {
   final TaskWithProgress progress;
   final ValueChanged<TaskSubtask> onToggle;
+  final ValueChanged<TaskSubtask> onDelete;
 
-  const _ProgressCard({required this.progress, required this.onToggle});
+  const _ProgressCard({
+    required this.progress,
+    required this.onToggle,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -495,43 +507,68 @@ class _ProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           for (final subtask in progress.subtasks)
-            Semantics(
-              excludeSemantics: true,
-              onTap: () => onToggle(subtask),
-              button: true,
-              label: '${subtask.isDone ? '取消完成' : '完成'} ${subtask.title}',
-              child: InkWell(
-                onTap: () => onToggle(subtask),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    children: [
-                      Icon(
-                        subtask.isDone
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
-                        size: 18,
-                        color: subtask.isDone
-                            ? AppColors.primarySage
-                            : AppColors.textTertiary,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          subtask.title,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textPrimary,
-                            decoration: subtask.isDone
-                                ? TextDecoration.lineThrough
-                                : null,
-                          ),
+            Row(
+              children: [
+                Expanded(
+                  child: Semantics(
+                    excludeSemantics: true,
+                    onTap: () => onToggle(subtask),
+                    button: true,
+                    label: '${subtask.isDone ? '取消完成' : '完成'} ${subtask.title}',
+                    child: InkWell(
+                      onTap: () => onToggle(subtask),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            Icon(
+                              subtask.isDone
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked,
+                              size: 18,
+                              color: subtask.isDone
+                                  ? AppColors.primarySage
+                                  : AppColors.textTertiary,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                subtask.title,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textPrimary,
+                                  decoration: subtask.isDone
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+                // Deliberately a SIBLING of the Semantics above, not a child of
+                // it. That wrapper excludes its whole subtree, so a delete
+                // control inside it would be unreachable to a screen reader -
+                // the same shape as the menu this project already lost once.
+                Semantics(
+                  label: '删除 ${subtask.title}',
+                  button: true,
+                  child: IconButton(
+                    onPressed: () => onDelete(subtask),
+                    icon: const Icon(Icons.close_rounded, size: 16),
+                    color: AppColors.textTertiary,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                  ),
+                ),
+              ],
             ),
         ],
       ),
