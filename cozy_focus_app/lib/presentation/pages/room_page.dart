@@ -16,6 +16,7 @@ import '../companion/room/companion_placement.dart';
 import '../companion/room/furniture_catalog.dart';
 import '../companion/room/furniture_use_panel.dart';
 import '../companion/room/room_simulation.dart';
+import '../widgets/cozy_room_backdrop.dart';
 import '../controllers/craft_controller.dart';
 import '../controllers/focus_session_controller.dart';
 import '../theme/app_theme.dart';
@@ -663,72 +664,20 @@ class _RoomPageState extends ConsumerState<RoomPage>
     return entity.interactionPoints.first;
   }
 
+  /// The room, drawn with the same painter the home, focus and growth screens use.
+  ///
+  /// This replaced a hand-drawn `_RoomScenePainter` whose "window" was a mint
+  /// rectangle with a white cross and whose floor was a flat band: it read as a
+  /// placeholder, and it drew no shelf, no plants and no light.
+  ///
+  /// `deskLine` is 0.70 because that is where `floorAnchor.y` is, and that is
+  /// where the companion and every floor-standing piece of furniture are placed.
+  /// The old painter put its floor line at 0.64, so the pet stood 6% of the
+  /// room's height *below* the floor it was supposed to be standing on, which is
+  /// why it looked half-buried.
   Widget _buildRoomBackground() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFF5EFE6),
-            Color(0xFFEDE6D8),
-          ],
-        ),
-      ),
-      child: CustomPaint(
-        painter: _RoomScenePainter(),
-        child: const SizedBox.expand(),
-      ),
-    );
+    return const CozyRoomBackdrop(deskLine: 0.70);
   }
-}
-
-class _RoomScenePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final wall = Paint()..color = const Color(0xFFF7F0E5);
-    canvas.drawRect(Offset.zero & size, wall);
-    final sunlight = Paint()
-      ..color = const Color(0xFFFFE7A9).withValues(alpha: 0.28);
-    final beam = Path()
-      ..moveTo(size.width * .12, 0)
-      ..lineTo(size.width * .43, 0)
-      ..lineTo(size.width * .66, size.height * .64)
-      ..lineTo(size.width * .34, size.height * .64)
-      ..close();
-    canvas.drawPath(beam, sunlight);
-    final windowPaint = Paint()..color = const Color(0xFFBFE0D6);
-    final window = RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * .1, size.height * .1, size.width * .28,
-            size.height * .27),
-        const Radius.circular(12));
-    canvas.drawRRect(window, windowPaint);
-    final frame = Paint()
-      ..color = Colors.white.withValues(alpha: 0.8)
-      ..strokeWidth = 3;
-    canvas.drawLine(Offset(size.width * .24, size.height * .1),
-        Offset(size.width * .24, size.height * .37), frame);
-    canvas.drawLine(Offset(size.width * .1, size.height * .235),
-        Offset(size.width * .38, size.height * .235), frame);
-    final floorPaint = Paint()..color = const Color(0xFFDCCBB6);
-    final floor = Path()
-      ..moveTo(0, size.height * .64)
-      ..lineTo(size.width, size.height * .64)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(floor, floorPaint);
-    final line = Paint()
-      ..color = const Color(0xFFCAB79D).withValues(alpha: 0.35)
-      ..strokeWidth = 1;
-    for (var i = 1; i < 7; i++) {
-      final y = size.height * .64 + i * size.height * .06;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), line);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// Displays a single placed furniture item and handles drag interaction.
