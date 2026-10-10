@@ -143,9 +143,24 @@ and a button that plays nothing is forbidden), and no tune icon in the corner (t
 no settings on this screen, and a control that does nothing is the same offence).
 Evidence: `evidence/focus_running_room.png`.
 
+### P3 成长页 — done, committed `f7f2b56`
+
+Same room painter, **confined to the pet's band (196dp)** rather than the whole hero. That
+confinement is the finding: behind the whole hero the rug landed under the pet's name and
+level, and the text read as written on a mat. Name / level / XP sit below the scene on the
+page background, which is the cream the wall fades to.
+
+The message bubble (「Mochi 正在陪伴你成长」 + sprout) is gone — board 10 draws no bubble.
+The test that pinned it now asserts its **absence**. Evidence: `evidence/growth_room.png`.
+
+**Not done on this page, recorded rather than skipped:** board 10 puts the name / level / XP
+bar in the header OVER the room with a pencil to rename, and draws a caption line under each
+stat value. The app has them below the room, has no rename entry, and has no level-title
+table for the captions (`S1.21b`).
+
 ### Still to do in this pass
 
-P3 成长/Mochi/房间, P4 任务列表/新建/详情, P5 今日计划/安排/时间线,
+房间页 (P3 剩余), P4 任务列表/新建/详情, P5 今日计划/安排/时间线,
 P6 分心箱/复盘/自由时间, P7 统计/设置/空状态. Each page: run → screenshot → compare to
 the board → fix → re-screenshot → test → next. The boards for the page are in
 `_devpack_v2/CozyFocus_2_0_Zxode_DevPack_v2/01_FINAL_16_DESIGNS/`; crop with
