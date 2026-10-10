@@ -7,7 +7,6 @@ import '../controllers/distraction_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../companion/companion_selection.dart';
 import '../../domain/models/focus_record.dart';
 import '../../domain/models/focus_review.dart';
 import '../../domain/services/duration_text.dart';
@@ -267,7 +266,6 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
 
   // ===== Screen 05A: Today =====
   Widget _buildTodayTab(RecordsState state) {
-    final companionName = ref.watch(companionDisplayNameProvider);
     final sec = state.todaySummary?.totalSeconds ?? 0;
     final count = state.todaySummary?.sessionCount ?? 0;
     final mins = sec ~/ 60;
@@ -279,12 +277,6 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
             r.startAt.month == now.month &&
             r.startAt.day == now.day)
         .toList();
-    final diff = state.todayVsYesterdayMinutes;
-    final msg = sec == 0
-        ? '和 $companionName 一起开启今天的专注吧！'
-        : diff > 0
-            ? '今天也很棒呢，和 $companionName 一起继续加油！💚'
-            : '慢慢来，和 $companionName 一起加油！💚';
 
     return ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -296,22 +288,6 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
           _buildTaskEntry(context),
           const SizedBox(height: 10),
           _buildInboxEntry(context),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-            decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(AppRadius.md)),
-            child: Row(children: [
-              const Icon(Icons.eco_rounded,
-                  color: AppColors.primarySage, size: 15),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: Text(msg,
-                      style: const TextStyle(
-                          fontSize: 13, color: AppColors.primaryDark))),
-            ]),
-          ),
           const SizedBox(height: 20),
           Row(children: [
             const Icon(Icons.schedule_rounded,
