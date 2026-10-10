@@ -162,22 +162,24 @@ class _HomePageState extends ConsumerState<HomePage> {
   /// 357dp — the earlier 264 was the height of a *flat colour band*, and it is
   /// why the room could not be drawn: a scene needs somewhere to stand. The card
   /// below still overlaps the hero's lower edge, as the board draws it.
-  static const double _heroContentHeight = 340;
+  static const double _heroContentHeight = 384;
 
   /// Vertical centre of the pet, measured from the top of the hero band.
   ///
   /// The pet keeps the size board 01 gives it (~190pt across) and sits lower in
   /// the taller band so that its feet land on the desk rather than in the air.
-  static const double _heroPetCentre = 214;
+  static const double _heroPetCentre = 196;
 
   /// Approved pet footprint width. Reference 01 draws Mochi ~190pt wide across
   /// the hero, which is also the width the layered renderer uses elsewhere.
   static const double _heroPetSize = 190;
 
   /// Where the desk surface starts, as a fraction of the hero band. Chosen so
-  /// the woven mat lands under the pet's feet: with a 340dp band this puts the
-  /// desk line at ~245dp and the mat at ~273dp, just below the pet's lower body.
-  static const double _heroDeskLine = 0.72;
+  /// the woven mat lands under the pet's feet: with a 384dp band this puts the
+  /// desk line at ~315dp and the mat at ~333dp. The pet's drawn body reaches
+  /// ~300dp, so it stands on the desk instead of being cut by it - which it was
+  /// at 340/0.72 and again at 340/0.78.
+  static const double _heroDeskLine = 0.82;
 
   Widget _buildHeroArea(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;

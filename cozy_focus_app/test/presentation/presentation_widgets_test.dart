@@ -328,8 +328,8 @@ void main() {
           )
           .first;
       final heroWidget = tester.widget<SizedBox>(heroFinder);
-      expect(heroWidget.height, equals(340));
-      expect(tester.getSize(heroFinder).height, equals(340));
+      expect(heroWidget.height, equals(384));
+      expect(tester.getSize(heroFinder).height, equals(384));
     });
 
     testWidgets('Screen 02: FocusSetupPage renders categories and mode options',
