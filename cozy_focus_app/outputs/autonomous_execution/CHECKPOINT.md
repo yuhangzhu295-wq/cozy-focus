@@ -126,9 +126,26 @@ because the board's version is drawn with data the app does not have.
 Evidence: `evidence/home_room_top.png`, `evidence/home_room_bottom.png`.
 Tests: 2045 green. The two headline-clearance tests keep their geometry assertion.
 
+### P2 专注进行页 — done, committed `28b9c86`
+
+Same room painter, shallower desk line. **The top-right sticky note was removed because its
+sentence is printed in the BOARD'S MARGIN**, outside the phone frame, as a pull-quote — a
+board's annotations are not UI. Also gone: the sprout on the title, the old subtitle, and
+保持专注，Mochi 正在陪着你 under the ring.
+
+The title is now the screen's name (专注), constant, as the board titles it — which is also
+a correctness fix: making it state-dependent made the page say 已暂停 twice, in the header
+and on the ring, and `focus_ring_test.dart` caught it. **The fix was the title, not the
+assertion.**
+
+Kept deliberately, with reasons in the code: three controls not four (白噪音 has no audio,
+and a button that plays nothing is forbidden), and no tune icon in the corner (the app has
+no settings on this screen, and a control that does nothing is the same offence).
+Evidence: `evidence/focus_running_room.png`.
+
 ### Still to do in this pass
 
-P2 专注进行页, P3 成长/Mochi/房间, P4 任务列表/新建/详情, P5 今日计划/安排/时间线,
+P3 成长/Mochi/房间, P4 任务列表/新建/详情, P5 今日计划/安排/时间线,
 P6 分心箱/复盘/自由时间, P7 统计/设置/空状态. Each page: run → screenshot → compare to
 the board → fix → re-screenshot → test → next. The boards for the page are in
 `_devpack_v2/CozyFocus_2_0_Zxode_DevPack_v2/01_FINAL_16_DESIGNS/`; crop with
