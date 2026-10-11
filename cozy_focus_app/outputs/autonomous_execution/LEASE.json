@@ -8,8 +8,8 @@
   "lease_expires_at": "2026-10-11T01:38:18+08:00",
   "current_stage": "STAGE_VISUAL_P3",
   "current_task": "growth-room-visual",
-  "last_verified_commit": "b90cda0b8243cfdbace6051f5ef80ade86fba2df",
-  "released_at": null,
+  "last_verified_commit": "b8317dde0b6a58d833a739e1d6cb0fc63f9431ea",
+  "released_at": "2026-10-11T12:59:42+08:00",
   "recovered_from": {
     "run_id": "sess-visual",
     "last_heartbeat_at": "2026-10-10T12:34:23+08:00",
