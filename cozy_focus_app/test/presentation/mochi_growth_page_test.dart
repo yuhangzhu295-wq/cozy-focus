@@ -228,15 +228,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      final buttonFinder = find.byKey(const Key('growth_collection_button'));
-      expect(buttonFinder, findsOneWidget);
-      // Scoped to the button. The page also renders GrowthSubNav, which carries
-      // its own 图鉴 pill, so an unscoped text match finds two and only ever
-      // found one while the shared router leaked a location into this test.
-      expect(
-        find.descendant(of: buttonFinder, matching: find.text('图鉴')),
-        findsOneWidget,
-      );
+      // The header's own 图鉴 button is gone. It duplicated the GrowthSubNav
+      // pill, and the old comment here admitted it - "the page also renders
+      // GrowthSubNav, which carries its own 图鉴 pill, so an unscoped text match
+      // finds two" - and worked around the duplication instead of removing it.
+      // The destination is the same, so this covers the same thing through the
+      // one control that offers it.
+      final buttonFinder = find.text('图鉴');
+      expect(buttonFinder, findsOneWidget,
+          reason: 'exactly one control should offer the collection');
 
       await tester.tap(buttonFinder);
       await tester.pump();

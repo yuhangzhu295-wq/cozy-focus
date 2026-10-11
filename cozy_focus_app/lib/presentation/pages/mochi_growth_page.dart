@@ -104,22 +104,6 @@ class MochiGrowthPage extends ConsumerWidget {
               height: 1.1,
             ),
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-            ),
-            child: Text(
-              petName,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryDark,
-              ),
-            ),
-          ),
           const Spacer(),
           TextButton.icon(
             key: const Key('growth_companion_picker_button'),
@@ -131,32 +115,6 @@ class MochiGrowthPage extends ConsumerWidget {
             ),
             label: const Text(
               '伙伴',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryDark,
-              ),
-            ),
-            style: TextButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                side: const BorderSide(color: AppColors.border),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          TextButton.icon(
-            key: const Key('growth_collection_button'),
-            onPressed: () => context.go('/growth/collection'),
-            icon: const Icon(
-              Icons.collections_bookmark_outlined,
-              size: 18,
-              color: AppColors.primaryDark,
-            ),
-            label: const Text(
-              '图鉴',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
