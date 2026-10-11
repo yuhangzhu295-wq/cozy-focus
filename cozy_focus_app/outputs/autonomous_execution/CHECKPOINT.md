@@ -223,8 +223,26 @@ claim, passed the state in, and `mochi_live_gate_test` showed a session was in f
 running - the badge was right. **A screenshot without checking the session state is
 not evidence of a wrong badge.**
 
-### Still to do in this pass
-P4 任务列表/新建/详情, P5 今日计划/安排/时间线,
+
+### P7 成长页 — done, committed `bf41c8c`
+
+§8 asked this page to stop repeating its titles and navigation. It was doing both
+in one header row: 成长 + a chip repeating the companion's name + a 伙伴 button + a
+图鉴 button, while the GrowthSubNav below carries the companion (labelled with its
+name), 房间, 装扮 and 图鉴. **图鉴 was offered twice on one screen.** The button
+and the chip are gone; 伙伴 stays because it opens the picker, which the sub-nav
+does not offer. The test that covered the removed button had already noticed the
+duplication and worked around it in a comment; it now asserts exactly one control
+offers the collection.
+
+### Verified this stretch
+
+format 0 changed, `analyze --fatal-infos` clean, `git diff --check` clean,
+**2047/2047 tests**, debug APK builds. Evidence in
+`outputs/final_visual_implementation/`: `01_home_360x800.png`, `01_home_411x914.png`,
+`04_focus_running.png`, `07_records.png`, `10_growth.png`.
+
+### Still to do in this passP4 任务列表/新建/详情, P5 今日计划/安排/时间线,
 P6 分心箱/复盘/自由时间, P7 统计/设置/空状态. Each page: run → screenshot → compare to
 the board → fix → re-screenshot → test → next. The boards for the page are in
 `_devpack_v2/CozyFocus_2_0_Zxode_DevPack_v2/01_FINAL_16_DESIGNS/`; crop with
