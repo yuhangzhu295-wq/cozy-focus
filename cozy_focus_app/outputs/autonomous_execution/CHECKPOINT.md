@@ -193,8 +193,37 @@ encouragement strip** - a sprout, a heart and '今天也很棒呢，和 Mochi �
 on no board, and the brief names exactly this pattern. Removed. **Worth grepping for
 more copies of that strip before assuming there were only two.**
 
-### Still to do in this pass
 
+### P4 首页布局 — done, committed `45b3c80`
+
+The brief said the room band was too tall and the actions sat too low. The guard I
+wrote for its own requirement proved the first half false: at 360x800 开始专注
+ends at 568 with the nav at 744, so it was never below the fold. What WAS broken is
+the brief's second requirement - 放松一下 was **never built** at that size, because it
+sits in a lazy sliver. Two changes, both from the brief's own order: the band takes
+at most 42% of the screen (clamped 220..384) with the pet scaled to match, and 放松
+moved above 今日统计. Scaling the pet introduced a headline/pet overlap at 320x640
+that the clearance test caught; the pet's centre now has a floor.
+
+### P5 专注进行页 — done, committed `02bea93`
+
+Rebuilt to board 04's composition: the room is the whole screen and the title, the
+mode switch, the ring, Mochi and the controls all float over it. It used to be two
+bands, which put Mochi ABOVE the ring and hid the room behind a card. Three things
+had to move to fit without scrolling: the pet 160 -> 146, 52dp of clearance under
+the control row, and a fill-or-scroll wrapper (without it the column overflowed by
+24px at 800x600).
+
+### P6 记录页 — done, committed `0eee8ea`
+
+The header spent ~116dp on a leaf glyph, a motivational line and a 100x100 leaf
+circle; it is the page's name now. The empty state went 350dp -> ~310dp. One change
+was made and reverted: I read 'Mochi 专注中' on the empty records page as a false
+claim, passed the state in, and `mochi_live_gate_test` showed a session was in fact
+running - the badge was right. **A screenshot without checking the session state is
+not evidence of a wrong badge.**
+
+### Still to do in this pass
 P4 任务列表/新建/详情, P5 今日计划/安排/时间线,
 P6 分心箱/复盘/自由时间, P7 统计/设置/空状态. Each page: run → screenshot → compare to
 the board → fix → re-screenshot → test → next. The boards for the page are in
