@@ -86,9 +86,10 @@ void main() {
     );
   }
 
-  Future<void> pumpHome(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1080, 2400);
-    tester.view.devicePixelRatio = 1080 / 411;
+  Future<void> pumpHome(WidgetTester tester, {Size? size}) async {
+    final s = size ?? const Size(1080, 2400);
+    tester.view.physicalSize = s;
+    tester.view.devicePixelRatio = s.width / (s.width == 1080 ? 411 : 360);
     addTearDown(() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
@@ -103,6 +104,37 @@ void main() {
   }
 
   group('the duration selector', () {
+    testWidgets('at 360x800 the start button is on screen without scrolling',
+        (tester) async {
+      // The brief's own requirement: on a 360x800 phone the first screen must
+      // show 开始专注 without the user scrolling. The room band was 384dp, which
+      // pushed the button under the fold at that size.
+      await pumpHome(tester, size: const Size(360, 800));
+
+      final button = find.text('开始专注');
+      expect(button, findsOneWidget);
+
+      final rect = tester.getRect(button);
+      final navTop = tester.getRect(find.byType(BottomNavigationBar)).top;
+      expect(rect.bottom, lessThanOrEqualTo(navTop),
+          reason: '开始专注 must sit above the bottom nav at 360x800 without '
+              'scrolling; it ends at ${rect.bottom} and the nav starts at '
+              '$navTop');
+
+      // Deliberately not tapped: tapping starts a session, and its ticker is a
+      // pending timer that flutter_test fails the test for. Whether the button
+      // works is covered by the focus-flow tests; this one is about geometry.
+
+      // The brief also asks for the 放松 entry to show on the first screen, or
+      // to be a clearly visible entrance rather than buried in an unmarked
+      // scroll region.
+      final rest = find.text('放松一下');
+      expect(rest, findsOneWidget);
+      expect(tester.getRect(rest).bottom, lessThanOrEqualTo(navTop),
+          reason: '放松一下 must be reachable on the first screen at 360x800; '
+              'it ends at ${tester.getRect(rest).bottom}, nav at $navTop');
+    });
+
     testWidgets('the greeting follows the clock across a band boundary',
         (tester) async {
       // The greeting used to read the clock during build, and

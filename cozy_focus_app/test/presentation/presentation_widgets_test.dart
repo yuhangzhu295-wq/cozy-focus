@@ -287,7 +287,7 @@ void main() {
     });
 
     testWidgets(
-        'Screen 01: HomePage handles null PetProgress with the 340 hero band',
+        'Screen 01: HomePage handles null PetProgress with a band sized from the screen',
         (tester) async {
       const homeState = HomeUIState(
         petProgress: null,
@@ -328,8 +328,13 @@ void main() {
           )
           .first;
       final heroWidget = tester.widget<SizedBox>(heroFinder);
-      expect(heroWidget.height, equals(384));
-      expect(tester.getSize(heroFinder).height, equals(384));
+      // The band is responsive: at most 42% of the height the screen has,
+      // clamped to [220, 384]. A fixed 384 pushed 放松一下 out of the lazy
+      // sliver's build window on a 360x800 phone. This viewport is 800x600,
+      // so the expected band is 252.
+      final expectedBand = (600 * 0.42).clamp(220.0, 384.0);
+      expect(heroWidget.height, closeTo(expectedBand, 0.5));
+      expect(tester.getSize(heroFinder).height, closeTo(expectedBand, 0.5));
     });
 
     testWidgets('Screen 02: FocusSetupPage renders categories and mode options',

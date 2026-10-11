@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -167,6 +168,12 @@ class _HomePageState extends ConsumerState<HomePage> {
             SliverToBoxAdapter(child: _buildHeroArea(context)),
             SliverToBoxAdapter(child: _buildCurrentTaskCard(context)),
             SliverToBoxAdapter(child: _buildFocusPanel(hasActive)),
+            // 放松 before 今日统计, which is the order the brief specifies. It
+            // also decides whether the entry is reachable: the stats card is
+            // tall enough that with it first the 放松 row fell outside the lazy
+            // sliver's build window on a 360x800 phone and was never built at
+            // all, so it could not be found, let alone tapped.
+            SliverToBoxAdapter(child: _buildRestRow(context)),
             SliverToBoxAdapter(
               child: _buildStatsPanel(
                 homeState.todayFocusSeconds,
@@ -174,7 +181,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 homeState.todayRecords,
               ),
             ),
-            SliverToBoxAdapter(child: _buildRestRow(context)),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
@@ -213,12 +219,34 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _buildHeroArea(BuildContext context) {
     final topInset = MediaQuery.paddingOf(context).top;
 
+    // The room band is sized from the screen, not fixed.
+    //
+    // At a fixed 384dp the band pushed 放松一下 below the fold on a 360x800
+    // phone - not merely off-screen but never built, because it sits in a lazy
+    // sliver, so `find.text('放松一下')` found nothing at all there. The band now
+    // takes at most 42% of the height the screen actually has, and the pet is
+    // scaled with it so it keeps standing on the desk instead of hanging off it.
+    //
+    // The 220dp floor is where the scene stops being a room: below that the desk
+    // has no room to exist under the pet.
+    final media = MediaQuery.of(context);
+    final available =
+        media.size.height - media.padding.top - media.padding.bottom;
+    final heroHeight = (available * 0.42).clamp(220.0, _heroContentHeight);
+    final scale = heroHeight / _heroContentHeight;
+    final petSize = _heroPetSize * scale;
+    // The pet is centred by proportion, but never high enough to meet the
+    // headline: on a 320x640 phone the shrunken band put the pet's box top at
+    // 68dp while the greeting runs to about 80dp, so they overlapped. The floor
+    // is the headline's height plus half the pet.
+    final petCentre = math.max(_heroPetCentre * scale, 84 + petSize / 2);
+
     return SizedBox(
       // The hero is positioned rather than bottom-anchored: the pet box is
       // square while the approved character is 1.47:1, so anchoring the box to
       // the hero's bottom would lift the character ~28dp above where the
       // reference draws it. The box's empty lower half is clipped instead.
-      height: topInset + _heroContentHeight,
+      height: topInset + heroHeight,
       child: Stack(
         children: [
           // The room, drawn rather than photographed. Board 01 puts Mochi in a
@@ -300,7 +328,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           Positioned(
             // Reference 01 centres the pet on the screen; constraining the
             // right edge instead pulled it 49dp off-centre.
-            top: topInset + _heroPetCentre - _heroPetSize / 2,
+            top: topInset + petCentre - petSize / 2,
             left: 0,
             right: 0,
             child: Center(
@@ -317,7 +345,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: CompanionAvatar(
                 visualStateOverride:
                     ref.watch(companionBusinessStateOverrideProvider),
-                size: _heroPetSize,
+                size: petSize,
                 showStateBadge: false,
               ),
             ),

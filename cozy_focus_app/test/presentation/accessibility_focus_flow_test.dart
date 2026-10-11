@@ -263,7 +263,12 @@ void main() {
       await tester.pump();
 
       expect(find.byType(HomePage), findsOneWidget);
-      expect(find.byType(PetAvatarWidget), findsOneWidget);
+      // At least one, not exactly one: the home page draws the hero pet and
+      // the 放松一下 row draws its own small Mochi, and which of them is
+      // inside the lazy sliver's build window depends on the viewport and the
+      // text scale. This test is about rendering without overflow, so the
+      // count is not its subject.
+      expect(find.byType(PetAvatarWidget), findsWidgets);
       expect(tester.takeException(), isNull);
     });
 
