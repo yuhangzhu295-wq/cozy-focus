@@ -210,7 +210,11 @@ void main() {
       expect(avatarFinder, findsOneWidget);
       var avatar = tester.widget<PetAvatarWidget>(avatarFinder);
       expect(avatar.visualState, equals(PetVisualState.focus));
-      expect(avatar.size, equals(160));
+      // 146, down from 160: the running screen is one floating column over the
+      // room now, and the pet is the element with the most give when the whole
+      // thing has to fit a 360x800 phone without scrolling. This test is about
+      // which visual state the pet is bound to, not its size.
+      expect(avatar.size, equals(146));
 
       // Pause session via controller
       final controller =

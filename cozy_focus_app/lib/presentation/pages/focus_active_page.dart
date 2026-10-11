@@ -640,248 +640,254 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
     }
 
     // ── 03 running / 03A paused ──────────────────────────────────
+    //
+    // Board 04's composition: the room is the whole screen and the title, the
+    // mode switch, the ring, Mochi and the controls all float over it.
+    //
+    // This used to be two bands - room and pet in the top 48%, an opaque white
+    // card with the timer and the controls in the bottom 52%. That put Mochi
+    // ABOVE the ring where the board puts the ring above the pet at the desk,
+    // and it hid the room behind a card on the one screen whose whole point is
+    // the atmosphere.
     return Scaffold(
       backgroundColor: AppColors.backgroundWarm,
-      body: Column(
+      body: Stack(
         children: [
-          // Hero area
-          Expanded(
-            flex: 48,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Board 04 puts the running session in the same room the home
-                // screen opens in. Same painter, shallower desk line: this
-                // screen has no cards over the scene, so the room carries more
-                // of it and the pet stands on the desk rather than on a flat
-                // band. Slightly dimmed, because the timer has to stay the
-                // brightest thing on the screen.
-                const CozyRoomBackdrop(deskLine: 0.52, dim: 0.06),
-                // Top left title
-                Positioned(
-                  top: 52,
-                  left: 20,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // The screen's name, not its state. Board 04 titles this
-                      // screen 专注 and lets the ring say 专注中; making the
-                      // title state-dependent made the page say 已暂停 twice, in
-                      // the header and on the ring, which is the doubled
-                      // announcement this project has already had to fix more
-                      // than once.
-                      const Text(
-                        '专注',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        isPaused
-                            ? '休息一下也很好，\n慢下来，是为了走更远的路。'
-                            : '和 $companionName 一起，\n每一次投入，都在靠近更好的自己',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Pet avatar
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    // Goes through CompanionAvatar rather than a bare
-                    // PetAvatarWidget so Mochi carries its real growth stage and
-                    // the page's own session state at the same time. The page
-                    // owns the pause/run distinction, so it supplies the state.
-                    child: CompanionAvatar(
-                      visualStateOverride: sessionState.petState,
-                      size: 160,
-                      // Mochi's encouragement line, or `null` for silence. The
-                      // bubble is inside an `IgnorePointer`, so it can never
-                      // absorb a tap meant for the controls below.
-                      message: _encouragementMessage?.text,
-                      focusProgress: _progressOf(sessionState),
-                      // The real category of the running task. Read from the
-                      // session rather than `sessionState.categoryId`, because
-                      // the session is the persisted truth and survives a
-                      // restore, whereas the UI field is only populated on a
-                      // fresh `startSession`.
-                      //
-                      // Read-only: it picks a presentation work flavour and
-                      // never touches statistics, rewards or session semantics.
-                      focusCategoryId: sessionState.session?.categoryId,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          const Positioned.fill(
+            child: CozyRoomBackdrop(deskLine: 0.78, dim: 0.05),
           ),
-
-          // Bottom card
-          Expanded(
-            flex: 52,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-              ),
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          children: [
-                            // Mode, above the timer: it is the setting that
-                            // decides what the number below it means, and the
-                            // switch is real — it writes the session.
-                            _TimingModeSwitch(
-                              mode: sessionState.timingMode,
-                              onChanged: _handleTimingModeChange,
+          SafeArea(
+            // Fills the viewport when there is room and scrolls when there is not.
+            // The Spacer above the pet keeps the controls at the foot when it fits;
+            // without this the same column overflowed by 24px on a short viewport
+            // (800x600 in the widget tests), and a brief that says the controls must
+            // be reachable is not served by a red screen.
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          // Back, then the screen's name. Board 04 gives this screen a way
+                          // out in the corner. Leaving does not end the session - it keeps
+                          // running, which is the whole point of the background-resume
+                          // flow - so this is navigation, not a control.
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+                            child: Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.arrow_back_rounded,
+                                    semanticLabel: '返回',
+                                  ),
+                                  color: AppColors.textPrimary,
+                                  tooltip: '返回',
+                                  onPressed: () => context.pop(),
+                                ),
+                                const Spacer(),
+                                // The screen's name, not its state. Board 04 titles this
+                                // screen 专注 and lets the ring say 专注中; a
+                                // state-dependent title made the page say 已暂停 twice, in
+                                // the header and on the ring, which is the doubled
+                                // announcement this project has had to fix more than once.
+                                const Text(
+                                  '专注',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const Spacer(),
+                                // Balances the row so the title stays centred.
+                                const SizedBox(width: 48),
+                              ],
                             ),
-                            const SizedBox(height: 16),
-                            // Timer, inside the ring the design draws around it.
-                            FocusTimerRing(
-                              time: displayTime,
-                              // A countdown's ring drains with what is left, so
-                              // 25:00 on a 25 minute target is a full ring. An
-                              // open-ended mode has no fraction, and the ring
-                              // draws its track alone rather than inventing one.
-                              remaining: switch (_progressOf(sessionState)) {
-                                final double done => (1 - done).clamp(0.0, 1.0),
-                                null => null,
-                              },
-                              statusLabel: isPaused ? '已暂停' : '专注中',
-                              paused: isPaused,
+                          ),
+                          // Board 04's second line, under the title and centred.
+                          Text(
+                            isPaused
+                                ? '暂停不会清零，随时可以继续'
+                                : '和 $companionName 一起，专注当下\n每一次投入，都在靠近更好的自己',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textPrimary,
+                              height: 1.5,
                             ),
+                          ),
+                          const SizedBox(height: 10),
 
-                            // Reference 03 shows the active craft job here:
-                            // item icon, name, a bar and the real percentage.
-                            if (craft.activeJob != null &&
-                                craft.activeRecipe != null) ...[
-                              const SizedBox(height: 18),
-                              _buildCraftProgress(craft),
-                            ],
+                          // Mode, above the timer: it is the setting that decides what the
+                          // number below it means, and the switch is real - it writes the
+                          // session.
+                          _TimingModeSwitch(
+                            mode: sessionState.timingMode,
+                            onChanged: _handleTimingModeChange,
+                          ),
+                          const SizedBox(height: 12),
 
-                            // 03A paused: task + elapsed info
-                            if (isPaused) ...[
-                              const SizedBox(height: 20),
-                              Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: AppColors.background,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.sm),
-                                  border: Border.all(color: AppColors.border),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.description_outlined,
-                                            color: AppColors.primarySage,
-                                            size: 18),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          '本次任务：${sessionState.taskName ?? '专注任务'}',
-                                          style: const TextStyle(
-                                              fontSize: 14,
-                                              color: AppColors.textPrimary),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        const Text('🌱 ',
-                                            style: TextStyle(fontSize: 16)),
-                                        Text(
-                                          '已专注：${(sessionState.elapsedSeconds / 60).floor()} 分钟',
-                                          style: const TextStyle(
-                                              fontSize: 14,
-                                              color: AppColors.textPrimary),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          // Timer, inside the ring the design draws around it.
+                          FocusTimerRing(
+                            time: displayTime,
+                            // A countdown's ring drains with what is left, so 25:00 on a
+                            // 25 minute target is a full ring. An open-ended mode has no
+                            // fraction, and the ring draws its track alone rather than
+                            // inventing one.
+                            remaining: switch (_progressOf(sessionState)) {
+                              final double done => (1 - done).clamp(0.0, 1.0),
+                              null => null,
+                            },
+                            statusLabel: isPaused ? '已暂停' : '专注中',
+                            paused: isPaused,
+                          ),
 
-                            const Spacer(),
-
-                            // Buttons
-                            if (isPaused) ...[
-                              // 03A, in the board's shape: the control this
-                              // screen is for is the large filled one, and the
-                              // way out sits beside it rather than under it.
-                              FocusControlRow(controls: [
-                                FocusControl(
-                                  icon: Icons.play_arrow_rounded,
-                                  label: '继续专注',
-                                  primary: true,
-                                  onPressed: () => _handlePauseResume(true),
-                                ),
-                                FocusControl(
-                                  icon: Icons.stop_rounded,
-                                  label: '提前结束',
-                                  onPressed: () => _showEarlyFinishDialog(
-                                      sessionState.elapsedSeconds),
-                                ),
-                              ]),
-                            ] else ...[
-                              // Design 04's row. 白噪音 is the board's first
-                              // control and is absent: there is no audio in the
-                              // repo, and a round button that plays nothing is
-                              // the fake control the brief forbids.
-                              FocusControlRow(controls: [
-                                FocusControl(
-                                  icon: Icons.edit_note_rounded,
-                                  label: '记一下',
-                                  onPressed: _captureDistraction,
-                                ),
-                                FocusControl(
-                                  icon: Icons.pause_rounded,
-                                  // Deep focus does not pause, so the control
-                                  // says so and is disabled rather than being
-                                  // live and refused. The engine refuses it too
-                                  // — this is the visible half of one rule.
-                                  label: allowsPause ? '暂停' : '深度专注中',
-                                  primary: true,
-                                  onPressed: allowsPause
-                                      ? () => _handlePauseResume(false)
-                                      : null,
-                                ),
-                                FocusControl(
-                                  icon: Icons.stop_rounded,
-                                  label: '提前结束',
-                                  onPressed: () => _showEarlyFinishDialog(
-                                      sessionState.elapsedSeconds),
-                                ),
-                              ]),
-                            ],
-                            const SizedBox(height: 24),
+                          // Reference 03 shows the active craft job here: item icon, name,
+                          // a bar and the real percentage.
+                          if (craft.activeJob != null &&
+                              craft.activeRecipe != null) ...[
+                            const SizedBox(height: 14),
+                            _buildCraftProgress(craft),
                           ],
-                        ),
+
+                          // 03A paused: task + elapsed info
+                          if (isPaused) ...[
+                            const SizedBox(height: 14),
+                            Container(
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color:
+                                    AppColors.surface.withValues(alpha: 0.88),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.description_outlined,
+                                          color: AppColors.primarySage,
+                                          size: 18),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '本次任务：${sessionState.taskName ?? '专注任务'}',
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.textPrimary),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      const Text('🌱 ',
+                                          style: TextStyle(fontSize: 16)),
+                                      Text(
+                                        '已专注：${(sessionState.elapsedSeconds / 60).floor()} 分钟',
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.textPrimary),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
+                          const Spacer(),
+
+                          // Mochi, working at the desk in the room, below the ring.
+                          //
+                          // Goes through CompanionAvatar rather than a bare
+                          // PetAvatarWidget so it carries its real growth stage and the
+                          // page's own session state at the same time. The page owns the
+                          // pause/run distinction, so it supplies the state.
+                          CompanionAvatar(
+                            visualStateOverride: sessionState.petState,
+                            size: 146,
+                            // Mochi's encouragement line, or `null` for silence. The
+                            // bubble is inside an `IgnorePointer`, so it can never absorb
+                            // a tap meant for the controls below.
+                            message: _encouragementMessage?.text,
+                            focusProgress: _progressOf(sessionState),
+                            // The real category of the running task. Read from the session
+                            // rather than `sessionState.categoryId`, because the session is
+                            // the persisted truth and survives a restore, whereas the UI
+                            // field is only populated on a fresh `startSession`.
+                            //
+                            // Read-only: it picks a presentation work flavour and never
+                            // touches statistics, rewards or session semantics.
+                            focusCategoryId: sessionState.session?.categoryId,
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Buttons, at the foot of the room where the board puts them.
+                          if (isPaused) ...[
+                            // 03A, in the board's shape: the control this screen is for is
+                            // the large filled one, and the way out sits beside it rather
+                            // than under it.
+                            FocusControlRow(controls: [
+                              FocusControl(
+                                icon: Icons.play_arrow_rounded,
+                                label: '继续专注',
+                                primary: true,
+                                onPressed: () => _handlePauseResume(true),
+                              ),
+                              FocusControl(
+                                icon: Icons.stop_rounded,
+                                label: '提前结束',
+                                onPressed: () => _showEarlyFinishDialog(
+                                    sessionState.elapsedSeconds),
+                              ),
+                            ]),
+                          ] else ...[
+                            // Design 04's row. 白噪音 is the board's first control and is
+                            // absent: there is no audio in the repo, and a round button
+                            // that plays nothing is the fake control the brief forbids.
+                            FocusControlRow(controls: [
+                              FocusControl(
+                                icon: Icons.edit_note_rounded,
+                                label: '记一下',
+                                onPressed: _captureDistraction,
+                              ),
+                              FocusControl(
+                                icon: Icons.pause_rounded,
+                                // Deep focus does not pause, so the control says so and is
+                                // disabled rather than being live and refused. The engine
+                                // refuses it too - this is the visible half of one rule.
+                                label: allowsPause ? '暂停' : '深度专注中',
+                                primary: true,
+                                onPressed: allowsPause
+                                    ? () => _handlePauseResume(false)
+                                    : null,
+                              ),
+                              FocusControl(
+                                icon: Icons.stop_rounded,
+                                label: '提前结束',
+                                onPressed: () => _showEarlyFinishDialog(
+                                    sessionState.elapsedSeconds),
+                              ),
+                            ]),
+                          ],
+                          // 52, not 16: the Spacer above pins the control row to the foot of
+                          // the column, and the primary control is the tallest of the three, so
+                          // its label landed at y 792 in an 800pt viewport - on the edge, with
+                          // the button's own padding past it.
+                          const SizedBox(height: 52),
+                        ],
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           ),
         ],
