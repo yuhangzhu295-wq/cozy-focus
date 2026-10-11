@@ -145,46 +145,24 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
   Widget _buildHero() {
     return Container(
       color: AppColors.backgroundWarm,
-      child: SafeArea(
+      child: const SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
+          // Just the page's name. This used to carry a leaf glyph beside the
+          // title, a motivational line under it and a 100x100 circle holding a
+          // 48px leaf on the right - about 116dp of the first screen spent on
+          // decoration with no business value, which is what the brief calls out
+          // as 大面积无业务价值的装饰. The tabs below say what the page is for.
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(children: [
-                      Text('记录',
-                          style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryDark,
-                              height: 1.1)),
-                      SizedBox(width: 6),
-                      Icon(Icons.eco_rounded,
-                          color: AppColors.primarySage, size: 24),
-                    ]),
-                    SizedBox(height: 4),
-                    Text('每一次专注，都是更靠近理想生活的一步。',
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.textSecondary)),
-                    SizedBox(height: 8),
-                  ],
-                ),
-              ),
-              Container(
-                width: 100,
-                height: 100,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryLight,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.eco_rounded,
-                    size: 48, color: AppColors.primarySage),
+              Expanded(
+                child: Text('记录',
+                    style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                        height: 1.1)),
               ),
             ],
           ),
@@ -918,10 +896,23 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
 
   // ===== Empty state (Screen 14) =====
   Widget _buildEmptyState() {
+    // Compact: the brief asks for a simple empty state and one clear way to
+    // start, and the illustration and the gaps around it were spending about
+    // 350dp of the page to say that. It already carries the 开始第一次专注 button
+    // and a real calendar entry below.
     return Column(children: [
-      const SizedBox(height: 20),
-      const CompanionAvatar(size: 120),
-      const SizedBox(height: 16),
+      const SizedBox(height: 12),
+      // No state override, deliberately. The avatar resolves the real session
+      // state itself, and mochi_live_gate_test asserts the SAME state is rendered
+      // on /, /progress and /growth. Passing a state from here made the records
+      // page say idle while a session was running, because this page's provider is
+      // not the one the session writes to.
+      //
+      // I changed this on the strength of a screenshot showing 'Mochi 专注中' on an
+      // empty records page. A session was in fact still running, so the badge was
+      // right and my change was wrong. The lifecycle test caught it.
+      const CompanionAvatar(size: 96),
+      const SizedBox(height: 12),
       const Text('今天还没有专注记录',
           style: TextStyle(
               fontSize: 18,
@@ -934,7 +925,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
       const Text('遇见更专注、更平静的自己。',
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           textAlign: TextAlign.center),
-      const SizedBox(height: 24),
+      const SizedBox(height: 16),
       SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
