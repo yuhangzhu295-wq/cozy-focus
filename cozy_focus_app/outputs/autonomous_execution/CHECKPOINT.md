@@ -182,6 +182,17 @@ boards' rooms are photographic renders with real wood grain and depth of field; 
 vector painter gets the mood and the layering, not the pixels. Reaching the boards
 exactly needs a working generation key, supplied art, or accepting the illustration.
 
+### P4 任务列表 — in progress, committed `738fce5`
+
+The empty state was checked and is fine as it stands: title, back, `+`, three filters
+(今天 / 进行中 / 已完成), a Mochi illustration, and two buttons. Simple and tool-like, which is
+what the brief asks of tool pages - do not push a room background onto it.
+
+What that pass did find: **the records hub carried a second copy of the home page's
+encouragement strip** - a sprout, a heart and '今天也很棒呢，和 Mochi 一起继续加油！'. It is
+on no board, and the brief names exactly this pattern. Removed. **Worth grepping for
+more copies of that strip before assuming there were only two.**
+
 ### Still to do in this pass
 
 P4 任务列表/新建/详情, P5 今日计划/安排/时间线,
