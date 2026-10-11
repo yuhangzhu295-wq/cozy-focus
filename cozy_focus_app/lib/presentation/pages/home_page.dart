@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,6 +42,20 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
+  /// The greeting's band, refreshed on a timer this widget owns.
+  ///
+  /// Reading the clock during build was a one-shot - `focusClockProvider` is a
+  /// plain Provider and never notifies - so the greeting froze at whatever band
+  /// the screen was built in: still 早上好 at 12:01. An independent review found
+  /// it.
+  ///
+  /// A timer here rather than a StreamProvider: a provider that awaits a delay
+  /// in a loop leaves a pending timer behind, and `flutter_test` fails the test
+  /// for that - which it did, across every home test, before this shape.
+  /// Cancelled in dispose, so nothing is pending once the tree is gone.
+  TimeOfDayBand _band = TimeOfDayBand.morning;
+  Timer? _bandTimer;
+
   int _selectedMinutes = 25;
   static const List<int> _quickChips = [5, 25, 50, 90];
 
@@ -51,6 +67,19 @@ class _HomePageState extends ConsumerState<HomePage> {
     // Launch hook: a session the save flow never finished (app killed, crash,
     // force quit) has no other way back — see _recoverAbandonedSessions.
     Future.microtask(_recoverAbandonedSessions);
+
+    _band = TimeOfDayResolver.resolve(ref.read(focusClockProvider).now());
+    _bandTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      final next =
+          TimeOfDayResolver.resolve(ref.read(focusClockProvider).now());
+      if (next != _band && mounted) setState(() => _band = next);
+    });
+  }
+
+  @override
+  void dispose() {
+    _bandTimer?.cancel();
+    super.dispose();
   }
 
   /// Persist sessions left in `finishing` by an interrupted save flow.
@@ -207,7 +236,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _greetingFor(ref.watch(focusClockProvider).now()),
+                  _greetingFor(_band),
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
@@ -913,7 +942,7 @@ class _StepButton extends StatelessWidget {
 /// This replaced a fixed 和 Mochi 一起 / 专注吧！ headline. That headline was the
 /// same at 7am and 11pm, and it named the companion in a line the companion is
 /// already the subject of — the kind of copy the visual brief calls out as filler.
-String _greetingFor(DateTime now) => switch (TimeOfDayResolver.resolve(now)) {
+String _greetingFor(TimeOfDayBand band) => switch (band) {
       TimeOfDayBand.morning => '早上好',
       TimeOfDayBand.midday => '中午好',
       TimeOfDayBand.afternoon => '下午好',

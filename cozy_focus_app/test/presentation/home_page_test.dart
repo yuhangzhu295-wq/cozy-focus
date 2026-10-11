@@ -35,13 +35,14 @@ import 'package:cozy_focus_app/presentation/widgets/hourly_focus_chart.dart';
 void main() {
   late AppDatabase db;
   late ProviderContainer container;
+  late _FixedClock clock;
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
+    clock = _FixedClock(DateTime(2026, 10, 9, 14, 0));
     container = ProviderContainer(overrides: [
       appDatabaseProvider.overrideWithValue(db),
-      focusClockProvider
-          .overrideWithValue(_FixedClock(DateTime(2026, 10, 9, 14, 0))),
+      focusClockProvider.overrideWithValue(clock),
       currentUserIdProvider.overrideWithValue('default_user'),
     ]);
   });
@@ -102,6 +103,27 @@ void main() {
   }
 
   group('the duration selector', () {
+    testWidgets('the greeting follows the clock across a band boundary',
+        (tester) async {
+      // The greeting used to read the clock during build, and
+      // focusClockProvider is a plain Provider that never notifies - so it froze
+      // at whatever band the screen was built in and still said 早上好 at 12:01.
+      // An independent review found it.
+      clock.advance(const Duration(hours: -3, minutes: -1)); // 10:59 -> morning
+      await pumpHome(tester);
+      expect(find.text('早上好'), findsOneWidget);
+
+      clock.advance(const Duration(minutes: 2)); // 11:01 -> midday
+      // The page refreshes on a one-minute tick it owns and cancels in dispose.
+      await tester.pump(const Duration(minutes: 1));
+      await tester.pump();
+
+      expect(find.text('中午好'), findsOneWidget,
+          reason: 'the greeting must not stay on the band the screen was built '
+              'in once the clock has crossed a boundary');
+      expect(find.text('早上好'), findsNothing);
+    });
+
     testWidgets('is named the way the design names it', (tester) async {
       await pumpHome(tester);
 
@@ -281,7 +303,11 @@ void main() {
 
 class _FixedClock implements FocusClock {
   _FixedClock(this._now);
-  final DateTime _now;
+  DateTime _now;
+
+  /// Moves the clock, so a test can cross a time-of-day boundary without
+  /// waiting for one.
+  void advance(Duration d) => _now = _now.add(d);
 
   @override
   DateTime now() => _now;

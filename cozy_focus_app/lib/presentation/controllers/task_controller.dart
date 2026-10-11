@@ -223,19 +223,41 @@ class TaskDetailController extends StateNotifier<TaskDetailState> {
     await load();
   }
 
+  /// True while a subtask write is in flight.
+  ///
+  /// Both writes below read-then-write, and neither had a guard: two taps landing
+  /// before the first `load()` returned made `addSubtask` read the same length
+  /// twice and insert two rows with the same `sortOrder`, and made
+  /// `deleteSubtask` issue the same delete twice. A review found both; the
+  /// dialog serialises taps in practice, but the controller is what owns the
+  /// invariant, so the guard lives here.
+  bool _subtaskWriteInFlight = false;
+
   Future<void> addSubtask(String title) async {
-    await _repo.insertSubtask(TaskSubtask(
-      id: const Uuid().v4(),
-      taskId: taskId,
-      title: title,
-      sortOrder: state.progress?.subtasks.length ?? 0,
-    ));
-    await load();
+    if (_subtaskWriteInFlight) return;
+    _subtaskWriteInFlight = true;
+    try {
+      await _repo.insertSubtask(TaskSubtask(
+        id: const Uuid().v4(),
+        taskId: taskId,
+        title: title,
+        sortOrder: state.progress?.subtasks.length ?? 0,
+      ));
+      await load();
+    } finally {
+      _subtaskWriteInFlight = false;
+    }
   }
 
   Future<void> deleteSubtask(String id) async {
-    await _repo.deleteSubtask(id);
-    await load();
+    if (_subtaskWriteInFlight) return;
+    _subtaskWriteInFlight = true;
+    try {
+      await _repo.deleteSubtask(id);
+      await load();
+    } finally {
+      _subtaskWriteInFlight = false;
+    }
   }
 
   Future<void> deleteTask() => _repo.deleteById(taskId);

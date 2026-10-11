@@ -57,11 +57,19 @@ class CozyRoomBackdrop extends StatelessWidget {
   }
 }
 
+/// The tone the wall fades to at the scene's lower edge.
+///
+/// Public so a host can continue it below the scene. The growth page sits its
+/// pet's name, level and XP card under the scene band, and it drew them on
+/// `AppColors.background` (#FBF8F2) while the wall above faded to #EDE0C9 -
+/// a visible horizontal seam that a review found rather than a preference.
+const Color kCozyRoomWallBottom = Color(0xFFEDE0C9);
+
 /// The scene's own tones. Named here rather than in [AppColors] because they are
 /// illustration colours: no control, text or border may use them.
 class _Room {
   static const wallTop = Color(0xFFF7EFE0);
-  static const wallBottom = Color(0xFFEDE0C9);
+  static const wallBottom = kCozyRoomWallBottom;
   static const wallShade = Color(0xFFE4D4B8);
   static const light = Color(0xFFFDF1D6);
   static const lightCore = Color(0xFFFFFBF0);
@@ -86,7 +94,7 @@ class _RoomPainter extends CustomPainter {
     final h = size.height;
     final deskY = h * deskLine;
 
-    _paintWall(canvas, size, w, h);
+    _paintWall(canvas, size, w, h, deskY);
 
     // ── far layer, blurred ────────────────────────────────────────────────
     // A blurred backdrop is what separates "a room" from "shapes on a wall".
@@ -118,7 +126,7 @@ class _RoomPainter extends CustomPainter {
     }
   }
 
-  void _paintWall(Canvas canvas, Size size, double w, double h) {
+  void _paintWall(Canvas canvas, Size size, double w, double h, double deskY) {
     canvas.drawRect(
       Rect.fromLTWH(0, 0, w, h),
       Paint()
@@ -131,7 +139,7 @@ class _RoomPainter extends CustomPainter {
     // Where the wall meets the floor, shaded rather than lined: a hard line
     // would read as a wall of a different height on every screen size.
     canvas.drawRect(
-      Rect.fromLTWH(0, h * 0.52, w, h * 0.48),
+      Rect.fromLTWH(0, deskY * 0.78, w, h - deskY * 0.78),
       Paint()
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
@@ -140,7 +148,7 @@ class _RoomPainter extends CustomPainter {
             _Room.wallShade.withValues(alpha: 0.0),
             _Room.wallShade.withValues(alpha: 0.55),
           ],
-        ).createShader(Rect.fromLTWH(0, h * 0.52, w, h * 0.48)),
+        ).createShader(Rect.fromLTWH(0, deskY * 0.78, w, h - deskY * 0.78)),
     );
   }
 
@@ -164,9 +172,14 @@ class _RoomPainter extends CustomPainter {
 
   /// A window on the right, below the status bar and clear of the settings chip.
   void _paintWindow(Canvas canvas, double w, double h, double deskY) {
+    // A band too short for a window draws no window. The previous form clamped
+    // the height to a 24px floor, so a short host got a 24px stub of frame
+    // floating on the wall - worse than an honest empty wall. 28px of frame
+    // below the top offset needs a band of about 93dp.
+    final windowHeight = deskY - h * 0.24;
+    if (windowHeight < 28) return;
     final rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-          w * 0.63, h * 0.18, w * 0.33, math.max(24, deskY - h * 0.24)),
+      Rect.fromLTWH(w * 0.63, h * 0.18, w * 0.33, windowHeight),
       const Radius.circular(5),
     );
     canvas.drawRRect(

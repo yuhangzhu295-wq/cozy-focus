@@ -22,7 +22,9 @@ class MochiGrowthPage extends ConsumerWidget {
     final state = ref.watch(growthControllerProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      // Continues the room's wall tone, so the scene band and the pet's name below
+      // it are the same colour instead of meeting at a seam.
+      backgroundColor: kCozyRoomWallBottom,
       body: SafeArea(
         bottom: false,
         child: _buildBody(context, ref, state),
