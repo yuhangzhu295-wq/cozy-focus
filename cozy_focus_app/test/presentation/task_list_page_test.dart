@@ -99,6 +99,58 @@ void main() {
     expect(find.text('25 分钟'), findsOneWidget);
   });
 
+  testWidgets('a row carries every element board 02 draws, and the done tint',
+      (tester) async {
+    // Board 02 draws four things per row: an unticked circle, the name, a
+    // coloured category chip beside the duration, and a chevron. The done row
+    // in the same board is tinted and struck through. The existing tests cover
+    // the name, the chip and the duration; the chevron and the done treatment
+    // were not asserted anywhere, which is the kind of gap a board comparison
+    // finds and a code read does not.
+    await repo.insert(Task(
+      id: 'open1',
+      userId: userId,
+      title: '写产品方案',
+      categoryId: 'work',
+      estimatedSeconds: 25 * 60,
+      createdAt: DateTime(2026, 10, 7, 9),
+    ));
+    await repo.insert(Task(
+      id: 'done1',
+      userId: userId,
+      title: '阅读 30 分钟',
+      categoryId: 'study',
+      estimatedSeconds: 30 * 60,
+      createdAt: DateTime(2026, 10, 7, 9),
+      status: TaskStatus.done,
+    ));
+
+    await pump(tester, container());
+
+    // The open row: circle, chevron, no strikethrough.
+    expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsNWidgets(2),
+        reason: 'both rows carry the chevron board 02 draws');
+
+    final openTitle = tester.widget<Text>(find.text('写产品方案'));
+    expect(openTitle.style?.decoration, isNot(TextDecoration.lineThrough));
+
+    // The done row: filled tick and a struck-through name.
+    expect(find.byIcon(Icons.check_circle), findsOneWidget);
+    final doneTitle = tester.widget<Text>(find.text('阅读 30 分钟'));
+    expect(doneTitle.style?.decoration, TextDecoration.lineThrough,
+        reason: 'the board strikes the finished task through');
+
+    // And the done row sits on the tinted surface, not the plain one. Read from
+    // the Material the row is built on, because that is what paints it.
+    final doneMaterial = tester.widget<Material>(
+      find
+          .ancestor(of: find.text('阅读 30 分钟'), matching: find.byType(Material))
+          .first,
+    );
+    expect(doneMaterial.color, AppColors.primaryLight);
+  });
+
   testWidgets('tapping the tick marks it done and moves it to that tab',
       (tester) async {
     await repo.insert(Task(
