@@ -242,7 +242,20 @@ format 0 changed, `analyze --fatal-infos` clean, `git diff --check` clean,
 `outputs/final_visual_implementation/`: `01_home_360x800.png`, `01_home_411x914.png`,
 `04_focus_running.png`, `07_records.png`, `10_growth.png`.
 
-### Still to do in this passP4 任务列表/新建/详情, P5 今日计划/安排/时间线,
+### Gate (§10/§11) — run on the visual pass, 0 FAIL
+
+`tools/cozy_gate.py --full`: **12 PASS / 3 DEFERRED / 3 BLOCKED / 0 FAIL**.
+UNIT 2047, INTEGRATION 51/51, GOLDEN_FLOW 6/6, MIGRATION 16/16, LIFECYCLE 81/81,
+ASSET_GATES 75/75, APK 32.0 MB, AAB 50.5 MB, DIFF_CHECK clean. The business
+regression in the project's own terms passes on the visual work.
+
+BLOCKED, unchanged and external: release signing (no keystore, none invented),
+the launcher icon (stock Flutter logo), Flow generation. DEFERRED: OWNER_VISUAL_GATE,
+the six remaining product decisions, DEVICE_MATRIX (needs `--with-device`).
+
+### Still to do in this pass
+
+P4 任务列表/新建/详情, P5 今日计划/安排/时间线,
 P6 分心箱/复盘/自由时间, P7 统计/设置/空状态. Each page: run → screenshot → compare to
 the board → fix → re-screenshot → test → next. The boards for the page are in
 `_devpack_v2/CozyFocus_2_0_Zxode_DevPack_v2/01_FINAL_16_DESIGNS/`; crop with
