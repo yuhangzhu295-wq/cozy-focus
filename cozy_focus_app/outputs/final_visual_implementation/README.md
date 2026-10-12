@@ -168,6 +168,28 @@ OpenAI 密钥被拒（401）。技能清单里也没有 Google Flow。**没有�
 | `OWNER_VISUAL_GATE` | **DEFERRED** | 项目门禁标 REQUIRED，**永不由测量决定**，非我可声称 |
 | 独立视觉审查 | **BLOCKED** | 子代理供应商配额（约 66h 后恢复） |
 
+## 9a. 设备为什么一直不稳定 —— 是内存，不是 App
+
+简报第 3 节要求用运行证据判断。查完之后，原因和「模拟器重启导致 Activity 丢失」这个假设**不是同一件事**：
+
+```
+宿主机    总 15.6 GB，可用 3.3 GB
+模拟器    MemTotal 2.5 GB，MemFree 146 MB，MemAvailable 1.0 GB
+          SwapTotal 1.9 GB，SwapFree 1.27 GB（已用 634 MB）
+CozyFocus TOTAL PSS 286 MB，其中 SWAP PSS 98 MB
+treehole  有一个 WebView 的 SandboxedProcessService 常驻
+```
+
+**两边都在内存压力下。** 模拟器只剩 146 MB 空闲并在换页，CozyFocus 自己就占了 286 MB、其中 98 MB 被换出。这解释了这一窗口里反复出现的现象：App 被系统回收、冷启动要 40 秒、以及"前台在两次调用之间变成另一个 App"——不是那个 App 主动抢，是**它就在最近任务里，CozyFocus 被回收后系统回落到它**。
+
+**换独立 AVD 治不了这个**：宿主机只剩 3.3 GB，再开一台同样是饿的。能做的只有：
+
+1. 把设备操作**压进单进程脚本**（`tools/qa/motion_state.py`、`capture_boards.py`、`full_session_capture.py` 都是），避免调用之间被杀；
+2. 每次点击/截图前**校验前台包名**，不匹配就拒绝（`device_launch.py`，本窗口拒绝过四次）；
+3. 把宿主机内存腾出来——这需要所有者关掉别的程序，不是我能决定的。
+
+**不把"重启模拟器"当解决方案**：它不解决 3.3 GB。
+
 ## 10. 模拟器验证方式（简报第 5 节）
 
 新增 `tools/qa/device_launch.py`：**没有确认前台是 CozyFocus 就拒绝截图和点击**（exit 2）。
