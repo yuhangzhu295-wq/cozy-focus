@@ -46,7 +46,19 @@ void main() {
   }
 
   /// The three sizes the brief names, in dp.
-  const sizes = <Size>[Size(360, 800), Size(393, 852), Size(412, 915)];
+  const portrait = <Size>[Size(360, 800), Size(393, 852), Size(412, 915)];
+
+  /// The same three devices rotated.
+  ///
+  /// Landscape is not hypothetical here. `AndroidManifest.xml` carries no
+  /// `screenOrientation` lock and its `configChanges` includes `orientation`, so
+  /// the activity really does rotate and re-lay-out in place. Before this list
+  /// existed nothing had ever laid a screen out at 800x360, so "adapts to
+  /// different sizes" was only half checked - the half that happens to be
+  /// portrait.
+  const landscape = <Size>[Size(800, 360), Size(852, 393), Size(915, 412)];
+
+  const sizes = <Size>[...portrait, ...landscape];
 
   /// The routes worth sweeping, each with a string that only that screen draws.
   ///
@@ -98,12 +110,15 @@ void main() {
           router.go(entry.key);
           // Fixed pumps rather than pumpAndSettle: the companion animation never
           // settles, so pumpAndSettle would time out on every screen that has one.
-          for (var i = 0; i < 10; i++) {
-            await tester.pump(const Duration(milliseconds: 60));
-          }
-          // Proof the route rendered. Without this the sweep is green for the wrong
-          // reason - it was, until the marker was added.
-          expect(find.text(entry.value), findsWidgets,
+          await settle(tester);
+
+          // Proof the route rendered, and proof the marker is not doing it by
+          // accident: `skipOffstage: false` because the default finder visits only
+          // the slivers currently inside the viewport. In landscape a page is 360dp
+          // tall, so a section that sits mid-page is built but off-stage, and the
+          // default finder reports zero. That is a property of the finder, not of
+          // the screen - it was the growth page's 成长属性 and nothing else.
+          expect(find.text(entry.value, skipOffstage: false), findsWidgets,
               reason: '${entry.key} did not render its marker '
                   '"${entry.value}" at '
                   '${size.width.toInt()}x${size.height.toInt()}');
@@ -112,6 +127,34 @@ void main() {
               reason: '${entry.key} overflowed at '
                   '${size.width.toInt()}x${size.height.toInt()} '
                   'at ${scale}x text: $error');
+
+          // Scroll to the end. Two things come out of this that the first
+          // viewport cannot show: the sections below the fold get laid out (a
+          // sliver outside the viewport is built but its layout is only checked
+          // when it is reached), and the marker has to actually become visible -
+          // "built somewhere in the tree" is not the same claim as "the user can
+          // get to it", and on a short landscape viewport that difference is the
+          // whole question.
+          var seenOnStage = find.text(entry.value).evaluate().isNotEmpty;
+          for (var step = 0; step < 14; step++) {
+            final target = verticalScrollable(tester);
+            if (target == null) break;
+            await tester.drag(target, const Offset(0, -600),
+                warnIfMissed: false);
+            await settle(tester, frames: 4);
+            if (find.text(entry.value).evaluate().isNotEmpty) {
+              seenOnStage = true;
+            }
+            final scrollError = tester.takeException();
+            expect(scrollError, isNull,
+                reason: '${entry.key} overflowed while scrolling at '
+                    '${size.width.toInt()}x${size.height.toInt()} '
+                    'at ${scale}x text: $scrollError');
+          }
+          expect(seenOnStage, isTrue,
+              reason: '${entry.key} built its marker but never showed it, even '
+                  'after scrolling to the end, at '
+                  '${size.width.toInt()}x${size.height.toInt()}');
         }
       });
     }
@@ -149,6 +192,80 @@ void main() {
             'the instrument must report an overflow, or every green above is '
             'unearned');
   });
+
+  testWidgets(
+      'the reachability step can fail: content below the fold is not '
+      'visible until it is scrolled to', (tester) async {
+    // The other half of the instrument. The landscape rows above only pass
+    // because the scroll step brings mid-page content on stage, so if that step
+    // ever stopped doing work the sweep would go green while reporting nothing.
+    // This pins the mechanism on the real screen that exposed it: at 800x360 the
+    // growth page's 成长属性 is built but sits below the fold.
+    tester.view.physicalSize = const Size(800, 360);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final c = container();
+    final router = createAppRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp.router(
+          theme: AppTheme.lightTheme,
+          routerConfig: router,
+        ),
+      ),
+    );
+    router.go('/growth');
+    await settle(tester);
+
+    expect(find.text('成长属性', skipOffstage: false), findsWidgets,
+        reason: 'the growth page must build its stats section at all');
+    expect(find.text('成长属性'), findsNothing,
+        reason: 'at 360dp tall the section must start below the fold, or this '
+            'test is not exercising the scroll step');
+
+    final target = verticalScrollable(tester);
+    expect(target, isNotNull,
+        reason: 'the scroll step needs a vertical scrollable to drive');
+
+    var revealed = false;
+    for (var step = 0; step < 14 && !revealed; step++) {
+      await tester.drag(target!, const Offset(0, -600), warnIfMissed: false);
+      await settle(tester, frames: 4);
+      revealed = find.text('成长属性').evaluate().isNotEmpty;
+    }
+    expect(revealed, isTrue,
+        reason: 'scrolling must bring the section on stage; if this fails the '
+            'sweep above is green for the wrong reason');
+  });
+}
+
+/// Pump a fixed number of frames.
+///
+/// Not `pumpAndSettle`: the companion animation is continuous, so settling would
+/// time out on every screen that has one.
+Future<void> settle(WidgetTester tester, {int frames = 10}) async {
+  for (var i = 0; i < frames; i++) {
+    await tester.pump(const Duration(milliseconds: 60));
+  }
+}
+
+/// The first vertical scrollable, or null when the screen has none.
+///
+/// Vertical on purpose. Several screens carry horizontal chip rows, and
+/// `find.byType(Scrollable).first` can land on one of those - a vertical drag on
+/// a horizontal list moves nothing, so the scroll step would silently do no work
+/// and the reachability assertion would fail for the wrong reason.
+Finder? verticalScrollable(WidgetTester tester) {
+  final finder = find.byWidgetPredicate(
+    (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+    skipOffstage: false,
+  );
+  return finder.evaluate().isEmpty ? null : finder.first;
 }
 
 class _FixedClock implements FocusClock {

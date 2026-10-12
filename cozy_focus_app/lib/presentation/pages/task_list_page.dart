@@ -295,6 +295,32 @@ class _TaskRow extends StatelessWidget {
 /// The copy follows the tab rather than being one generic sentence: "no tasks"
 /// and "nothing finished yet" are different situations and a user who has
 /// completed nothing should be told that, not told the app is empty.
+/// Centres its child when there is room, and scrolls when there is not.
+///
+/// The empty and error states below are each a fixed-height column. Portrait has
+/// room for them; rotated, the viewport is 360dp tall and the app bar plus the
+/// filter row take roughly 110 of that, so the empty state's ~305dp column
+/// overflowed by 65px and the device drew the yellow-and-black stripes. The
+/// manifest has no `screenOrientation` lock, so rotation is a configuration the
+/// app really has to survive - the column scrolls instead of assuming it fits.
+class _ScrollableCentre extends StatelessWidget {
+  final Widget child;
+
+  const _ScrollableCentre({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(child: child),
+        ),
+      ),
+    );
+  }
+}
+
 class _EmptyState extends ConsumerWidget {
   final TaskFilter filter;
 
@@ -311,7 +337,7 @@ class _EmptyState extends ConsumerWidget {
       TaskFilter.done => ('还没有完成的任务', '完成一个任务后，它会出现在这里。'),
     };
 
-    return Center(
+    return _ScrollableCentre(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(
@@ -408,7 +434,7 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return _ScrollableCentre(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(
