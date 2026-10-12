@@ -90,6 +90,12 @@ def main():
     ap.add_argument("--tab", default=None,
                     help="switch to this bottom-nav tab instead of tapping the "
                          "companion")
+    ap.add_argument("--taps", type=int, default=1,
+                    help="how many times to tap the companion. Two taps is the "
+                         "discriminating experiment: the second switch reuses "
+                         "frames that are already decoded, so a cold-cache "
+                         "cause blanks only the first time and a structural "
+                         "cause blanks both")
     a = ap.parse_args()
 
     os.makedirs(BUILD, exist_ok=True)
@@ -113,9 +119,12 @@ def main():
         return 2
     print(f"companion box {box}")
 
+    # Room for every tap plus the settle between them.
+    duration = RECORD_SECONDS + 4 * max(0, a.taps - 1)
+
     C.adb("shell", "rm", "-f", "/sdcard/_flick.mp4")
     subprocess.Popen(
-        [C.ADB, "shell", "screenrecord", "--time-limit", str(RECORD_SECONDS),
+        [C.ADB, "shell", "screenrecord", "--time-limit", str(duration),
          "--bit-rate", "6000000", "/sdcard/_flick.mp4"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(2)
@@ -126,8 +135,15 @@ def main():
             return 2
         label = f"tab_{a.tab}"
     else:
-        C.tap((box[0] + box[2]) // 2, (box[1] + box[3]) // 2, settle=3)
-        label = "tap_companion"
+        cx, cy = (box[0] + box[2]) // 2, (box[1] + box[3]) // 2
+        for n in range(a.taps):
+            C.tap(cx, cy, settle=1)
+            if n < a.taps - 1:
+                # Let the overlay finish and the pose settle before the next
+                # tap, so the two switches are separate events rather than one
+                # long overlay.
+                time.sleep(3)
+        label = "tap_companion" if a.taps == 1 else f"tap_companion_x{a.taps}"
 
     time.sleep(RECORD_SECONDS)
 

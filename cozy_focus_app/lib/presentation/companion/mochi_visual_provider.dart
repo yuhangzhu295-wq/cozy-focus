@@ -107,6 +107,44 @@ class MochiVisualProvider extends CompanionVisualProvider {
       spriteSpec: useLayered ? null : spec,
     );
   }
+
+  /// The sprite sequences a tap or a long press switches the companion to.
+  ///
+  /// ## Why this list exists
+  ///
+  /// The hero draws the **layered rig** for `idle` - the only pose in
+  /// [layeredPoses] - and a **sprite** for everything else. So the first tap
+  /// swaps renderers, and because that is a different widget type at the same
+  /// position Flutter builds a brand-new sprite element rather than reusing the
+  /// old one. A new element has no decoded image to show, and `gaplessPlayback`
+  /// has nothing to hold, so the companion drew nothing for a frame or two:
+  /// measured on the device as a blank frame exactly at the tap, and only the
+  /// first time, because afterwards the frames are in the image cache.
+  ///
+  /// Decoding these while the rig is still on screen is what removes it. The
+  /// player's own contract says this is the caller's job - "Only this sequence:
+  /// the caller decides what else is likely next, and the brief forbids holding
+  /// every frame of every action in memory at once" - so the caller decodes the
+  /// two interaction sequences and nothing else.
+  ///
+  /// Visible for testing because the defect it fixes is a *decode timing* one,
+  /// which a widget test cannot observe - images do not decode in a widget test,
+  /// which is why the real check is the device instrument
+  /// `tools/qa/state_switch_flicker.py`. What a test can pin is the list itself:
+  /// if it ever goes empty the blank comes back, and this is the cheapest place
+  /// to notice.
+  @visibleForTesting
+  static List<CompanionActionSpec> interactionSpriteSpecs() {
+    const interactions = [CompanionOverlay.tapReact, CompanionOverlay.petReact];
+    final specs = <CompanionActionSpec>[];
+    for (final overlay in interactions) {
+      final pose = overlay.pose;
+      if (pose == null) continue;
+      final spec = CompanionSpriteArt.resolveFor(companionKey, pose);
+      if (spec != null) specs.add(spec);
+    }
+    return specs;
+  }
 }
 
 /// The widget half of the Mochi provider.
@@ -158,34 +196,74 @@ class _MochiPoseAvatar extends ConsumerWidget {
     final growth = MochiGrowthProfile.fromProgress(
         ref.watch(homeControllerProvider).petProgress);
 
-    return PetAvatarWidget(
-      visualState: visualStateFor(intent.baseContext),
-      companionName: options.displayName,
-      size: options.size,
-      message: options.message,
-      controller: options.controller,
-      accessory: options.accessory,
-      focusProgress: options.focusProgress,
-      craftProgress: intent.craftProgress,
-      showStateBadge: options.showStateBadge,
-      growthProfile: growth,
-      // The existing work-cycle beats still run inside the focus state; the pose
-      // refines which work silhouette is shown, it does not replace the cycle.
-      focusPhase: FocusPhaseResolver.resolve(intent.focusProgress),
-      focusCategoryId: options.focusCategoryId,
-      poseSpec: poseSpec,
-      spriteSpec: spriteSpec,
-      // A one-shot the director chooses again has to play again. The dog renders
-      // through PetAvatarWidget rather than CompanionSpriteAvatar, so the token
-      // has to be handed over here as well - without it the completion screen's
-      // repeated celebration never restarts and the companion holds the first
-      // one's last frame for as long as the page stays open.
-      spriteRestartToken: intent.behaviorStartedAt,
-      semanticLabelOverride: intent.baseContext == CompanionBaseContext.room
-          ? '${options.displayName} 在房间'
-          : null,
-      onTapReact: options.onTapReact,
-      onLongPressReact: options.onLongPressReact,
+    return _SpritePrecache(
+      specs: MochiVisualProvider.interactionSpriteSpecs(),
+      child: PetAvatarWidget(
+        visualState: visualStateFor(intent.baseContext),
+        companionName: options.displayName,
+        size: options.size,
+        message: options.message,
+        controller: options.controller,
+        accessory: options.accessory,
+        focusProgress: options.focusProgress,
+        craftProgress: intent.craftProgress,
+        showStateBadge: options.showStateBadge,
+        growthProfile: growth,
+        // The existing work-cycle beats still run inside the focus state; the pose
+        // refines which work silhouette is shown, it does not replace the cycle.
+        focusPhase: FocusPhaseResolver.resolve(intent.focusProgress),
+        focusCategoryId: options.focusCategoryId,
+        poseSpec: poseSpec,
+        spriteSpec: spriteSpec,
+        // A one-shot the director chooses again has to play again. The dog renders
+        // through PetAvatarWidget rather than CompanionSpriteAvatar, so the token
+        // has to be handed over here as well - without it the completion screen's
+        // repeated celebration never restarts and the companion holds the first
+        // one's last frame for as long as the page stays open.
+        spriteRestartToken: intent.behaviorStartedAt,
+        semanticLabelOverride: intent.baseContext == CompanionBaseContext.room
+            ? '${options.displayName} 在房间'
+            : null,
+        onTapReact: options.onTapReact,
+        onLongPressReact: options.onLongPressReact,
+      ),
     );
   }
+}
+
+/// Decodes a set of sequences ahead of the switch that will need them.
+///
+/// A `precacheImage` call is idempotent in effect - the image cache answers the
+/// second one - but not free, so each frame is asked for once and a failure is
+/// dropped from the set rather than retried on every rebuild.
+class _SpritePrecache extends StatefulWidget {
+  final List<CompanionActionSpec> specs;
+  final Widget child;
+
+  const _SpritePrecache({required this.specs, required this.child});
+
+  @override
+  State<_SpritePrecache> createState() => _SpritePrecacheState();
+}
+
+class _SpritePrecacheState extends State<_SpritePrecache> {
+  final Set<String> _asked = {};
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    for (final spec in widget.specs) {
+      for (final frame in spec.frames) {
+        if (!_asked.add(frame)) continue;
+        precacheImage(AssetImage(frame), context, onError: (_, __) {
+          // A missing frame must degrade to "not drawn", never to a crash, and
+          // must not be re-requested on every rebuild.
+          _asked.remove(frame);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
