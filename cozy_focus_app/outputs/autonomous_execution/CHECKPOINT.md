@@ -17,6 +17,63 @@ one look identical to a finished one.
 
 below; re-verify the git state before acting on it.
 
+## 2026-10-12T21:53+08:00 — STAGE 1-3: companion animation and device verification
+
+**HEAD `11d639e`, local == remote, worktree clean.** Four commits this round, all
+pushed after the network dropped three times (each failure retried until
+`git ls-remote` actually matched - a push message is not evidence).
+
+### Fixed, each with a reverse proof and a device measurement
+
+| # | What was wrong | Where the evidence is |
+|---|---|---|
+| 42 | The companion vanished for one frame when a tap swapped renderers. The hero draws the **rig** for `idle` and a **sprite** for every other pose, so a tap changes the widget type, Flutter builds a new element, and a new `Image` has no decoded frame for `gaplessPlayback` to hold. | `flicker/tap_companion_FLICKER_REPORT.json`; the CREATED/DISPOSED log pairs are quoted in the commit message |
+| 43 | The completion screen re-celebrated every 1-2s (four celebrations in five seconds). Fixing it exposed **four more** defects: the rig was frozen in a one-shot state, the state mapping existed twice and the rig read the other copy, the controller only synced on rebuilds while the hand-over happens on a clock tick, and the sprite gate stopped the rig on dispose. | `celebrate/celebrate_MOTION_REPORT.json` - three consecutive PASSes |
+
+Full write-ups in `outputs/final_product_qa/04_BUG_FIX_LEDGER.md` (40/41/42/43).
+**Do not re-open these four.**
+
+### Verified this round
+
+- Landscape, **8 of 8** main screens photographed on the device with their own
+  marker asserted: `outputs/final_visual_implementation/landscape/`.
+  `tools/qa/landscape_sweep.py` navigates **by accessibility label, not by
+  coordinate** - rotating turns 1080x2400 into 2400x1080, so portrait coordinates
+  are wrong afterwards.
+- `python tools/cozy_gate.py --full` -> **12 PASS / 3 DEFERRED / 3 BLOCKED / 0 FAIL**,
+  UNIT_TESTS 2075/2075, APK 32.0 MB, AAB 50.5 MB.
+
+### Still open, and why
+
+1. **An owned collection item has never been seen.** The device reads 0/8 and the
+   shortest recipe needs **20 minutes of uninterrupted real focus**
+   (30/20/90/60/30/45/120/180 across the eight). This round the emulator was
+   reclaimed repeatedly and wedged its own System UI once - evidence in
+   `outputs/device_diagnostics/anr_2026-10-12.txt` (the ANR was in
+   `com.android.systemui`, "Input dispatching timed out ... NavigationBar0", not
+   in CozyFocus). **It was not inferred from the existence of an owned branch.**
+2. **`WAITING_FOR_INDEPENDENT_REVIEW`.** Every reviewer provider is unreachable
+   from this machine: `code-reviewer` times out against chatgpt.com (one run
+   lasted 724s before failing), `deep-reasoner` reports `provider-not-found`
+   (`gpt-6-astra` unconfigured), `general-purpose` reports `auth_unavailable`
+   against oauth2.googleapis.com. GitHub was intermittently unreachable in the
+   same period. The implementer must not self-approve.
+3. Device frame-time harness (`DEFERRED`), the owner's visual gate, and the six
+   remaining product decisions.
+
+### Device notes for the next window
+
+- The host had **3.3 GB free of 15.6 GB** at the start of this round and **5.5 GB**
+  later; the emulator's instability tracked it. A wedged System UI recovered with
+  `adb reboot` of the **existing** AVD - do not start a second one.
+- `tools/qa/landscape_sweep.py` scrolls in **220px steps** on purpose: a
+  full-viewport swipe walks straight past the records page's three entries, which
+  then get reported as unreachable.
+- The celebrate gate's control region is the **bottom nav**, not the title block:
+  the title fades in and its residual motion failed a companion that had done
+  nothing wrong.
+
+
 ```
 at           2026-10-10 (host clock — run `git log -1 --format=%ci` for the real one)
 branch       recovery/v4.2.1-rebuild

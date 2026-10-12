@@ -5,7 +5,7 @@
  "branch": "recovery/v4.2.1-rebuild",
  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
- "updated_at": "2026-10-11T22:33:02+08:00",
+ "updated_at": "2026-10-12T21:53:12+08:00",
  "continuation": {
   "question": "does this environment support automatic continuation of the work?",
   "answer": "PARTIALLY — and the honest split matters.",
@@ -24,18 +24,22 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "764d8e4ffd029cf23e556a1fc44b8722af508062",
-  "remote_head": "fa56849f72e86ca7f472be13795ac896ae0269f4",
+  "head": "11d639e67c6fd5914b1c48d4beaab96f24554d95",
+  "remote_head": "11d639e67c6fd5914b1c48d4beaab96f24554d95",
   "head_matches_remote": true,
-  "worktree": "dirty",
-  "last_verified_at": "2026-10-10T11:30:50+08:00",
-  "note": "Local and remote agree. The frame-time harness (4db76d5) and the QA/state commit (fa56849) reached origin after the connection had dropped several times; the push reported 'Everything up-to-date' and `git ls-remote` was then read directly to confirm the remote ref equals local HEAD, because 'Everything up-to-date' is the one message that looks the same whether the push landed or the ref was never read. The state commit carrying this file sits on top of the SHA recorded here.",
-  "remote_reachable_at_last_check": false
+  "worktree": "clean",
+  "last_verified_at": "2026-10-12T21:53:12+08:00",
+  "note": "Verified by reading `git rev-parse HEAD` and `git ls-remote` directly, not from a push message: pushes in this window failed on the network three separate times and each failure was retried until the remote actually matched."
  },
  "current": {
-  "stage": "STAGE_1_VISUAL_MATRIX",
-  "subtask": "One-shot completion run. The hourly CozyFocus automation was deleted at the owner's request and no new schedule was created. Four units closed: S1.21a (the fourth stat tile was a duplicate of the 幸福感 card), S1.09a (resolved as not a defect - board 09's own prose names four kinds and the app renders four), S1.20 (the subtask card had no way in, and both dialogs on that page used a disposed controller), S4.04c (flicker measured frame by frame, no device needed). Defects 35-38. A new scanner for the 'built but unreachable' class then found deleteSubtask, which was the other half of the same card.",
-  "mode": "ONE_SHOT_COMPLETION"
+  "round": "STAGE_1_TO_3_COMPANION_AND_DEVICE_VERIFICATION",
+  "finished_at": "2026-10-12T21:53:12+08:00",
+  "commits_this_round": [
+   "04647b3 test(qa): the companion vanishes for one frame when it changes action",
+   "c89076b fix(companion): the companion vanished for a frame when a tap swapped renderers",
+   "b67b297 fix(companion): celebrate once, then settle into idle breathing",
+   "11d639e test(qa): landscape device sweep, and the record for what could not be verified"
+  ]
  },
  "status_vocabulary": [
   "PENDING",
@@ -120,19 +124,17 @@
   "S7 depends on all of the above"
  ],
  "recent_test_evidence": {
-  "at": "2026-10-10T11:30:50+08:00",
-  "command": "flutter test",
-  "result": "2045/2045 unit, analyze clean, format clean, APK builds",
-  "analyze": "flutter analyze --fatal-infos: No issues found",
-  "format": "dart format --set-exit-if-changed .: 0 changed",
-  "apk": "flutter build apk --debug: built",
-  "diff_check": "clean",
-  "scanners": "find_doubled_semantics_labels.py 0 (self-test 6/6), find_excluded_tap_actions.py 0, find_excluded_controls.py 0, find_unlabelled_icon_buttons.py 0, and the new find_uncalled_controller_methods.py 1 (self-test 4/4) - that one reports a question, not a defect",
-  "project_gate": "tools/cozy_gate.py --full --with-device: 13 PASS / 3 BLOCKED / 2 DEFERRED / 0 FAIL",
-  "device": "411x914 emulator; frame time measured over five runs (see 06_DEVICE_QA.md); A-H re-walked on the final build; three sizes; large text; landscape"
+  "at": "2026-10-12T21:53:12+08:00",
+  "head": "11d639e67c6fd5914b1c48d4beaab96f24554d95",
+  "flutter_test": "2075/2075",
+  "flutter_analyze": "No issues found",
+  "dart_format": "0 changed (468 files)",
+  "flutter_build_apk_debug": "success, 32.0 MB",
+  "git_diff_check": "clean",
+  "cozy_gate_full": "12 PASS / 3 DEFERRED / 3 BLOCKED / 0 FAIL"
  },
- "uncommitted": "none",
- "next_instruction": "Independent review is the only thing standing between the queue and PASS on roughly forty rows. Retry it first once the subagent quota resets (about 66 hours from 2026-10-10). Everything else left is the owner's (OWNER_VISUAL_GATE, S1.21b's level titles, S1.20b, S1.22), a GPU-backed device, or the standing external blocks. Also check whether the last push went through: github.com:443 was refusing again at the end of this run.",
+ "uncommitted": "none - the worktree is clean and every evidence file is tracked",
+ "next_instruction": "Nothing in this round is left half-done. The next unit of work, in the order the brief sets out:\n1. Collection: an OWNED item has still never been seen. The device reads 0/8 and the shortest recipe needs 20 minutes of uninterrupted real focus (30/20/90/60/30/45/120/180 across the eight). Needs a device that survives 20 minutes; this round the emulator was reclaimed repeatedly and wedged its own System UI once (evidence: outputs/device_diagnostics/anr_2026-10-12.txt).\n2. Independent review: WAITING_FOR_INDEPENDENT_REVIEW. Every reviewer provider is unreachable from this machine (chatgpt.com and oauth2.googleapis.com time out; gpt-6-astra is not configured). Retry when the network recovers; the implementer must not self-approve.\n3. The device frame-time harness (DEFERRED) and the owner's visual gate.\nDo not re-open the four defects fixed this round - each has a reverse proof and a device measurement recorded in 04_BUG_FIX_LEDGER.md (40/41/42/43).",
  "external_blockers": [
   "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
   "LAUNCHER_ICON: stock Flutter icon, no approved artwork",
