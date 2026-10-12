@@ -106,7 +106,7 @@ HUD 是真实控件。
 | focus 是否有可见工作动作 | **PASS**（上表 focus） |
 | pause_rest 是否正确 | **PASS**（上表 pause） |
 | sleep 是否自然 | **PASS**（上表 rest；设备上真实休息运行中，宠物闭眼趴着） |
-| celebrate 是否正常 | **PASS（本轮已实测，并顺带修掉一个真缺陷）** —— 见下面的更正 |
+| celebrate 是否正常 | **PASS（庆祝一次 + 安顿下来，连续三次设备复测）** —— 见下面的更正 |
 | idle 帧是否含眨眼 | **PASS（看素材，不是看引擎）** —— 狗的空闲序列是 6 帧，**第 4 帧是闭眼的**（其余 5 帧睁眼）。见 `build/_idle_strip.png` 的六帧并排。**注意这是"素材里有闭眼帧"**，不等于"引擎按 140ms 的 blink 通道在播它"：狗的空闲走 sprite 序列，`_blinkController` 那条通道是**分层骨架渲染器**（`pet_idle_fallback_view.dart`）的，狗在空闲态不走它。6 帧也确实互不相同（相对第 1 帧的均值差 2.6～16.2），所以空闲不是一张静止图 |
 | 状态切换是否闪烁 | **FAIL（已复现，见缺陷 42）** —— 伙伴**换动作的那一帧整个消失**：195 帧 @20fps 里第 42 帧的墨量是 15293 中位数的 **4%**（前后两帧都满），把那一帧调出来看，页头/房间/卡片/按钮全在，**只有 Mochi 不在**。区分实验：同样仪器切 `记录` 标签，墨量恒定到第 88 帧才一次性掉下去并**保持**（那页本来就没有伙伴），**没有孤立单帧塌陷** —— 所以闪烁**只发生在伙伴换动作时**。仪器：`tools/qa/state_switch_flicker.py`，报告 `flicker/tap_companion_FLICKER_REPORT.json`，证据帧 `flicker/tap_companion_f03.png` |
 | 与家具接触点是否一致 | **PASS**（`tools/audit_pack_geometry.py`：49 帧，落地点最差偏差 1px / 容差 2px） |
@@ -124,6 +124,19 @@ HUD 是真实控件。
 
 **教训写在这里**：`NOT_VERIFIED` 是对的，但把原因归给"我的窗口没对上"是**替被测对象开脱**。换一个工具之后，问题从来不在工具窗口上。
 
+### 4a-2. 第二轮：从"冻死"到"每 1.5 秒庆祝一次"，再到"庆祝一次然后安顿"
+
+41 的修法（把 dwell 改短）消掉了 11 秒定格，代价是**5 秒内 4 次庆祝** —— 一个永远在庆祝的伙伴不是庆祝，是循环。目标句是：**完成专注 → 播放一次可感知的庆祝动作 → 平滑进入待机呼吸**。
+
+现在：`complete` 的池子加上 `idle`，导演增加"一次完成只庆祝一次"规则。**这一改又连着暴露四层缺陷**（骨架被冻在一次性状态 / 状态映射有两份而骨架读的是另一份 / controller 只在 rebuild 时同步而交班发生在时钟 tick 上 / sprite 闸门在 dispose 时把刚挂载的骨架关掉）—— 全部记录在缺陷台账 43。
+
+| 项 | 状态 | 证据 |
+|---|---|---|
+| 庆祝播放一次 | **PASS** | 开场最大步进 24.9 / 25.0 / 25.0（连续三次） |
+| 之后不再庆祝 | **PASS** | 2 秒之后最大步进 4.2 / 3.1 / 4.3，远低于庆祝的 25 |
+| 结束不僵死 | **PASS** | 最长静止 0.20 / 0.25 / 0.75 秒（改法前是 4.35–5.95 秒） |
+| 控制区不动 | **PASS** | 控制区改用底部导航（标题是渐进的，会误判） |
+
 ## 4b. 横屏：扫描只扫竖屏，就只验了一半
 
 `AndroidManifest.xml` 既没有 `screenOrientation` 锁、`configChanges` 里又带 `orientation` —— **旋转是真会发生的配置**。而尺寸扫描此前只有任务书点名的三个竖屏尺寸，**从来没有一个屏幕在 800×360 下被布局过**。
@@ -134,7 +147,7 @@ HUD 是真实控件。
 |---|---|
 | 8 个主屏 × 3 个横屏尺寸 × 2 档字号的溢出扫描 | **PASS**（`screen_size_and_text_sweep_test.dart`，含两条反向证明） |
 | 任务列表横屏真机走查（含滚动可达） | **PASS** |
-| 其余 7 个主屏的横屏**设备截图** | **`NOT_VERIFIED`** —— 组件级扫描答的是"会不会溢出"，设备截图答的是"好不好看" |
+| 其余 7 个主屏的横屏**设备截图** | **PASS** —— `tools/qa/landscape_sweep.py` 逐屏导航（**按无障碍标签，不按坐标**：旋转后 1080×2400 变 2400×1080）并截图，每屏断言渲染出了自己的标记文本。8/8 在 `outputs/final_visual_implementation/landscape/` |
 
 
 ## 5. 图鉴真实交互 —— 已在真机走过
@@ -148,7 +161,7 @@ HUD 是真实控件。
 | 返回路径 | 成功回到「收藏图鉴」，子导航仍在 | 树里读到「返回」+「收藏图鉴」 |
 | 分类筛选 | **正确**：未筛选 8 件；「植物」→ **0**（目录里确实没有植物）；「家具」→ **6**（沙发/茶几/书架/小床/矮柜/写字台），剩下 2 件归「生活」 | `10_collection_filter.png` |
 | 未解锁不伪造拥有 | **是**：逐条读作「… 未收集」，带锁标，进度 `0 / 8` | 同上 |
-| **已拥有物品的显示** | **`NOT_VERIFIED`** | 当前收集度 0/8，**没有已拥有的物品可看**。要看到这个状态必须先真的做出一件家具（需一次完整专注把制作进度跑完）。**不拿「代码里有已拥有分支」当验过。** |
+| **已拥有物品的显示** | **`NOT_VERIFIED`** | 当前收集度 0/8，**没有已拥有的物品可看**。本轮把这条路走到底量了一次：八件家具的配方时长是 30/20/90/60/30/45/120/180 分钟（`app_database.dart` 的种子表），**最短的一件要 20 分钟真实专注**才能把制作进度跑完。模拟器本轮反复被回收，20 分钟不中断的专注跑不下来，所以这一格保持未验。**不拿「代码里有已拥有分支」当验过。** |
 
 上一轮我把这项记成 `NOT_VERIFIED`，理由是「设备被别的 App 抢占」。**真正的原因是坐标点偏**——图鉴在 `913,398`，我点的是 `960,386`。从栋树里取坐标而不是估算，一次就对了。
 
@@ -177,7 +190,7 @@ ASSET_GATES 75/75、APK 32.0 MB、AAB 50.5 MB、DIFF_CHECK clean）。
 |---|---|
 | 8 屏 × 3 横屏尺寸 × 2 档字号 | **PASS** |
 | 任务列表横屏真机走查（含滚动可达） | **PASS**（`17_landscape_*.png`，前后对比） |
-| 其余 7 屏的横屏**设备截图** | **`NOT_VERIFIED`** —— 组件级扫描答"会不会溢出"，设备截图答"好不好看" |
+| 其余 7 屏的横屏**设备截图** | **PASS** —— 8/8，见 `outputs/final_visual_implementation/landscape/` |
 
 ## 7. 测试与构建
 
@@ -185,7 +198,7 @@ ASSET_GATES 75/75、APK 32.0 MB、AAB 50.5 MB、DIFF_CHECK clean）。
 |---|---|
 | `dart format --set-exit-if-changed .` | 0 changed（463 文件） |
 | `flutter analyze --fatal-infos` | No issues found |
-| `flutter test` | **2067 / 2067** |
+| `flutter test` | **2075 / 2075** |
 | `flutter build apk --debug` | 成功，32.0 MB |
 | `git diff --check` | clean |
 
@@ -215,7 +228,7 @@ OpenAI 密钥被拒（401）。技能清单里也没有 Google Flow。**没有�
 | 帧时间（raster） | **NOT_VERIFIED** | 本机 AVD 无 GPU，swiftshader 数字不代表真机 |
 | TalkBack / 真机 / release 签名 / 启动图标 | **BLOCKED_EXTERNAL** | 环境或所有者 |
 | `OWNER_VISUAL_GATE` | **DEFERRED** | 项目门禁标 REQUIRED，**永不由测量决定**，非我可声称 |
-| 独立视觉审查 | **BLOCKED** | 三个可用的评审子代理全部不可达。**本轮换了三种类型各试一次**：`code-reviewer` 两次都是到 `chatgpt.com/backend-api/codex/responses` 的连接超时；`deep-reasoner` 报 `provider-not-found`（`gpt-6-astra` 未配置）；`general-purpose` 报 `auth_unavailable`（到 `oauth2.googleapis.com/token` 连接超时）。**这已经不是配额问题，是网络**。因此本轮的两处修复（缺陷 40/41）**没有独立评审，只有自测 + 反向证明 + 真机实测**，按四等级记在 `VISUAL_VERIFIED` 而不是 `REVIEW_APPROVED` |
+| 独立视觉审查 | **BLOCKED（网络，不是配额）** | 本轮又试了两次 `code-reviewer`，两次都超时在 `chatgpt.com/backend-api/codex/responses`（后台跑满 724 秒后失败）。上一轮记录的三条也仍然成立：`code-reviewer` 连接超时、`deep-reasoner` 报 `provider-not-found`（`gpt-6-astra` 未配置）、`general-purpose` 报 `auth_unavailable`（到 `oauth2.googleapis.com/token` 超时）。**同一时段 GitHub 也间歇不可达**（推送要重试三次，`api.github.com` 通而 `github.com` 不通），所以这是这台机器的网络，不是供应商配额。因此本轮四处修复（缺陷 40/41/42/43）**没有独立评审**，只有自测 + 反向证明 + 真机实测，按四等级记在 `VISUAL_VERIFIED`，不是 `REVIEW_APPROVED`。**实施者不能自己批准 REVIEW_APPROVED**，这一项保持 `WAITING_FOR_INDEPENDENT_REVIEW` |
 
 ## 9a. 设备为什么一直不稳定 —— 是内存，不是 App
 

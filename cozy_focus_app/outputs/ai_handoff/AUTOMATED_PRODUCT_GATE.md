@@ -1,12 +1,12 @@
 # Automated product gate
 
-Generated 2026-10-12 08:13:15 at `58ead4bb`. Local equals remote: **YES**.
+Generated 2026-10-12 21:40:31 at `b67b297a`. Local equals remote: **NO**.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| `FORMAT` | **PASS** | 461 files, 0 changed |
+| `FORMAT` | **PASS** | 466 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
-| `UNIT_TESTS` | **PASS** | 2047/2047 passed |
+| `UNIT_TESTS` | **PASS** | 2075/2075 passed |
 | `INTEGRATION_TESTS` | **PASS** | 51/51 passed |
 | `GOLDEN_FLOW` | **PASS** | 6/6 passed |
 | `MIGRATION` | **PASS** | 16/16 passed |
