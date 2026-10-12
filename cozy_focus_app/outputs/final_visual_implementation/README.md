@@ -78,24 +78,32 @@ Git HEAD：`0635271`（本地；远端推送因 github.com:443 中断未完成�
 **不是"一张房间截图 + 烘焙按钮"**：场景是可缩放的 painter，宠物是运行时渲染的精灵，
 HUD 是真实控件。
 
-## 4. Mochi 动画状态与证据
+## 4. Mochi 动画 —— 已用运动门禁实测（不是只看 manifest）
 
-`AnimationState` 枚举里 **8 个状态各有自己的帧**（`sprite_animation_manifest_data.dart`）：
-`idle`（含呼吸，多帧）、`focus_write`、`focus_read`、`focus_think`、`craft_work`、
-`sleep`、`pause_rest`、`celebrate`。
+`tools/runtime_motion_gate.py` 取**时间上分开的多帧**，比较**主体区**与一个**必须不动的对照区**。
+只有对照区不动，主体区的差异才说明是 App 画了不同的东西，而不是两张截图不同。
 
-| 简报要求 | 对应状态 | 状态 |
-|---|---|---|
-| Idle 待机 / 呼吸 | `idle`（多帧，注释明写"单张 PNG 不是 idle 循环"） | **PASS** |
-| Focus 工作 | `focus_write` / `focus_read` / `focus_think` | **PASS** |
-| Pause 暂停 | `rest` → `pause_rest` 帧（注释：投影到 `idle` 会丢掉已交付的 art） | **PASS** |
-| Rest 趴下休息 | `sleep` | **PASS** |
-| Celebrate 庆祝 | `happy` → `celebrate` 帧 | **PASS** |
-| 房间交互 | `locomotion_controller` + 真实家具锚点 | **PASS** |
-| 眨眼 | 无独立状态（属 `idle` 帧序列内） | **NOT_VERIFIED**：未逐帧确认 `idle` 序列里含眨眼帧 |
+| 状态 | 主体区 | 对照区 | 结果 |
+|---|---|---|---|
+| **idle（呼吸）** | 宠物 311,379–769,837 | 时长卡 84,1300–984,1600 | `subject_animates: true`、`control_is_static: true`、`cycles_rather_than_drifts: true` → **PASS** |
+| **focus（工作）** | 宠物 348,1476–732,1941 | 标题区 250,300–830,430 | 同上 → **PASS** |
+| **pause（暂停）** | 宠物 348,1476–732,1941 | 标题区 250,300–830,430 | 同上 → **PASS** |
 
-几何与接触点：`tools/audit_pack_geometry.py` **PASS**——三套包 49 帧，
-落地点最差偏差 **1px**、中心点 **0.5px**，容差 2px。
+报告落在 `outputs/ai_handoff/android_v1_runtime/motion/{idle,focus,pause}/`。
+**所以"呼吸真的在播"是量出来的，不是从 manifest 推的。**
+
+| 简报要求 | 状态 |
+|---|---|
+| 呼吸动作是否实际播放 | **PASS**（上表 idle） |
+| focus 是否有可见工作动作 | **PASS**（上表 focus） |
+| pause_rest 是否正确 | **PASS**（上表 pause） |
+| sleep 是否自然 | **`NOT_VERIFIED`**：本轮没能进到休息页——设备在两次调用之间把 App 杀掉并重启，每次都弹回「已恢复专注状态」，未能稳定到达 |
+| celebrate 是否正常 | **`NOT_VERIFIED`**：需要完成一次专注，同上未到达 |
+| idle 帧是否含眨眼 | **`NOT_VERIFIED`**：门禁证明 idle 在动，**不分辨动的是呼吸还是眨眼** |
+| 状态切换是否闪烁 | **`NOT_VERIFIED`** |
+| 与家具接触点是否一致 | **PASS**（`tools/audit_pack_geometry.py`：49 帧，落地点最差偏差 1px / 容差 2px） |
+
+**"8 个状态各有自己的帧"是 manifest 事实，不等于"8 个动作都验过"。** 上表按实测分级。
 
 ## 5. 图鉴真实交互 —— 已在真机走过
 
