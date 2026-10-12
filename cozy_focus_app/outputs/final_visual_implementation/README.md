@@ -88,6 +88,7 @@ HUD 是真实控件。
 | **idle（呼吸）** | 宠物 311,379–769,837 | 时长卡 84,1300–984,1600 | `subject_animates: true`、`control_is_static: true`、`cycles_rather_than_drifts: true` → **PASS** |
 | **focus（工作）** | 宠物 348,1476–732,1941 | 标题区 250,300–830,430 | 同上 → **PASS** |
 | **pause（暂停）** | 宠物 348,1476–732,1941 | 标题区 250,300–830,430 | 同上 → **PASS** |
+| **rest（趴下休息）** | 宠物 331,368–785,712 | 副标题区 150,190–930,290 | 同上 → **PASS**（休息页真实运行中） |
 
 报告落在 `outputs/ai_handoff/android_v1_runtime/motion/{idle,focus,pause}/`。
 **所以"呼吸真的在播"是量出来的，不是从 manifest 推的。**
@@ -97,8 +98,8 @@ HUD 是真实控件。
 | 呼吸动作是否实际播放 | **PASS**（上表 idle） |
 | focus 是否有可见工作动作 | **PASS**（上表 focus） |
 | pause_rest 是否正确 | **PASS**（上表 pause） |
-| sleep 是否自然 | **`NOT_VERIFIED`**：本轮没能进到休息页——设备在两次调用之间把 App 杀掉并重启，每次都弹回「已恢复专注状态」，未能稳定到达 |
-| celebrate 是否正常 | **`NOT_VERIFIED`**：需要完成一次专注，同上未到达 |
+| sleep 是否自然 | **PASS**（上表 rest；设备上真实休息运行中，宠物闭眼趴着） |
+| celebrate 是否正常 | **`NOT_VERIFIED`（测到的不是它）**：走完了整条流程（结束休息 → 开始专注 → 提前结束 → 仍然结束）到达完成页，页面上确实写着 **`Mochi 庆祝中`**。但门禁量到的 12 帧**逐帧完全相同**（`distance_from_first` 全 0）——因为 **celebrate 是一次性动画**：`pet_idle_fallback_view.dart:31` 明写"Outside active motion states, other states (e.g. celebrate, craft) remain static"，第 381 行有 `_celebrateSettled`。它到达时播一次就落定，**我的测量窗口开在它播完之后**。所以"庆祝在播"这件事**没有测到**，只有"状态挂上了"和"落定后是静的" |
 | idle 帧是否含眨眼 | **`NOT_VERIFIED`**：门禁证明 idle 在动，**不分辨动的是呼吸还是眨眼** |
 | 状态切换是否闪烁 | **`NOT_VERIFIED`** |
 | 与家具接触点是否一致 | **PASS**（`tools/audit_pack_geometry.py`：49 帧，落地点最差偏差 1px / 容差 2px） |

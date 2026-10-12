@@ -1,0 +1,75 @@
+{
+  "label": "celebrate",
+  "mode": "idle",
+  "frames": 12,
+  "interval_s": 0.6,
+  "subject_box": [
+    343,
+    288,
+    737,
+    619
+  ],
+  "control_box": [
+    150,
+    190,
+    930,
+    290
+  ],
+  "subject_steps": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "control_steps": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "distance_from_first": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "thresholds": {
+    "min_subject_motion": 1.0,
+    "max_control_motion": 0.5,
+    "cycle_return_fraction": 0.5
+  },
+  "checks": {
+    "subject_animates": false,
+    "control_is_static": true,
+    "cycles_rather_than_drifts": false
+  },
+  "technical_visual_gate": "FAIL",
+  "blocking": [
+    "subject_animates",
+    "cycles_rather_than_drifts"
+  ],
+  "owner_visual_gate": "REQUIRED",
+  "note": "owner_visual_gate is REQUIRED and is never decided here: whether the art reads well is not a measurement."
+}
