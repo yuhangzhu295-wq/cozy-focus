@@ -32,6 +32,7 @@ TAKEN = []
 
 
 def shot(name):
+    keep_foreground()
     if dl.foreground() != dl.PKG:
         print(f"  REFUSING {name}: foreground is {dl.foreground()!r}")
         return False
@@ -46,12 +47,27 @@ def shot(name):
     return ok
 
 
+def keep_foreground():
+    """Re-establish CozyFocus before a step, because it gets reclaimed mid-flow.
+
+    The host has 3.3 GB free and the emulator swaps, so the app is reclaimed between
+    steps; the foreground then falls back to whatever is in recents. Checking once at
+    the start was not enough - the flow died halfway every time.
+    """
+    if dl.foreground() == dl.PKG:
+        return True
+    print("  reclaimed; bringing it back")
+    return dl.ensure(settle=45) == dl.PKG
+
+
 def labels():
     return [l for _x, _y, l in ms.nodes(ms.dump())]
 
 
 def tap_first(*needles, settle=6):
     """Tap the first node whose label contains any of `needles`."""
+    if not keep_foreground():
+        return False
     xml = ms.dump()
     for x, y, label in ms.nodes(xml):
         for n in needles:
