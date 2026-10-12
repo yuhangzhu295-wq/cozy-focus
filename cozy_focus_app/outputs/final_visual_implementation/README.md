@@ -190,6 +190,16 @@ treehole  有一个 WebView 的 SandboxedProcessService 常驻
 
 **不把"重启模拟器"当解决方案**：它不解决 3.3 GB。
 
+**而且 AVD 的数据分区是临时的**：`~/.android/avd/GoodnightPixel7Api34.avd/config.ini` 里
+
+```
+disk.dataPartition.path=<temp>
+disk.dataPartition.size=10G
+hw.ramSize=2G
+```
+
+`path=<temp>` 意味着数据分区不落盘。**这才是"重启后已安装的 App 解析不到 Activity"的真正原因**——不是包管理器损坏，是它的数据被丢掉了。上一轮我把它写成"包管理器丢了活动、重装能修"，重装确实能修，但**没说清为什么每次重启都会丢**。现在有了：数据分区本来就是临时的。
+
 ## 10. 模拟器验证方式（简报第 5 节）
 
 新增 `tools/qa/device_launch.py`：**没有确认前台是 CozyFocus 就拒绝截图和点击**（exit 2）。
