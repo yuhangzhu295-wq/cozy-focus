@@ -107,8 +107,8 @@ HUD 是真实控件。
 | pause_rest 是否正确 | **PASS**（上表 pause） |
 | sleep 是否自然 | **PASS**（上表 rest；设备上真实休息运行中，宠物闭眼趴着） |
 | celebrate 是否正常 | **PASS（本轮已实测，并顺带修掉一个真缺陷）** —— 见下面的更正 |
-| idle 帧是否含眨眼 | **`NOT_VERIFIED`**：门禁证明 idle 在动，**不分辨动的是呼吸还是眨眼**。眨眼只有 140ms（`PetMotionSpec.blinkDuration`），要另一套更密的取样 |
-| 状态切换是否闪烁 | **`NOT_VERIFIED`** |
+| idle 帧是否含眨眼 | **PASS（看素材，不是看引擎）** —— 狗的空闲序列是 6 帧，**第 4 帧是闭眼的**（其余 5 帧睁眼）。见 `build/_idle_strip.png` 的六帧并排。**注意这是"素材里有闭眼帧"**，不等于"引擎按 140ms 的 blink 通道在播它"：狗的空闲走 sprite 序列，`_blinkController` 那条通道是**分层骨架渲染器**（`pet_idle_fallback_view.dart`）的，狗在空闲态不走它。6 帧也确实互不相同（相对第 1 帧的均值差 2.6～16.2），所以空闲不是一张静止图 |
+| 状态切换是否闪烁 | **`NOT_VERIFIED`** —— 需要一个"在切换瞬间高频取样"的仪器，本轮未做 |
 | 与家具接触点是否一致 | **PASS**（`tools/audit_pack_geometry.py`：49 帧，落地点最差偏差 1px / 容差 2px） |
 
 **"8 个状态各有自己的帧"是 manifest 事实，不等于"8 个动作都验过"。** 上表按实测分级。
@@ -214,7 +214,7 @@ OpenAI 密钥被拒（401）。技能清单里也没有 Google Flow。**没有�
 | 帧时间（raster） | **NOT_VERIFIED** | 本机 AVD 无 GPU，swiftshader 数字不代表真机 |
 | TalkBack / 真机 / release 签名 / 启动图标 | **BLOCKED_EXTERNAL** | 环境或所有者 |
 | `OWNER_VISUAL_GATE` | **DEFERRED** | 项目门禁标 REQUIRED，**永不由测量决定**，非我可声称 |
-| 独立视觉审查 | **BLOCKED** | 子代理供应商配额（约 66h 后恢复） |
+| 独立视觉审查 | **BLOCKED** | 三个可用的评审子代理全部不可达。**本轮换了三种类型各试一次**：`code-reviewer` 两次都是到 `chatgpt.com/backend-api/codex/responses` 的连接超时；`deep-reasoner` 报 `provider-not-found`（`gpt-6-astra` 未配置）；`general-purpose` 报 `auth_unavailable`（到 `oauth2.googleapis.com/token` 连接超时）。**这已经不是配额问题，是网络**。因此本轮的两处修复（缺陷 40/41）**没有独立评审，只有自测 + 反向证明 + 真机实测**，按四等级记在 `VISUAL_VERIFIED` 而不是 `REVIEW_APPROVED` |
 
 ## 9a. 设备为什么一直不稳定 —— 是内存，不是 App
 
