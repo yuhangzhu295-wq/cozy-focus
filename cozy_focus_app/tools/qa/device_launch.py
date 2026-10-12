@@ -12,6 +12,31 @@ So nothing here screenshots or taps without first reading the resumed activity
 and checking the package name. `am start` returning is not evidence that the app
 is up; the foreground package is.
 
+## The fault this self-heals
+
+`am start` was reporting `Activity class does not exist` for an app that
+`pm list packages` still listed, and the foreground then stayed on whatever was
+last used - which on this AVD is `com.goodnight.treehole`, so screenshots came
+back showing another app.
+
+The evidence, gathered rather than assumed:
+
+    pm path com.yuhangzhu295.cozyfocus   -> the APK is there, 144444467 bytes,
+                                            byte-identical to the built one
+    df -h /data                          -> 53% used, 4.5G free
+    dumpsys package <pkg>                -> "Activity Resolver Table:" EMPTY
+    cmd package resolve-activity --brief -> "No activity found"
+
+So the APK is intact and the disk is fine; it is the package manager's *parsed
+state* that is missing the activities. `uninstall` + `install` restores it, and
+the same table comes back populated. The emulator here has been shut down
+abruptly several times, which is the plausible cause: a package scan that never
+finished committing.
+
+Reinstalling by hand every time is not a fix, so this does it when it is needed
+and only then. It is not "restart until it works": it checks a specific, readable
+piece of state and repairs exactly that.
+
 ## Usage
 
     python tools/qa/device_launch.py            # ensure foreground, report
@@ -59,10 +84,37 @@ def foreground():
     return m.group(1) if m else ""
 
 
+APK = os.path.join(APP, "build", "app", "outputs", "flutter-apk", "app-debug.apk")
+
+
+def resolvable():
+    """True when the package manager knows this package's main activity."""
+    out = adb("shell", "cmd", "package", "resolve-activity", "--brief", PKG)
+    return f"{PKG}/.MainActivity" in out
+
+
+def repair_if_unresolvable():
+    """Reinstall when the resolver has lost the activity, and only then."""
+    if resolvable():
+        return True
+    print("activity not resolvable; the package manager lost it - reinstalling",
+          file=sys.stderr)
+    if not os.path.exists(APK):
+        print(f"no APK to install at {APK}", file=sys.stderr)
+        return False
+    adb("uninstall", PKG)
+    adb("install", APK, timeout=600)
+    ok = resolvable()
+    print(f"after reinstall: resolvable={ok}")
+    return ok
+
+
 def ensure(settle=45, tries=3):
     """Bring CozyFocus to the foreground. Returns the foreground package."""
     if not devices():
         print("no device attached", file=sys.stderr)
+        return ""
+    if not repair_if_unresolvable():
         return ""
     for attempt in range(tries):
         adb("shell", "am", "start", "-n", ACTIVITY)
