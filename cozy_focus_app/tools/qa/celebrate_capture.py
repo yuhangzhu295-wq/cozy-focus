@@ -59,7 +59,13 @@ CONTROL = (53, 157, 1000, 275)
 # completion screen says 庆祝中. Matching only 点一下 found the companion on the
 # running screen and on the modal, and then failed outright on the completion
 # screen - which is the one screen this tool exists for.
-PET_MARKERS = ("点一下", "庆祝中", "专注中", "空闲", "休息", "陪伴中", "工作中")
+#
+# `休息中`, not `休息`: the bare word also matches the home page's 放松一下
+# button, whose description reads 放松一下，累了就休息一会儿吧. That node is
+# smaller than the companion, so the "smallest match" rule picked it and every
+# measurement was taken of a button.
+PET_MARKERS = ("点一下", "庆祝中", "专注中", "空闲", "休息中", "陪伴中", "工作中",
+               "在房间")
 
 # A frozen still scores 0. The ambient layer alone stays far below this; the
 # celebrate burst has to clear it.
@@ -141,7 +147,12 @@ def pet_box(xml):
         if not (d and b and any(m in d.group(1) for m in PET_MARKERS)):
             continue
         box = tuple(int(g) for g in b.groups())
-        area = (box[2] - box[0]) * (box[3] - box[1])
+        w, h = box[2] - box[0], box[3] - box[1]
+        # The companion is drawn in a square box. Requiring one is a cheap second
+        # guard against a text node that happens to contain a state word.
+        if w <= 0 or h <= 0 or not (0.75 <= w / h <= 1.35):
+            continue
+        area = w * h
         if best is None or area < best[0]:
             best = (area, box)
     return best[1] if best else None
