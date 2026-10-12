@@ -175,6 +175,12 @@ class _MochiPoseAvatar extends ConsumerWidget {
       focusCategoryId: options.focusCategoryId,
       poseSpec: poseSpec,
       spriteSpec: spriteSpec,
+      // A one-shot the director chooses again has to play again. The dog renders
+      // through PetAvatarWidget rather than CompanionSpriteAvatar, so the token
+      // has to be handed over here as well - without it the completion screen's
+      // repeated celebration never restarts and the companion holds the first
+      // one's last frame for as long as the page stays open.
+      spriteRestartToken: intent.behaviorStartedAt,
       semanticLabelOverride: intent.baseContext == CompanionBaseContext.room
           ? '${options.displayName} 在房间'
           : null,

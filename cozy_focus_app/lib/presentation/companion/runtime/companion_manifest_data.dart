@@ -87,10 +87,23 @@ abstract final class CompanionManifestData {
       'default': _recipe([CompanionMacroBehavior.rest], 10, 22),
     },
     CompanionBaseContext.complete: {
+      // One short dwell, not the six-to-twelve the other contexts use.
+      //
+      // A dwell is a *hold* time, and `celebrate` is a `SpriteLoopMode.once`
+      // action - five frames at 8fps, 625ms - whose player holds the last frame
+      // when it ends. So a 6-12s dwell meant the companion animated for 0.6s and
+      // then stood perfectly still for the next 5-11s. Measured on the device as
+      // pixel-identical frames across eleven seconds, on the one screen whose
+      // whole job is to celebrate, while the same companion animates
+      // continuously on the home screen.
+      //
+      // The eligible list stays `celebrate` alone: that is what keeps the hour
+      // from diluting the moment. Only the hold is shortened, to roughly the
+      // length of the clip.
       'default': _recipe(
         [CompanionMacroBehavior.celebrate],
-        6,
-        12,
+        1,
+        2,
         noImmediateRepeat: false,
       ),
     },

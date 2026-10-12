@@ -3,11 +3,14 @@ import 'dart:io';
 import 'package:cozy_focus_app/domain/growth/growth_stage.dart';
 import 'package:cozy_focus_app/presentation/companion/focus_phase.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_availability.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_manifest.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_manifest_data.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_behavior_director.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_catalog.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_context.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_event.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_id.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_manifest_data.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_pose.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/random_source.dart';
 import 'package:cozy_focus_app/presentation/companion/time_of_day.dart';
@@ -119,6 +122,36 @@ void main() {
         );
         expect(d.currentMacroBehavior, CompanionMacroBehavior.celebrate,
             reason: 'band=$band');
+      }
+    });
+
+    test('the completion dwell fits the celebration it holds', () {
+      // A dwell is a HOLD time, and `celebrate` is a one-shot: its player stops
+      // on the last frame and holds it. So the dwell has to be about the length
+      // of the clip. At the six-to-twelve seconds this recipe used to declare,
+      // the companion animated for 0.6s and then stood perfectly still for the
+      // next 5-11s - measured on the device as pixel-identical frames across
+      // eleven seconds, on the one screen whose whole job is to celebrate, while
+      // the same companion animates continuously on the home screen.
+      //
+      // Derived from the clip rather than pinned to a number, so changing
+      // celebrate's fps or frame count keeps the two facts honest.
+      final recipe = CompanionManifestData
+          .contextRecipes[CompanionBaseContext.complete]!['default']!;
+      for (final entry in CompanionActionManifestData.manifests.entries) {
+        final spec = entry.value.resolve(CompanionPose.celebrate);
+        expect(spec, isNotNull,
+            reason: '${entry.key} ships no celebration to hold');
+        expect(spec!.loopMode, SpriteLoopMode.once,
+            reason:
+                '${entry.key}: this test only means anything while celebrate '
+                'is a one-shot - a looping celebrate fills any dwell');
+        final clip = spec.frameDuration * spec.frames.length;
+        expect(recipe.maxDuration, lessThan(clip * 5),
+            reason: '${entry.key}: a ${recipe.maxDuration.inMilliseconds}ms '
+                'dwell over a ${clip.inMilliseconds}ms one-shot leaves the '
+                'companion holding a still frame for '
+                '${recipe.maxDuration.inMilliseconds - clip.inMilliseconds}ms');
       }
     });
 

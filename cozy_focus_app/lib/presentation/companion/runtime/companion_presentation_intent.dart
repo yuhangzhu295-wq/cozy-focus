@@ -66,6 +66,26 @@ class CompanionPresentationIntent {
   /// The real craft progress passthrough, or `null` when no craft job runs.
   final double? craftProgress;
 
+  /// When the macro behaviour in force was last (re-)chosen, on the director's
+  /// presentation clock.
+  ///
+  /// It exists because a dwell is a hold time, and a one-shot action cannot fill
+  /// one. `celebrate` is five frames at 8fps and its player stops on the last
+  /// frame, so when the director re-chose celebrate on the completion screen the
+  /// action id was unchanged, the player saw no reason to reset, and the
+  /// companion held one still frame for as long as the screen stayed open —
+  /// measured on the device as pixel-identical frames across eleven seconds.
+  /// This token lets the renderer tell "the same action, chosen again" apart
+  /// from "the same action, still running".
+  ///
+  /// Part of [==], unlike [focusProgress]. Those are excluded because they move
+  /// *every frame*, so counting them would rebuild the tree sixty times a second
+  /// to redraw an unchanged pose. This one changes only when a behaviour is
+  /// chosen, which is precisely a moment the renderer has to hear about — leave
+  /// it out and the avatar never rebuilds, so the token never arrives and the
+  /// fix is inert.
+  final Duration? behaviorStartedAt;
+
   const CompanionPresentationIntent({
     required this.companionId,
     required this.pose,
@@ -79,6 +99,7 @@ class CompanionPresentationIntent {
     this.timeOfDay = TimeOfDayBand.midday,
     this.focusProgress,
     this.craftProgress,
+    this.behaviorStartedAt,
   });
 
   @override
@@ -94,7 +115,8 @@ class CompanionPresentationIntent {
           isOverlayActive == other.isOverlayActive &&
           reducedMotion == other.reducedMotion &&
           roomAnchor == other.roomAnchor &&
-          timeOfDay == other.timeOfDay;
+          timeOfDay == other.timeOfDay &&
+          behaviorStartedAt == other.behaviorStartedAt;
 
   @override
   int get hashCode => Object.hash(
@@ -107,6 +129,7 @@ class CompanionPresentationIntent {
         reducedMotion,
         roomAnchor,
         timeOfDay,
+        behaviorStartedAt,
       );
 
   @override

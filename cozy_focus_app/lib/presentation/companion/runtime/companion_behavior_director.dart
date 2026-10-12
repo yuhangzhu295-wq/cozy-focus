@@ -626,6 +626,10 @@ class CompanionBehaviorDirector {
       timeOfDay: _context.timeOfDay,
       focusProgress: _context.focusProgress,
       craftProgress: _context.craftProgress,
+      // The macro's own end time doubles as the presentation token: it is set
+      // afresh every time a behaviour is chosen, so a renderer can tell a
+      // re-chosen one-shot from one that is still holding its last frame.
+      behaviorStartedAt: _macroEndsAt,
     );
   }
 

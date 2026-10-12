@@ -131,6 +131,12 @@ class CompanionSpriteAvatar extends StatelessWidget {
       reducedMotion: intent.reducedMotion,
       semanticLabel: '$name $state',
       frameSource: frameSource,
+      // Only for a one-shot: a looping action never reaches its end, so there is
+      // nothing to restart. This is what makes the completion screen's repeated
+      // celebration actually play instead of holding the first one's last frame.
+      restartToken: spec.loopMode == SpriteLoopMode.once
+          ? intent.behaviorStartedAt
+          : null,
     );
 
     return Column(

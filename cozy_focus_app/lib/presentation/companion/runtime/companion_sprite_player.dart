@@ -54,6 +54,21 @@ class CompanionSpritePlayer extends StatefulWidget {
   /// provider differs, which is what keeps this one player rather than two.
   final CompanionFrameSource frameSource;
 
+  /// Changes when the same action has been *chosen again* rather than merely
+  /// still running.
+  ///
+  /// A `once` action clamps on its last frame, which is right while the
+  /// behaviour is in force and wrong the moment the director picks the same
+  /// behaviour a second time: the action id is unchanged, so nothing below
+  /// resets, and the companion holds a still frame for the whole of the next
+  /// dwell. On the completion screen - whose recipe lists only `celebrate` -
+  /// that meant one 0.6s animation and then eleven seconds of pixel-identical
+  /// frames, while the same companion animates continuously at home.
+  ///
+  /// Only one-shot specs need this. A looping action never reaches its end, so
+  /// restarting it would be a visible hiccup for no gain.
+  final Object? restartToken;
+
   const CompanionSpritePlayer({
     super.key,
     required this.spec,
@@ -62,6 +77,7 @@ class CompanionSpritePlayer extends StatefulWidget {
     this.semanticLabel,
     this.enabled = true,
     this.frameSource = const CompanionFrameSource.assets(),
+    this.restartToken,
   });
 
   @override
@@ -117,10 +133,19 @@ class _CompanionSpritePlayerState extends State<CompanionSpritePlayer>
     super.didUpdateWidget(oldWidget);
     // A new action starts from its own first frame rather than inheriting the
     // previous action's index.
-    if (!identical(oldWidget.spec, widget.spec) ||
-        oldWidget.spec.actionId != widget.spec.actionId) {
+    //
+    // So does the same one-shot action chosen again: its id has not changed, so
+    // without the token the player would keep holding the frame it stopped on
+    // and the second celebration would never play.
+    final differentAction = !identical(oldWidget.spec, widget.spec) ||
+        oldWidget.spec.actionId != widget.spec.actionId;
+    final reChosenOneShot = widget.spec.loopMode == SpriteLoopMode.once &&
+        oldWidget.restartToken != widget.restartToken;
+    if (differentAction || reChosenOneShot) {
       _index = 0;
       _direction = 1;
+    }
+    if (differentAction) {
       _precached.clear();
     }
     _sync();

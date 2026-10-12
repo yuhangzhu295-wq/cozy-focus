@@ -61,6 +61,17 @@ class PetAvatarWidget extends StatelessWidget {
   /// the rig is what is being drawn.
   final CompanionActionSpec? spriteSpec;
 
+  /// Passed through to the sprite player for one-shot specs: it changes when the
+  /// same action has been *chosen again* rather than merely still running.
+  ///
+  /// The dog renders through this widget rather than through
+  /// `CompanionSpriteAvatar`, so without this the completion screen's repeated
+  /// celebration never restarts - the first one plays, the player clamps on its
+  /// last frame, and the companion holds that frame for as long as the page is
+  /// open. Measured on the device as pixel-identical frames across eleven
+  /// seconds.
+  final Object? spriteRestartToken;
+
   /// The name the state label and the badge use.
   ///
   /// Required rather than defaulted, because the wrong answer is invisible: the
@@ -106,6 +117,7 @@ class PetAvatarWidget extends StatelessWidget {
     this.focusCategoryId,
     this.poseSpec,
     this.spriteSpec,
+    this.spriteRestartToken,
     this.onTapReact,
     this.onLongPressReact,
     this.semanticLabelOverride,
@@ -273,6 +285,8 @@ class PetAvatarWidget extends StatelessWidget {
         size: size,
         reducedMotion: MediaQuery.maybeOf(context)?.disableAnimations ?? false,
         semanticLabel: semanticLabelOverride ?? _petSemanticLabel(activeState),
+        restartToken:
+            spec.loopMode == SpriteLoopMode.once ? spriteRestartToken : null,
       );
       return _SpriteMotionGate(
         controller: controller,
