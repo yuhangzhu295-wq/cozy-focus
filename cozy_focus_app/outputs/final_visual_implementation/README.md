@@ -127,9 +127,18 @@ HUD 是真实控件。
 （UNIT 2047、INTEGRATION 51/51、**GOLDEN_FLOW 6/6**、MIGRATION 16/16、LIFECYCLE 81/81、
 ASSET_GATES 75/75、APK 32.0 MB、AAB 50.5 MB、DIFF_CHECK clean）。
 
-多尺寸：360×800 与 411×914 有实机截图（`01_home_360x800.png`、`01_home_411x914.png`）；
-393×852 只在 Widget 测试里覆盖（`focus_active_layout_test` 三尺寸断言）。
-**其余页面的 393×852 / 大字号 / 横屏未逐页实机**：`NOT_VERIFIED`。
+多尺寸：360×800 与 411×914 有实机截图（`01_home_360x800.png`、`01_home_411x914.png`）。
+
+**三尺寸 × 大字号已用 Widget 扫描覆盖**（`test/presentation/screen_size_and_text_sweep_test.dart`）：
+**8 个屏 × 3 个尺寸（360×800 / 393×852 / 412×915）× 2 档字号（1.0 / 1.3）**，
+逐屏断言**不溢出**，并且**每条路由都断言渲染出了自己的标记文本**——没有标记的扫描会在路由根本没渲染时也是绿的。
+
+**这个扫描自己也有反向证明**：第一版把 App 包在 `MediaQueryData(textScaler:)` 里，
+而那份数据**没有尺寸**，于是所有屏都按 0×0 布局、永远不可能溢出——**它在树里塞着一个 2000px 宽的标题时依然是绿的**。
+改成用 `platformDispatcher.textScaleFactorTestValue` 设置字号，并补了一条自检用例：在 360×800 下**故意溢出必须被抓到**。
+**扫不动错的扫描器比没有扫描器更糟。**
+
+横屏：只有 `report_landscape_width_test.dart` 覆盖报告页；**其余页面横屏未验**：`NOT_VERIFIED`。
 
 ## 7. 测试与构建
 
