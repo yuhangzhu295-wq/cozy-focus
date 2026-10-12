@@ -1,18 +1,18 @@
 # Automated product gate
 
-Generated 2026-10-10 11:39:37 at `764d8e4f`. Local equals remote: **NO**.
+Generated 2026-10-12 08:13:15 at `58ead4bb`. Local equals remote: **YES**.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| `FORMAT` | **PASS** | 460 files, 0 changed |
+| `FORMAT` | **PASS** | 461 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
-| `UNIT_TESTS` | **PASS** | 2045/2045 passed |
+| `UNIT_TESTS` | **PASS** | 2047/2047 passed |
 | `INTEGRATION_TESTS` | **PASS** | 51/51 passed |
 | `GOLDEN_FLOW` | **PASS** | 6/6 passed |
 | `MIGRATION` | **PASS** | 16/16 passed |
 | `LIFECYCLE` | **PASS** | 81/81 passed |
 | `ASSET_GATES` | **PASS** | 75/75 passed |
-| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 693 frames on emulator-5554, 663 after the 30-frame startup warmup; steady-state UI-thread build p50 1728 us / p90 7239 us / p99 25501 us; frames over the 16.67 ms budget after the warmup: 24. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
+| `DEVICE_MATRIX` | **DEFERRED** | the frame-time harness (integration_test/frame_time_test.dart, driver test_driver/perf_driver.dart) is re-runnable but needs an attached device and about three minutes, so it is not run by default. Pass --with-device to run it. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
 | `APK` | **PASS** | 32.0 MB (budget 34 MB) |
 | `AAB` | **PASS** | 50.5 MB (budget 55 MB) |
 | `DIFF_CHECK` | **PASS** | no whitespace errors |
@@ -25,9 +25,9 @@ Generated 2026-10-10 11:39:37 at `764d8e4f`. Local equals remote: **NO**.
 
 ## Counts
 
-- **PASS**: 13
+- **PASS**: 12
 - **BLOCKED**: 3
-- **DEFERRED**: 2
+- **DEFERRED**: 3
 
 ---
 
