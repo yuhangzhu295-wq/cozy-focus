@@ -1,0 +1,16 @@
+10-12 12:08:37.093 19177 19203 I DialerCanRecord: com.android.dialer.callrecording.impl.canrecord.CanRecord.canRecordCall:87 Call recording is disabled in the current country
+10-12 12:08:45.091   543   647 W InputDispatcher: Window 2e22f1b NavigationBar0 (server) is unresponsive: 2e22f1b NavigationBar0 (server) is not responding. Waited 5004ms for MotionEvent
+10-12 12:08:45.100   543   647 I WindowManager: ANR in Window{2e22f1b u0 NavigationBar0}. Reason:Input dispatching timed out (2e22f1b NavigationBar0 (server) is not responding. Waited 5004ms for MotionEvent)
+10-12 12:08:45.124   543   647 W InputDispatcher: Window [Gesture Monitor] edge-swipe (server) is unresponsive: [Gesture Monitor] edge-swipe (server) is not responding. Waited 5065ms for MotionEvent
+10-12 12:08:45.135   543 19293 D ActivityManager: created ANR temporary file:/data/anr/temp_anr_6460399643666983288.txt
+10-12 12:08:45.135   543 19293 I ActivityManager: Collecting stacks for pid 765 into temporary file temp_anr_6460399643666983288.txt
+10-12 12:08:45.221   543   647 I WindowManager: ANR in input window owned by pid=765. Reason: Input dispatching timed out ([Gesture Monitor] edge-swipe (server) is not responding. Waited 5065ms for MotionEvent)
+10-12 12:08:45.221   543   647 I ActivityManager: Skip duplicated ANR, pid=765 Input dispatching timed out ([Gesture Monitor] edge-swipe (server) is not responding. Waited 5065ms for MotionEvent)
+10-12 12:08:45.222   543   571 W Looper  : Slow dispatch took 103ms android.fg h=android.os.Handler c=com.android.server.wm.AnrController$$ExternalSyntheticLambda2@eab14d7 m=0
+10-12 12:08:45.318   543 19294 I ActivityManager: Dumping to /data/anr/anr_2026-10-12-12-08-45-317
+10-12 12:08:49.819   543 19294 E ActivityManager: ANR in com.android.systemui
+10-12 12:08:49.819   543 19294 E ActivityManager: Reason: Input dispatching timed out (2e22f1b NavigationBar0 (server) is not responding. Waited 5004ms for MotionEvent)
+10-12 12:08:49.819   543 19294 E ActivityManager:     32% 19295/AnrAuxiliaryTas: 0% user + 32% kernel
+10-12 12:08:49.843   543 19377 I DropBoxManagerService: add tag=system_app_anr isTagEnabled=true flags=0x6
+10-12 12:08:49.843   543 19294 D ActivityManager: Completed ANR of com.android.systemui in 4724ms, latency 1ms
+10-12 12:08:49.938   543   572 D CoreBackPreview: Window{60fa31f u0 Application Not Responding: com.android.systemui}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.WindowOnBackInvokedDispatcher$OnBackInvokedCallbackWrapper@58224ed, mPriority=0, mIsAnimationCallback=false}

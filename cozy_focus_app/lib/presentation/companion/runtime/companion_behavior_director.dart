@@ -48,6 +48,13 @@ class CompanionBehaviorDirector {
   CompanionMacroBehavior? _macro;
   Duration? _macroEndsAt;
 
+  /// Whether this completion has already had its celebration.
+  ///
+  /// A completion is a moment, not a state, so it plays once and the companion
+  /// settles. Reset whenever the base context changes, so arriving at the
+  /// completion screen again - or a second session finishing - celebrates again.
+  bool _celebratedForContext = false;
+
   CompanionOverlay _overlay = CompanionOverlay.none;
   Duration? _overlayEndsAt;
 
@@ -110,7 +117,15 @@ class CompanionBehaviorDirector {
             availabilityOf ?? CompanionActionAvailabilityResolver.resolve {
     _macroSlot = _slotFor(_context);
     _committedId = _context.macroBehavior?.id;
-    _pickMacro();
+    // A director that is *constructed* on the completion screen never passes
+    // through `updateContext`, so the forced celebration has to be applied here
+    // too. Otherwise the first behaviour came from a weighted pick between the
+    // celebration and the sustained idle, and the moment could simply be missed.
+    if (_context.baseContext == CompanionBaseContext.complete) {
+      _forceCelebration();
+    } else {
+      _pickMacro();
+    }
   }
 
   /// What this companion can actually be asked to play.
@@ -200,9 +215,26 @@ class CompanionBehaviorDirector {
   /// so an unrelated rebuild (a growth tick, a happiness change) does not restart
   /// the behaviour mid-dwell.
   void updateContext(CompanionContext next) {
+    final previousBase = _context.baseContext;
     _context = next;
     final slot = _slotFor(next);
     final committed = next.macroBehavior?.id;
+
+    // A new base context is a new situation, so the completion's once-only rule
+    // starts fresh. Without this, leaving the completion screen and finishing
+    // another session would arrive at a companion that had already celebrated.
+    if (previousBase != next.baseContext) {
+      _celebratedForContext = false;
+      if (next.baseContext == CompanionBaseContext.complete) {
+        // The screen itself is the claim that a session just finished, so the
+        // celebration is forced here rather than waiting for the event. The
+        // recipe's pool can hold a sustained state too, and a plain weighted
+        // pick between them would let the moment be missed entirely.
+        _forceCelebration();
+        return;
+      }
+    }
+
     if (slot != _macroSlot || committed != _committedId) {
       // A new slot, or the simulation committing to a different action at the
       // same anchor. The second case is invisible to the slot: sitting and
@@ -373,6 +405,9 @@ class CompanionBehaviorDirector {
   /// degrades like anything else rather than being asked for art it lacks.
   void _forceCelebration() {
     const celebrate = CompanionMacroBehavior.celebrate;
+    // A completion is a new moment, so its once-only rule starts here. This also
+    // covers a second session finishing while the screen is still up.
+    _celebratedForContext = false;
     if (!availability.canSchedule(celebrate.pose)) {
       _usedFallback = true;
       _pickMacro();
@@ -393,6 +428,13 @@ class CompanionBehaviorDirector {
 
   /// Picks the next macro behaviour from the active recipe.
   void _pickMacro() {
+    // The behaviour being replaced was a celebration, so this completion has had
+    // its moment. Recorded here rather than at the celebration's start so a
+    // celebration that is interrupted by a state change never counts as seen.
+    if (_macro == CompanionMacroBehavior.celebrate) {
+      _celebratedForContext = true;
+    }
+
     // A forced celebration outranks everything: it is a *moment*, not a state,
     // and it is the one behaviour the brief requires to be unconditional.
     if (isCelebrating) {
@@ -556,6 +598,22 @@ class CompanionBehaviorDirector {
       ...recipe.eligible,
       ...modifier.extraEligible.where((b) => !recipe.eligible.contains(b)),
     ];
+
+    // A completion celebrates *once*, then settles.
+    //
+    // The celebration hands over here the moment its dwell expires - that is what
+    // `advanceTo` re-picking immediately is for - and the context's recipe now
+    // contains a sustained state for it to hand over to. Without this rule it
+    // handed back to itself: `complete`'s pool was `celebrate` alone, so the
+    // companion re-celebrated every dwell, which measured as four celebrations in
+    // five seconds on the device. A pet that celebrates forever is not a
+    // celebration, it is a loop.
+    if (_context.baseContext == CompanionBaseContext.complete &&
+        _celebratedForContext) {
+      pool = pool
+          .where((b) => b != CompanionMacroBehavior.celebrate)
+          .toList(growable: false);
+    }
 
     // Capability gate. The recipes are shared data across companions, so this is
     // where a companion that ships no `focus_write` sequence stops being asked

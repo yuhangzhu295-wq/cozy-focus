@@ -200,7 +200,15 @@ void main() {
       }
     });
 
-    test('and it keeps celebrating as the behaviour is re-picked', () {
+    test('and it celebrates once, then settles', () {
+      // This test used to be called "and it keeps celebrating as the behaviour is
+      // re-picked" and asserted `celebrate` for two straight minutes. That was
+      // the old contract and it was wrong: the completion's pool held `celebrate`
+      // alone, so the behaviour handed over to itself and the companion
+      // re-celebrated every dwell - measured on the device as four celebrations
+      // in five seconds. A companion that celebrates forever is not celebrating,
+      // it is looping. A completion is a moment, so it plays once and the
+      // companion settles into the context's sustained state.
       final d = CompanionBehaviorDirector(
         catalog: catalog,
         context: const CompanionContext(
@@ -210,10 +218,28 @@ void main() {
         ),
         random: SeededRandomSource(7),
       );
-      for (var ms = 0; ms <= 120000; ms += 1000) {
+
+      // It opens on the celebration, not on a coin toss between the two.
+      expect(d.currentMacroBehavior, CompanionMacroBehavior.celebrate);
+      expect(d.isCelebrating, isTrue);
+
+      var settled = false;
+      for (var ms = 0; ms <= 120000; ms += 500) {
         d.advanceTo(Duration(milliseconds: ms));
-        expect(d.currentMacroBehavior, CompanionMacroBehavior.celebrate);
+        if (d.isCelebrating) {
+          expect(settled, isFalse,
+              reason: 'a second celebration started at ${ms}ms; the moment is '
+                  'supposed to happen once');
+          expect(d.currentMacroBehavior, CompanionMacroBehavior.celebrate);
+        } else {
+          settled = true;
+          expect(d.currentMacroBehavior, CompanionMacroBehavior.idle,
+              reason: 'after its celebration the companion settles into the '
+                  'sustained state, at ${ms}ms');
+        }
       }
+      expect(settled, isTrue,
+          reason: 'the celebration has to hand over rather than hold');
     });
   });
 

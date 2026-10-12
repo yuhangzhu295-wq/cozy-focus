@@ -68,12 +68,13 @@
     "complete": {
       "default": {
         "eligible": [
-          "celebrate"
+          "celebrate",
+          "idle"
         ],
         "minSeconds": 1,
         "maxSeconds": 2,
         "noImmediateRepeat": false,
-        "note": "One short dwell, not the six-to-twelve the other contexts use. `celebrate` is a `once` action - five frames at 8fps, 625ms - and a dwell is a hold time, so 6-12s meant the companion animated for 0.6s and then stood perfectly still for the next 5-11s, on the one screen whose whole job is to celebrate. The eligible list stays `celebrate` alone, which is what keeps the hour from diluting the moment; only the hold is shortened to the length of the clip."
+        "note": "The celebration, and what it hands over to. A dwell is a hold time and `celebrate` is a `once` action - five frames at 8fps, 625ms - whose player holds the last frame, so the hold is about the length of the clip rather than the six-to-twelve that left the companion standing still for 5-11s. `idle` is in the pool so the celebration has somewhere to hand over to: `advanceTo` re-picks the moment the celebration's dwell expires, and the director's once-per-completion rule drops `celebrate` at that point, so the companion celebrates once and settles rather than celebrating again every dwell. `complete` stays excluded from the ambient modifiers, which is what stops the hour or the growth stage from reaching this pool."
       }
     },
     "craft": {

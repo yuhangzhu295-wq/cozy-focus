@@ -376,10 +376,26 @@ class _SpriteMotionGateState extends State<_SpriteMotionGate> {
 
   @override
   void dispose() {
-    // Leave the controller stopped rather than detached: a caller-supplied
-    // controller may still be in use by a sibling, and the rig re-attaches on its
-    // own when it is built again.
-    _scheduleStop();
+    // Deliberately does NOT stop the scheduler.
+    //
+    // It used to, on the reasoning that a caller-supplied controller may still be
+    // in use by a sibling and that "the rig re-attaches on its own when it is
+    // built again". The second half is true and the first is why this is wrong:
+    // `_scheduleStop` is a *post-frame* callback, so when a sprite hands the pet
+    // back to the rig the order is
+    //
+    //   1. the rig mounts and starts its ambient motion
+    //   2. this widget is disposed, and the deferred stop lands
+    //   3. the rig's breathing is switched off again
+    //
+    // which left the companion in exactly the state the gate exists to prevent:
+    // mounted, and perfectly still. Measured on the device as 4.35s of
+    // pixel-identical frames on the completion screen after the celebration had
+    // handed over to idle.
+    //
+    // Stopping while a sprite is drawn is what this widget is for, and `initState`
+    // and `didUpdateWidget` already do it. A controller that outlives the gate
+    // belongs to its owner, which disposes it.
     super.dispose();
   }
 

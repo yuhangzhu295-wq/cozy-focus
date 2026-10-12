@@ -87,21 +87,26 @@ abstract final class CompanionManifestData {
       'default': _recipe([CompanionMacroBehavior.rest], 10, 22),
     },
     CompanionBaseContext.complete: {
-      // One short dwell, not the six-to-twelve the other contexts use.
+      // The celebration, and what it hands over to.
       //
       // A dwell is a *hold* time, and `celebrate` is a `SpriteLoopMode.once`
       // action - five frames at 8fps, 625ms - whose player holds the last frame
-      // when it ends. So a 6-12s dwell meant the companion animated for 0.6s and
-      // then stood perfectly still for the next 5-11s. Measured on the device as
-      // pixel-identical frames across eleven seconds, on the one screen whose
-      // whole job is to celebrate, while the same companion animates
-      // continuously on the home screen.
+      // when it ends. So the hold has to be about the length of the clip: at the
+      // six-to-twelve it used to be, the companion animated for 0.6s and then
+      // stood perfectly still for the next 5-11s, on the one screen whose whole
+      // job is to celebrate.
       //
-      // The eligible list stays `celebrate` alone: that is what keeps the hour
-      // from diluting the moment. Only the hold is shortened, to roughly the
-      // length of the clip.
+      // `idle` is in the pool so the celebration has somewhere to hand over to.
+      // `advanceTo` already re-picks the moment a celebration's dwell expires,
+      // and the director's once-per-completion rule drops `celebrate` from the
+      // pool at that point - so the companion celebrates once and then settles
+      // into the sustained idle, rather than celebrating again every dwell. A
+      // companion that celebrates forever is not celebrating, it is looping.
+      //
+      // `complete` stays excluded from `CompanionAmbientModifiers`, which is
+      // what stops the hour or the growth stage from reaching this pool.
       'default': _recipe(
-        [CompanionMacroBehavior.celebrate],
+        [CompanionMacroBehavior.celebrate, CompanionMacroBehavior.idle],
         1,
         2,
         noImmediateRepeat: false,

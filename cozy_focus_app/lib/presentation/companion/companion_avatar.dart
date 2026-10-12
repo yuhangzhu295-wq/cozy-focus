@@ -17,6 +17,7 @@ import 'companion_selection.dart';
 import 'pack/companion_availability_provider.dart';
 import 'pack/installed_pack_profiles.dart';
 import 'companion_visual_registry.dart';
+import 'companion_visual_state.dart';
 import 'runtime/companion_behavior_director.dart';
 import 'runtime/companion_context.dart';
 import 'runtime/companion_id.dart';
@@ -388,29 +389,23 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
       earTwitchIntervalScale: growth.earTwitchIntervalScale,
     );
 
-    // Keep the legacy controller's visual state in step, so the micro-motion
-    // gating (which states sustain ambient motion) stays correct.
-    final visualState = _legacyVisualStateFor(_director.context.baseContext);
-    if (_controller.visualState != visualState) {
-      _controller.updateState(visualState);
-    }
+    _syncLegacyVisualState();
   }
 
-  static PetVisualState _legacyVisualStateFor(CompanionBaseContext context) {
-    switch (context) {
-      case CompanionBaseContext.home:
-      case CompanionBaseContext.room:
-        return PetVisualState.idle;
-      case CompanionBaseContext.focus:
-        return PetVisualState.focus;
-      case CompanionBaseContext.pause:
-        return PetVisualState.pause;
-      case CompanionBaseContext.complete:
-        return PetVisualState.celebrate;
-      case CompanionBaseContext.craft:
-        return PetVisualState.craft;
-      case CompanionBaseContext.sleep:
-        return PetVisualState.sleep;
+  /// Keeps the legacy controller's visual state in step with the director.
+  ///
+  /// The micro-motion gating reads this state - it is what decides whether a
+  /// state sustains ambient motion - so it has to follow the director exactly.
+  ///
+  /// Called from the **tick** as well as from `_sync`, and that is the point: a
+  /// celebration hands over on a tick, not on a provider rebuild. Syncing only
+  /// on rebuilds left the controller in the one-shot `celebrate` state for as
+  /// long as the completion screen was open, and a rig in a one-shot state is
+  /// never ambient - it stands perfectly still.
+  void _syncLegacyVisualState() {
+    final visualState = companionVisualStateFor(_director.intent);
+    if (_controller.visualState != visualState) {
+      _controller.updateState(visualState);
     }
   }
 
@@ -497,6 +492,7 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
       // they have to be advanced off the tick rather than off a rebuild.
       onTick: (elapsed) {
         if (_animation.advanceTo(elapsed) && mounted) setState(() {});
+        _syncLegacyVisualState();
         _reportAnimationState();
       },
       builder: (context, intent, elapsed) {

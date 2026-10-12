@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/growth/mochi_growth_profile.dart';
-import '../../domain/models/enums.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/pet_avatar_widget.dart';
 import 'animation/animation_state.dart';
+import 'companion_visual_state.dart';
 import 'focus_phase.dart';
 import 'mochi_pose_spec.dart';
 import 'runtime/companion_action_manifest.dart';
@@ -167,30 +167,6 @@ class _MochiPoseAvatar extends ConsumerWidget {
     this.spriteSpec,
   });
 
-  /// Maps the runtime's base context onto the renderer's existing state enum.
-  ///
-  /// The overlay deliberately does not appear here: an overlay changes the
-  /// *pose*, never the base state, so a tap during focus must not make the badge
-  /// or the state machine claim Mochi stopped focusing.
-  static PetVisualState visualStateFor(CompanionBaseContext context) {
-    switch (context) {
-      case CompanionBaseContext.home:
-        return PetVisualState.idle;
-      case CompanionBaseContext.focus:
-        return PetVisualState.focus;
-      case CompanionBaseContext.pause:
-        return PetVisualState.pause;
-      case CompanionBaseContext.complete:
-        return PetVisualState.celebrate;
-      case CompanionBaseContext.craft:
-        return PetVisualState.craft;
-      case CompanionBaseContext.room:
-        return PetVisualState.idle;
-      case CompanionBaseContext.sleep:
-        return PetVisualState.sleep;
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final growth = MochiGrowthProfile.fromProgress(
@@ -199,7 +175,7 @@ class _MochiPoseAvatar extends ConsumerWidget {
     return _SpritePrecache(
       specs: MochiVisualProvider.interactionSpriteSpecs(),
       child: PetAvatarWidget(
-        visualState: visualStateFor(intent.baseContext),
+        visualState: companionVisualStateFor(intent),
         companionName: options.displayName,
         size: options.size,
         message: options.message,

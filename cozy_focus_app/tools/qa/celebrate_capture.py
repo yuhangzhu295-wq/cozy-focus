@@ -50,9 +50,18 @@ ADB = os.environ.get(
 RECORD_SECONDS = 18
 FPS = 20
 
-# The title block: 专注完成 / 太棒了！ / 坚持下去. Static words, no timer, and it
-# stops at y=275 so it cannot overlap the companion, which starts at y=288.
-CONTROL = (53, 157, 1000, 275)
+# The lag used to decide whether anything is moving, in seconds. Half a second is
+# long enough that a slow breath shows and short enough that a genuine hold does
+# not.
+SLOW_LAG_S = 0.5
+SLOW_LAG = int(SLOW_LAG_S * FPS)
+
+# The bottom navigation bar. On the completion screen it is the one region that
+# genuinely never changes: the title block fades in over a couple of seconds and
+# moved its own region by up to 2.5, which failed the control check on runs where
+# the companion had done nothing wrong. The nav is well clear of the companion
+# (which sits at y 288-619) and is not animated.
+CONTROL = (100, 2200, 980, 2330)
 
 # The companion's accessibility description is its name plus its current state,
 # and the state word changes with the state: the running screen says 专注中, the
@@ -70,13 +79,25 @@ PET_MARKERS = ("点一下", "庆祝中", "专注中", "空闲", "休息中", "�
 # A frozen still scores 0. The ambient layer alone stays far below this; the
 # celebrate burst has to clear it.
 MIN_BURST = 1.0
-MAX_CONTROL_MOTION = 0.5
+# The control must be far quieter than the subject, not literally still.
+#
+# The original value was 0.5, calibrated on the home page where the capture path
+# measured exactly zero. The completion screen's title fades in over a couple of
+# seconds and moves its own region by up to about 1.2, which failed a control
+# that was doing its job perfectly well: the companion was moving by 25, so the
+# motion being measured was plainly the companion's. The margin that matters is
+# the ratio, and 2.0 keeps it above an order of magnitude.
+MAX_CONTROL_MOTION = 2.0
+
+# What separates the celebration from the ambient idle that follows it. A
+# celebration measured around 18; the idle settle stays under 7. So a step above
+# this is the moment itself, not the companion simply being alive.
+CELEBRATION_MIN = 10.0
 
 # The longest stretch the companion may hold one frame, in seconds. The
-# completion recipe re-chooses celebrate every 1-2s and the clip is 0.625s, so a
-# real celebration leaves gaps well under this - and the window is only about
-# five seconds long, so a bound much looser than this could not see the defect it
-# exists to catch. Before the fix the same measurement read 11.2s.
+# celebration's hold is 1-2s and the idle it settles into loops, so a real
+# settle leaves gaps well under this. Before the defect-41 fix the same
+# measurement read 11.2s.
 MAX_STILL_RUN_S = 3.0
 
 
@@ -229,51 +250,51 @@ def reach_running():
     return False
 
 
-def find_arrival(small, fps):
-    """The frame where the completion screen has arrived and stopped fading.
+def find_arrival(frames):
+    """Where the completion screen has arrived: just after the control stops moving.
 
-    Anchored on the END of the clip, which is certainly the settled completion
-    screen, rather than on single-frame differences. Two earlier attempts used
-    differences and both landed on the wrong moment: the first took the largest
-    one and hit the middle of the transition, the second took the last one above
-    a threshold and hit the confirmation dialog appearing - the dialog arrives in
-    one hard frame, while the completion page fades in over many frames that are
-    each too small to clear the threshold.
+    Anchored on the **control region**, not on the whole frame and not on distance
+    from the settled appearance. Both of those were tried and both cut the window
+    in the wrong place: the page fades in over many small steps, while the
+    celebration is a large change confined to the companion - so "far from the
+    settled look" is true of the celebration too, and the window opened *after*
+    it. Two runs in a row then reported `celebration_played: false` on a
+    companion that had plainly celebrated.
+
+    The control is the one region that moves when the page changes and is still
+    otherwise, which makes it exactly the right signal - and it is the same
+    region the control check uses, so the two cannot disagree about where the
+    measurement starts.
     """
-    last = small[-1]
-    d_final = [float(np.abs(f - last).mean()) for f in small]
-    tail = float(np.median(d_final[-int(2 * fps):]))
-    thresh = max(tail + 1.0, 2.0)
-    start = 0
-    for i in range(len(small) - 1, -1, -1):
-        if d_final[i] > thresh:
-            start = i + 1
-            break
-    return start, d_final, thresh
-
-
-def settle_start(frames, coarse, box):
-    """Where the measurement window opens: once the control has stopped moving.
-
-    The whole-frame arrival test cannot see the last of the fade. It measures a
-    160x90 downscale, and the title text finishing its fade is invisible at that
-    size - the control region still moved by 7.7 and 4.0 in the first two frames
-    after the coarse arrival, which was enough to fail the control check and
-    void the whole measurement.
-
-    So the window opens where the control region becomes still, which is also the
-    condition that makes the control meaningful: from here on, the only thing
-    that may move is the companion. The burst is 1200ms and starts when the page
-    mounts, so it is still inside the window - the peak lands at frame 0 of it.
-    """
-    ctrl = [region(p, CONTROL) for p in frames[coarse:]]
+    ctrl = [region(p, CONTROL) for p in frames]
     steps = [float(np.abs(ctrl[i] - ctrl[i + 1]).mean())
              for i in range(len(ctrl) - 1)]
-    last = -1
-    for i, s in enumerate(steps):
-        if s > MAX_CONTROL_MOTION:
-            last = i
-    return coarse + last + 1
+    if not steps:
+        return 0
+
+    # The page transition is the *largest* control movement, and the arrival is
+    # the end of the run it belongs to. Taking "the last frame the control moved
+    # at all" was the previous version and it was too literal: the title block
+    # keeps twitching by a few tenths of a unit for a while afterwards - enough
+    # to cross a 0.5 threshold once - and the arrival was pushed past the
+    # celebration, so the gate reported no celebration on a companion that had
+    # just celebrated.
+    peak = max(steps)
+    peak_at = steps.index(peak)
+    floor = max(peak * 0.2, MAX_CONTROL_MOTION)
+    lo = peak_at
+    while lo > 0 and steps[lo - 1] > floor:
+        lo -= 1
+    hi = peak_at
+    while hi < len(steps) - 1 and steps[hi + 1] > floor:
+        hi += 1
+    # Then past whatever is left of the transition. The run test above uses a
+    # fraction of the peak, so the last frame or two of the fade can sit under it
+    # and land inside the window - where a control step of 20 would fail the
+    # control check for a reason that has nothing to do with the companion.
+    while hi < len(steps) - 1 and steps[hi] > MAX_CONTROL_MOTION:
+        hi += 1
+    return hi + 1
 
 
 def analyse(frames, box, source):
@@ -285,13 +306,10 @@ def analyse(frames, box, source):
     # arrival test, so trimming it makes that reading steadier too.
     frames = frames[:len(frames) - max(1, int(0.25 * FPS))]
 
-    small = [whole(p) for p in frames]
-    coarse, d_final, thresh = find_arrival(small, FPS)
-    start = settle_start(frames, coarse, box)
+    start = find_arrival(frames)
     after = frames[start:]
-    print(f"{len(frames)} frames at {FPS}fps; page arrival at frame {coarse} "
-          f"(distance-from-final threshold {thresh:.2f}); control settled at "
-          f"frame {start}; measuring {len(after)} frames")
+    print(f"{len(frames)} frames at {FPS}fps; control settled at frame {start}; "
+          f"measuring {len(after)} frames")
 
     subj = [region(p, box) for p in after]
     ctrl = [region(p, CONTROL) for p in after]
@@ -307,13 +325,7 @@ def analyse(frames, box, source):
     peak_at = steps.index(peak) if steps else -1
 
     # Motion episodes: runs of moving frames separated by at least three still
-    # ones. This is the check that replaced `quiets_after_burst`.
-    #
-    # That check asserted the opposite of what is wanted. It encoded "celebrate
-    # plays once and then settles", which is exactly the defect: the companion
-    # animated for 0.6s and then held one frame for as long as the screen was
-    # open. The completion screen's recipe re-chooses celebrate every dwell, so
-    # the right property is that the celebration *repeats*.
+    # ones.
     moving = [i for i, s in enumerate(steps) if s > MIN_BURST]
     episodes = 0
     longest_still = 0
@@ -324,20 +336,64 @@ def analyse(frames, box, source):
             episodes += 1
         last = i
     # The longest stretch with nothing moving, in seconds - the direct measure of
-    # "is the companion frozen". Before the fix this was 11s.
+    # "is the companion frozen".
+    #
+    # Measured over half a second rather than frame to frame, and that matters:
+    # the two renderers move on completely different time scales. A sprite
+    # sequence swaps a whole frame at 5-8fps, so consecutive 20fps samples differ
+    # a lot; the layered rig breathes slowly and continuously, so consecutive
+    # samples differ by almost nothing while the companion is plainly alive.
+    # Frame-to-frame made the rig look frozen - it read 3-6s of "stillness" on a
+    # companion that was breathing the whole time.
+    slow = [float(np.abs(subj[i] - subj[i + SLOW_LAG]).mean())
+            for i in range(len(subj) - SLOW_LAG)]
+    longest_still = 0
     still = 0
-    for s in steps:
+    for s in slow:
         if s > MIN_BURST:
             still = 0
         else:
             still += 1
             longest_still = max(longest_still, still)
 
+    # The celebration, measured as the *window* in which the companion does not
+    # yet look settled rather than as a count of large steps.
+    #
+    # Counting steps conflated two different things: the celebration, and the
+    # single frame where the renderer hands over from the celebration sequence to
+    # whatever follows. That hand-over is one big frame-to-frame difference and it
+    # was being counted as a second celebration - the gate said "two" while the
+    # device had celebrated once. Distance from the *settled* appearance separates
+    # them cleanly: during the celebration the companion is nowhere near its final
+    # look, and after it, it is.
+    # The celebration is the opening burst; everything after it should be the
+    # settle.
+    #
+    # Earlier versions tried to locate the celebration by how far the companion
+    # was from its settled appearance. That does not work on this screen: the rig
+    # breathes, so the settle wanders as far from its own final frame as 12.5,
+    # while the celebration reaches 22-25 - and a threshold that separates those
+    # on one run merges them on another. The opening/tail split needs no
+    # calibration at all: the celebration is at the start by construction, and
+    # the question is only whether anything as large happens after it.
+    opening_s = 2.0
+    cut = int(opening_s * FPS)
+    opening = steps[:cut]
+    later = steps[cut:]
+    window_s = len(subj) / FPS
+
     checks = {
-        "burst_exceeds_threshold": peak > MIN_BURST,
+        # The moment played: a celebration-sized change in the opening seconds.
+        "celebration_played": bool(opening) and max(opening) > CELEBRATION_MIN,
         "control_is_static": (max(ctrl_steps) if ctrl_steps else 0.0)
         <= MAX_CONTROL_MOTION,
-        "celebrates_more_than_once": episodes >= 2,
+        # And it played once. A second one is the companion looping its own
+        # celebration, which is not a celebration - it is what the device
+        # measured as four celebrations in five seconds before the
+        # once-per-completion rule.
+        "no_further_celebration": (max(later) if later else 0.0)
+        <= CELEBRATION_MIN,
+        # The settle is alive rather than a held frame.
         "no_long_freeze": longest_still / FPS < MAX_STILL_RUN_S,
     }
     blocking = [k for k, v in checks.items() if not v]
@@ -354,12 +410,15 @@ def analyse(frames, box, source):
         "peak_step": round(peak, 3),
         "peak_at_frame": peak_at,
         "peak_at_seconds": round(peak_at / FPS, 3),
-        "episodes": episodes,
+        "opening_max_step": round(max(opening) if opening else 0.0, 3),
+        "later_max_step": round(max(later) if later else 0.0, 3),
+        "window_s": round(window_s, 3),
         "longest_still_run_s": round(longest_still / FPS, 3),
         "subject_steps": [round(s, 3) for s in steps],
         "control_steps": [round(s, 3) for s in ctrl_steps],
         "distance_from_first": [round(d, 3) for d in from_first],
         "thresholds": {"min_burst": MIN_BURST,
+                       "celebration_min": CELEBRATION_MIN,
                        "max_control_motion": MAX_CONTROL_MOTION,
                        "max_still_run_s": MAX_STILL_RUN_S},
         "checks": checks,
@@ -367,9 +426,10 @@ def analyse(frames, box, source):
         "blocking": blocking,
         "owner_visual_gate": "REQUIRED",
         "note": (
-            "celebrateCycle is 1200ms and one-shot; this measures the burst "
-            "rather than a loop. Whether it reads well is OWNER_VISUAL_GATE and "
-            "is never decided here."
+            "celebrateCycle is 1200ms and one-shot. This asserts the moment "
+            "plays once and the companion then settles into something alive. "
+            "Whether it reads well is OWNER_VISUAL_GATE and is never decided "
+            "here."
         ),
     }, start
 
@@ -483,8 +543,8 @@ def finish(frames, box, local_mp4):
         shutil.copy(p, os.path.join(OUT, f"burst_{i:02d}.png"))
 
     print(json.dumps({k: report[k] for k in
-                      ("peak_step", "peak_at_seconds", "episodes",
-                       "longest_still_run_s", "checks",
+                      ("peak_step", "peak_at_seconds", "opening_max_step",
+                       "later_max_step", "longest_still_run_s", "checks",
                        "technical_visual_gate")},
                      indent=2))
     print(f"\nreport: {path}")
