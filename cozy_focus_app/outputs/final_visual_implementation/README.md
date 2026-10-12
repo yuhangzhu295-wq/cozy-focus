@@ -106,12 +106,36 @@ HUD 是真实控件。
 | focus 是否有可见工作动作 | **PASS**（上表 focus） |
 | pause_rest 是否正确 | **PASS**（上表 pause） |
 | sleep 是否自然 | **PASS**（上表 rest；设备上真实休息运行中，宠物闭眼趴着） |
-| celebrate 是否正常 | **`NOT_VERIFIED`（测到的不是它）**：走完了整条流程（结束休息 → 开始专注 → 提前结束 → 仍然结束）到达完成页，页面上确实写着 **`Mochi 庆祝中`**。但门禁量到的 12 帧**逐帧完全相同**（`distance_from_first` 全 0）——因为 **celebrate 是一次性动画**：`pet_idle_fallback_view.dart:31` 明写"Outside active motion states, other states (e.g. celebrate, craft) remain static"，第 381 行有 `_celebrateSettled`。它到达时播一次就落定，**我的测量窗口开在它播完之后**。所以"庆祝在播"这件事**没有测到**，只有"状态挂上了"和"落定后是静的" |
-| idle 帧是否含眨眼 | **`NOT_VERIFIED`**：门禁证明 idle 在动，**不分辨动的是呼吸还是眨眼** |
+| celebrate 是否正常 | **PASS（本轮已实测，并顺带修掉一个真缺陷）** —— 见下面的更正 |
+| idle 帧是否含眨眼 | **`NOT_VERIFIED`**：门禁证明 idle 在动，**不分辨动的是呼吸还是眨眼**。眨眼只有 140ms（`PetMotionSpec.blinkDuration`），要另一套更密的取样 |
 | 状态切换是否闪烁 | **`NOT_VERIFIED`** |
 | 与家具接触点是否一致 | **PASS**（`tools/audit_pack_geometry.py`：49 帧，落地点最差偏差 1px / 容差 2px） |
 
 **"8 个状态各有自己的帧"是 manifest 事实，不等于"8 个动作都验过"。** 上表按实测分级。
+
+### 4a. celebrate：上一版把原因写错了，真因是宠物冻住了
+
+上一版这一行写的是 **`NOT_VERIFIED`**，理由是"celebrate 是一次性动画，我的测量窗口开在它播完之后"。**那个理由是错的。** 换成长录像（`tools/qa/celebrate_capture.py`：`screenrecord` 录下整个到页过程，再按 20fps 抽帧）之后才看清：不是窗口没对上，是**宠物在动了一下之后就彻底不动了**。
+
+- **设备证据**：同一台设备、同一个伙伴、同一时刻 —— 首页的宠物每 0.39 秒采样都在变（2～7）；庆祝页的宠物在 0.3 秒间隔下**连续 4.3 秒逐像素相同**，更慢的采样连续看 17 秒一次变化都没有。
+- **根因**：`complete` 的 dwell 是 6–12 秒，而 `celebrate` 是 625ms 的一次性动作 —— dwell 是**保持**时间，剩下的 5–11 秒是在保持一张静止帧。**四层链路，每一层修完在单测层面都自洽，在设备上全部无效**（详见 `04_BUG_FIX_LEDGER.md` 缺陷 41）。
+- **修复后复测**：5 秒窗口内 **4 次庆祝**、最长静止 **1.4 秒**；把 dwell 改回 6–12 秒重录，同一测量读到 **1 次庆祝、4.4 秒静止**，闸门 FAIL。报告：`outputs/final_visual_implementation/celebrate/celebrate_MOTION_REPORT.json`，抽出的帧序列同目录 `burst_*.png`。
+- **闸门自己的判据也修了**：原来有一条 `quiets_after_burst`（"爆发之后要安静下来"）—— **那正是缺陷本身被写成了要求**。改成 `celebrates_more_than_once` + `no_long_freeze`。
+
+**教训写在这里**：`NOT_VERIFIED` 是对的，但把原因归给"我的窗口没对上"是**替被测对象开脱**。换一个工具之后，问题从来不在工具窗口上。
+
+## 4b. 横屏：扫描只扫竖屏，就只验了一半
+
+`AndroidManifest.xml` 既没有 `screenOrientation` 锁、`configChanges` 里又带 `orientation` —— **旋转是真会发生的配置**。而尺寸扫描此前只有任务书点名的三个竖屏尺寸，**从来没有一个屏幕在 800×360 下被布局过**。
+
+把横屏加进去，当场抓到 `/records/tasks` 空态溢出 66px（缺陷 40，已修并真机验证）。设备前后对比截图：`17_landscape_BEFORE_*.png` / `17_landscape_task_list_*.png`。
+
+| 横屏项 | 状态 |
+|---|---|
+| 8 个主屏 × 3 个横屏尺寸 × 2 档字号的溢出扫描 | **PASS**（`screen_size_and_text_sweep_test.dart`，含两条反向证明） |
+| 任务列表横屏真机走查（含滚动可达） | **PASS** |
+| 其余 7 个主屏的横屏**设备截图** | **`NOT_VERIFIED`** —— 组件级扫描答的是"会不会溢出"，设备截图答的是"好不好看" |
+
 
 ## 5. 图鉴真实交互 —— 已在真机走过
 
@@ -137,7 +161,7 @@ ASSET_GATES 75/75、APK 32.0 MB、AAB 50.5 MB、DIFF_CHECK clean）。
 多尺寸：360×800 与 411×914 有实机截图（`01_home_360x800.png`、`01_home_411x914.png`）。
 
 **三尺寸 × 大字号已用 Widget 扫描覆盖**（`test/presentation/screen_size_and_text_sweep_test.dart`）：
-**8 个屏 × 3 个尺寸（360×800 / 393×852 / 412×915）× 2 档字号（1.0 / 1.3）**，
+**8 个屏 × 6 个尺寸（三个竖屏 360×800 / 393×852 / 412×915 **加**三个横屏 800×360 / 852×393 / 915×412）× 2 档字号（1.0 / 1.3）**，
 逐屏断言**不溢出**，并且**每条路由都断言渲染出了自己的标记文本**——没有标记的扫描会在路由根本没渲染时也是绿的。
 
 **这个扫描自己也有反向证明**：第一版把 App 包在 `MediaQueryData(textScaler:)` 里，
@@ -145,7 +169,15 @@ ASSET_GATES 75/75、APK 32.0 MB、AAB 50.5 MB、DIFF_CHECK clean）。
 改成用 `platformDispatcher.textScaleFactorTestValue` 设置字号，并补了一条自检用例：在 360×800 下**故意溢出必须被抓到**。
 **扫不动错的扫描器比没有扫描器更糟。**
 
-横屏：只有 `report_landscape_width_test.dart` 覆盖报告页；**其余页面横屏未验**：`NOT_VERIFIED`。
+横屏是**这一轮才加进扫描的**，加进去当场抓到缺陷 40（任务列表空态溢出 66px，真机截图上是黄黑条纹、两个按钮完全不可见）。横屏为什么是真配置：`AndroidManifest.xml` 没有 `screenOrientation` 锁，`configChanges` 里带 `orientation`。
+
+横屏还带出**第二处仪器缺陷**：`find.text` 默认 `skipOffstage: true`，而 `Viewport` 的元素只访问当前可见的 sliver —— 360dp 高的横屏里成长页的 `成长属性` 被构建了但在台下，默认查找器报 0，扫描因此**冤枉了屏幕**。标记改用 `skipOffstage: false`，并加了"滚到底、每步查溢出、标记必须真的露过面"这一步；两条新机制各有一条反向证明。
+
+| 横屏项 | 状态 |
+|---|---|
+| 8 屏 × 3 横屏尺寸 × 2 档字号 | **PASS** |
+| 任务列表横屏真机走查（含滚动可达） | **PASS**（`17_landscape_*.png`，前后对比） |
+| 其余 7 屏的横屏**设备截图** | **`NOT_VERIFIED`** —— 组件级扫描答"会不会溢出"，设备截图答"好不好看" |
 
 ## 7. 测试与构建
 
@@ -153,7 +185,7 @@ ASSET_GATES 75/75、APK 32.0 MB、AAB 50.5 MB、DIFF_CHECK clean）。
 |---|---|
 | `dart format --set-exit-if-changed .` | 0 changed（463 文件） |
 | `flutter analyze --fatal-infos` | No issues found |
-| `flutter test` | **2048 / 2048** |
+| `flutter test` | **2067 / 2067** |
 | `flutter build apk --debug` | 成功，32.0 MB |
 | `git diff --check` | clean |
 
