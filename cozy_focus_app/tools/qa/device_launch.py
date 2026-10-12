@@ -130,6 +130,25 @@ def ensure(settle=45, tries=3):
     return foreground()
 
 
+def drawn(min_nodes=6, timeout=90):
+    """True once the app has painted something, not just come to the foreground.
+
+    Being the resumed activity is not the same as being drawn: the app shows its
+    splash while Flutter boots, and a screenshot taken then is a Flutter logo with
+    the right package name behind it. A settings screenshot came back as the
+    splash for exactly this reason.
+    """
+    waited = 0
+    while waited < timeout:
+        adb("shell", "uiautomator", "dump", "/sdcard/_drawn.xml")
+        out = adb("shell", "cat", "/sdcard/_drawn.xml")
+        if out.count("<node") >= min_nodes and "Flutter" not in out[:400]:
+            return True
+        time.sleep(4)
+        waited += 4
+    return False
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -144,6 +163,10 @@ def main():
               "Nothing was captured and nothing was tapped.", file=sys.stderr)
         return 2
     print(f"foreground ok: {fg}")
+    if not drawn():
+        print("REFUSING: the app is foreground but has not painted anything",
+              file=sys.stderr)
+        return 2
 
     if a.tap:
         adb("shell", "input", "tap", str(a.tap[0]), str(a.tap[1]))
