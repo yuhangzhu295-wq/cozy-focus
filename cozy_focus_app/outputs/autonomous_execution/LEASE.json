@@ -1,19 +1,15 @@
 {
-  "run_id": "sess-visual2",
+  "run_id": "sess-stage3-owned",
   "owner": "zcode",
   "worktree": "C:\\Users\\zyu33\\Documents\\Codex\\2026-09-07\\new-chat\\cozy_focus_app",
   "branch": "recovery/v4.2.1-rebuild",
-  "started_at": "2026-10-11T01:18:18+08:00",
-  "heartbeat_at": "2026-10-11T01:18:18+08:00",
-  "lease_expires_at": "2026-10-11T01:38:18+08:00",
-  "current_stage": "STAGE_VISUAL_P3",
-  "current_task": "growth-room-visual",
-  "last_verified_commit": "b8317dde0b6a58d833a739e1d6cb0fc63f9431ea",
-  "released_at": "2026-10-11T12:59:42+08:00",
-  "recovered_from": {
-    "run_id": "sess-visual",
-    "last_heartbeat_at": "2026-10-10T12:34:23+08:00",
-    "current_task": "home-visual"
-  },
-  "previous_verdict": "EXPIRED"
+  "started_at": "2026-10-13T19:36:25+08:00",
+  "heartbeat_at": "2026-10-13T19:36:25+08:00",
+  "lease_expires_at": "2026-10-13T19:56:25+08:00",
+  "current_stage": "STAGE_3_DEVICE",
+  "current_task": "collection-owned-item",
+  "last_verified_commit": "e89236a5f83432d3dc7b36fa516b259a88a95426",
+  "released_at": null,
+  "recovered_from": null,
+  "previous_verdict": "RELEASED"
 }
