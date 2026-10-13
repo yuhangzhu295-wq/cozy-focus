@@ -5,7 +5,7 @@
  "branch": "recovery/v4.2.1-rebuild",
  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
- "updated_at": "2026-10-12T21:53:12+08:00",
+ "updated_at": "2026-10-13T20:51+0800",
  "continuation": {
   "question": "does this environment support automatic continuation of the work?",
   "answer": "PARTIALLY — and the honest split matters.",
@@ -24,12 +24,12 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "11d639e67c6fd5914b1c48d4beaab96f24554d95",
-  "remote_head": "11d639e67c6fd5914b1c48d4beaab96f24554d95",
+  "head": "c6ce43a9820290ee8ad8b82a449aadc144ffd7b8",
+  "remote_head": "c6ce43a9820290ee8ad8b82a449aadc144ffd7b8",
   "head_matches_remote": true,
   "worktree": "clean",
-  "last_verified_at": "2026-10-12T21:53:12+08:00",
-  "note": "Verified by reading `git rev-parse HEAD` and `git ls-remote` directly, not from a push message: pushes in this window failed on the network three separate times and each failure was retried until the remote actually matched."
+  "last_verified_at": "2026-10-13T20:51+0800",
+  "note": "Verified by reading git rev-parse and git ls-remote directly, not from a push message."
  },
  "current": {
   "round": "STAGE_1_TO_3_COMPANION_AND_DEVICE_VERIFICATION",
@@ -133,8 +133,8 @@
   "git_diff_check": "clean",
   "cozy_gate_full": "12 PASS / 3 DEFERRED / 3 BLOCKED / 0 FAIL"
  },
- "uncommitted": "none - the worktree is clean and every evidence file is tracked",
- "next_instruction": "Nothing in this round is left half-done. The next unit of work, in the order the brief sets out:\n1. Collection: an OWNED item has still never been seen. The device reads 0/8 and the shortest recipe needs 20 minutes of uninterrupted real focus (30/20/90/60/30/45/120/180 across the eight). Needs a device that survives 20 minutes; this round the emulator was reclaimed repeatedly and wedged its own System UI once (evidence: outputs/device_diagnostics/anr_2026-10-12.txt).\n2. Independent review: WAITING_FOR_INDEPENDENT_REVIEW. Every reviewer provider is unreachable from this machine (chatgpt.com and oauth2.googleapis.com time out; gpt-6-astra is not configured). Retry when the network recovers; the implementer must not self-approve.\n3. The device frame-time harness (DEFERRED) and the owner's visual gate.\nDo not re-open the four defects fixed this round - each has a reverse proof and a device measurement recorded in 04_BUG_FIX_LEDGER.md (40/41/42/43).",
+ "uncommitted": "none",
+ "next_instruction": "Nothing from the last two rounds is half-done. What is left is the visual board review (no reviewer covers Flutter screenshots - do not self-approve), the device frame-time harness, the owner's visual gate, the six product decisions, and the external blockers (release signing, launcher icon, Flow video). Defects 40-43 are closed with reverse proofs and device measurements; do not re-open them.",
  "external_blockers": [
   "RELEASE_SIGNING: android/key.properties absent, release falls back to debug signing",
   "LAUNCHER_ICON: stock Flutter icon, no approved artwork",

@@ -17,6 +17,63 @@ one look identical to a finished one.
 
 below; re-verify the git state before acting on it.
 
+## 2026-10-13T20:51+0800 — the owned collection item, and an independent code review
+
+**HEAD `c6ce43a9820290ee8ad8b82a449aadc144ffd7b8`, local == remote, worktree clean.**
+
+### Two rows closed, neither by inference
+
+**The owned collection item is now verified on the device, and it was earned.**
+Last round it was `NOT_VERIFIED` for a stated reason (device at 0/8; shortest
+recipe needs 20 minutes of real focus). This round the path was walked for real:
+图鉴 -> `原木茶几` (20 min, no materials) -> 开始制作 -> a genuine **25:00 focus
+session run to completion** -> the recipe settled into the inventory. No clock
+change and no seeded row. Re-measured: summary **1 / 8 · 13%**, the row reads
+**已拥有 x1** with a green border and no lock while the other seven keep their
+locks, and the detail's 获取方式 became **已经做好啦，可以摆到房间里** with the
+button changed to **去房间摆放**. Evidence: `09_collection_owned.png`,
+`09_collection_owned_detail.png`. This also verified the **craft loop** end to
+end on the device for the first time: focus time -> craft progress -> settlement
+-> inventory -> collection.
+
+**An independent code review was obtained.** `code-reviewer` is pinned by its
+*workspace* definition (`ZCodeProject/.zcode/agents/code-reviewer.md`) to a
+provider that cannot reach chatgpt.com, and timed out twice. The way round it is
+**not** to edit the owner's agent config: `architecture-reviewer` has only a
+user-level definition, bound to `new-provider-6/cn:glm-5.3` - a different model
+and a different provider from the implementer's. It traced all five concerns in
+the defect 42/43 changes end to end and returned **PASS** with `file:line`
+evidence for each. The **visual** review of the boards is a separate thing and
+stays `WAITING_FOR_INDEPENDENT_REVIEW`: no working reviewer covers Flutter
+screenshots (`visual-judge` is scoped to pptx/docx/xlsx/pdf/poster/chart). The
+implementer approved neither dimension.
+
+### What is genuinely left
+
+1. The **visual** board review (no available reviewer; do not self-approve).
+2. The device frame-time harness (`DEFERRED` - needs the device and ~3 min).
+3. The owner's visual gate and the six remaining product decisions.
+4. Release signing (no keystore was invented), the launcher icon, Flow video.
+
+### Host and device notes for the next window
+
+- **Free memory was 0.7 GB of 15.6 GB** at one point this round. The biggest
+  consumers were chrome (3.55 GB), ZCode (3.2 GB) and the emulator itself
+  (2.45 GB). Freeing the host is the owner's call; nothing here killed their
+  apps.
+- The emulator had to be started from scratch (the host had been shut down) and
+  took a few minutes. `python tools/qa/lease.py status` first.
+- **`uiautomator dump` returned the launcher's tree while CozyFocus was provably
+  in the foreground.** A screenshot is the arbiter when the two disagree; retry
+  the dump rather than believing it.
+- A **soft keyboard** opens if a swipe lands in the mood field on the completion
+  page, and then types. Check for it before scrolling, and dismiss with
+  `input keyevent 4`.
+- The completion page's title slides under the status bar **while scrolling**;
+  the un-scrolled state is clean. Ordinary scroll-under, not a defect.
+
+
+
 ## 2026-10-12T21:53+08:00 — STAGE 1-3: companion animation and device verification
 
 **HEAD `11d639e`, local == remote, worktree clean.** Four commits this round, all
