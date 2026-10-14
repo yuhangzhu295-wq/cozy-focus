@@ -61,25 +61,43 @@ class CozyRoomBackdrop extends StatelessWidget {
 ///
 /// Public so a host can continue it below the scene. The growth page sits its
 /// pet's name, level and XP card under the scene band, and it drew them on
-/// `AppColors.background` (#FBF8F2) while the wall above faded to #EDE0C9 -
-/// a visible horizontal seam that a review found rather than a preference.
-const Color kCozyRoomWallBottom = Color(0xFFEDE0C9);
+/// `AppColors.background` (#FBF8F2) while the wall above faded to a different
+/// tone - a visible horizontal seam that a review found rather than a
+/// preference.
+const Color kCozyRoomWallBottom = Color(0xFFB0885B);
 
 /// The scene's own tones. Named here rather than in [AppColors] because they are
 /// illustration colours: no control, text or border may use them.
+///
+/// ## Retuned against board 01, by measurement
+///
+/// The first palette was a near-white cream - the wall ran #F7EFE0 to #EDE0C9 -
+/// and the scene measured **luma 227.5** on the device. Board 01's room measures
+/// **#9D7B55 to #B0885B, luma 122-134**: a mid-tone warm interior. That is not a
+/// taste difference but a ~95-point luma gap, and it had two visible
+/// consequences rather than one:
+///
+///   * the room read as washed-out cream rather than as a warm interior;
+///   * the companion is drawn white, so against a near-white room it had almost
+///     no contrast and needed a dark outline to be seen at all - which is what
+///     made it look like a sticker laid on the page instead of a character in a
+///     room. Board 01's pet is white on a mid-brown room and needs no outline.
+///
+/// The light sources stay bright on purpose: the board's window is the brightest
+/// thing in the frame, and flattening it would lose the depth the scene is for.
 class _Room {
-  static const wallTop = Color(0xFFF7EFE0);
+  static const wallTop = Color(0xFFA1825C);
   static const wallBottom = kCozyRoomWallBottom;
-  static const wallShade = Color(0xFFE4D4B8);
-  static const light = Color(0xFFFDF1D6);
-  static const lightCore = Color(0xFFFFFBF0);
-  static const wood = Color(0xFFD9B183);
-  static const woodDark = Color(0xFFBE9A70);
-  static const woodLight = Color(0xFFEBD5B2);
-  static const mat = Color(0xFFF3E8CF);
-  static const matLine = Color(0xFFDCC9A2);
-  static const pot = Color(0xFFE0B48C);
-  static const leaf = Color(0xFF6F9B62);
+  static const wallShade = Color(0xFF8B6B47);
+  static const light = Color(0xFFF0D6A4);
+  static const lightCore = Color(0xFFFFF4DC);
+  static const wood = Color(0xFF8A6A46);
+  static const woodDark = Color(0xFF6E5233);
+  static const woodLight = Color(0xFFA98760);
+  static const mat = Color(0xFFC2A276);
+  static const matLine = Color(0xFFA2825A);
+  static const pot = Color(0xFFA97C55);
+  static const leaf = Color(0xFF5E8A52);
 }
 
 class _RoomPainter extends CustomPainter {

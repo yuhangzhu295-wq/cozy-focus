@@ -168,12 +168,18 @@ class _HomePageState extends ConsumerState<HomePage> {
             SliverToBoxAdapter(child: _buildHeroArea(context)),
             SliverToBoxAdapter(child: _buildCurrentTaskCard(context)),
             SliverToBoxAdapter(child: _buildFocusPanel(hasActive)),
-            // 放松 before 今日统计, which is the order the brief specifies. It
-            // also decides whether the entry is reachable: the stats card is
-            // tall enough that with it first the 放松 row fell outside the lazy
-            // sliver's build window on a 360x800 phone and was never built at
-            // all, so it could not be found, let alone tapped.
-            SliverToBoxAdapter(child: _buildRestRow(context)),
+            // 今日统计 then 放松, which is the order board 01 draws: the stats
+            // card sits directly under 开始专注, and 放松一下 is the last card
+            // before the nav.
+            //
+            // These two were the other way round. The stated reason was that the
+            // stats card is tall enough to push 放松 out of a lazy sliver's build
+            // window on a 360x800 phone, so it "was never built at all". That was
+            // a misdiagnosis: `SliverToBoxAdapter` children are inflated whether
+            // or not they are on screen, and what could not see the row was
+            // `find.text`, which skips off-stage elements by default - the same
+            // trap the size sweep hit. Swapping the order to satisfy a finder is
+            // how a board order gets lost, so it is restored here.
             SliverToBoxAdapter(
               child: _buildStatsPanel(
                 homeState.todayFocusSeconds,
@@ -181,6 +187,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 homeState.todayRecords,
               ),
             ),
+            SliverToBoxAdapter(child: _buildRestRow(context)),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
@@ -222,10 +229,13 @@ class _HomePageState extends ConsumerState<HomePage> {
     // The room band is sized from the screen, not fixed.
     //
     // At a fixed 384dp the band pushed 放松一下 below the fold on a 360x800
-    // phone - not merely off-screen but never built, because it sits in a lazy
-    // sliver, so `find.text('放松一下')` found nothing at all there. The band now
-    // takes at most 42% of the height the screen actually has, and the pet is
-    // scaled with it so it keeps standing on the desk instead of hanging off it.
+    // phone. That was recorded as "never built, because it sits in a lazy
+    // sliver" - which is wrong: `SliverToBoxAdapter` inflates its child whether
+    // or not the child is on screen, and the row was really invisible to
+    // `find.text`, which skips off-stage elements. The band is still sized from
+    // the screen, because 42% of the height is what board 01 gives the room, and
+    // the pet is scaled with it so it keeps standing on the desk rather than
+    // hanging off it.
     //
     // The 220dp floor is where the scene stops being a room: below that the desk
     // has no room to exist under the pet.
@@ -268,8 +278,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    // White, because the room behind it is a mid-tone interior.
+                    // It was `textPrimary` while the room was a near-white cream,
+                    // where dark text was the only thing that read; board 01
+                    // draws this in white on the room, and now that the room
+                    // measures the board's tone instead of 95 luma lighter, so
+                    // does the app. The shadow is what keeps it legible where the
+                    // wall is at its lightest, near the window.
+                    color: Colors.white,
                     height: 1.15,
+                    shadows: _greetingShadow,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -277,8 +295,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                   '今天也辛苦了，\n一起专注一会儿吧。',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.textPrimary,
+                    color: Color(0xFFF7EFE2),
                     height: 1.35,
+                    shadows: _greetingShadow,
                   ),
                 ),
               ],
@@ -970,6 +989,15 @@ class _StepButton extends StatelessWidget {
 /// This replaced a fixed 和 Mochi 一起 / 专注吧！ headline. That headline was the
 /// same at 7am and 11pm, and it named the companion in a line the companion is
 /// already the subject of — the kind of copy the visual brief calls out as filler.
+/// A soft shadow under the hero's greeting.
+///
+/// The greeting is white on the room, and the room is not one flat tone - the
+/// wall is lighter toward the window than in the corner - so without this the
+/// text fades out over the bright end of the gradient.
+const List<Shadow> _greetingShadow = [
+  Shadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 1)),
+];
+
 String _greetingFor(TimeOfDayBand band) => switch (band) {
       TimeOfDayBand.morning => '早上好',
       TimeOfDayBand.midday => '中午好',

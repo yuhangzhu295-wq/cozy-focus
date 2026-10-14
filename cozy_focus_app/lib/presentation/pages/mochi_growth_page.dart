@@ -22,9 +22,19 @@ class MochiGrowthPage extends ConsumerWidget {
     final state = ref.watch(growthControllerProvider);
 
     return Scaffold(
-      // Continues the room's wall tone, so the scene band and the pet's name below
-      // it are the same colour instead of meeting at a seam.
-      backgroundColor: kCozyRoomWallBottom,
+      // The page is light below the room, which is what board 10 draws: the room
+      // band ends and a pale sheet carries the stats, the unlocks and the
+      // sub-nav.
+      //
+      // It used to continue the wall tone (`kCozyRoomWallBottom`) so the band and
+      // the text under it would not meet at a seam. That worked while the wall
+      // was a near-white cream, because the wall tone *was* a pale sheet. Once
+      // the room was retuned to the board's mid-tone brown - the wall measures
+      // luma 162 now against the board's 153 - continuing it turned the whole
+      // page brown, which the board does not do and which left the pet's name
+      // dark-on-brown. The band's lower edge is rounded instead, so the boundary
+      // reads as the sheet board 10 draws rather than as a seam.
+      backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
         child: _buildBody(context, ref, state),
@@ -151,12 +161,20 @@ class MochiGrowthPage extends ConsumerWidget {
         // The scene covers the PET's band only, not the name, the level and the
         // XP card below it. Behind the whole hero the rug landed under the
         // name and the text read as written on a mat.
+        //
+        // It is tall enough to contain the pet whole - the pet's box ends at
+        // 8 + 160 within the hero - because the band now ends in a rounded edge
+        // over a pale page. A band that stopped short of the pet would draw that
+        // edge straight across it.
         const Positioned(
           top: 0,
           left: 0,
           right: 0,
-          height: 196,
-          child: CozyRoomBackdrop(deskLine: 0.74),
+          height: 208,
+          child: ClipRRect(
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+            child: CozyRoomBackdrop(deskLine: 0.74),
+          ),
         ),
         Container(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),

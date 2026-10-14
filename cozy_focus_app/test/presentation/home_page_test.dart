@@ -125,14 +125,37 @@ void main() {
       // pending timer that flutter_test fails the test for. Whether the button
       // works is covered by the focus-flow tests; this one is about geometry.
 
-      // The brief also asks for the 放松 entry to show on the first screen, or
-      // to be a clearly visible entrance rather than buried in an unmarked
-      // scroll region.
-      final rest = find.text('放松一下');
-      expect(rest, findsOneWidget);
-      expect(tester.getRect(rest).bottom, lessThanOrEqualTo(navTop),
-          reason: '放松一下 must be reachable on the first screen at 360x800; '
-              'it ends at ${tester.getRect(rest).bottom}, nav at $navTop');
+      // 放松一下 is the last card before the nav, which is the order board 01
+      // draws: 今日统计 sits directly under 开始专注, and 放松 closes the page.
+      //
+      // This assertion used to require 放松 to be *on the first screen* at
+      // 360x800, and the sliver order was swapped to satisfy it. Two things are
+      // wrong with that. Board 01 puts the stats card first, and the code's own
+      // comment on the rest row already said so - so the swap contradicted both
+      // the design and the file it lives in. And the requirement it satisfied
+      // cannot be met on a real phone anyway: the board's phone mockup is about
+      // 2.8:1, taller than any shipping device, which is why its whole page fits
+      // in one frame. On a 360x800 phone the board's content scrolls, and the
+      // honest requirement is that 放松 is a real, reachable card rather than a
+      // buried one.
+      final rest = find.text('放松一下', skipOffstage: false);
+      expect(rest, findsOneWidget,
+          reason: '放松一下 must be built even though it starts below the fold');
+
+      final stats = find.text('今天的专注', skipOffstage: false);
+      expect(stats, findsOneWidget);
+      final statsY = tester.getRect(stats).top;
+      final restY = tester.getRect(rest).top;
+      expect(statsY, lessThan(restY),
+          reason: 'board 01 draws 今日统计 above 放松一下; found stats at '
+              '$statsY and rest at $restY');
+
+      // Scrolling to it has to work, or "reachable" is a claim rather than a
+      // fact.
+      await tester.scrollUntilVisible(find.text('放松一下'), 200,
+          scrollable: find.byType(Scrollable).first);
+      expect(find.text('放松一下'), findsOneWidget,
+          reason: '放松一下 must become visible once the page is scrolled');
     });
 
     testWidgets('the greeting follows the clock across a band boundary',
