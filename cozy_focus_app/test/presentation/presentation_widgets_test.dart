@@ -521,7 +521,7 @@ void main() {
       for (final label in const ['分心较多', '一般', '不错', '心流']) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
-      expect(find.text('保存记录'), findsOneWidget);
+      expect(find.text('完成'), findsOneWidget);
     });
 
     testWidgets('Screen 04B: FocusRewardPage renders rewards and return CTA',

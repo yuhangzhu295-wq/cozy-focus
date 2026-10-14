@@ -135,11 +135,18 @@ void main() {
     final openTitle = tester.widget<Text>(find.text('写产品方案'));
     expect(openTitle.style?.decoration, isNot(TextDecoration.lineThrough));
 
-    // The done row: filled tick and a struck-through name.
+    // The done row: a filled tick, a plain name, and the tinted surface.
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
     final doneTitle = tester.widget<Text>(find.text('阅读 30 分钟'));
-    expect(doneTitle.style?.decoration, TextDecoration.lineThrough,
-        reason: 'the board strikes the finished task through');
+    // NOT struck through. This assertion used to require
+    // `TextDecoration.lineThrough`, with the reason "the board strikes the
+    // finished task through" - and that reason was simply wrong. Board 02 draws
+    // the finished row with a filled green check and a tinted row and leaves the
+    // title plain. The strike was an assumption written down as a requirement,
+    // which is how a board detail gets replaced by a habit.
+    expect(doneTitle.style?.decoration, isNot(TextDecoration.lineThrough),
+        reason: 'board 02 marks a finished task with the check and the tint, '
+            'not a strike');
 
     // And the done row sits on the tinted surface, not the plain one. Read from
     // the Material the row is built on, because that is what paints it.

@@ -115,7 +115,7 @@ void main() {
   }
 
   Future<void> save(WidgetTester tester) async {
-    final button = find.text('保存记录');
+    final button = find.text('完成');
     await tester.ensureVisible(button);
     await settle(tester);
     await tester.tap(button);

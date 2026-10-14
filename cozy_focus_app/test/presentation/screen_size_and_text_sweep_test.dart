@@ -69,7 +69,7 @@ void main() {
     '/records': '今天的专注',
     '/growth': '成长属性',
     '/records/tasks': '新建任务',
-    '/records/today': '计划',
+    '/records/today': '列表',
     '/records/inbox': '分心箱清单',
     '/settings': '设置',
     '/rest': '开始休息',

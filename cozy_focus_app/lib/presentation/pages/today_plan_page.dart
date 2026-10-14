@@ -328,7 +328,14 @@ String _dayLabel(DateTime day) {
 String _timeLabel(DateTime at) =>
     '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}';
 
-/// 计划 / 时间线 / 统计, the design's three views of one day.
+/// 列表 / 时间线, the two views of one day that board 03 draws, plus 统计.
+///
+/// This comment used to say "the design's three views of one day", which is not
+/// what board 03 shows: its switch is 列表 / 时间线. 统计 is the app's own addition
+/// - a day's totals and its distribution - and it is on no board. It is recorded
+/// as an extra rather than removed, because dropping a built feature is the
+/// owner's call and not a board detail; the first view's *name* was a plain
+/// mismatch, and that is fixed.
 enum _DayView { plan, timeline, statistics }
 
 class _Segments extends StatelessWidget {
@@ -338,7 +345,7 @@ class _Segments extends StatelessWidget {
   const _Segments({required this.view, required this.onChanged});
 
   static const Map<_DayView, String> _labels = {
-    _DayView.plan: '计划',
+    _DayView.plan: '列表',
     _DayView.timeline: '时间线',
     _DayView.statistics: '统计',
   };

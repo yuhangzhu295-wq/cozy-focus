@@ -249,13 +249,16 @@ class _TaskRow extends StatelessWidget {
                       task.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
-                        decoration:
-                            task.isDone ? TextDecoration.lineThrough : null,
-                        decorationColor: AppColors.textTertiary,
+                        // No strike-through. Board 02 marks a finished task with a
+                        // filled green check and a tinted row, and draws the title
+                        // plain - the strike was extra, and it is the one part of
+                        // this row the board does not have. The check and the tint
+                        // already carry the state, and a struck title is harder to
+                        // read back when the user is scanning what they did.
                       ),
                     ),
                     const SizedBox(height: 8),

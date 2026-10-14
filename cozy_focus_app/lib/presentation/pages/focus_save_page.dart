@@ -597,7 +597,11 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                           ),
                         )
                       : const Text(
-                          '保存记录',
+                          // Board 06's own word for this button. It was
+                          // 保存记录, which names the mechanism; the board names
+                          // the act, and the form above it is already titled
+                          // 保存本次记录.
+                          '完成',
                           style: TextStyle(
                               fontSize: 17, fontWeight: FontWeight.bold),
                         ),
