@@ -329,11 +329,11 @@ ASSET_GATES 75/75、APK 32.0 MB、AAB 50.5 MB、DIFF_CHECK clean）。
 | 等级称号表（`萌芽伙伴` 等） | **NOT_VERIFIED** | 展板只给一个例子（Lv.3 = 萌芽伙伴），其余无法推导，**属内容不发明** |
 | 改名入口（名字旁铅笔） | **NOT_VERIFIED** | 同上，需要产品定义 |
 | `关于与帮助` 行 | **NOT_VERIFIED** | 需要有真实的产品介绍与常见问题内容，否则是空壳 |
-| `更多 ›`（记录详情 / 专注回顾） | **不照做** | 没有"全部记录"页可跳，点开没东西的入口是契约禁止的 |
-| 白噪音 / 系统通知 / 云同步开关 | **不照做** | 功能未接入，画拨不动的开关是契约禁止的假控件 |
+| `更多 ›`（记录详情 / 专注回顾） | **记录侧已真机走通，复盘侧无此控件** | 上一版笼统写「没有"全部记录"页可跳」。**本轮拆开查了，两半答案不一样**：记录行右侧的 `…的操作` 真机点开是 `关闭菜单 / 查看详情`，`查看详情` 进到 `记录详情` 页（任务名 / 分类 / 日期 / 时间段 / 时长 / `编辑`）——**入口和落点都是真的**（`20_record_actions.png`、`21_record_detail.png`）；而专注回顾页**根本没有 `更多 ›` 这个控件**（`focus_save_page` 的 AppBar 只有标题），所以那一半是"无对象"，不是"没做"。写这条的目的没变：点了没东西的入口不许加 |
+| 白噪音 / 系统通知 / 云同步开关 | **不照做** | 功能未接入，画拨不动的开关是契约禁止的假控件。**本轮核查过一遍，结论不变、且比上一版更具体**：`pubspec.yaml` 里**确实**有 `flutter_local_notifications: ^18.0.1`，但 `lib/` 下**一次都没有 import 过它**（`git log -S "FlutterLocalNotifications" -- lib/` 为空）——所以设置页那句「当前版本尚未接入系统通知」是**真的**，不是没去接。把它接上是另一件事（要权限、要调度、要后台行为），不在「视觉与设计一致性」这一轮的范围内；**依赖躺在那里没用，这句备注就是为了别让下一个人以为已经接好了** |
 | 眨眼帧 | **已在真机逐帧确认（`tools/qa/blink_capture.py`）** | 上一版这里写 `NOT_VERIFIED`「未逐帧确认」。本轮做了 `blink_capture.py` 并量到了：70 秒窗口内 **6 次眨眼**，时长 50–150ms（`PetMotionSpec.blinkDuration` = 140ms），窗口内的三次间隔 **3.35 / 5.00 / 4.95 秒**，全部落在声明的 2.5–5.5 秒带内。**这台仪器我一共写错了三次才量对，三次都记在案**：① 眼带按「盒子比例 0.15–0.24」取，结果那一段是**头顶、没有眼睛**（`eye_left.png` 的墨在 153–178、`eye_right.png` 在 179–210， rig 画布 328 高、画进 458 见方后眼睛在设备行 594–653）；② 每秒都在动的 3.2 秒呼吸把眨眼整个盖住，去掉趋势才浮出来；③ rig↔sprite 换渲染器时这个色带会掉到一个平的 ~1145 并停住，**和一次深度眨眼的形状一模一样**，按静默期判掉才不会把换页当成眨个不停。反向证明：真实录音 → 6 次；纯 sprite 窗口 → 0 次；只有呼吸没有眨眼 → 0 次 |
-| 图鉴条目点击 | **NOT_VERIFIED** | 设备被别的 App 抢占，未完成 |
-| 帧时间（raster） | **NOT_VERIFIED** | 本机 AVD 无 GPU，swiftshader 数字不代表真机 |
+| 图鉴条目点击 | **已通过（真机走完整条）** | 上一版写「设备被别的 App 抢占，未完成」——那是个**环境状况，不是能力边界**，这轮设备没被抢，同一路径一次就走通了：`成长 → 图鉴` → 已拥有的 `原木茶几 已拥有 x1` 弹出详情（`获取方式 / 已经做好啦，可以摆到房间 / 去房间摆放`）→ 点按钮进到 `房间装修`（`拥有件数 1 / 房间中 0 / 可摆放 1`，截图 `23_collection_detail.png`）。**整条链路是真的通的，之前只是没跑** |
+| 帧时间（raster） | **NOT_VERIFIED** | 本机 AVD 无 GPU。**本轮再次取到证据，不是沿用旧话**：`getprop ro.hardware.egl` = **`emulation`**、`ro.hardware.vulkan` = `ranchu`，即软件渲染；`dumpsys gfxinfo` 也确实在报（`Janky frames 35.29%`），但**这些数字量的是 swiftshader 软件光栅，不是目标真机的 GPU**。拿它当验收数字会是另一个「构建成功等于门禁通过」。要真数只能到真机 |
 | TalkBack / 真机 / release 签名 / 启动图标 | **BLOCKED_EXTERNAL** | 环境或所有者 |
 | `OWNER_VISUAL_GATE` | **DEFERRED** | 项目门禁标 REQUIRED，**永不由测量决定**，非我可声称 |
 | 独立评审 | **代码：PASS（本轮拿到）／ 展板视觉：仍 `WAITING`** | `code-reviewer` 这一类**不可达**：它被工作区定义 `ZCodeProject/.zcode/agents/code-reviewer.md` 钉在 `32bb342b-.../gpt-6-sol`，而这个供应商连不上 `chatgpt.com`（两次各跑满 ~12 分钟后超时）；`deep-reasoner` 报 `provider-not-found`（`gpt-6-astra` 未配置）、`general-purpose` 报 `auth_unavailable`（`oauth2.googleapis.com` 超时）、`local-private` 报 `provider-not-found`（本地 qwen 模型不存在）。**绕法不是改配置，而是换一个绑在可达供应商上的代理类型**：`architecture-reviewer` 只有用户级定义，绑 `new-provider-6/cn:glm-5.3`，本轮跑通并判 **PASS**（五条关注点，均带 `file:line`）。展板的**视觉**审查没有对应的可用代理（`visual-judge` 只对 pptx/docx/xlsx/pdf/poster/chart 开放），所以那一格保持未审。**实施者没有自批。** |
