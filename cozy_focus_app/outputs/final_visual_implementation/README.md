@@ -209,7 +209,35 @@ HUD 是真实控件。
 | 结束不僵死 | **PASS** | 最长静止 0.20 / 0.25 / 0.75 秒（改法前是 4.35–5.95 秒） |
 | 控制区不动 | **PASS** | 控制区改用底部导航（标题是渐进的，会误判） |
 
-## 4b. 横屏：扫描只扫竖屏，就只验了一半
+## 4b. 一个被查清但**不是缺陷**的现象：首页伙伴在 rig 与 sprite 之间来回切
+
+量眨眼时撞上的：真机上首页伙伴每 ~11 秒切一次渲染器（rig 约 11 秒 → sprite 约 2 秒 → rig …）。
+看起来像抖动，查完之后不是。
+
+用一次临时 `debugPrint` 打出来的实况（跑完即删，`git diff lib/` 为空）：
+
+```
+pose=idle   macro=idle   useLayered=true    ← 分层 rig（会眨眼）
+pose=sleep  macro=sleep  useLayered=false   ← pause_rest 精灵图（2 帧 pingpong）
+pose=idle   macro=idle   useLayered=true
+pose=glance macro=glance useLayered=false   ← glance 精灵图（环境变化的一次挑选）
+```
+
+三件事叠在一起，每件都对：
+
+1. 那一刻**真的有一个休息在跑**，所以 `companionBusinessStateOverrideProvider` 给出 `PetVisualState.sleep`，
+   `CompanionBaseContext.sleep` 拿 `pause_rest` 精灵图（manifest：2 帧、3fps、pingpong）——**这就是那个 1.2 秒循环**。
+2. `home` 的环境配方除了 `idle` 还会挑 `glance`，`glance` 是精灵图姿势，`layeredPoses` 里只有 `idle`。
+3. sprite 在手时 `_SpriteMotionGate` 会**故意**停掉 rig 的微动计时器（注释写明：sprite 本身就是动画，
+   留着计时器只会空烧唤醒）。所以**眨眼只在 rig 那段时间发生**——这正是设计要的，不是丢了。
+
+**判别方法值得记下来**：把设备帧和三套精灵图的 `idle_00X` 逐帧比，rig 帧的最佳匹配差 ~50 luma，
+sprite 帧 ~3.6——**一个是 3.6 一个是 50，两个世界**，所以「现在是 rig 还是 sprite」是个可测量的事实，不是猜的。
+
+**这次也顺带纠了我自己的一个误判**：我一开始把「量到 1.2 秒周期的 4 帧相同墨量」读成"这就是眨眼"，
+其实那是精灵图在踏步；真正要先答的问题是"我现在量的是哪个渲染器"。
+
+## 4c. 横屏：扫描只扫竖屏，就只验了一半
 
 `AndroidManifest.xml` 既没有 `screenOrientation` 锁、`configChanges` 里又带 `orientation` —— **旋转是真会发生的配置**。而尺寸扫描此前只有任务书点名的三个竖屏尺寸，**从来没有一个屏幕在 800×360 下被布局过**。
 
@@ -303,7 +331,7 @@ ASSET_GATES 75/75、APK 32.0 MB、AAB 50.5 MB、DIFF_CHECK clean）。
 | `关于与帮助` 行 | **NOT_VERIFIED** | 需要有真实的产品介绍与常见问题内容，否则是空壳 |
 | `更多 ›`（记录详情 / 专注回顾） | **不照做** | 没有"全部记录"页可跳，点开没东西的入口是契约禁止的 |
 | 白噪音 / 系统通知 / 云同步开关 | **不照做** | 功能未接入，画拨不动的开关是契约禁止的假控件 |
-| 眨眼帧 | **NOT_VERIFIED** | 未逐帧确认 |
+| 眨眼帧 | **已在真机逐帧确认（`tools/qa/blink_capture.py`）** | 上一版这里写 `NOT_VERIFIED`「未逐帧确认」。本轮做了 `blink_capture.py` 并量到了：70 秒窗口内 **6 次眨眼**，时长 50–150ms（`PetMotionSpec.blinkDuration` = 140ms），窗口内的三次间隔 **3.35 / 5.00 / 4.95 秒**，全部落在声明的 2.5–5.5 秒带内。**这台仪器我一共写错了三次才量对，三次都记在案**：① 眼带按「盒子比例 0.15–0.24」取，结果那一段是**头顶、没有眼睛**（`eye_left.png` 的墨在 153–178、`eye_right.png` 在 179–210， rig 画布 328 高、画进 458 见方后眼睛在设备行 594–653）；② 每秒都在动的 3.2 秒呼吸把眨眼整个盖住，去掉趋势才浮出来；③ rig↔sprite 换渲染器时这个色带会掉到一个平的 ~1145 并停住，**和一次深度眨眼的形状一模一样**，按静默期判掉才不会把换页当成眨个不停。反向证明：真实录音 → 6 次；纯 sprite 窗口 → 0 次；只有呼吸没有眨眼 → 0 次 |
 | 图鉴条目点击 | **NOT_VERIFIED** | 设备被别的 App 抢占，未完成 |
 | 帧时间（raster） | **NOT_VERIFIED** | 本机 AVD 无 GPU，swiftshader 数字不代表真机 |
 | TalkBack / 真机 / release 签名 / 启动图标 | **BLOCKED_EXTERNAL** | 环境或所有者 |
