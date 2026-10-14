@@ -34,7 +34,7 @@ SCREENS = {
     "02_records": (["记录"], "今天的专注"),
     "03_growth": (["成长"], "成长属性"),
     "04_tasks": (["记录", "任务"], "新建任务"),
-    "05_today": (["记录", "今日记录"], "计划"),
+    "05_today": (["记录", "今日计划"], "时间线"),
     "06_inbox": (["记录", "分心箱"], "分心箱清单"),
     "07_settings": (["首页", "设置"], "设置"),
     "08_collection": (["成长", "图鉴"], "图鉴"),
@@ -106,6 +106,23 @@ def find_label(needle, tries=4):
     return False
 
 
+def find_entry(needle):
+    """Tap an entry inside the records page.
+
+    The records page keeps the tab you last looked at, and 今日计划/任务/分心箱
+    only exist under the 今日 tab. A sweep that ran after a report run therefore
+    started on 报告 - which has none of them - and scrolled the whole page
+    without ever finding them. Selecting the tab first is what makes the sweep
+    independent of what the last run left the page on.
+    """
+    for _ in range(4):
+        if any(needle in l for l in labels_now()):
+            return find_label(needle)
+        if not L.tap_label("今日", settle=5, exact=True):
+            return False
+    return find_label(needle)
+
+
 def marker_visible(marker, tries=4):
     """Whether the marker is on screen, scrolling to look for it."""
     for _ in range(14):
@@ -147,9 +164,15 @@ def main():
             continue
         ok = True
         for label in path:
-            # The first hop is a bottom-nav tab and is always on screen; the rest
-            # are entries inside a page and may need scrolling to reach.
-            finder = L.tap_label if label in ("首页", "记录", "成长") else find_label
+            # The first hop is a bottom-nav tab and is always on screen. A hop
+            # that follows 记录 is an entry inside that page, so it needs the tab
+            # reset above before it can be found at all.
+            if label == "记录":
+                finder = L.tap_label
+            elif "记录" in path[:path.index(label)]:
+                finder = find_entry
+            else:
+                finder = find_label
             if not finder(label):
                 print(f"{name}: no '{label}' on screen", file=sys.stderr)
                 ok = False
