@@ -113,26 +113,30 @@ void main() {
     testWidgets('selection is the brand green, not the category colour',
         (tester) async {
       await openSheet(tester);
-      await tester.tap(find.byKey(const ValueKey('distraction_tag_life')));
+      // 工作, not 生活: board 05 opens with 生活 already selected, so tapping that
+      // one would *deselect* it and this test would read the unselected colour.
+      // The property under test is the same either way - choosing a chip tints it
+      // with the brand green rather than with its own category colour.
+      await tester.tap(find.byKey(const ValueKey('distraction_tag_work')));
       await tester.pump();
 
       final decoration = tester
           .widget<Container>(
             find
                 .descendant(
-                  of: find.byKey(const ValueKey('distraction_tag_life')),
+                  of: find.byKey(const ValueKey('distraction_tag_work')),
                   matching: find.byType(Container),
                 )
                 .first,
           )
           .decoration! as BoxDecoration;
 
-      // 生活's own colour is `catLife` (orange). Selecting it must not paint the
-      // chip orange: on a screen where the chip is a *choice*, the tint means
-      // "chosen", and design 05 draws it green.
+      // 工作's own colour is its own hue. Selecting it must not paint the chip
+      // that colour: on a screen where the chip is a *choice*, the tint means
+      // "chosen", and design 05 draws the chosen one green.
       expect(decoration.color, AppColors.primaryLight);
       expect(decoration.color,
-          isNot(taskCategoryColor('life').withValues(alpha: 0.14)));
+          isNot(taskCategoryColor('work').withValues(alpha: 0.14)));
     });
   });
 

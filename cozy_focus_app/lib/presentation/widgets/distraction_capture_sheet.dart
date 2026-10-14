@@ -43,7 +43,15 @@ class _CaptureSheet extends ConsumerStatefulWidget {
 
 class _CaptureSheetState extends ConsumerState<_CaptureSheet> {
   final TextEditingController _text = TextEditingController();
-  String? _categoryId;
+
+  /// The tag the sheet opens on.
+  ///
+  /// Board 05 draws 生活 as the selected chip - green fill and border, with
+  /// 学习 / 工作 / 其他 neutral beside it - so the board's opening state has a
+  /// tag already chosen rather than an empty row. Tapping the chosen chip still
+  /// clears it (see the `onTap` below), so saving an untagged note stays one tap
+  /// away.
+  String? _categoryId = 'life';
   bool _saving = false;
   String? _error;
 

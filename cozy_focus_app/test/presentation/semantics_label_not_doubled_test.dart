@@ -121,7 +121,9 @@ void main() {
       // '标签 生活\n生活', because the wrapper's label and the child Text merged.
       expect(node.label, '标签 生活');
       expect(node.hasFlag(SemanticsFlag.isButton), isTrue);
-      expect(node.hasFlag(SemanticsFlag.isSelected), isFalse);
+      // Selected, because board 05 opens with 生活 already chosen. This test is
+      // about the label staying single, not about the chip being unselected.
+      expect(node.hasFlag(SemanticsFlag.isSelected), isTrue);
     });
   });
 }

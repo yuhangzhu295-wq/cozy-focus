@@ -90,7 +90,9 @@ void main() {
     final saved = await notes();
     expect(saved, hasLength(1));
     expect(saved.single.text, '买充电线');
-    expect(saved.single.categoryId, isNull);
+    // 生活, because board 05 opens with that chip already chosen. Saving without
+    // touching the row stores the tag the screen is showing.
+    expect(saved.single.categoryId, 'life');
     expect(saved.single.createdAt, clock.now());
     expect(find.text('分心收集箱'), findsNothing, reason: 'the sheet closed');
   });
@@ -100,13 +102,16 @@ void main() {
     await tester.enterText(find.byType(TextField), '买充电线');
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey('distraction_tag_life')));
+    // 工作 rather than the pre-selected 生活: tapping the chip that is already
+    // chosen clears it, so 工作 is what shows "the chip you see is the chip that
+    // is saved".
+    await tester.tap(find.byKey(const ValueKey('distraction_tag_work')));
     await tester.pump();
     await tester.tap(find.text('记下，继续专注'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect((await notes()).single.categoryId, 'life');
+    expect((await notes()).single.categoryId, 'work');
   });
 
   testWidgets('the tag is optional and can be un-chosen', (tester) async {
@@ -184,7 +189,11 @@ void main() {
         find.byKey(ValueKey('distraction_tag_$id')),
       );
       expect(node.hasFlag(SemanticsFlag.isButton), isTrue, reason: id);
-      expect(node.hasFlag(SemanticsFlag.isSelected), isFalse, reason: id);
+      // 生活 is the one that opens chosen - board 05 draws it with the green
+      // fill - so a screen reader has to be told *that*, and told the other three
+      // are not chosen.
+      expect(node.hasFlag(SemanticsFlag.isSelected), id == 'life',
+          reason: '$id selection state');
     }
     expect(find.byKey(const ValueKey('distraction_close')), findsOneWidget);
   });
