@@ -48,12 +48,23 @@ BUILD = os.path.join(APP, "build", "flicker")
 FPS = 20
 RECORD_SECONDS = 10
 
-# Ink is a pixel this much darker than the companion's backdrop. The backdrop is
-# a pale cream; the companion is drawn in white with dark outlines, so its
-# outlines are far below this and its body is above it. What is counted is
-# therefore mostly outline, which is exactly what disappears when the drawing
-# does.
-INK_LEVEL = 205
+# Ink is the companion's own dark outline: a pixel darker than luma 64.
+#
+# This threshold used to be 205, calibrated against the *old* room - a pale cream
+# the companion's white body sat above. The room was then retuned to the board's
+# measured brown, and luma 128-160 now covers 46% of the pet's box, so that
+# threshold started counting wall pixels as ink. The same run reported ink ~121000
+# where pre-retune runs reported ~15000: an 8x jump with nothing to do with the
+# companion, because the instrument had stopped measuring the pet and started
+# measuring the wall. A PASS on those numbers would have been evidence of nothing.
+#
+# 64 is the separation the current room actually gives. The companion is drawn
+# white with dark outlines, so its outline sits well below 64; the room's dominant
+# band starts at 128. Measured on the device: the same box on a page with the
+# companion counts 5417 outline pixels, and on the 记录 page - which has no
+# companion at all - counts zero. That zero is what makes the number mean
+# something, and it is the instrument's own control.
+INK_LEVEL = 64
 
 # A frame counts as a dip when it holds under this share of the window's median
 # ink. The companion is either drawn or it is not; there is no middle.
@@ -185,6 +196,23 @@ def main():
     dips = [i for i, v in enumerate(inks) if v < median * DIP_SHARE]
     interior = [i for i in dips if 0 < i < len(inks) - 1]
 
+    # ...and interior is not enough on its own. Switching to a page that has no
+    # companion drops the ink to nothing *and leaves it there*: 5867, 5867, ...
+    # 0, 0, 0, 2801, 2801. That is the intended result of a tab change, and
+    # calling the six frames where it settles a flicker means the `--tab` control
+    # run reports FAIL for behaving correctly. So a low run is only a flicker when
+    # ink **returns** to its previous level afterwards. The companion being gone
+    # for the rest of the window is a page change, and is reported as such.
+    def returns_after(i):
+        tail = inks[i + 1:]
+        before = inks[:i]
+        if not tail or not before:
+            return False
+        return (max(tail) >= median * 0.6 and
+                max(before) >= median * 0.6)
+
+    flicker = sorted({i for i in interior if returns_after(i)})
+
     report = {
         "label": label,
         "frames": len(frames),
@@ -193,10 +221,11 @@ def main():
         "ink_min": min(inks),
         "ink_max": max(inks),
         "dip_frames": interior,
+        "flicker_frames": flicker,
         "ink_series": inks,
         "thresholds": {"ink_level": INK_LEVEL, "dip_share": DIP_SHARE},
-        "checks": {"no_interior_dip": len(interior) == 0},
-        "technical_visual_gate": "FAIL" if interior else "PASS",
+        "checks": {"no_flicker": len(flicker) == 0},
+        "technical_visual_gate": "FAIL" if flicker else "PASS",
         "owner_visual_gate": "REQUIRED",
         "note": (
             "Answers 'did the companion vanish for a frame'. It cannot see a "
@@ -208,15 +237,15 @@ def main():
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2)
 
-    # Keep the frames around any dip, or the transition itself when clean.
-    keep = interior[:1] or [len(frames) // 2]
+    # Keep the frames around any flicker, or the transition itself when clean.
+    keep = flicker[:1] or interior[:1] or [len(frames) // 2]
     for n, i in enumerate(range(max(0, keep[0] - 3),
                                 min(len(frames), keep[0] + 5))):
         shutil.copy(frames[i], os.path.join(OUT, f"{label}_f{n:02d}.png"))
 
     print(json.dumps({k: report[k] for k in
-                      ("ink_median", "dip_frames", "checks",
-                       "technical_visual_gate")}, indent=2))
+                      ("ink_median", "dip_frames", "flicker_frames",
+                       "checks", "technical_visual_gate")}, indent=2))
     print(f"\nreport: {path}")
     return 0 if report["technical_visual_gate"] == "PASS" else 1
 
