@@ -145,6 +145,14 @@ class MochiGrowthPage extends ConsumerWidget {
     );
   }
 
+  /// A soft shadow under the identity line, which now sits on the room.
+  ///
+  /// The room is not one flat tone - the wall is lighter toward the window - so
+  /// white text on it needs the same help the home page's greeting gets.
+  static const List<Shadow> _heroTextShadow = [
+    Shadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 1)),
+  ];
+
   Widget _buildPetHero(String petName, PetProgress progress) {
     final level = progress.level;
     final xp = progress.experiencePoints;
@@ -162,15 +170,16 @@ class MochiGrowthPage extends ConsumerWidget {
         // XP card below it. Behind the whole hero the rug landed under the
         // name and the text read as written on a mat.
         //
-        // It is tall enough to contain the pet whole - the pet's box ends at
-        // 8 + 160 within the hero - because the band now ends in a rounded edge
-        // over a pale page. A band that stopped short of the pet would draw that
-        // edge straight across it.
+        // It is tall enough to contain the identity line AND the pet whole -
+        // 8 of top padding, the name/level/progress block, a 12 gap and a 160
+        // pet come to about 238 - because the band ends in a rounded edge over a
+        // pale page, and a band that stopped short would draw that edge straight
+        // across whatever it cut.
         const Positioned(
           top: 0,
           left: 0,
           right: 0,
-          height: 208,
+          height: 250,
           child: ClipRRect(
             borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
             child: CozyRoomBackdrop(deskLine: 0.74),
@@ -180,90 +189,72 @@ class MochiGrowthPage extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           child: Column(
             children: [
+              // Board 10 puts the name, the level and the level's own progress
+              // on the room itself, above the pet, in white - the room is the
+              // hero and the pet is its focus, so the identity line belongs on
+              // the scene rather than under it.
+              //
               // No message bubble: board 10 gives this hero to the room and the
               // pet, and the line it used to say - 'Mochi 正在陪伴你成长' with a
               // sprout - is on no board.
-              const CompanionAvatar(size: 160),
-              const SizedBox(height: 16),
-              Text(
-                petName,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Lv.$level 伙伴',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primarySage,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          '经验值 (XP)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        // The right-hand side carries a total that grows with the
-                        // player, and it used to be an unbounded Text in a
-                        // spaceBetween Row: nothing could shrink, so a long total on
-                        // a narrow screen overflowed. A 360dp test found it; the
-                        // app's own data never did, because its totals are small.
-                        // Scaled down rather than ellipsised - a truncated XP total
-                        // is a wrong number.
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              '$currentLevelXp / $xpPerLevel XP (总计 $xp XP)',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    petName,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      shadows: _heroTextShadow,
                     ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      child: LinearProgressIndicator(
-                        value: xpRatio,
-                        minHeight: 8,
-                        backgroundColor: AppColors.primaryLight,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.primarySage,
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(
+                        'Lv.$level 伙伴',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFF3E6D2),
+                          shadows: _heroTextShadow,
                         ),
                       ),
+                      const Spacer(),
+                      // The level's own progress, which is what board 10 prints
+                      // beside the level ("320 / 500"). The card that used to sit
+                      // under the pet carried the same two numbers plus a total,
+                      // and the total is already on the 累计经验 tile below - so
+                      // the card is gone and the fraction is here, where the
+                      // board puts it.
+                      Text(
+                        '$currentLevelXp / $xpPerLevel',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFF3E6D2),
+                          shadows: _heroTextShadow,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: LinearProgressIndicator(
+                      value: xpRatio,
+                      minHeight: 6,
+                      backgroundColor: const Color(0x4DFFFFFF),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Colors.white,
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 12),
+              const CompanionAvatar(size: 160),
             ],
           ),
         ),

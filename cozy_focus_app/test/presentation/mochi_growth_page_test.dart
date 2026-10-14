@@ -156,9 +156,13 @@ void main() {
       // than quietly dropped from the list.
       expect(find.textContaining('正在陪伴你成长'), findsNothing);
 
-      // XP progress bar text
-      expect(find.text('经验值 (XP)'), findsOneWidget);
-      expect(find.text('45 / 100 XP (总计 245 XP)'), findsOneWidget);
+      // The level's own progress, which board 10 prints beside the level on the
+      // room itself. The card that used to sit under the pet carried the same
+      // two numbers plus a total, and the total is on the 累计经验 tile below -
+      // so the card is gone, and this is asserted where the board puts it. The
+      // card's own label is asserted absent rather than quietly dropped.
+      expect(find.text('45 / 100'), findsOneWidget);
+      expect(find.text('经验值 (XP)'), findsNothing);
 
       // Attribute cards. Three of them: design 10 annotates 只保留最关键的 3 项
       // 数据 and then names them. The fourth tile was 心情指数 and printed the
@@ -277,14 +281,17 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('0 / 100 XP (总计 0 XP)'), findsOneWidget);
+      expect(find.text('0 / 100'), findsOneWidget);
       expect(find.text('Lv.1'), findsOneWidget);
       expect(find.text('0 XP'), findsOneWidget);
       expect(find.text('0 分钟'), findsOneWidget);
       // The 心情指数 tile is gone (design 10 names three tiles, and the 幸福感
-      // card below shows this same number), so the tile text must be absent. The
-      // value itself is asserted on the card, two lines down.
-      expect(find.text('0 / 100'), findsNothing);
+      // card below shows this same number). It is asserted absent by its own
+      // label: this used to look for `0 / 100`, which was that tile's value at
+      // zero - and `0 / 100` is now a legitimate thing for the page to show, as
+      // the level's own progress on the room, so the old marker could no longer
+      // tell the tile from the header.
+      expect(find.text('心情指数'), findsNothing);
 
       await tester.scrollUntilVisible(find.text('0%'), 100);
       expect(find.text('0%'), findsOneWidget);
@@ -461,14 +468,14 @@ void main() {
       // because a truncated number is a wrong number.
       expect(find.text('12345 分钟'), findsOneWidget);
 
-      // And the XP line stays ONE line. A Flexible alone stops the overflow by
-      // letting the text wrap, which is why this assertion is here: the board
-      // draws that line whole, and a wrapped line makes the card grow. The test
-      // font is about 1.7x wider than a real one, so this is the case that
-      // wraps without a FittedBox. Two lines at fontSize 12 is roughly 29px.
-      final xpLine = tester.getSize(find.text('45 / 100 XP (总计 245 XP)'));
-      expect(xpLine.height, lessThan(20),
-          reason: 'the XP line must stay one line rather than wrap');
+      // And the level's progress line stays ONE line. It sits on the room beside
+      // the level, where board 10 draws it, and the room band has a fixed height
+      // - so a line that wrapped would push the pet out of the scene rather than
+      // merely growing a card.
+      final xpLine = tester.getSize(find.text('45 / 100'));
+      expect(xpLine.height, lessThan(24),
+          reason:
+              'the level progress line must stay one line rather than wrap');
 
       // And the three are still on one line at this width.
       final centres = ['当前等级', '累计经验', '陪伴专注']
