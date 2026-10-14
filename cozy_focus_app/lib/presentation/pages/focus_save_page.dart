@@ -147,7 +147,11 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
           icon: const Icon(Icons.close_rounded, semanticLabel: '关闭', size: 26),
           onPressed: _isSaving ? null : _handleClose,
         ),
-        title: const Text('保存本次记录'),
+        // No title. Board 06 has no page title here: the hero below is the
+        // headline, and a title bar saying 保存本次记录 above a screen whose
+        // first line is 太棒了！ names the mechanism over the moment. The close
+        // control stays, because the sheet still has to be dismissible.
+        title: null,
       ),
       body: SafeArea(
         child: Column(
@@ -159,49 +163,41 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Mochi Greeting Banner
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: const Row(
-                        children: [
-                          CompanionAvatar(
-                            visualStateOverride: PetVisualState.celebrate,
-                            size: 64,
-                            showStateBadge: false,
+                    // The hero, as board 06 draws it: the companion, then a large
+                    // 太棒了！, then one line under it - centred and unbordered.
+                    //
+                    // It was a small bordered card with a 64px avatar and the two
+                    // lines at 16/14pt, sitting under a page title that repeated
+                    // the job. The board gives this moment the top of the page and
+                    // no title at all, which is the point of the screen: the
+                    // session just ended and this is the reward for it.
+                    const Column(
+                      children: [
+                        CompanionAvatar(
+                          visualStateOverride: PetVisualState.celebrate,
+                          size: 104,
+                          showStateBadge: false,
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          '太棒了！',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
                           ),
-                          SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '太棒了！',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  '又完成一次专注！♡',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '你完成了一次专注 ✨',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Task Name Input
                     _buildSectionHeader('任务名称'),
