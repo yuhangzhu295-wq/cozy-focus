@@ -199,8 +199,14 @@ void main() {
     // The other half of the instrument. The landscape rows above only pass
     // because the scroll step brings mid-page content on stage, so if that step
     // ever stopped doing work the sweep would go green while reporting nothing.
-    // This pins the mechanism on the real screen that exposed it: at 800x360 the
-    // growth page's 成长属性 is built but sits below the fold.
+    // This pins the mechanism on a real screen: at 800x360 the growth page's
+    // sub-nav is built but sits below the fold.
+    //
+    // It used to be 成长属性 that played this part. Removing the growth page's
+    // header and moving its sub-nav to the bottom - board 10's layout - lifted
+    // 成长属性 into the first viewport, so it could no longer demonstrate
+    // anything about scrolling. The sub-nav is now the last sliver, which is a
+    // stronger case for the same mechanism.
     tester.view.physicalSize = const Size(800, 360);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -222,10 +228,10 @@ void main() {
     router.go('/growth');
     await settle(tester);
 
-    expect(find.text('成长属性', skipOffstage: false), findsWidgets,
-        reason: 'the growth page must build its stats section at all');
-    expect(find.text('成长属性'), findsNothing,
-        reason: 'at 360dp tall the section must start below the fold, or this '
+    expect(find.text('图鉴', skipOffstage: false), findsWidgets,
+        reason: 'the growth page must build its sub-nav at all');
+    expect(find.text('图鉴'), findsNothing,
+        reason: 'at 360dp tall the sub-nav must start below the fold, or this '
             'test is not exercising the scroll step');
 
     final target = verticalScrollable(tester);
@@ -236,7 +242,7 @@ void main() {
     for (var step = 0; step < 14 && !revealed; step++) {
       await tester.drag(target!, const Offset(0, -600), warnIfMissed: false);
       await settle(tester, frames: 4);
-      revealed = find.text('成长属性').evaluate().isNotEmpty;
+      revealed = find.text('图鉴').evaluate().isNotEmpty;
     }
     expect(revealed, isTrue,
         reason: 'scrolling must bring the section on stage; if this fails the '

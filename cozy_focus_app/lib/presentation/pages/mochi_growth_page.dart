@@ -74,14 +74,13 @@ class MochiGrowthPage extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
+        // No page header. Board 10 gives the top of this page to the room: the
+        // pet's identity is drawn on the scene, and the only chrome is the
+        // sub-nav, which the board puts at the BOTTOM. The app had a 成长 title
+        // and a 伙伴 chip in a band above the room, with the sub-nav directly
+        // under them - three rows of chrome before the page's own subject.
         SliverToBoxAdapter(
-          child: _buildHeader(context, companionName),
-        ),
-        const SliverToBoxAdapter(
-          child: GrowthSubNav(active: GrowthSection.companion),
-        ),
-        SliverToBoxAdapter(
-          child: _buildPetHero(companionName, progress),
+          child: _buildPetHero(context, companionName, progress),
         ),
         SliverToBoxAdapter(
           child: _buildGrowthStatsGrid(progress),
@@ -91,6 +90,10 @@ class MochiGrowthPage extends ConsumerWidget {
         ),
         SliverToBoxAdapter(
           child: _buildHappinessCard(progress),
+        ),
+        // The sub-nav closes the page, which is where board 10 draws it.
+        const SliverToBoxAdapter(
+          child: GrowthSubNav(active: GrowthSection.companion),
         ),
         const SliverToBoxAdapter(
           child: SizedBox(height: 24),
@@ -115,31 +118,7 @@ class MochiGrowthPage extends ConsumerWidget {
             ),
           ),
           const Spacer(),
-          TextButton.icon(
-            key: const Key('growth_companion_picker_button'),
-            onPressed: () => context.push('/companions'),
-            icon: const Icon(
-              Icons.pets_outlined,
-              size: 18,
-              color: AppColors.primaryDark,
-            ),
-            label: const Text(
-              '伙伴',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryDark,
-              ),
-            ),
-            style: TextButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                side: const BorderSide(color: AppColors.border),
-              ),
-            ),
-          ),
+          _CompanionPickerChip(onTap: () => context.push('/companions')),
         ],
       ),
     );
@@ -153,7 +132,8 @@ class MochiGrowthPage extends ConsumerWidget {
     Shadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 1)),
   ];
 
-  Widget _buildPetHero(String petName, PetProgress progress) {
+  Widget _buildPetHero(
+      BuildContext context, String petName, PetProgress progress) {
     final level = progress.level;
     final xp = progress.experiencePoints;
     const xpPerLevel = 100;
@@ -200,14 +180,30 @@ class MochiGrowthPage extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    petName,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      shadows: _heroTextShadow,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        petName,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          shadows: _heroTextShadow,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // The companion picker, beside the name.
+                      //
+                      // Board 10 draws its affordance there - a small mark right
+                      // after the pet's name, on the room - and the app's copy of
+                      // it used to be a 伙伴 chip in a header band above the room
+                      // that the board does not have. The route is real (it is
+                      // the only way to change companion), so the control stays;
+                      // it moves to where the board puts its affordance, and
+                      // keeps its label rather than becoming an unmarked glyph.
+                      _CompanionPickerChip(
+                          onTap: () => context.push('/companions')),
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Row(
@@ -667,5 +663,62 @@ class MochiGrowthPage extends ConsumerWidget {
 
   Widget _buildBottomNav(BuildContext context) {
     return const AppBottomNav(currentIndex: 2);
+  }
+}
+
+/// The companion picker, as a pill that sits beside the pet's name on the room.
+///
+/// Board 10 draws a small affordance immediately after the name, on the scene,
+/// and its page has no header band at all. The app's picker was a chip in a
+/// `成长` header above the room, which the board does not have; the control is
+/// real - it is the only route to changing companion - so it moved to the
+/// board's position rather than being removed.
+///
+/// It keeps its label. The board's mark is an unlabelled pencil, and copying
+/// that shape here would leave a glyph whose meaning is a guess.
+class _CompanionPickerChip extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _CompanionPickerChip({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '伙伴',
+      // The wrapper supplies the whole name, so it excludes what it wraps. Without
+      // this the label and the pill's own `Text` both reached the tree and the
+      // device read `伙伴\n伙伴` - the doubled announcement this project has had to
+      // fix more than once. `tools/find_doubled_semantics_labels.py` catches this
+      // shape: with the line removed it reports "label '伙伴' and '伙伴'".
+      excludeSemantics: true,
+      child: Material(
+        color: const Color(0x33FFFFFF),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: InkWell(
+          key: const Key('growth_companion_picker_button'),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.pets_outlined, size: 15, color: Colors.white),
+                SizedBox(width: 5),
+                Text(
+                  '伙伴',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

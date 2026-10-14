@@ -238,11 +238,23 @@ void main() {
       // finds two" - and worked around the duplication instead of removing it.
       // The destination is the same, so this covers the same thing through the
       // one control that offers it.
-      final buttonFinder = find.text('图鉴');
+      //
+      // The sub-nav is now the LAST thing on the page, which is where board 10
+      // draws it, so it starts below the fold - and `find.text` skips off-stage
+      // elements by default. Hence `skipOffstage: false` plus a scroll before the
+      // tap: a tap on an off-stage widget does not land.
+      final buttonFinder = find.text('图鉴', skipOffstage: false);
       expect(buttonFinder, findsOneWidget,
           reason: 'exactly one control should offer the collection');
 
-      await tester.tap(buttonFinder);
+      // Scroll the page to the bottom in steps until the pill is on stage.
+      // `scrollUntilVisible` did not get it there - the sub-nav is the last
+      // sliver and it needed more travel than that helper took.
+      for (var i = 0; i < 10 && find.text('图鉴').evaluate().isEmpty; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+        await tester.pump();
+      }
+      await tester.tap(find.text('图鉴'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
