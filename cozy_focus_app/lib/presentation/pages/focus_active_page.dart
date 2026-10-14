@@ -684,7 +684,11 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                                     Icons.arrow_back_rounded,
                                     semanticLabel: '返回',
                                   ),
-                                  color: AppColors.textPrimary,
+                                  // White with the rest of the header, for the
+                                  // same reason: board 04 draws it white on the
+                                  // room, and a dark glyph on the board's
+                                  // mid-tone room reads as a smudge.
+                                  color: Colors.white,
                                   tooltip: '返回',
                                   onPressed: () => context.pop(),
                                 ),
@@ -699,7 +703,13 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
+                                    // White, as board 04 draws it. These were
+                                    // `textPrimary` while the room was near-white
+                                    // and dark text was the only thing that read
+                                    // on it; against the board's mid-tone room
+                                    // they had to change with the room.
+                                    color: Colors.white,
+                                    shadows: _ringTextShadow,
                                   ),
                                 ),
                                 const Spacer(),
@@ -716,8 +726,9 @@ class _FocusActivePageState extends ConsumerState<FocusActivePage>
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 13,
-                              color: AppColors.textPrimary,
+                              color: Color(0xFFF3E6D2),
                               height: 1.5,
+                              shadows: _ringTextShadow,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -1086,21 +1097,38 @@ class FocusTimerRing extends StatelessWidget {
               painter: _FocusRingPainter(
                 remaining: remaining,
                 track: AppColors.primaryLight,
-                arc: paused ? AppColors.textTertiary : AppColors.primarySage,
+                // Board 04's arc is a LIGHT green - measured #BEDAA3, with a
+                // near-white highlight along it - and its track is near-white
+                // (#F3F6EB). The app drew the arc in `primarySage` (#44714B), a
+                // dark green that read correctly against the near-white room it
+                // was chosen for and reads as a heavy outline against the
+                // board's mid-tone room. The paused colour is lightened for the
+                // same reason.
+                arc: paused ? const Color(0xFFCFCFC6) : const Color(0xFFBEDAA3),
                 stroke: _stroke,
               ),
             ),
-            // The sprout sits on the ring's top, as the design draws it.
-            const Positioned(
-              top: -2,
-              child: CustomPaint(
-                size: Size(22, 22),
-                painter: _SproutPainter(color: AppColors.primarySage),
-              ),
-            ),
+            // Board 04 draws the sprout INSIDE the ring, above the time, and
+            // reads the time and the state under it in white. All three were
+            // wrong here in a way that only became visible once the room was
+            // retuned to the board's tone:
+            //
+            //   * the sprout sat on the ring's own edge at 22px, where it read as
+            //     a stray mark on the arc rather than as the design's motif;
+            //   * the time was `primaryDark` and the state `textSecondary`, both
+            //     dark, and both were drawn against a near-white room where that
+            //     read fine. Against the board's mid-tone room they nearly vanish.
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const CustomPaint(
+                  size: Size(30, 30),
+                  // Board 04's sprout is a fresh mid green - measured #91B957 -
+                  // and it reads on the room, so it keeps its own colour rather
+                  // than being forced to white like the text beside it.
+                  painter: _SproutPainter(color: Color(0xFF91B957)),
+                ),
+                const SizedBox(height: 4),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
@@ -1110,8 +1138,9 @@ class FocusTimerRing extends StatelessWidget {
                       // proportion to it at every size.
                       fontSize: 46 * (diameter / _maxDiameter),
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primaryDark,
+                      color: Colors.white,
                       letterSpacing: 2,
+                      shadows: _ringTextShadow,
                     ),
                   ),
                 ),
@@ -1120,7 +1149,8 @@ class FocusTimerRing extends StatelessWidget {
                   statusLabel,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: Color(0xFFF3E6D2),
+                    shadows: _ringTextShadow,
                   ),
                 ),
               ],
@@ -1188,6 +1218,14 @@ class _FocusRingPainter extends CustomPainter {
 }
 
 /// A stem with two leaves: the app's sprout motif, at ring scale.
+/// A soft shadow under the ring's time and state.
+///
+/// The ring sits on the room, and the room is not one flat tone, so white text
+/// on it needs the same help the home page's greeting gets.
+const List<Shadow> _ringTextShadow = [
+  Shadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 1)),
+];
+
 class _SproutPainter extends CustomPainter {
   const _SproutPainter({required this.color});
 
