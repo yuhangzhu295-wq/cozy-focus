@@ -15,6 +15,7 @@ import '../controllers/records_controller.dart';
 import '../theme/app_theme.dart';
 import '../companion/companion_avatar.dart';
 import '../widgets/app_bottom_nav.dart';
+import '../widgets/statistics_view.dart';
 
 /// Screen 05: Records Hub (V4.1)
 class ProgressOverviewPage extends ConsumerStatefulWidget {
@@ -236,7 +237,7 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
       case 2:
         return _buildCalendarTab(state);
       case 3:
-        return _buildReportsTab();
+        return _buildReportsTab(state);
       default:
         return _buildTodayTab(state);
     }
@@ -739,8 +740,16 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
   }
 
   // ===== Reports tab =====
-  Widget _buildReportsTab() {
+  Widget _buildReportsTab(RecordsState state) {
     return ListView(padding: const EdgeInsets.all(16), children: [
+      // Board 07's own content: a 日 / 周 / 月 range switch over 专注总时长,
+      // 专注次数, 平均时长, 每日专注时长 and 任务专注时长分布.
+      //
+      // These sections used to live on the today page as a third tab (统计). Board
+      // 03's switch has two views, and board 07 - this page - is where the
+      // statistics belong, so the view moved here rather than being deleted.
+      StatisticsView(day: state.selectedCalendarDate),
+      const SizedBox(height: 20),
       _reportEntry(Icons.calendar_view_week_rounded, '周报', '过去 7 天的专注概览',
           () => context.push('/reports/weekly')),
       const SizedBox(height: 12),

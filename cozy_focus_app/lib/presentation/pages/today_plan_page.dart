@@ -10,7 +10,6 @@ import '../controllers/analytics_controller.dart';
 import '../controllers/timeline_controller.dart';
 import '../controllers/today_plan_controller.dart';
 import '../theme/app_theme.dart';
-import '../widgets/statistics_view.dart';
 import '../widgets/task_category_chip.dart';
 import '../widgets/task_duration.dart';
 
@@ -136,8 +135,6 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
                           day: state.day,
                           onStopRunning: _stopRunningSession,
                         )
-                      else if (_view == _DayView.statistics)
-                        StatisticsView(day: state.day)
                       else ...[
                         if (state.next case final PlannedTask next) ...[
                           _NextTaskCard(
@@ -201,7 +198,7 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
 
   /// Reloads everything the screen shows.
   ///
-  /// The plan has a controller to reload; the timeline and the statistics are
+  /// The plan has a controller to reload; the timeline is
   /// projections, so they are invalidated and rebuilt from the tables. Pull to
   /// refresh has to mean all three, or a user who pulled because a number looked
   /// wrong would watch the number not change.
@@ -328,15 +325,15 @@ String _dayLabel(DateTime day) {
 String _timeLabel(DateTime at) =>
     '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}';
 
-/// 列表 / 时间线, the two views of one day that board 03 draws, plus 统计.
+/// 列表 / 时间线 - the two views of one day that board 03 draws, and only those.
 ///
-/// This comment used to say "the design's three views of one day", which is not
-/// what board 03 shows: its switch is 列表 / 时间线. 统计 is the app's own addition
-/// - a day's totals and its distribution - and it is on no board. It is recorded
-/// as an extra rather than removed, because dropping a built feature is the
-/// owner's call and not a board detail; the first view's *name* was a plain
-/// mismatch, and that is fixed.
-enum _DayView { plan, timeline, statistics }
+/// 统计 used to be a third tab here, and an earlier note on this enum recorded it
+/// as "the app's own addition, on no board". That was wrong: those sections -
+/// 专注总时长 / 专注次数 / 平均时长, 每日专注时长, 任务专注时长分布 - are **board
+/// 07**, which is the 记录 page. So the view moved there rather than being
+/// dropped, and both boards now match: this page is 列表 / 时间线, and 记录 shows
+/// the statistics where the board puts them.
+enum _DayView { plan, timeline }
 
 class _Segments extends StatelessWidget {
   final _DayView view;
@@ -347,13 +344,11 @@ class _Segments extends StatelessWidget {
   static const Map<_DayView, String> _labels = {
     _DayView.plan: '列表',
     _DayView.timeline: '时间线',
-    _DayView.statistics: '统计',
   };
 
   static const Map<_DayView, String> _keys = {
     _DayView.plan: 'plan_view_list',
     _DayView.timeline: 'plan_view_timeline',
-    _DayView.statistics: 'plan_view_stats',
   };
 
   @override

@@ -13,7 +13,7 @@ import 'package:cozy_focus_app/domain/models/task.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/controllers/analytics_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
-import 'package:cozy_focus_app/presentation/pages/today_plan_page.dart';
+import 'package:cozy_focus_app/presentation/pages/progress_overview_page.dart';
 import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 
 /// P7 — the statistics view, against a real database.
@@ -54,11 +54,16 @@ void main() {
 
   Widget app(ProviderContainer c) {
     final router = GoRouter(
-      initialLocation: '/records/today',
+      initialLocation: '/records',
       routes: [
         GoRoute(
-          path: '/records/today',
-          builder: (context, state) => const TodayPlanPage(),
+          path: '/records',
+          // The statistics moved from the today page's 统计 tab to this page's
+          // 报告 tab: board 03's switch has two views (列表 / 时间线), and these
+          // sections are **board 07**, which is the records page. The assertions
+          // below are unchanged - they were always about the figures coming from
+          // the records in the window, and that is still what they check.
+          builder: (context, state) => const ProgressOverviewPage(),
         ),
         GoRoute(
           path: '/records/tasks',
@@ -95,7 +100,8 @@ void main() {
     await tester.pumpWidget(app(c));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 80));
-    await tester.tap(find.byKey(const ValueKey('plan_view_stats')));
+    // Open the 报告 tab, which is where the statistics now live.
+    await tester.tap(find.text('报告'));
     await settle(tester);
   }
 
