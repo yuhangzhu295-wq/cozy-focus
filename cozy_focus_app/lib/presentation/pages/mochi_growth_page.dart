@@ -89,7 +89,7 @@ class MochiGrowthPage extends ConsumerWidget {
           child: _buildRecentUnlocks(context, ref),
         ),
         SliverToBoxAdapter(
-          child: _buildHappinessCard(progress),
+          child: _buildHappinessCard(context, ref, progress),
         ),
         // The sub-nav closes the page, which is where board 10 draws it.
         const SliverToBoxAdapter(
@@ -471,9 +471,15 @@ class MochiGrowthPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildHappinessCard(PetProgress progress) {
+  Widget _buildHappinessCard(
+      BuildContext context, WidgetRef ref, PetProgress progress) {
     final happiness = progress.happinessScore;
     final happinessRatio = (happiness / 100.0).clamp(0.0, 1.0);
+    // The selected companion's own name, not a species word. Six other places in
+    // the app already read this provider; this card was the one that had 小狗
+    // typed into the string, so switching to the cat kept saying "小狗" on a page
+    // whose own header had already changed to 小猫.
+    final companionName = ref.watch(companionDisplayNameProvider);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -530,9 +536,9 @@ class MochiGrowthPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            '保持专注与陪伴，让小狗保持快乐满满的状态吧！',
-            style: TextStyle(
+          Text(
+            '保持专注与陪伴，让$companionName保持快乐满满的状态吧！',
+            style: const TextStyle(
               fontSize: 12,
               color: AppColors.textTertiary,
             ),
