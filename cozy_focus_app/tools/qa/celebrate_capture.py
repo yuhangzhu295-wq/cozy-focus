@@ -144,10 +144,54 @@ def tap(x, y, settle=3):
 
 
 def tap_label(needle, settle=3, xml=None):
-    for x, y, label in nodes(xml if xml is not None else dump()):
-        if needle in label:
+    """Tap the node whose label contains `needle`, preferring a clickable one.
+
+    ## Why clickable first
+
+    Container nodes carry the same text as the control inside them - the
+    acquisition sheet's whole card reads `... 开始制作 ... 制作工坊 ... 需要专注
+    30 分钟 ... 材料需求 ...` in one content-desc, and the real button is a
+    separate node whose label is just `开始制作`. Taking the first text match
+    taps the card, which is not clickable, and nothing happens - which reads
+    exactly like a dead button. The same trap `pet_box` documents for the
+    companion: a wrapper that also carries the subject's description.
+
+    Falls back to any matching node only when nothing is clickable, so a label
+    that genuinely has no clickable target still resolves rather than silently
+    failing.
+    """
+    tree = xml if xml is not None else dump()
+    matches = nodes(tree)
+    hit = None
+    for x, y, label in matches:
+        if needle not in label:
+            continue
+        if _is_clickable(tree, x, y, label):
             tap(x, y, settle)
             return True
+        if hit is None:
+            hit = (x, y)
+    if hit is not None:
+        tap(hit[0], hit[1], settle)
+        return True
+    return False
+
+
+def _is_clickable(xml, cx, cy, label):
+    """Whether the node at (cx, cy) with this label is itself clickable."""
+    for m in re.finditer(r"<node[^>]*?/?>", xml):
+        s = m.group(0)
+        b = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', s)
+        d = re.search(r'content-desc="([^"]*)"', s)
+        if not (b and d):
+            continue
+        x1, y1, x2, y2 = (int(g) for g in b.groups())
+        if (x1 + x2) // 2 != cx or (y1 + y2) // 2 != cy:
+            continue
+        if label not in d.group(1):
+            continue
+        c = re.search(r'clickable="([^"]*)"', s)
+        return c is not None and c.group(1) == "true"
     return False
 
 
