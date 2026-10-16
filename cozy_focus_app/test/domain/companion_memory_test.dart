@@ -65,6 +65,10 @@ void main() {
   const petId = 'pet-p9';
   final settledAt = DateTime(2026, 6, 1, 9);
 
+  /// Under the long-session threshold, so a test about another rule is not
+  /// silently also testing this one.
+  const shortSession = 25 * 60;
+
   // ── 1. The pure decision ────────────────────────────────────────────────
   group('P9 the decision needs no invented number', () {
     test('the first settlement earns first_focus, the second does not', () {
@@ -74,6 +78,7 @@ void main() {
         previousXp: 0,
         newXp: 0,
         at: settledAt,
+        sessionSeconds: shortSession,
       );
       expect(first.map((m) => m.memoryType), [PetMemoryType.firstFocus]);
 
@@ -83,6 +88,7 @@ void main() {
         previousXp: 0,
         newXp: 0,
         at: settledAt,
+        sessionSeconds: shortSession,
       );
       expect(second, isEmpty);
     });
@@ -97,6 +103,7 @@ void main() {
         previousXp: previousXp,
         newXp: newXp,
         at: settledAt,
+        sessionSeconds: shortSession,
       );
 
       expect(earned.map((m) => m.memoryType), [PetMemoryType.levelUp]);
@@ -110,6 +117,7 @@ void main() {
         previousXp: 10,
         newXp: 35,
         at: settledAt,
+        sessionSeconds: shortSession,
       );
       expect(earned, isEmpty);
     });
@@ -121,9 +129,64 @@ void main() {
             previousXp: 0,
             newXp: 0,
             at: settledAt,
+            sessionSeconds: shortSession,
           ).single;
 
       expect(only(1).id, only(1).id);
+    });
+  });
+
+  // ── 1b. D4 — the one rule that did need a number ────────────────────────
+  group('D4 a long session is remembered, and the threshold is 50 minutes', () {
+    List<String> typesFor(int seconds) => CompanionMemory.earnedBy(
+          petId: petId,
+          settledCount: 5, // not the first, so first_focus stays out of the way
+          previousXp: 10, // no level crossing either
+          newXp: 35,
+          at: settledAt,
+          sessionSeconds: seconds,
+        ).map((m) => m.memoryType).toList();
+
+    test('the approved threshold is 50 minutes, stated once', () {
+      expect(CompanionMemory.longSessionThreshold, 50 * 60);
+    });
+
+    test('49:59 is not long enough', () {
+      expect(typesFor(50 * 60 - 1), isNot(contains(PetMemoryType.longSession)));
+    });
+
+    test('exactly 50:00 is', () {
+      // The boundary is inclusive: "达到 50 分钟" means reaching it counts.
+      expect(typesFor(50 * 60), contains(PetMemoryType.longSession));
+    });
+
+    test('a much longer session is also remembered, and says its own length',
+        () {
+      final earned = CompanionMemory.earnedBy(
+        petId: petId,
+        settledCount: 5,
+        previousXp: 10,
+        newXp: 35,
+        at: settledAt,
+        sessionSeconds: 90 * 60,
+      );
+      final long =
+          earned.firstWhere((m) => m.memoryType == PetMemoryType.longSession);
+      // The content names the session, not the threshold — a 90-minute session
+      // must not read as "50 minutes".
+      expect(long.content, contains('90'));
+      expect(long.content, isNot(contains('50')));
+    });
+
+    test('the threshold is not reachable by a session that did not run', () {
+      // Zero seconds is what an unstarted or instantly-ended session settles as.
+      expect(typesFor(0), isEmpty);
+    });
+
+    test('long_session is inside the closed set, so nothing invented it', () {
+      for (final t in typesFor(60 * 60)) {
+        expect(PetMemoryType.all, contains(t));
+      }
     });
   });
 
@@ -287,9 +350,16 @@ void main() {
   // Drift warns when two AppDatabase instances coexist, and the warning is
   // legitimate even when the executors are separate.
   group('P9 both settlement paths agree', () {
-    Future<List<String>> rememberedTypes({required bool atomic}) async {
+    Future<List<String>> rememberedTypes({
+      required bool atomic,
+      int seconds = 25 * 60,
+    }) async {
       final database = AppDatabase.forTesting(NativeDatabase.memory());
       final repo = DriftPetRepository(database.petDao);
+      // Derived from the duration the same way RewardService derives them, so
+      // the two paths are handed identical facts rather than two sets that
+      // happen to match at 25 minutes.
+      final minutes = seconds ~/ 60;
       try {
         await repo.savePet(Pet(
           id: petId,
@@ -314,11 +384,11 @@ void main() {
             entry: RewardLedger(
               sessionId: 'p1',
               userId: userId,
-              focusCoinsEarned: 50,
-              experienceEarned: 125,
+              focusCoinsEarned: minutes * 2,
+              experienceEarned: minutes * 5,
               settledAt: settledAt,
             ),
-            addedFocusSeconds: 25 * 60,
+            addedFocusSeconds: seconds,
             now: settledAt,
           );
         } else {
@@ -326,7 +396,7 @@ void main() {
             ledgerRepo: DriftRewardLedgerRepository(database.rewardLedgerDao),
             petRepo: repo,
             clock: _FixedClock(settledAt),
-          ).settle(_session(id: 'p1', userId: userId, elapsedSeconds: 25 * 60));
+          ).settle(_session(id: 'p1', userId: userId, elapsedSeconds: seconds));
         }
 
         final types = (await repo.findMemories(petId))
@@ -345,6 +415,34 @@ void main() {
 
       expect(atomic, isNotEmpty);
       expect(sequential, atomic);
+    });
+
+    test('D4 a 50-minute session reaches the database on both paths', () async {
+      // The rule is only real if the *real* settlement paths write it. The pure
+      // tests above would pass even if neither call site passed the duration.
+      for (final atomic in const [true, false]) {
+        final types = await rememberedTypes(atomic: atomic, seconds: 50 * 60);
+        expect(types, contains(PetMemoryType.longSession),
+            reason: 'the ${atomic ? "atomic" : "sequential"} path did not '
+                'record the long session');
+      }
+    });
+
+    test('D4 a 25-minute session records no long_session on either path',
+        () async {
+      for (final atomic in const [true, false]) {
+        final types = await rememberedTypes(atomic: atomic);
+        expect(types, isNot(contains(PetMemoryType.longSession)),
+            reason: 'the ${atomic ? "atomic" : "sequential"} path invented a '
+                'long session from a short one');
+      }
+    });
+
+    test('D4 and the two paths still agree on a long session', () async {
+      final atomic = await rememberedTypes(atomic: true, seconds: 55 * 60);
+      final sequential = await rememberedTypes(atomic: false, seconds: 55 * 60);
+      expect(sequential, atomic);
+      expect(atomic, contains(PetMemoryType.longSession));
     });
   });
 }

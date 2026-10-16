@@ -50,7 +50,10 @@ abstract final class FurnitureCatalog {
   static const FurnitureEntity _sofa = FurnitureEntity(
     id: 'sofa',
     type: FurnitureType.seating,
-    label: '沙发',
+    // The craft recipe's own name, per D3: one object, one user-facing name, and
+    // the recipe is authoritative. This said 沙发 while the recipe said 温馨沙发,
+    // so the same sofa was called two different things depending on the screen.
+    label: '温馨沙发',
     purpose: '累了就窝在这里，慢慢恢复精神',
     interactionPoints: ['seat'],
     actions: [
@@ -101,7 +104,8 @@ abstract final class FurnitureCatalog {
   static const FurnitureEntity _desk = FurnitureEntity(
     id: 'desk',
     type: FurnitureType.workSurface,
-    label: '书桌',
+    // The recipe's name, for the same reason as the sofa above.
+    label: '窗边书桌',
     purpose: '专注的时候，在这里陪你一起工作',
     interactionPoints: ['work'],
     actions: [

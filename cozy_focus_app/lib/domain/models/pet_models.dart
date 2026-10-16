@@ -78,8 +78,16 @@ abstract final class PetMemoryType {
   /// a number chosen here.
   static const String levelUp = 'level_up';
 
+  /// A single focus session that ran long enough to be worth recalling.
+  ///
+  /// The threshold is a product decision (D4, 50 minutes) rather than a derived
+  /// fact — unlike the other two, this one needed a number, and it now has an
+  /// approved one. It lives on `CompanionMemory.longSessionThreshold` beside the
+  /// only rule that reads it, so the constant and its consumer cannot drift.
+  static const String longSession = 'long_session';
+
   /// Every type the application is allowed to write.
   ///
   /// Used by tests to assert that nothing invents a type outside this list.
-  static const Set<String> all = {firstFocus, levelUp};
+  static const Set<String> all = {firstFocus, levelUp, longSession};
 }

@@ -109,6 +109,10 @@ class SettlementDao extends DatabaseAccessor<AppDatabase>
             previousXp: progress.experiencePoints,
             newXp: newXp,
             now: now,
+            // The session's own length: the fact the long-session rule compares
+            // against its threshold. Passed rather than re-derived, so the memory
+            // cannot disagree with the coins and XP awarded just above.
+            sessionSeconds: addedFocusSeconds,
           );
         }
       }
@@ -179,6 +183,7 @@ class SettlementDao extends DatabaseAccessor<AppDatabase>
     required int previousXp,
     required int newXp,
     required DateTime now,
+    required int sessionSeconds,
   }) async {
     final settledCount = await (selectOnly(rewardLedgerTable)
           ..addColumns([rewardLedgerTable.sessionId.count()])
@@ -192,6 +197,7 @@ class SettlementDao extends DatabaseAccessor<AppDatabase>
       previousXp: previousXp,
       newXp: newXp,
       at: now,
+      sessionSeconds: sessionSeconds,
     );
 
     for (final memory in memories) {

@@ -21,6 +21,18 @@ import '../models/pet_models.dart';
 /// rules testable without a database and keeps the writing where the
 /// transaction is.
 abstract final class CompanionMemory {
+  /// How long one focus session has to run to be remembered.
+  ///
+  /// **A product decision, not a derived number** (D4, owner-approved: 50
+  /// minutes). The other two rules needed no threshold — "the first" is the first
+  /// row, and the level rule is the existing curve — which is why `long_session`
+  /// stayed unshipped while those two shipped. It now has one.
+  ///
+  /// It measures *sustained focus*: the seconds the session actually ran, which
+  /// is the same number settlement uses to award coins and XP. So a memory can
+  /// never describe a session the ledger disagrees with.
+  static const int longSessionThreshold = 50 * 60;
+
   /// The memories earned by one settlement.
   ///
   /// [settledCount] is the user's total settled sessions **including** the one
@@ -30,12 +42,16 @@ abstract final class CompanionMemory {
   /// A level rise is detected by comparing [GrowthLevelCurve.levelForXp] before
   /// and after, so the threshold is the existing curve rather than a constant
   /// invented here.
+  ///
+  /// [sessionSeconds] is how long the session being settled actually ran, which
+  /// is the fact [longSessionThreshold] is compared against.
   static List<PetMemory> earnedBy({
     required String petId,
     required int settledCount,
     required int previousXp,
     required int newXp,
     required DateTime at,
+    required int sessionSeconds,
   }) {
     final memories = <PetMemory>[];
 
@@ -57,6 +73,18 @@ abstract final class CompanionMemory {
         petId: petId,
         memoryType: PetMemoryType.levelUp,
         content: '成长到 Lv.$newLevel',
+        happenedAt: at,
+      ));
+    }
+
+    // A long session. The content names the actual minutes rather than the
+    // threshold, so a 90-minute session does not read as "50 minutes".
+    if (sessionSeconds >= longSessionThreshold) {
+      memories.add(PetMemory(
+        id: _idFor(petId, PetMemoryType.longSession, at),
+        petId: petId,
+        memoryType: PetMemoryType.longSession,
+        content: '陪你专注了 ${sessionSeconds ~/ 60} 分钟',
         happenedAt: at,
       ));
     }

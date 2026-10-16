@@ -120,7 +120,7 @@ void main() {
       expect(find.text('家具'), findsOneWidget);
       expect(find.text('生活'), findsOneWidget);
       expect(find.text('特别'), findsOneWidget);
-      expect(find.text('温馨布艺沙发'), findsOneWidget);
+      expect(find.text('温馨沙发'), findsOneWidget);
       expect(find.text('暂无宠物陪伴，前往成长页领养宠物伙伴吧！'), findsOneWidget);
       // The summary card reports the owned/total fraction against the
       // *obtainable* catalogue (8 of the 10 entries; two are preview-only and
@@ -144,7 +144,7 @@ void main() {
       expect(find.bySemanticsLabel(RegExp('插画')), findsNothing,
           reason:
               'every illustration here sits beside the name it would repeat');
-      expect(find.bySemanticsLabel(RegExp('温馨布艺沙发')), findsOneWidget,
+      expect(find.bySemanticsLabel(RegExp('温馨沙发')), findsOneWidget,
           reason: 'the item is still named by its own text');
 
       handle.dispose();

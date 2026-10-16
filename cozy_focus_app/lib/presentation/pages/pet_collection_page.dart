@@ -55,10 +55,22 @@ class CollectionCatalogItem {
 /// Bounded catalog of items displayed in the collection.
 /// Item IDs match repository-backed InventoryItem IDs for craft items,
 /// ensuring truthful verification of ownership (quantity > 0).
+///
+/// ## Why the names are the recipes' names
+///
+/// D3: one object has one user-facing name, and the craft recipe is
+/// authoritative. These entries used to carry their own richer names — 温馨布艺沙发
+/// here against 温馨沙发 in the recipe — so the same sofa was called two things
+/// depending on which screen you were looking at. Seven of the eight
+/// recipe-backed items disagreed.
+///
+/// The descriptions keep their own voice; only the name had to become single.
+/// `furniture_name_agreement_test.dart` reads all three surfaces and fails if any
+/// of them drifts again.
 const List<CollectionCatalogItem> kCollectionCatalog = [
   CollectionCatalogItem(
     id: 'sofa',
-    name: '温馨布艺沙发',
+    name: '温馨沙发',
     category: '家具',
     icon: Icons.chair_rounded,
     description: '柔软舒适的双人布艺沙发，适合休息放松。',
@@ -72,42 +84,42 @@ const List<CollectionCatalogItem> kCollectionCatalog = [
   ),
   CollectionCatalogItem(
     id: 'bookshelf',
-    name: '简约书架',
+    name: '书架',
     category: '家具',
     icon: Icons.menu_book_rounded,
     description: '结实耐用的原木书架，收纳专注时阅读的书籍。',
   ),
   CollectionCatalogItem(
     id: 'bed',
-    name: '治愈小床',
+    name: '小床',
     category: '家具',
     icon: Icons.bed_rounded,
     description: '松软温暖的单人床，伴你度过甜美夜晚。',
   ),
   CollectionCatalogItem(
     id: 'rug',
-    name: '编织地毯',
+    name: '地毯',
     category: '生活',
     icon: Icons.crop_square_rounded,
     description: '手工编织的纯羊毛小地毯，保暖又防滑。',
   ),
   CollectionCatalogItem(
     id: 'lamp',
-    name: '暖光台灯',
+    name: '落地灯',
     category: '生活',
     icon: Icons.light_rounded,
     description: '温暖柔和的暖黄台灯，照亮专注时光。',
   ),
   CollectionCatalogItem(
     id: 'cabinet',
-    name: '原木收纳矮柜',
+    name: '收纳柜',
     category: '家具',
     icon: Icons.kitchen_rounded,
     description: '精巧的储物柜，让小屋井井有条。',
   ),
   CollectionCatalogItem(
     id: 'desk',
-    name: '专注写字台',
+    name: '窗边书桌',
     category: '家具',
     icon: Icons.desk_rounded,
     description: '陪伴每一次深度心流的木质书桌。',

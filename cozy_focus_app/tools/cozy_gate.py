@@ -311,12 +311,59 @@ def gate_device_matrix():
 
 
 def gate_product_decisions():
+    """Reads the decision record instead of reciting it.
+
+    This gate used to repeat the sentence "P25 records 6
+    PRODUCT_DECISION_REQUIRED" as a literal. That is the same fault
+    `gate_behavior_authority` documents just below: a gate that recites a finding
+    it never re-reads cannot notice the day the finding stops being true. It went
+    stale the moment the owner closed the six decisions.
+
+    So it parses the status block out of `P25_PRODUCT_DECISION_CLOSURE.md`. Zero
+    open decisions is a PASS; any open decision is DEFERRED with the count,
+    because an open product decision is a standing owner choice rather than a
+    failure of the code.
+    """
+    path = os.path.join(APP, "outputs", "ai_handoff",
+                        "P25_PRODUCT_DECISION_CLOSURE.md")
+    if not os.path.exists(path):
+        return FAIL, (
+            "P25_PRODUCT_DECISION_CLOSURE.md is missing, so this gate cannot "
+            "read what is open. A gate whose input is gone must say so rather "
+            "than repeat the last number it remembers.")
+
+    with open(path, encoding="utf-8") as fh:
+        text = fh.read()
+
+    status = re.search(r"P25_PRODUCT_DECISIONS:\s*(\w+)", text)
+    open_count = re.search(r"PRODUCT_DECISION_REQUIRED:\s*(\d+)", text)
+    deferred = re.search(r"^DEFERRED:\s*(\d+)", text, re.M)
+    blocked = re.search(r"^BLOCKED_EXTERNAL:\s*(\d+)", text, re.M)
+
+    if not status or not open_count:
+        return FAIL, (
+            "P25 has no readable status block (it needs P25_PRODUCT_DECISIONS "
+            "and PRODUCT_DECISION_REQUIRED lines), so this gate has nothing to "
+            "decide from.")
+
+    state = status.group(1)
+    n = int(open_count.group(1))
+    extra = (f" {deferred.group(1)} DEFERRED and {blocked.group(1)} "
+             f"BLOCKED_EXTERNAL remain in the same file."
+             if deferred and blocked else "")
+
+    if n == 0:
+        return PASS, (
+            f"P25 reads {state} with 0 PRODUCT_DECISION_REQUIRED: every owner "
+            f"decision is made. Four of the six needed no code change - the code "
+            f"already behaved as decided - and two did, D3 (furniture names) and "
+            f"D4 (the long-session memory). Read from the document, not "
+            f"recited.{extra}")
+
     return DEFERRED, (
-        "P25 records 6 PRODUCT_DECISION_REQUIRED (D1-D4, D6, D7), 6 DEFERRED "
-        "and 4 BLOCKED_EXTERNAL. D5 was decided by the owner - tapping "
-        "furniture chooses the action - and is implemented; see "
-        "BEHAVIOR_AUTHORITY, which now measures 1. The remaining six are "
-        "product choices, and none was defaulted on the owner's behalf.")
+        f"P25 reads {state} with {n} PRODUCT_DECISION_REQUIRED still open. They "
+        f"are product choices and none was defaulted on the owner's behalf."
+        f"{extra}")
 
 
 def gate_behavior_authority():

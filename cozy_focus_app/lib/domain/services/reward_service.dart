@@ -103,6 +103,9 @@ class RewardService {
           previousXp: progress.experiencePoints,
           newXp: newXp,
           at: now,
+          // The same fact the atomic path passes, from the same session, so both
+          // paths agree about which sessions were long ones.
+          sessionSeconds: session.elapsedSeconds,
         );
         for (final memory in memories) {
           await _petRepo.addMemory(memory);

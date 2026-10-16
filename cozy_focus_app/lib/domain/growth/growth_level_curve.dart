@@ -1,6 +1,14 @@
 /// Level curve — the single, centralised place where XP becomes a level.
 ///
-/// ## Status: TEMPORARY DEFAULT MAPPING (documented, not silently invented)
+/// ## Status: APPROVED FOR V1 (D6)
+///
+/// This was a **chosen default**, recorded as temporary because no contract
+/// specified a curve. The owner has now approved it as the V1 rule: 100 XP per
+/// level, cap 30, and **existing levels and cumulative XP are not reset** — the
+/// curve is applied to what is already stored, so no install loses progress.
+///
+/// The history that made the default necessary is worth keeping, because it is
+/// why `level` is derived rather than incremented:
 ///
 /// `PetProgress.level` shipped as a **dead field**: it was written back
 /// unchanged by both settlement paths, so it stayed at its seeded value of `1`
@@ -10,8 +18,7 @@
 /// cap, or growth stages. The searches that establish this are recorded in
 /// `MOCHI_GROWTH_STAGE0_AUDIT.md` §A.
 ///
-/// The curve below is therefore a **chosen default**, not a recovered rule. It
-/// is deliberately the *least surprising* option available:
+/// The shape was chosen as the *least surprising* option available:
 ///
 /// - `100` XP per level is the convention the UI already assumes. Two pages
 ///   already draw a within-level progress bar as `experiencePoints % 100`
@@ -21,9 +28,9 @@
 ///   while making `level` truthful for the first time.
 /// - `maxLevel` exists so the curve is total and testable rather than unbounded.
 ///
-/// It lives here, and only here, so that replacing it with a real economy is a
-/// one-file change. If the owner later specifies a curve, change [_xpPerLevel]
-/// or [_xpForLevelTable] and every consumer follows.
+/// It lives here, and only here, so a later change to the economy is a
+/// one-file change. Change [_xpPerLevel] or [_xpForLevelTable] and every
+/// consumer follows.
 ///
 /// This class computes **nothing else**: it does not award XP, does not write
 /// to the database, and does not know about rewards. `RewardService` remains the

@@ -248,7 +248,7 @@ void main() {
 
       // The name comes from the collection catalog, so the announcement cannot
       // name something the collection does not contain.
-      expect(find.text('新收藏：治愈小床！'), findsOneWidget);
+      expect(find.text('新收藏：小床！'), findsOneWidget);
     });
 
     testWidgets('the celebration is a one-shot and clears itself',
@@ -352,7 +352,7 @@ void main() {
 
       await pumpPage(tester);
       expect(overrideOn(tester), PetVisualState.celebrate);
-      expect(find.text('新收藏：治愈小床！'), findsOneWidget);
+      expect(find.text('新收藏：小床！'), findsOneWidget);
     });
 
     testWidgets('returning with nothing new stays quiet', (tester) async {

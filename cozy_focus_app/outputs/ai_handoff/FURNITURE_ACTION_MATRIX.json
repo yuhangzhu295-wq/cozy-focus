@@ -17,7 +17,7 @@
   "actions": [
     {
       "itemId": "sofa",
-      "itemLabel": "沙发",
+      "itemLabel": "温馨沙发",
       "furnitureType": "seating",
       "purpose": "累了就窝在这里，慢慢恢复精神",
       "interactionPoints": [
@@ -64,7 +64,7 @@
     },
     {
       "itemId": "sofa",
-      "itemLabel": "沙发",
+      "itemLabel": "温馨沙发",
       "furnitureType": "seating",
       "purpose": "累了就窝在这里，慢慢恢复精神",
       "interactionPoints": [
@@ -111,7 +111,7 @@
     },
     {
       "itemId": "sofa",
-      "itemLabel": "沙发",
+      "itemLabel": "温馨沙发",
       "furnitureType": "seating",
       "purpose": "累了就窝在这里，慢慢恢复精神",
       "interactionPoints": [
@@ -156,7 +156,7 @@
     },
     {
       "itemId": "desk",
-      "itemLabel": "书桌",
+      "itemLabel": "窗边书桌",
       "furnitureType": "work_surface",
       "purpose": "专注的时候，在这里陪你一起工作",
       "interactionPoints": [
@@ -202,7 +202,7 @@
     },
     {
       "itemId": "desk",
-      "itemLabel": "书桌",
+      "itemLabel": "窗边书桌",
       "furnitureType": "work_surface",
       "purpose": "专注的时候，在这里陪你一起工作",
       "interactionPoints": [
@@ -248,7 +248,7 @@
     },
     {
       "itemId": "desk",
-      "itemLabel": "书桌",
+      "itemLabel": "窗边书桌",
       "furnitureType": "work_surface",
       "purpose": "专注的时候，在这里陪你一起工作",
       "interactionPoints": [
