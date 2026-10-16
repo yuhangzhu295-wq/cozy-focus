@@ -1,85 +1,85 @@
 {
-  "generated_at": "2026-10-17 01:19:09",
-  "head": "3939feb04d69f1404279f33c90eee98d4c0102a7",
+  "generated_at": "2026-10-17 02:37:13",
+  "head": "aa3d866df23295a84cf399a5aa9be7da72d52252",
   "remote_head": "3939feb04d69f1404279f33c90eee98d4c0102a7",
-  "local_equals_remote": true,
+  "local_equals_remote": false,
   "counts": {
-    "PASS": 10,
-    "FAIL": 1,
-    "DEFERRED": 2,
-    "NOT_TESTED": 2,
-    "BLOCKED": 3
+    "PASS": 14,
+    "BLOCKED": 3,
+    "DEFERRED": 1
   },
   "gates": [
     {
       "gate": "FORMAT",
       "status": "PASS",
-      "evidence": "470 files, 0 changed",
-      "seconds": 3.2
+      "evidence": "471 files, 0 changed",
+      "seconds": 2.9
     },
     {
       "gate": "ANALYZE",
-      "status": "FAIL",
-      "evidence": "1 issues",
-      "seconds": 15.7
+      "status": "PASS",
+      "evidence": "0 issues",
+      "seconds": 15.8
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
-      "evidence": "2103/2103 passed",
-      "seconds": 187.4
+      "evidence": "2107/2107 passed",
+      "seconds": 139.3
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "51/51 passed",
-      "seconds": 11.9
+      "seconds": 14.0
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 3.9
+      "seconds": 3.8
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 10.2
+      "seconds": 8.3
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "81/81 passed",
-      "seconds": 16.9
+      "seconds": 10.1
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 14.0
+      "seconds": 7.5
     },
     {
       "gate": "DEVICE_MATRIX",
-      "status": "DEFERRED",
-      "evidence": "the frame-time harness (integration_test/frame_time_test.dart, driver test_driver/perf_driver.dart) is re-runnable but needs an attached device and about three minutes, so it is not run by default. Pass --with-device to run it. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
-      "seconds": 0.0
+      "status": "PASS",
+      "evidence": "FRAME_TIME 698 frames on emulator-5554, 668 after the 30-frame startup warmup; steady-state UI-thread build p50 840 us / p90 1106 us / p99 2629 us; frames over the 16.67 ms budget after the warmup: 0. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
+      "seconds": 79.1
     },
     {
       "gate": "APK",
-      "status": "NOT_TESTED",
-      "evidence": "--skip-builds was passed"
+      "status": "PASS",
+      "evidence": "32.0 MB (budget 34 MB)",
+      "seconds": 8.5
     },
     {
       "gate": "AAB",
-      "status": "NOT_TESTED",
-      "evidence": "--skip-builds was passed"
+      "status": "PASS",
+      "evidence": "50.5 MB (budget 55 MB)",
+      "seconds": 7.2
     },
     {
       "gate": "DIFF_CHECK",
       "status": "PASS",
       "evidence": "no whitespace errors",
-      "seconds": 0.2
+      "seconds": 0.1
     },
     {
       "gate": "RELEASE_SIGNING",
@@ -90,7 +90,7 @@
     {
       "gate": "LAUNCHER_ICON",
       "status": "BLOCKED",
-      "evidence": "still the stock Flutter logo (dominant colours 0,0,0 / 84,197,248 / 1,87,155); no approved artwork exists, so none was invented",
+      "evidence": "still the stock Flutter logo in android/ (dominant colours 0,0,0 / 84,197,248 / 1,87,155). A candidate has been drawn - outputs/launcher_icon_candidate/, six sizes from the app's own palette - but it is NOT approved, so nothing under android/ was touched. Blocked on the owner's approval, not on artwork existing.",
       "seconds": 0.0
     },
     {
@@ -109,7 +109,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 5.8
+      "seconds": 3.5
     },
     {
       "gate": "FLOW_GENERATION",
