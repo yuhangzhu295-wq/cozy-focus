@@ -29,7 +29,9 @@ class FocusSetupPage extends ConsumerStatefulWidget {
 class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
   final TextEditingController _taskController = TextEditingController();
   int _selectedMinutes = 25;
-  bool _reminderOn = true;
+  // `_reminderOn` used to live here, defaulting to true and read only by a Switch
+  // that could not schedule anything. Both are gone: a state field whose only
+  // consumer was a fake control is not state.
 
   /// The category of the task this session is for, when it has one.
   ///
@@ -431,35 +433,65 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                           Icon(Icons.music_note_rounded,
                               color: AppColors.primarySage, size: 20),
                           SizedBox(width: 10),
-                          Text('专注白噪音',
-                              style: TextStyle(
-                                  fontSize: 15, color: AppColors.textPrimary)),
-                          Spacer(),
-                          Text('森林  >',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary)),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('专注白噪音',
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        color: AppColors.textPrimary)),
+                                SizedBox(height: 3),
+                                // Was `森林  >`: a chevron and a current value
+                                // for a picker that does not exist, on a row with
+                                // no onTap. That promises a navigation and a
+                                // setting, and delivers neither - the same dead
+                                // affordance the project refused to add as
+                                // `更多 ›`. The repository has no audio asset at
+                                // all, so the honest row is this one.
+                                Text('当前版本未接入音频素材',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary)),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     const Divider(color: AppColors.borderLight),
 
-                    // Reminder toggle (UI only)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
+                    // Reminder: stated, not switchable.
+                    //
+                    // This was a real `Switch` with a working setState, defaulting
+                    // to ON - which is worse than a dead row, because the control
+                    // moves and the user believes reminders are armed.
+                    // `flutter_local_notifications` is in pubspec and has never
+                    // been imported in `lib/`, so nothing could be scheduled. The
+                    // settings page already says this honestly; this page
+                    // contradicted it.
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
                       child: Row(
                         children: [
-                          const Icon(Icons.notifications_outlined,
+                          Icon(Icons.notifications_outlined,
                               color: AppColors.primarySage, size: 20),
-                          const SizedBox(width: 10),
-                          const Text('专注结束提醒',
-                              style: TextStyle(
-                                  fontSize: 15, color: AppColors.textPrimary)),
-                          const Spacer(),
-                          Switch(
-                            value: _reminderOn,
-                            activeColor: AppColors.primarySage,
-                            onChanged: (v) => setState(() => _reminderOn = v),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('专注结束提醒',
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        color: AppColors.textPrimary)),
+                                SizedBox(height: 3),
+                                Text('当前版本尚未接入系统通知',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary)),
+                              ],
+                            ),
                           ),
                         ],
                       ),

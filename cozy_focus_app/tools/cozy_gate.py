@@ -175,7 +175,23 @@ def gate_signing():
 
 
 def gate_launcher_icon():
-    """The icon is blocked on artwork, and the check says which artwork."""
+    """The icon is blocked on *approval*, and the check says which artwork.
+
+    It used to read "no approved artwork exists, so none was invented", which was
+    accurate when nothing had been drawn. A candidate now exists, so the sentence
+    has to distinguish "there is no artwork" from "there is artwork nobody has
+    approved yet" - the second is still BLOCKED, but for a different reason, and
+    conflating them would hide the work that was done.
+    """
+    candidate = os.path.join(APP, "outputs", "launcher_icon_candidate",
+                             "ic_launcher_mdpi_48.png")
+    if os.path.exists(candidate):
+        return BLOCKED, (
+            "still the stock Flutter logo in android/ (dominant colours 0,0,0 / "
+            "84,197,248 / 1,87,155). A candidate has been drawn - "
+            "outputs/launcher_icon_candidate/, six sizes from the app's own "
+            "palette - but it is NOT approved, so nothing under android/ was "
+            "touched. Blocked on the owner's approval, not on artwork existing.")
     return BLOCKED, (
         "still the stock Flutter logo (dominant colours 0,0,0 / 84,197,248 / "
         "1,87,155); no approved artwork exists, so none was invented")
