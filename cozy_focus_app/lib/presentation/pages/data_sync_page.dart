@@ -374,10 +374,12 @@ class _BackupActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // No explicit label: the card's own title and subtitle are its name. A
+    // `label:` here merged with them and the device read "导出备份 导出备份" -
+    // the same double-announcement class fixed elsewhere in the app.
     return Semantics(
       button: true,
       enabled: onTap != null,
-      label: title,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(

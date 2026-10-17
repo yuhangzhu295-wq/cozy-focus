@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:cozy_focus_app/presentation/widgets/cozy_room_backdrop.dart';
 import 'package:cozy_focus_app/presentation/widgets/cozy_room_handdrawn_candidate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -151,6 +152,22 @@ void main() {
     expect(bins, greaterThan(108),
         reason:
             'the shelf band carries $bins colour bins; a smudge carries few');
+  });
+
+  test('the candidate rug follows the shipped mat contract', () {
+    // The room page solves its deskLine from the floor anchor. With that same
+    // deskLine the candidate's rug centre must land on the paws; the first
+    // version put the rug's *top* there and the pet stood ~200px above it on
+    // the device.
+    const floorAnchorY = 0.70;
+    final solved = kDeskLineForFloorAnchor(floorAnchorY);
+    expect(CozyRoomHandDrawn.rugCentreFraction(solved),
+        closeTo(floorAnchorY, 1e-9));
+
+    // And at the painter's own default it is the shipped constant, so the two
+    // rooms describe the same floor plane.
+    expect(CozyRoomHandDrawn.rugCentreFraction(0.60),
+        closeTo(kCozyRoomMatCentre, 1e-9));
   });
 }
 

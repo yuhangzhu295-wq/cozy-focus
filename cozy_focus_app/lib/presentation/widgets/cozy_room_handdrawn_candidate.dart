@@ -60,6 +60,15 @@ class CozyRoomHandDrawn extends StatelessWidget {
     this.dim = 0,
   });
 
+  /// Where the rug's centre sits, as a fraction of the scene's height.
+  ///
+  /// The shipped painter's `kCozyRoomMatCentre` is this same expression at its
+  /// default `deskLine`. It is a public static so a test can assert the
+  /// candidate did not choose a different floor plane while the pet kept the
+  /// shipped one.
+  static double rugCentreFraction(double deskLine) =>
+      deskLine + (1 - deskLine) * 0.26;
+
   @override
   Widget build(BuildContext context) {
     return ExcludeSemantics(
@@ -661,8 +670,21 @@ class _HdRoomPainter extends CustomPainter {
   // ── near furniture ──────────────────────────────────────────────────────
 
   void _paintRug(Canvas canvas, double w, double h, double deskY) {
+    // The rug's **centre** sits 0.26 into the floor region, which is the same
+    // contract the shipped painter documents as `kCozyRoomMatCentre`. A host
+    // that draws the companion from `floorAnchor` solves its `deskLine` so this
+    // line lands on the paws; the candidate's first version put the rug's *top*
+    // there instead, which left the pet standing above a rug two hundred pixels
+    // away. Height stays large - that is the candidate's own look - but the
+    // centre is not free to choose.
+    final rugHeight = (h - deskY) * 0.52;
+    final centreY = h * CozyRoomHandDrawn.rugCentreFraction(deskLine);
     final rect = Rect.fromLTWH(
-        w * 0.20, deskY + (h - deskY) * 0.30, w * 0.60, (h - deskY) * 0.52);
+      w * 0.20,
+      centreY - rugHeight / 2,
+      w * 0.60,
+      rugHeight,
+    );
     final rr = RRect.fromRectAndRadius(rect, Radius.circular(w * 0.04));
 
     // Contact shadow first, so the rug sits on the boards.
