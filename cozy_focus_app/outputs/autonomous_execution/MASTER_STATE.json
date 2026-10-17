@@ -24,8 +24,8 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "74695e738f57400b5ae079fd05a0614bfc222244",
-  "remote_head": "74695e738f57400b5ae079fd05a0614bfc222244",
+  "head": "cd221a81af52f9d2d3b3f877df24789f639394da",
+  "remote_head": "cd221a81af52f9d2d3b3f877df24789f639394da",
   "head_matches_remote": true,
   "worktree": "clean",
   "last_verified_at": "2026-10-18T03:51+0800",
