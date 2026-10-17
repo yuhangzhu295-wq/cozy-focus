@@ -226,8 +226,7 @@ abstract final class BackupService {
     // controller wrote between the snapshot and the rollback.
     final stagedPacks = await _stagePacks(packRoot, payload['packs']);
     final epoch = const Uuid().v4();
-    final swap =
-        stagedPacks == null ? null : await _swapPacksIn(stagedPacks, epoch);
+    _PackSwap? swap;
 
     try {
       await db.transaction(() async {
@@ -240,6 +239,16 @@ abstract final class BackupService {
             '恢复开始前出现了未结束的专注或休息，已取消，原数据没有改动。',
           );
         }
+
+        // The swap is inside the transaction so the database is the only
+        // serialisation point: another controller's write cannot land between
+        // the delete and the commit, because it queues behind this transaction.
+        // The file operations are short (two renames), and a failure rolls the
+        // database back and swaps the packs back in the catch.
+        if (stagedPacks != null) {
+          swap = await _swapPacksIn(stagedPacks, epoch);
+        }
+
         for (final table in BackupFormat.tablesInDeleteOrder) {
           await db.customStatement('DELETE FROM "$table"');
         }
@@ -288,12 +297,12 @@ abstract final class BackupService {
         );
       });
     } catch (error) {
-      if (swap != null) await _swapPacksBack(swap);
+      if (swap != null) await _swapPacksBack(swap!);
       if (error is BackupException) rethrow;
       throw BackupException('恢复失败，原数据没有改动：$error');
     }
 
-    if (swap != null) await _finishSwap(swap);
+    if (swap != null) await _finishSwap(swap!);
     final rows = (tables.values)
         .whereType<List>()
         .fold<int>(0, (sum, list) => sum + list.length);
@@ -358,11 +367,20 @@ abstract final class BackupService {
         if (await previous.exists()) await previous.delete(recursive: true);
       } catch (_) {}
     } else {
-      // The data did not commit. Put the old packs back - but only if there is
-      // an old root to put back. A crash before the first rename leaves `live`
-      // untouched, and deleting it here would destroy the user's packs.
+      // The data did not commit. Put the old packs back.
+      //
+      // Two cases, and the first version only handled one:
+      // * there was an old root -> `previous` holds it, restore it;
+      // * there was no old root -> the live root is the *new* one and must be
+      //   removed, or the old (empty) data would sit next to packs that were
+      //   never part of it. A crash before the first rename is different again:
+      //   `hadLive == false` and `previous` absent, but `live` is also absent,
+      //   so there is nothing to delete.
+      final hadLive = data['hadLive'];
       try {
-        if (await previous.exists()) {
+        if (hadLive == false) {
+          if (await live.exists()) await live.delete(recursive: true);
+        } else if (await previous.exists()) {
           if (await live.exists()) await live.delete(recursive: true);
           await previous.rename(live.path);
         }
@@ -462,13 +480,17 @@ abstract final class BackupService {
     if (await previous.exists()) {
       await previous.delete(recursive: true);
     }
+    final hadLive = await live.exists();
     await _writeJournal(journal, {
       'epoch': epoch,
       'previous': previous.path,
       'staging': staged.staging.path,
+      // Whether there was an old root at all. Without this, a crash on the
+      // first-ever restore (no `previous`) would leave the new packs with the
+      // old data, and recovery would have no way to tell.
+      'hadLive': hadLive,
     });
 
-    final hadLive = await live.exists();
     if (hadLive) {
       await live.rename(previous.path);
     }

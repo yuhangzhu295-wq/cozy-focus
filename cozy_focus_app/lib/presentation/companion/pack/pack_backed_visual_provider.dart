@@ -11,6 +11,8 @@
 /// about how the pack arrived.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../room/companion_placement.dart';
@@ -81,6 +83,18 @@ class PackBackedCompanionVisualProvider extends CompanionVisualProvider {
         manifest.declaredFallbackFor(intent.pose);
   }
 
+  /// Where the declared ground line lands inside a square [boxSize] under
+  /// `BoxFit.contain`, as a fraction from the bottom.
+  double _containedBaselineFraction(double boxSize) {
+    final w = manifest.canvasWidth.toDouble();
+    final h = manifest.canvasHeight.toDouble();
+    if (w <= 0 || h <= 0 || boxSize <= 0) return 0;
+    final scale = math.min(boxSize / w, boxSize / h);
+    final top = (boxSize - h * scale) / 2;
+    final baselineFromTop = top + manifest.groundBaseline * scale;
+    return 1 - (baselineFromTop / boxSize);
+  }
+
   @override
   Widget build(
     BuildContext context,
@@ -104,9 +118,11 @@ class PackBackedCompanionVisualProvider extends CompanionVisualProvider {
         ? 0.0
         : spriteGroundOffsetFor(
             targetFeetFraction: target,
-            spriteFeetInsetFraction:
-                (manifest.canvasHeight - manifest.groundBaseline) /
-                    manifest.canvasHeight,
+            // The player uses `BoxFit.contain` in a square box. For a
+            // non-square canvas the image is letterboxed, so the baseline's
+            // position in the box is not `groundBaseline / canvasHeight`: the
+            // vertical padding has to be included.
+            spriteFeetInsetFraction: _containedBaselineFraction(options.size),
           );
 
     return CompanionSpriteAvatar(

@@ -593,11 +593,12 @@ void main() {
       journal = File('${parent.path}/.cozy_restore_journal.json');
     });
 
-    Future<void> writeJournal(String epoch) async {
+    Future<void> writeJournal(String epoch, {bool hadLive = true}) async {
       await journal.writeAsString(jsonEncode({
         'epoch': epoch,
         'previous': previous.path,
         'staging': '${parent.path}/.cozy_restore_staging',
+        'hadLive': hadLive,
       }));
     }
 
@@ -633,6 +634,20 @@ void main() {
       expect(File('${live.path}/old.txt').existsSync(), isTrue);
       expect(File('${live.path}/new.txt').existsSync(), isFalse);
       expect(previous.existsSync(), isFalse);
+      expect(journal.existsSync(), isFalse);
+    });
+
+    test('the first restore crashed after the swap: the new root is removed',
+        () async {
+      // There was no pack root before this restore, so `previous` does not
+      // exist. The live root is the new one and must not survive the rollback.
+      live.createSync();
+      File('${live.path}/new.txt').writeAsStringSync('new');
+      await writeJournal('epoch-4', hadLive: false);
+
+      await BackupService.recoverInterruptedRestore(db: db, packRoot: live);
+
+      expect(live.existsSync(), isFalse);
       expect(journal.existsSync(), isFalse);
     });
 
