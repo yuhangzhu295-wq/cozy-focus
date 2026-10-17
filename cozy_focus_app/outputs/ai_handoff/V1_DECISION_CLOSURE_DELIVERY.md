@@ -130,7 +130,7 @@ Pre-existing, on a software rasteriser, and worth the real-device pass.
 | V1 | the candidate's **left bookshelf is unreadable** — it sits in the blurred far layer and reads as a smudge with green streaks | candidate only |
 | V2 | the candidate's **side-wall wedge** shows as a dark diagonal band at the top left that reads as a shadow, not a wall | candidate only |
 | V3 | the candidate's **window is smaller and less luminous** than the shipped one, which is the shipped room's strongest element | candidate only |
-| V4 | in **both** rooms the pet's feet land on the desk line, so it reads as standing behind the desk rather than resting on the floor | shipped + candidate |
+| V4 | ~~in both rooms the pet's feet land on the desk line~~ **room fixed** (`a5d8ab4`); home/focus/growth are unchanged *by design* — the pet stands on the desk there | room: fixed · others: intended |
 | V5 | the board's pet is a **3D plush in the room**; both options draw a flat sprite | neither can close this — the brief forbids the swap |
 | V6 | `room_sit` has **no sprite sequence** in any pack; the rig carries it | shipped, unchanged |
 | V7 | **no photographic-room path** — settled as "worse, not impossible", with a side-by-side probe as evidence | settled |
