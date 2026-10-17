@@ -69,6 +69,21 @@ class CompanionSpritePlayer extends StatefulWidget {
   /// restarting it would be a visible hiccup for no gain.
   final Object? restartToken;
 
+  /// Moves the drawing inside its box, as a fraction of [size].
+  ///
+  /// The two renderers do not share an ink-to-canvas ratio: the layered rig's
+  /// paws sit `83 / 482` of the box above its bottom edge, while the sprite
+  /// packs declare `groundBaseline = 458` on a 512 canvas, i.e. `54 / 512`.
+  /// Drawn into the same square box, a sprite's paws therefore land about 6.1 pt
+  /// lower on the room's 92 pt avatar than the rig's do - the "floating" the
+  /// room showed at every contact surface.
+  ///
+  /// The correction is applied *inside* the box rather than by moving the box,
+  /// so the box's own anchor is unchanged and a renderer switch cannot jump the
+  /// character up or down. Only the room sets it: the other screens lay the
+  /// companion out against their own composition and are not being retuned.
+  final double groundOffsetFraction;
+
   const CompanionSpritePlayer({
     super.key,
     required this.spec,
@@ -78,6 +93,7 @@ class CompanionSpritePlayer extends StatefulWidget {
     this.enabled = true,
     this.frameSource = const CompanionFrameSource.assets(),
     this.restartToken,
+    this.groundOffsetFraction = 0,
   });
 
   @override
@@ -247,17 +263,24 @@ class _CompanionSpritePlayerState extends State<CompanionSpritePlayer>
       label: widget.semanticLabel,
       child: SizedBox.square(
         dimension: widget.size,
-        child: Image(
-          // The same widget for both sources: `Image.asset` is only shorthand for
-          // `Image(image: AssetImage(...))`, so the built-in path is unchanged.
-          image: widget.frameSource.providerFor(frame),
-          fit: BoxFit.contain,
-          // The canvas is identical across frames, so smoothing between frames
-          // is only ever a sub-pixel resample.
-          filterQuality: FilterQuality.medium,
-          gaplessPlayback: true,
-          excludeFromSemantics: true,
-          errorBuilder: (_, __, ___) => SizedBox.square(dimension: widget.size),
+        child: Transform.translate(
+          // Zero outside the room, so every other screen draws exactly where it
+          // did before this field existed.
+          offset: Offset(0, widget.groundOffsetFraction * widget.size),
+          child: Image(
+            // The same widget for both sources: `Image.asset` is only shorthand
+            // for `Image(image: AssetImage(...))`, so the built-in path is
+            // unchanged.
+            image: widget.frameSource.providerFor(frame),
+            fit: BoxFit.contain,
+            // The canvas is identical across frames, so smoothing between frames
+            // is only ever a sub-pixel resample.
+            filterQuality: FilterQuality.medium,
+            gaplessPlayback: true,
+            excludeFromSemantics: true,
+            errorBuilder: (_, __, ___) =>
+                SizedBox.square(dimension: widget.size),
+          ),
         ),
       ),
     );

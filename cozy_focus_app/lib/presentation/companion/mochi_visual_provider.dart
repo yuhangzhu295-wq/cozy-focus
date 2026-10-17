@@ -197,6 +197,9 @@ class _MochiPoseAvatar extends ConsumerWidget {
         // repeated celebration never restarts and the companion holds the first
         // one's last frame for as long as the page stays open.
         spriteRestartToken: intent.behaviorStartedAt,
+        // Zero unless the room asked for it: the other screens compose the
+        // companion against their own layout and are not being retuned.
+        spriteGroundOffsetFraction: options.spriteGroundOffsetFraction,
         semanticLabelOverride: intent.baseContext == CompanionBaseContext.room
             ? '${options.displayName} 在房间'
             : null,

@@ -13,6 +13,8 @@ import 'runtime/presentation_vitals.dart';
 import 'runtime/companion_event.dart';
 import 'companion_presentation_mapper.dart';
 import 'focus_phase.dart';
+import 'mochi_layered_renderer.dart';
+import 'room/companion_placement.dart';
 import 'companion_selection.dart';
 import 'pack/companion_availability_provider.dart';
 import 'pack/installed_pack_profiles.dart';
@@ -513,6 +515,15 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
             // A page that names a state itself wins — the room's walk override is
             // the one case — and otherwise the controller's performance is drawn.
             animationState: widget.animationState ?? _animation.currentState,
+            // The room is the one host whose contact surfaces are placed by the
+            // same arithmetic that anchors this box, so it is the one host that
+            // needs the sprite's ink to agree with the rig's. Everywhere else
+            // the box is composed against the page and stays at zero.
+            spriteGroundOffsetFraction: widget.roomAnchor == null
+                ? 0
+                : spriteGroundOffsetFraction(
+                    MochiLayerAssets.feetInsetFraction,
+                  ),
           ),
         );
       },

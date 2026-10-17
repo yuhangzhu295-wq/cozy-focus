@@ -77,6 +77,7 @@ class _CompanionRendererState extends State<CompanionRenderer> {
       // was, which made the whole animation layer invisible in production while
       // its own tests passed.
       animationState: widget.options.animationState,
+      spriteGroundOffsetFraction: widget.options.spriteGroundOffsetFraction,
     );
 
     return widget.provider.build(context, widget.intent, options);

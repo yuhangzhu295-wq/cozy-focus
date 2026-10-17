@@ -72,6 +72,11 @@ class PetAvatarWidget extends StatelessWidget {
   /// seconds.
   final Object? spriteRestartToken;
 
+  /// Vertical correction applied inside the sprite's box, as a fraction of
+  /// [size]. Zero everywhere except the room; see
+  /// [CompanionSpritePlayer.groundOffsetFraction].
+  final double spriteGroundOffsetFraction;
+
   /// The name the state label and the badge use.
   ///
   /// Required rather than defaulted, because the wrong answer is invisible: the
@@ -118,6 +123,7 @@ class PetAvatarWidget extends StatelessWidget {
     this.poseSpec,
     this.spriteSpec,
     this.spriteRestartToken,
+    this.spriteGroundOffsetFraction = 0,
     this.onTapReact,
     this.onLongPressReact,
     this.semanticLabelOverride,
@@ -287,6 +293,7 @@ class PetAvatarWidget extends StatelessWidget {
         semanticLabel: semanticLabelOverride ?? _petSemanticLabel(activeState),
         restartToken:
             spec.loopMode == SpriteLoopMode.once ? spriteRestartToken : null,
+        groundOffsetFraction: spriteGroundOffsetFraction,
       );
       return _SpriteMotionGate(
         controller: controller,

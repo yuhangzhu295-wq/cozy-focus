@@ -49,6 +49,15 @@ class CompanionVisualOptions {
   /// is a transition the behaviour layer has no vocabulary for.
   final AnimationState? animationState;
 
+  /// Moves a sprite drawing inside its box so its paws land where the layered
+  /// rig's do.
+  ///
+  /// Zero everywhere except the room. See
+  /// `CompanionSpritePlayer.groundOffsetFraction` for the measurement; the
+  /// value is computed by the room from the two renderers' own constants rather
+  /// than being a second hard-coded number.
+  final double spriteGroundOffsetFraction;
+
   const CompanionVisualOptions({
     this.displayName = '',
     this.size = 140,
@@ -61,6 +70,7 @@ class CompanionVisualOptions {
     this.onTapReact,
     this.onLongPressReact,
     this.animationState,
+    this.spriteGroundOffsetFraction = 0,
   });
 }
 

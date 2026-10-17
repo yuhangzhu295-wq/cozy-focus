@@ -18,6 +18,27 @@ import 'anchor_point.dart';
 /// the number would let the companion's feet drift from the art.
 const double kFurnitureItemSize = 60.0;
 
+/// Where a sprite pack's paws sit inside its square canvas, measured from the
+/// bottom edge.
+///
+/// Every shipped pack declares `groundBaseline: 458` on a 512 x 512 canvas
+/// (`assets/companions/*/manifest.json`), and the integrity suite measures the
+/// actual ink against it within the declared 2 px tolerance. The layered rig's
+/// equivalent number is `MochiLayerAssets.feetInsetFraction` = `83 / 482`.
+///
+/// The two are **not** the same, and the difference is the reason a sprite drawn
+/// into a box anchored by the rig's constant sits about 6.1 pt too low on the
+/// room's 92 pt avatar.
+const double kSpriteFeetInsetFraction = (512 - 458) / 512;
+
+/// The in-box vertical correction that puts a sprite's paws where the rig's are.
+///
+/// Negative, because the sprite's paws are lower in its canvas than the rig's
+/// are in the box. The caller passes the rig constant rather than this file
+/// importing the renderer, so the dependency still points one way.
+double spriteGroundOffsetFraction(double rigFeetInsetFraction) =>
+    kSpriteFeetInsetFraction - rigFeetInsetFraction;
+
 /// Where the companion's avatar box goes, in canvas pixels.
 class CompanionBox {
   /// The box's left edge.
