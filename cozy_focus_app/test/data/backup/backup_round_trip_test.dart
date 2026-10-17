@@ -1,0 +1,455 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:cozy_focus_app/data/backup/backup_format.dart';
+import 'package:cozy_focus_app/data/backup/backup_service.dart';
+import 'package:cozy_focus_app/data/local/app_database.dart';
+import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+/// The local backup is the only thing standing between a user and losing every
+/// record they have when they uninstall, so the tests here are about the failure
+/// modes, not the happy path.
+///
+/// Every test uses an isolated in-memory database and a temporary directory.
+/// Nothing touches the real database, and no test asserts on a device.
+void main() {
+  late AppDatabase db;
+
+  setUp(() {
+    db = AppDatabase.forTesting(NativeDatabase.memory());
+  });
+
+  tearDown(() async => db.close());
+
+  Future<AppDatabase> freshDb() async {
+    final other = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(other.close);
+    // Force the schema open so onCreate/seed runs before the first query.
+    await other.customSelect('SELECT 1').get();
+    return other;
+  }
+
+  Future<Map<String, List<Map<String, dynamic>>>> dump(
+      AppDatabase database) async {
+    final out = <String, List<Map<String, dynamic>>>{};
+    for (final table in BackupFormat.tables) {
+      final rows = await database
+          .customSelect('SELECT * FROM "$table" ORDER BY rowid')
+          .get();
+      out[table] = [
+        for (final row in rows) Map<String, dynamic>.from(row.data)
+      ];
+    }
+    return out;
+  }
+
+  Future<void> seed(AppDatabase database) async {
+    final t = DateTime.utc(2026, 10, 1, 9);
+    final stamp = t.millisecondsSinceEpoch ~/ 1000;
+
+    await database.customStatement(
+      'INSERT INTO tasks (id,user_id,title,category_id,estimated_seconds,note,'
+      'status,created_at,completed_at,sort_order) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      ['task-1', 'local', '写周报', 'work', 1500, '周五前', 'open', stamp, null, 0],
+    );
+    await database.customStatement(
+      'INSERT INTO task_subtasks (id,task_id,title,is_done,sort_order) '
+      'VALUES (?,?,?,?,?)',
+      ['sub-1', 'task-1', '收集数据', 0, 0],
+    );
+    await database.customStatement(
+      'INSERT INTO task_schedules (id,task_id,user_id,date,start_at,'
+      'planned_seconds,status,created_at) VALUES (?,?,?,?,?,?,?,?)',
+      [
+        'sched-1',
+        'task-1',
+        'local',
+        '2026-10-01',
+        stamp,
+        1500,
+        'planned',
+        stamp
+      ],
+    );
+    await database.customStatement(
+      'INSERT INTO focus_sessions (id,user_id,category_id,task_name,task_id,'
+      'planned_seconds,mode,timing_mode,start_at,pause_intervals_json,end_at,'
+      'status,timezone_offset_minutes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [
+        'sess-1',
+        'local',
+        'work',
+        '写周报',
+        'task-1',
+        1500,
+        'focus',
+        'countdown',
+        stamp,
+        '[]',
+        stamp + 1500,
+        'saved',
+        480,
+      ],
+    );
+    await database.customStatement(
+      'INSERT INTO focus_records (id,session_id,user_id,category_id,task_name,'
+      'task_id,mood,gains,next_intention,timing_mode,duration_seconds,start_at,'
+      'end_at,recorded_at,is_counted_for_reward,note) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [
+        'rec-1',
+        'sess-1',
+        'local',
+        'work',
+        '写周报',
+        'task-1',
+        'calm',
+        '专注',
+        '继续',
+        'countdown',
+        1500,
+        stamp,
+        stamp + 1500,
+        stamp + 1500,
+        1,
+        null,
+      ],
+    );
+    await database.customStatement(
+      'INSERT INTO distraction_notes (id,user_id,text,category_id,status,'
+      'created_at,handled_at,converted_task_id,session_id) '
+      'VALUES (?,?,?,?,?,?,?,?,?)',
+      ['note-1', 'local', '买牛奶', null, 'open', stamp, null, null, 'sess-1'],
+    );
+    await database.customStatement(
+      'INSERT INTO rest_sessions (id,user_id,planned_seconds,start_at,end_at,'
+      'status,created_at) VALUES (?,?,?,?,?,?,?)',
+      ['rest-1', 'local', 600, stamp, stamp + 600, 'completed', stamp],
+    );
+    await database.customStatement(
+      'INSERT INTO craft_jobs (id,user_id,recipe_id,status,progress_seconds,'
+      'started_at,completed_at,reward_claimed,session_id) '
+      'VALUES (?,?,?,?,?,?,?,?,?)',
+      [
+        'job-1',
+        'local',
+        'table',
+        'completed',
+        1200,
+        stamp,
+        stamp + 1200,
+        1,
+        'sess-1'
+      ],
+    );
+    await database.customStatement(
+      'INSERT INTO inventory_items (id,user_id,item_id,quantity,updated_at) '
+      'VALUES (?,?,?,?,?)',
+      ['inv-1', 'local', 'table', 1, stamp],
+    );
+    await database.customStatement(
+      'INSERT INTO room_items (id,user_id,item_id,position_x,position_y,scale,'
+      'z_index,is_visible,placed_at) VALUES (?,?,?,?,?,?,?,?,?)',
+      ['room-1', 'local', 'table', 0.5, 0.7, 1.0, 0, 1, stamp],
+    );
+    await database.customStatement(
+      'INSERT INTO pets (id,user_id,character_id,species,name,adopted_at) '
+      'VALUES (?,?,?,?,?,?)',
+      ['pet-1', 'local', 'mochi', 'dog', 'Mochi', stamp],
+    );
+    await database.customStatement(
+      'INSERT INTO pet_progress (id,pet_id,level,experience_points,'
+      'total_focus_minutes,happiness_score,updated_at) VALUES (?,?,?,?,?,?,?)',
+      ['pp-1', 'pet-1', 3, 250, 120, 60, stamp],
+    );
+    await database.customStatement(
+      'INSERT INTO pet_memories (id,pet_id,memory_type,content,happened_at) '
+      'VALUES (?,?,?,?,?)',
+      ['mem-1', 'pet-1', 'first_focus', '第一次陪你专注', stamp],
+    );
+    await database.customStatement(
+      'INSERT INTO achievements (id,user_id,achievement_key,type,title,'
+      'description,threshold,current_value,is_unlocked,unlocked_at,created_at) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+      [
+        'ach-1',
+        'local',
+        'first',
+        'milestone',
+        '第一次',
+        null,
+        1,
+        1,
+        1,
+        stamp,
+        stamp
+      ],
+    );
+    await database.customStatement(
+      'INSERT INTO reward_ledger (session_id,user_id,focus_coins_earned,'
+      'experience_earned,craft_recipe_unlocked,settled_at) '
+      'VALUES (?,?,?,?,?,?)',
+      ['sess-1', 'local', 50, 125, null, stamp],
+    );
+    await database.customStatement(
+      'INSERT INTO app_settings (key,value) VALUES (?,?)',
+      ['companion_id', 'mochi'],
+    );
+  }
+
+  test('an empty database round-trips', () async {
+    final bytes = await BackupService.export(db: db);
+    final read = BackupReader.read(bytes, currentSchema: db.schemaVersion);
+    expect(read.ok, isTrue, reason: read.refusal);
+
+    final target = await freshDb();
+    await BackupService.restore(
+      db: target,
+      payload: read.payload!,
+    );
+    final source = await dump(db);
+    final restored = await dump(target);
+    expect(restored, source);
+  });
+
+  test('a populated database round-trips table by table', () async {
+    await seed(db);
+    final before = await dump(db);
+    expect(before.values.fold<int>(0, (n, r) => n + r.length), greaterThan(15));
+
+    final bytes = await BackupService.export(db: db);
+    final read = BackupReader.read(bytes, currentSchema: db.schemaVersion);
+    expect(read.ok, isTrue, reason: read.refusal);
+    expect(read.preview!.rowCounts['tasks'], 1);
+    expect(read.preview!.rowCounts['focus_sessions'], 1);
+
+    final target = await freshDb();
+    final report =
+        await BackupService.restore(db: target, payload: read.payload!);
+    expect(report.rowsRestored,
+        before.values.fold<int>(0, (n, r) => n + r.length));
+
+    expect(await dump(target), before);
+  });
+
+  test('a changed byte is refused and the target is untouched', () async {
+    await seed(db);
+    final bytes = await BackupService.export(db: db);
+    final decoded = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+    final tables = decoded['tables'] as Map<String, dynamic>;
+    final tasks = tables['tasks'] as List;
+    (tasks.first as Map<String, dynamic>)['title'] = '被篡改';
+    final tampered = utf8.encode(jsonEncode(decoded));
+
+    final target = await freshDb();
+    await seed(target);
+    final before = await dump(target);
+
+    final read = BackupReader.read(
+      Uint8List.fromList(tampered),
+      currentSchema: target.schemaVersion,
+    );
+    expect(read.ok, isFalse);
+    expect(read.refusal, contains('完整性校验失败'));
+
+    // The refusal happened before any write, so the target is still its old self.
+    expect(await dump(target), before);
+  });
+
+  test('a newer format version is refused', () async {
+    final bytes = await BackupService.export(db: db);
+    final decoded = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+    decoded['formatVersion'] = 2;
+    decoded.remove('checksum');
+    decoded['checksum'] = checksumFor(decoded);
+
+    final read = BackupReader.read(
+      Uint8List.fromList(utf8.encode(jsonEncode(decoded))),
+      currentSchema: db.schemaVersion,
+    );
+    expect(read.ok, isFalse);
+    expect(read.refusal, contains('更新'));
+  });
+
+  test('a different schema version is refused, not migrated silently',
+      () async {
+    final bytes = await BackupService.export(db: db);
+    final decoded = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+    decoded['appSchemaVersion'] = db.schemaVersion + 1;
+    decoded.remove('checksum');
+    decoded['checksum'] = checksumFor(decoded);
+
+    final read = BackupReader.read(
+      Uint8List.fromList(utf8.encode(jsonEncode(decoded))),
+      currentSchema: db.schemaVersion,
+    );
+    expect(read.ok, isFalse);
+    expect(read.refusal, contains('数据库版本'));
+  });
+
+  test('a restore is refused while a focus session is live', () async {
+    final bytes = await BackupService.export(db: db);
+    final read = BackupReader.read(bytes, currentSchema: db.schemaVersion);
+
+    final target = await freshDb();
+    await seed(target);
+    await target.customStatement(
+      'INSERT INTO focus_sessions (id,user_id,category_id,task_name,task_id,'
+      'planned_seconds,mode,timing_mode,start_at,pause_intervals_json,end_at,'
+      'status,timezone_offset_minutes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [
+        'live',
+        'local',
+        null,
+        null,
+        null,
+        1500,
+        'focus',
+        'countdown',
+        1,
+        '[]',
+        null,
+        'running',
+        480,
+      ],
+    );
+    final before = await dump(target);
+
+    await expectLater(
+      BackupService.restore(db: target, payload: read.payload!),
+      throwsA(isA<BackupException>()),
+    );
+    expect(await dump(target), before);
+  });
+
+  test('a backup naming a column this build does not have is refused',
+      () async {
+    await seed(db);
+    final bytes = await BackupService.export(db: db);
+    final decoded = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+    final tables = decoded['tables'] as Map<String, dynamic>;
+    ((tables['tasks'] as List).first as Map<String, dynamic>)['future_column'] =
+        'x';
+    decoded.remove('checksum');
+    decoded['checksum'] = checksumFor(decoded);
+
+    final read = BackupReader.read(
+      Uint8List.fromList(utf8.encode(jsonEncode(decoded))),
+      currentSchema: db.schemaVersion,
+    );
+    expect(read.ok, isTrue, reason: 'the envelope itself is valid');
+
+    final target = await freshDb();
+    await seed(target);
+    final before = await dump(target);
+    expect(
+      () => BackupService.restore(db: target, payload: read.payload!),
+      throwsA(isA<BackupException>()),
+    );
+    expect(await dump(target), before);
+  });
+
+  test('a failure halfway through rolls the whole replacement back', () async {
+    await seed(db);
+    // Two inventory rows with the same (user, item) violate the table's unique
+    // key. The first insert succeeds, the second throws, and the transaction has
+    // to put the target back exactly as it was.
+    final bytes = await BackupService.export(db: db);
+    final decoded = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+    final tables = decoded['tables'] as Map<String, dynamic>;
+    final inventory = tables['inventory_items'] as List;
+    final duplicate =
+        Map<String, dynamic>.from(inventory.first as Map<String, dynamic>);
+    duplicate['id'] = 'inv-duplicate';
+    inventory.add(duplicate);
+    decoded.remove('checksum');
+    decoded['checksum'] = checksumFor(decoded);
+
+    final read = BackupReader.read(
+      Uint8List.fromList(utf8.encode(jsonEncode(decoded))),
+      currentSchema: db.schemaVersion,
+    );
+    expect(read.ok, isTrue);
+
+    final target = await freshDb();
+    await seed(target);
+    await target.customStatement(
+      'INSERT INTO tasks (id,user_id,title,category_id,estimated_seconds,note,'
+      'status,created_at,completed_at,sort_order) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      ['keep-me', 'local', '恢复失败也要留下', null, 1500, null, 'open', 1, null, 0],
+    );
+    final before = await dump(target);
+
+    await expectLater(
+      BackupService.restore(db: target, payload: read.payload!),
+      throwsA(isA<BackupException>()),
+    );
+    expect(await dump(target), before,
+        reason: 'the original rows, including the one added after the backup, '
+            'must still be there');
+  });
+
+  test('restoring the same backup twice is idempotent', () async {
+    await seed(db);
+    final bytes = await BackupService.export(db: db);
+    final read = BackupReader.read(bytes, currentSchema: db.schemaVersion);
+    final target = await freshDb();
+
+    await BackupService.restore(db: target, payload: read.payload!);
+    final first = await dump(target);
+    await BackupService.restore(db: target, payload: read.payload!);
+    expect(await dump(target), first);
+  });
+
+  test('custom packs travel with the backup and are replaced, not merged',
+      () async {
+    final sourceRoot = Directory.systemTemp.createTempSync('cozy_pack_src');
+    addTearDown(() => sourceRoot.deleteSync(recursive: true));
+    File('${sourceRoot.path}/installed_packs.json')
+        .writeAsStringSync('{"version":1,"packs":[]}');
+    Directory('${sourceRoot.path}/mimi').createSync();
+    File('${sourceRoot.path}/mimi/manifest.json')
+        .writeAsStringSync('{"companionId":"mimi"}');
+    File('${sourceRoot.path}/mimi/frame.png').writeAsBytesSync([1, 2, 3, 4]);
+
+    await seed(db);
+    final bytes = await BackupService.export(db: db, packRoot: sourceRoot);
+    final read = BackupReader.read(bytes, currentSchema: db.schemaVersion);
+    expect(read.preview!.packIds, ['mimi']);
+
+    final targetRoot = Directory.systemTemp.createTempSync('cozy_pack_dst');
+    addTearDown(() => targetRoot.deleteSync(recursive: true));
+    File('${targetRoot.path}/stale.txt').writeAsStringSync('old');
+    Directory('${targetRoot.path}/old_pack').createSync();
+    File('${targetRoot.path}/old_pack/x.png').writeAsBytesSync([9]);
+
+    final target = await freshDb();
+    final report = await BackupService.restore(
+      db: target,
+      payload: read.payload!,
+      packRoot: targetRoot,
+    );
+    expect(report.packsRestored, 3);
+
+    expect(File('${targetRoot.path}/stale.txt').existsSync(), isFalse,
+        reason: 'V1 replaces the pack root rather than merging it');
+    expect(Directory('${targetRoot.path}/old_pack').existsSync(), isFalse);
+    expect(File('${targetRoot.path}/mimi/frame.png').readAsBytesSync(),
+        [1, 2, 3, 4]);
+  });
+
+  test('the checksum is stable across two exports of the same data', () async {
+    await seed(db);
+    final first = jsonDecode(utf8.decode(await BackupService.export(
+      db: db,
+      now: DateTime.utc(2026, 10, 18),
+    ))) as Map<String, dynamic>;
+    final second = jsonDecode(utf8.decode(await BackupService.export(
+      db: db,
+      now: DateTime.utc(2026, 10, 18),
+    ))) as Map<String, dynamic>;
+    expect(first['checksum'], second['checksum']);
+  });
+}

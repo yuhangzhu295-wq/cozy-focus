@@ -59,7 +59,7 @@ void main() {
     });
 
     testWidgets(
-        '3. DataSyncPage has no fake controls or navigation affordances',
+        '3. DataSyncPage has no fake controls; its only actions are the real ones',
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -71,13 +71,21 @@ void main() {
       );
       await tester.pump();
 
+      // Still no control that moves without a backend. Cloud sync remains a
+      // statement, not a switch.
       expect(find.byType(Switch), findsNothing);
       expect(find.byType(SwitchListTile), findsNothing);
       expect(find.byType(Checkbox), findsNothing);
       expect(find.byType(CheckboxListTile), findsNothing);
       expect(find.byType(ListTile), findsNothing);
       expect(find.byType(BottomNavigationBar), findsNothing);
-      expect(find.byIcon(Icons.chevron_right), findsNothing);
+
+      // The two chevrons are the backup actions, and both are wired to a real
+      // service. This is the assertion that changed when local backup shipped:
+      // a chevron used to mean "an affordance with nothing behind it".
+      expect(find.text('导出备份'), findsOneWidget);
+      expect(find.text('从备份恢复'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
     });
 
     testWidgets(
