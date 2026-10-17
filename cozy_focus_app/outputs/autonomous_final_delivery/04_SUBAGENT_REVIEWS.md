@@ -108,6 +108,34 @@ closed.
 
 ---
 
+## Round 3 — FAIL, 2 P1 + 1 P2
+
+The third pass checked only the round-2 P1s.
+
+1. **P1 — first-restore crash.** If there was no pack root before the restore,
+   there is no `previous` directory; a crash after the swap and before the
+   commit left the new packs with the old data, and recovery could not tell.
+2. **P1 — no mutual exclusion with other writers.** The swap happened before the
+   transaction, so a controller write could still interleave.
+3. **P2 — non-square custom canvases.** `groundBaseline / canvasHeight` is only
+   the in-box fraction for a square image; `BoxFit.contain` letterboxes a
+   rectangle.
+
+### What was done
+
+1. The journal records `hadLive`; on a non-committed epoch with
+   `hadLive == false`, recovery removes the live root. A test covers that state.
+2. **The pack swap moved inside the database transaction.** SQLite serialises
+   writes on the connection, so no other controller write can land between the
+   delete and the commit. A swap failure rolls the transaction back and the
+   catch swaps the old packs back.
+3. The imported-pack baseline is converted through the `BoxFit.contain` rect
+   (scale + vertical letterbox).
+
+**No fourth review round was run.** The two P1s and the P2 above are fixed and
+tested, but the reviewer has not re-approved the final code. That is recorded
+here rather than claimed.
+
 ## What is still not reviewed
 
 - **The visual result.** The screenshots exist and the pixel guards pass; an

@@ -19,25 +19,25 @@ python tools/cozy_gate.py --full --with-device
 |---|---|
 | `dart format` | 0 changed |
 | `flutter analyze --fatal-infos` | 0 issues |
-| `flutter test` | **2146 / 2146 passed** |
+| `flutter test` | **2147 / 2147 passed** |
 | `flutter build apk --debug` | succeeded, 32.1 MB |
 | `flutter build appbundle --release` | succeeded, **50.7 MB** (budget 55) |
 | `git diff --check` | clean |
 | Full gate | **14 PASS / 3 BLOCKED / 1 DEFERRED / 0 FAIL** |
 
-### The gate's own output (generated 2026-10-18 03:49:30 at `6f03180b`)
+### The gate's own output (generated 2026-10-18 04:04:31 at `b314c28d`)
 
 ```
 FORMAT            PASS   480 files, 0 changed
 ANALYZE           PASS   0 issues
-UNIT_TESTS        PASS   2146/2146 passed
+UNIT_TESTS        PASS   2147/2147 passed
 INTEGRATION_TESTS PASS   54/54 passed
 GOLDEN_FLOW       PASS   6/6 passed
 MIGRATION         PASS   16/16 passed
 LIFECYCLE         PASS   81/81 passed
 ASSET_GATES       PASS   75/75 passed
-DEVICE_MATRIX     PASS   677 frames; 647 after warmup; build p50 2566us /
-                         p90 5307us / p99 12625us; 2 over budget
+DEVICE_MATRIX     PASS   681 frames; 651 after warmup; build p50 2473us /
+                         p90 5425us / p99 12341us; 4 over budget
 APK               PASS   32.1 MB (budget 34)
 AAB               PASS   50.7 MB (budget 55)
 DIFF_CHECK        PASS   no whitespace errors
@@ -51,9 +51,9 @@ FLOW_GENERATION   BLOCKED
 counts: {'PASS': 14, 'BLOCKED': 3, 'DEFERRED': 1}  FAIL: 0
 ```
 
-The criterion for the device row is p90 within one 16.67 ms frame (5.31 ms) and
-p50 within half of one (2.57 ms). The two late frames are reported, not hidden;
-the harness's own note is that this count tracks host load and ranged 0–3 across
+The criterion for the device row is p90 within one 16.67 ms frame (5.43 ms) and
+p50 within half of one (2.47 ms). The four late frames are reported, not hidden;
+the harness's own note is that this count tracks host load and ranged 0–4 across
 runs.
 
 ## The AAB failure, and what it actually was

@@ -67,15 +67,14 @@ The order is the safety property:
 9. **Pack staging**: files are written to a sibling `.cozy_restore_*` directory,
    with the decoded size estimated **before** decoding and the path checked
    again after canonicalisation.
-10. **Journal, then swap**: a journal naming the epoch, the old root and the
-    staging root is written and renamed into place, then the live root is moved
-    aside and the staging root moved in. A failure here puts the old root back.
-11. **One database transaction**: re-check unsettled work, delete
+10. **One database transaction**: re-check unsettled work, write the journal
+    (epoch, old root, staging root, `hadLive`), swap the packs, delete
     children-first (including `sync_outbox`), insert parents-first, verify every
-    table's row count, and write the epoch marker — all before commit. A
-    mismatch throws and the whole transaction rolls back, and the packs are
+    table's row count, and write the epoch marker — all before commit. The swap
+    is inside the transaction so SQLite serialises it against every other
+    writer. A mismatch throws, the transaction rolls back, and the packs are
     swapped back.
-12. **Cleanup**: the old root and the journal are deleted; a cleanup failure is
+11. **Cleanup**: the old root and the journal are deleted; a cleanup failure is
     harmless because the committed state already agrees.
 13. **Crash recovery** (`recoverInterruptedRestore`, called from `main()` before
     the app opens its connection): if the journal's epoch is in `app_settings`,
@@ -90,7 +89,7 @@ re-reads the restored rows instead of showing a cached total.
 
 ## Tests
 
-`test/data/backup/backup_round_trip_test.dart` — **18 tests**, all isolated
+`test/data/backup/backup_round_trip_test.dart` — **19 tests**, all isolated
 (in-memory database, temporary directories):
 
 | Test | What it proves |
@@ -112,6 +111,7 @@ re-reads the restored rows instead of showing a cached total.
 | a restore clears the target device pending outbox | no pre-restore write is replayed |
 | crash: data committed | new packs kept, old dropped, journal cleared |
 | crash: data not committed | old packs restored, journal cleared |
+| crash on the first restore, after the swap | the new root is removed, journal cleared |
 | crash before the swap | live root untouched, staging removed |
 
 ## Device walk

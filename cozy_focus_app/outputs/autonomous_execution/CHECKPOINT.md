@@ -19,10 +19,11 @@ below; re-verify the git state before acting on it.
 
 ## 2026-10-18 — autonomous final delivery round
 
-**HEAD `6f03180` on `recovery/v4.2.1-rebuild`** (commits this round: `b9e19ee`,
-`599099a`, `df811ca`, `b068495`, `6f03180`). Local == remote after the push; if
-the push did not complete, `git push origin recovery/v4.2.1-rebuild` is the only
-step.
+**HEAD `b314c28` on `recovery/v4.2.1-rebuild`** (commits this round: `b9e19ee`,
+`599099a`, `df811ca`, `b068495`, `6f03180`, `b314c28`). The gate ran at
+`b314c28`: 2147/2147 tests, 14 PASS / 3 BLOCKED / 1 DEFERRED / 0 FAIL. Local ==
+remote after the push; if the push did not complete,
+`git push origin recovery/v4.2.1-rebuild` is the only step.
 
 ### Delivered
 

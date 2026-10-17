@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-18 03:49:30",
-  "head": "6f03180b792f0d13ecda0aaac870454e0e30b5a4",
-  "remote_head": "a8d679c47a009fbb76bf31588eff2223505dae9a",
+  "generated_at": "2026-10-18 04:04:31",
+  "head": "b314c28d180c87ee14aa8b4d025cf489c9616b4b",
+  "remote_head": "f07b268f3706a0cd789a9a85d2ddbe16719d696b",
   "local_equals_remote": false,
   "counts": {
     "PASS": 14,
@@ -13,67 +13,67 @@
       "gate": "FORMAT",
       "status": "PASS",
       "evidence": "480 files, 0 changed",
-      "seconds": 5.6
+      "seconds": 3.1
     },
     {
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 22.9
+      "seconds": 12.6
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
-      "evidence": "2146/2146 passed",
-      "seconds": 289.8
+      "evidence": "2147/2147 passed",
+      "seconds": 156.8
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "54/54 passed",
-      "seconds": 24.1
+      "seconds": 10.4
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 7.9
+      "seconds": 3.8
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 12.3
+      "seconds": 6.1
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "81/81 passed",
-      "seconds": 18.1
+      "seconds": 11.1
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 16.1
+      "seconds": 7.8
     },
     {
       "gate": "DEVICE_MATRIX",
       "status": "PASS",
-      "evidence": "FRAME_TIME 677 frames on emulator-5554, 647 after the 30-frame startup warmup; steady-state UI-thread build p50 2566 us / p90 5307 us / p99 12625 us; frames over the 16.67 ms budget after the warmup: 2. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
-      "seconds": 178.1
+      "evidence": "FRAME_TIME 681 frames on emulator-5554, 651 after the 30-frame startup warmup; steady-state UI-thread build p50 2473 us / p90 5425 us / p99 12341 us; frames over the 16.67 ms budget after the warmup: 4. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
+      "seconds": 100.2
     },
     {
       "gate": "APK",
       "status": "PASS",
       "evidence": "32.1 MB (budget 34 MB)",
-      "seconds": 13.8
+      "seconds": 63.2
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "50.7 MB (budget 55 MB)",
-      "seconds": 8.2
+      "seconds": 13.6
     },
     {
       "gate": "DIFF_CHECK",
@@ -109,7 +109,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 4.2
+      "seconds": 4.4
     },
     {
       "gate": "FLOW_GENERATION",
