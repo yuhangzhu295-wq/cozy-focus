@@ -5,7 +5,7 @@
  "branch": "recovery/v4.2.1-rebuild",
  "devpack": "C:\\Users\\zyu33\\Downloads\\CozyFocus_2_0_Zxode_DevPack_v2.zip",
  "devpack_extracted": "C:\\Users\\zyu33\\ZCodeProject\\_devpack_v2\\CozyFocus_2_0_Zxode_DevPack_v2",
- "updated_at": "2026-10-13T20:51+0800",
+ "updated_at": "2026-10-18T03:51+0800",
  "continuation": {
   "question": "does this environment support automatic continuation of the work?",
   "answer": "PARTIALLY — and the honest split matters.",
@@ -24,12 +24,12 @@
   "timestamp_discipline": "Every timestamp in these files is the host clock, not an estimate. An earlier window wrote times hours ahead of it, which would make the scheduled run's 25-minute guard skip every time. Re-read the clock rather than copying the previous value forward."
  },
  "git": {
-  "head": "c6ce43a9820290ee8ad8b82a449aadc144ffd7b8",
-  "remote_head": "c6ce43a9820290ee8ad8b82a449aadc144ffd7b8",
+  "head": "74695e738f57400b5ae079fd05a0614bfc222244",
+  "remote_head": "74695e738f57400b5ae079fd05a0614bfc222244",
   "head_matches_remote": true,
   "worktree": "clean",
-  "last_verified_at": "2026-10-13T20:51+0800",
-  "note": "Verified by reading git rev-parse and git ls-remote directly, not from a push message."
+  "last_verified_at": "2026-10-18T03:51+0800",
+  "note": "head/remote_head name the last verified pushed commit (the delivery commit). This state file is updated in a follow-up commit, so the branch head will be exactly one commit later; the two fields are not a prediction."
  },
  "current": {
   "round": "STAGE_1_TO_3_COMPANION_AND_DEVICE_VERIFICATION",
