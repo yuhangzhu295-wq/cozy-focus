@@ -337,9 +337,15 @@ class _RoomPageState extends ConsumerState<RoomPage>
                       final canvasWidth = constraints.maxWidth;
                       final canvasHeight = constraints.maxHeight;
 
+                      // The plane the companion rests on, which is where the
+                      // background's mat has to be centred.
+                      final restingAnchor = _anchorFor(_anchorsFor(craft),
+                              simulation.activity.anchorId) ??
+                          floorAnchor;
+
                       return Stack(
                         children: [
-                          _buildRoomBackground(),
+                          _buildRoomBackground(restingAnchor, canvasHeight),
                           ...craft.roomItems.map((item) {
                             final recipe = craft.recipes
                                 .where((r) => r.outputItemId == item.itemId)
@@ -670,13 +676,31 @@ class _RoomPageState extends ConsumerState<RoomPage>
   /// rectangle with a white cross and whose floor was a flat band: it read as a
   /// placeholder, and it drew no shelf, no plants and no light.
   ///
-  /// `deskLine` is 0.70 because that is where `floorAnchor.y` is, and that is
-  /// where the companion and every floor-standing piece of furniture are placed.
-  /// The old painter put its floor line at 0.64, so the pet stood 6% of the
-  /// room's height *below* the floor it was supposed to be standing on, which is
-  /// why it looked half-buried.
-  Widget _buildRoomBackground() {
-    return const CozyRoomBackdrop(deskLine: 0.70);
+  /// The deskLine is **derived from the anchor the companion is resting at**, not
+  /// hard-coded. The painter centres its mat at `deskLine + (1 - deskLine) * 0.26`
+  /// and the companion's paws land at the anchor's y, so the two only agree when
+  /// the deskLine is solved for that y.
+  ///
+  /// With the anchor at `0.70` (the floor anchor) the old hard-coded `0.70` put
+  /// the mat at `0.778` — about 187px *below* the paws on a 2400px scene, which
+  /// reads as hovering above the rug. And because the room binds the companion to
+  /// whatever furniture it just used, a fixed value is wrong for every other
+  /// anchor too: the rug anchor is `0.74`, so the mat would drift again.
+  ///
+  /// Deriving it makes the two planes the same number by construction rather than
+  /// by a matching literal. Furniture still moves with the plane, so its seating
+  /// and the pet's feet keep agreeing — the old painter's 0.64 floor line was what
+  /// made the pet look half-buried.
+  Widget _buildRoomBackground(AnchorPoint restingAnchor, double canvasHeight) {
+    // The companion's *feet*, not the anchor's raw y: on a furniture anchor the
+    // paws land higher than the anchor because the seat has thickness. Deriving
+    // from the raw y would put the mat above the paws again, just by less.
+    final feetFraction = CompanionPlacement.feetYFor(
+          anchor: restingAnchor,
+          canvasHeight: canvasHeight,
+        ) /
+        canvasHeight;
+    return CozyRoomBackdrop(deskLine: kDeskLineForFloorAnchor(feetFraction));
   }
 }
 

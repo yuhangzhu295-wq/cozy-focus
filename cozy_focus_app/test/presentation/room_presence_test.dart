@@ -12,6 +12,7 @@ import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/mochi_layered_renderer.dart';
 import 'package:cozy_focus_app/presentation/companion/room/room_simulation.dart';
 import 'package:cozy_focus_app/presentation/companion/room_presence.dart';
+import 'package:cozy_focus_app/presentation/widgets/cozy_room_backdrop.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_context.dart';
 import 'package:cozy_focus_app/presentation/controllers/craft_controller.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
@@ -125,6 +126,34 @@ void main() {
   tearDown(() async {
     container.dispose();
     await db.close();
+  });
+
+  group('the room rests Mochi on the mat it draws', () {
+    testWidgets('the mat the page draws is centred on the paws',
+        (tester) async {
+      // Reads the deskLine the page actually built and compares where the mat
+      // lands with where the paws actually are. Both come from the widget tree,
+      // so neither can drift from the page's own arithmetic.
+      await container.read(craftControllerProvider.notifier).loadAll();
+      await tester.pumpWidget(_app(container, const RoomPage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final backdrop =
+          tester.widget<CozyRoomBackdrop>(find.byType(CozyRoomBackdrop));
+      final feet = impliedPresence(tester);
+
+      // The painter centres its mat at deskLine + (1 - deskLine) * 0.26.
+      final matCentre = backdrop.deskLine + (1 - backdrop.deskLine) * 0.26;
+
+      // Within 2% of the scene height. The mat is an oval far larger than the
+      // paws, so the exact centre is not what the eye reads; being on it is.
+      expect((matCentre - feet.dy).abs(), lessThan(0.02),
+          reason: 'the page drew the mat at $matCentre but the paws are at '
+              '${feet.dy.toStringAsFixed(3)} of the scene - a gap of '
+              '${((matCentre - feet.dy) * 2400).toStringAsFixed(0)}px on a '
+              '2400px scene, which reads as hovering');
+    });
   });
 
   group('the seat is gated on real placement', () {

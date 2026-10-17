@@ -66,6 +66,30 @@ class CozyRoomBackdrop extends StatelessWidget {
 /// preference.
 const Color kCozyRoomWallBottom = Color(0xFFB0885B);
 
+/// Where the woven mat's **centre** sits, as a fraction of the scene height.
+///
+/// The companion's paws rest on this line, so the boards' reading — the pet
+/// lying *on* the rug — comes from the room's floor plane landing here. A host
+/// that also draws the companion from `floorAnchor` can solve for the `deskLine`
+/// that makes the two agree (see `kDeskLineForFloorAnchor`), instead of both
+/// sides hard-coding a number that can drift.
+///
+/// 0.26 of the floor region puts the mat under the pet without pushing it to the
+/// bottom edge, which is where the previous 0.26 landed the *hovering* pet: the
+/// paws were on the floor line while the mat centre was further down.
+const double kCozyRoomMatCentre = 0.60 + (1 - 0.60) * 0.26;
+
+/// The `deskLine` a host should pass so the mat's centre lands on the floor
+/// anchor's y.
+///
+/// Solves `deskLine + (1 - deskLine) * 0.26 == floorAnchorY` for `deskLine`.
+/// With `floorAnchorY = 0.70` this is ~0.595, i.e. the floor plane sits a little
+/// lower than the old 0.70, which is what closes the ~187px gap between the paws
+/// and the mat. The pet and every floor-standing piece of furniture move together
+/// with the plane, so the furniture's seating and the pet's feet still agree.
+double kDeskLineForFloorAnchor(double floorAnchorY) =>
+    (floorAnchorY - 0.26) / (1 - 0.26);
+
 /// The scene's own tones. Named here rather than in [AppColors] because they are
 /// illustration colours: no control, text or border may use them.
 ///
@@ -314,6 +338,9 @@ class _RoomPainter extends CustomPainter {
 
   /// The woven mat the pet rests on.
   void _paintMat(Canvas canvas, double w, double h, double deskY) {
+    // Same expression as [kCozyRoomMatCentre], but from the host's own deskLine:
+    // a caller that passes a deskLine chosen with `kDeskLineForFloorAnchor` gets
+    // the mat centred on the companion's paws.
     final centre = Offset(w * 0.5, deskY + (h - deskY) * 0.26);
     final rect = Rect.fromCenter(
       center: centre,
