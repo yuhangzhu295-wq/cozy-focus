@@ -154,6 +154,35 @@ void main() {
             'the shelf band carries $bins colour bins; a smudge carries few');
   });
 
+  testWidgets('the rug is drawn under the pet, not above it', (tester) async {
+    const floorAnchorY = 0.70;
+    final frame = await render(
+      tester,
+      CozyRoomHandDrawn(deskLine: kDeskLineForFloorAnchor(floorAnchorY)),
+    );
+
+    // The rug's fill is #CFB183. Find its pixels in the lower-middle band and
+    // take their mean row; the formula test alone could pass while the painter
+    // used a different coordinate.
+    final rows = frame.rowsWhere(
+      left: (size.width * 0.20).round(),
+      right: (size.width * 0.80).round(),
+      top: (size.height * 0.50).round(),
+      bottom: (size.height * 0.95).round(),
+      test: (r, g, b) =>
+          (r - 0xCF).abs() < 16 &&
+          (g - 0xB1).abs() < 16 &&
+          (b - 0x83).abs() < 16,
+    );
+    expect(rows.length, greaterThan(500),
+        reason: 'the rug has to be visible in the room band');
+    final mean = rows.reduce((a, b) => a + b) / rows.length / size.height;
+    expect(mean, closeTo(floorAnchorY, 0.06),
+        reason:
+            'the rug centre measured at $mean of the scene; the paws are at '
+            '$floorAnchorY, and the first version drew it 200px lower');
+  });
+
   test('the candidate rug follows the shipped mat contract', () {
     // The room page solves its deskLine from the floor anchor. With that same
     // deskLine the candidate's rug centre must land on the paws; the first
@@ -196,6 +225,24 @@ class _Frame {
       }
     }
     return count == 0 ? 0 : sum / count;
+  }
+
+  /// One row index per matching pixel, for a mean-position measurement.
+  List<int> rowsWhere({
+    required int left,
+    required int top,
+    required int right,
+    required int bottom,
+    required bool Function(int r, int g, int b) test,
+  }) {
+    final rows = <int>[];
+    for (var y = top; y < bottom; y++) {
+      for (var x = left; x < right; x++) {
+        final i = _offset(x, y);
+        if (test(rgba[i], rgba[i + 1], rgba[i + 2])) rows.add(y);
+      }
+    }
+    return rows;
   }
 
   int countWhere({

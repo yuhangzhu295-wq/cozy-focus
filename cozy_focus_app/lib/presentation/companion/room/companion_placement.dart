@@ -31,13 +31,18 @@ const double kFurnitureItemSize = 60.0;
 /// room's 92 pt avatar.
 const double kSpriteFeetInsetFraction = (512 - 458) / 512;
 
-/// The in-box vertical correction that puts a sprite's paws where the rig's are.
+/// The in-box vertical correction for a sprite whose own paws sit
+/// [spriteFeetInsetFraction] above its canvas bottom, so that they land on
+/// [targetFeetFraction] (measured from the top of the box).
 ///
-/// Negative, because the sprite's paws are lower in its canvas than the rig's
-/// are in the box. The caller passes the rig constant rather than this file
-/// importing the renderer, so the dependency still points one way.
-double spriteGroundOffsetFraction(double rigFeetInsetFraction) =>
-    kSpriteFeetInsetFraction - rigFeetInsetFraction;
+/// Every provider passes its **own** baseline: the built-in packs declare
+/// `458/512`, and an imported pack declares whatever its manifest says. A
+/// single built-in constant would leave a custom companion hovering or sunk.
+double spriteGroundOffsetFor({
+  required double targetFeetFraction,
+  required double spriteFeetInsetFraction,
+}) =>
+    targetFeetFraction - (1 - spriteFeetInsetFraction);
 
 /// Where the companion's avatar box goes, in canvas pixels.
 class CompanionBox {

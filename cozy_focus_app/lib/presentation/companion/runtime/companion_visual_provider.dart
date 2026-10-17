@@ -49,14 +49,14 @@ class CompanionVisualOptions {
   /// is a transition the behaviour layer has no vocabulary for.
   final AnimationState? animationState;
 
-  /// Moves a sprite drawing inside its box so its paws land where the layered
-  /// rig's do.
+  /// Where a sprite's paws must land inside the avatar box, measured from the
+  /// top. Null everywhere except the room.
   ///
-  /// Zero everywhere except the room. See
-  /// `CompanionSpritePlayer.groundOffsetFraction` for the measurement; the
-  /// value is computed by the room from the two renderers' own constants rather
-  /// than being a second hard-coded number.
-  final double spriteGroundOffsetFraction;
+  /// This is a *target*, not an offset, because the offset depends on the pack's
+  /// own `groundBaseline`: a built-in pack declares `458/512`, and an imported
+  /// pack declares its own. Each provider converts the target with its own
+  /// manifest rather than applying one built-in constant to every companion.
+  final double? spriteFeetTargetFraction;
 
   const CompanionVisualOptions({
     this.displayName = '',
@@ -70,7 +70,7 @@ class CompanionVisualOptions {
     this.onTapReact,
     this.onLongPressReact,
     this.animationState,
-    this.spriteGroundOffsetFraction = 0,
+    this.spriteFeetTargetFraction,
   });
 }
 

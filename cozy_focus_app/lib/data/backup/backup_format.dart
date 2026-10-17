@@ -38,6 +38,14 @@ abstract final class BackupFormat {
   /// memory problem before any validation runs.
   static const int maxBytes = 64 * 1024 * 1024;
 
+  /// Caps on the pack payload, checked before decoding as well as after.
+  static const int maxPackBytes = 32 * 1024 * 1024;
+  static const int maxPackFiles = 2000;
+
+  /// Settings keys that are this app's own bookkeeping, not the user's
+  /// preferences. They stay in the database but never travel in a backup.
+  static const Set<String> internalSettingsKeys = {'backup_restore_epoch'};
+
   /// The business tables a backup carries, parents before children.
   ///
   /// `sync_outbox` is deliberately absent: it holds pending writes, not user
@@ -64,8 +72,20 @@ abstract final class BackupFormat {
     'reward_ledger',
   ];
 
-  /// The reverse order, for deletes: children first.
-  static List<String> get tablesInDeleteOrder => tables.reversed.toList();
+  /// Tables that must be cleared on restore but are not carried in a backup.
+  ///
+  /// `sync_outbox` holds pending writes. A backup must not carry them (replaying
+  /// them would undo the restore), but a restore must still clear the *target's*
+  /// queue - otherwise operations queued before the restore would be flushed
+  /// against the restored world.
+  static const List<String> clearedOnly = ['sync_outbox'];
+
+  /// Every table the snapshot and the delete pass touch.
+  static List<String> get snapshotTables => [...tables, ...clearedOnly];
+
+  /// The reverse order, for deletes: children first, then the outbox.
+  static List<String> get tablesInDeleteOrder =>
+      [...clearedOnly, ...tables.reversed];
 }
 
 /// What a validated backup contains, before anything is written.
@@ -222,8 +242,11 @@ abstract final class BackupReader {
       if (files is! Map<String, dynamic>) {
         return const BackupReadResult.refused('备份的伙伴包文件清单无效。');
       }
+      if (files.length > BackupFormat.maxPackFiles) {
+        return const BackupReadResult.refused('备份的伙伴包文件数量超过上限。');
+      }
       for (final entry in files.entries) {
-        if (entry.value is! String || !_safeRelative(entry.key)) {
+        if (entry.value is! String || !isSafePackPath(entry.key)) {
           return const BackupReadResult.refused(
             '备份含不安全的伙伴包文件路径。',
           );
@@ -291,12 +314,20 @@ String checksumFor(Map<String, dynamic> payload) =>
     sha256.convert(utf8.encode(canonicalJson(payload))).toString();
 
 /// Whether [path] is a relative path that cannot escape the pack root.
-bool _safeRelative(String path) {
+///
+/// Strict on purpose, and on every platform: a backup written on Linux can be
+/// restored on Windows, where `\` is a separator too. A check that only split
+/// on `/` accepted `pack\..\..\target`, and the staging writer then created the
+/// file outside the root. A checksum does not help here - whoever wrote the
+/// file can compute a matching one - so the path itself has to be safe.
+bool isSafePackPath(String path) {
   if (path.isEmpty) return false;
-  if (path.startsWith('/') || path.startsWith(r'\')) return false;
+  if (path.contains(r'\')) return false;
+  if (path.startsWith('/') || path.startsWith('.')) return false;
   if (RegExp(r'^[A-Za-z]:').hasMatch(path)) return false;
   for (final part in path.split('/')) {
-    if (part == '..' || part.isEmpty) return false;
+    if (part.isEmpty || part == '.' || part == '..') return false;
+    if (part.contains(':')) return false;
   }
   return true;
 }

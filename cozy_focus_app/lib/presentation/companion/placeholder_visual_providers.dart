@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'mochi_pose_spec.dart';
 import 'procedural_companion_art.dart';
+import 'room/companion_placement.dart';
 import 'runtime/companion_action_manifest.dart';
 import 'runtime/companion_action_manifest_data.dart';
 import 'runtime/companion_context.dart';
@@ -31,6 +32,16 @@ import 'runtime/companion_visual_provider.dart';
 /// `RabbitFocusEngine`: all three companions are driven by the same
 /// [CompanionBehaviorDirector] over the same shared `PetProgress`. These classes
 /// only draw.
+/// The built-in cat and rabbit packs use the same declared baseline as the dog.
+double _groundOffsetFor(CompanionVisualOptions options) {
+  final target = options.spriteFeetTargetFraction;
+  if (target == null) return 0;
+  return spriteGroundOffsetFor(
+    targetFeetFraction: target,
+    spriteFeetInsetFraction: kSpriteFeetInsetFraction,
+  );
+}
+
 class CatVisualProvider extends CompanionVisualProvider {
   CatVisualProvider();
 
@@ -178,6 +189,7 @@ class PlaceholderCompanionAvatar extends StatelessWidget {
             size: options.size,
             reducedMotion: intent.reducedMotion,
             semanticLabel: '$name $state',
+            groundOffsetFraction: _groundOffsetFor(options),
           )
         : ProceduralCompanionArt(
             silhouette: silhouette,

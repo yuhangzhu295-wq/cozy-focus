@@ -14,7 +14,6 @@ import 'runtime/companion_event.dart';
 import 'companion_presentation_mapper.dart';
 import 'focus_phase.dart';
 import 'mochi_layered_renderer.dart';
-import 'room/companion_placement.dart';
 import 'companion_selection.dart';
 import 'pack/companion_availability_provider.dart';
 import 'pack/installed_pack_profiles.dart';
@@ -84,6 +83,15 @@ class CompanionAvatar extends ConsumerStatefulWidget {
   /// authoritative and is not read or written here.
   final String? roomAnchor;
 
+  /// Whether this avatar is drawn **in the room**, independently of which
+  /// anchor it is bound to.
+  ///
+  /// `roomAnchor` cannot answer this: the floor anchor has an empty `itemId`,
+  /// so `_anchorRoleFor` returns null for exactly the position the companion
+  /// idles at most of the time. Using the anchor as the proxy left the floor
+  /// case without the sprite ground correction.
+  final bool inRoom;
+
   /// The action the room has already committed the companion to.
   ///
   /// A semantic behaviour id (`room_sit`, `pause_rest`, `focus_read`, …). It is
@@ -147,6 +155,7 @@ class CompanionAvatar extends ConsumerStatefulWidget {
     this.focusCategoryId,
     this.companionId,
     this.roomAnchor,
+    this.inRoom = false,
     this.companionAction,
     this.animationState,
     this.vitals = PresentationVitals.neutral,
@@ -519,11 +528,8 @@ class _CompanionAvatarState extends ConsumerState<CompanionAvatar> {
             // same arithmetic that anchors this box, so it is the one host that
             // needs the sprite's ink to agree with the rig's. Everywhere else
             // the box is composed against the page and stays at zero.
-            spriteGroundOffsetFraction: widget.roomAnchor == null
-                ? 0
-                : spriteGroundOffsetFraction(
-                    MochiLayerAssets.feetInsetFraction,
-                  ),
+            spriteFeetTargetFraction:
+                !widget.inRoom ? null : 1 - MochiLayerAssets.feetInsetFraction,
           ),
         );
       },

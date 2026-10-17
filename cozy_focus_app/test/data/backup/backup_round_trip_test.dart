@@ -39,7 +39,13 @@ void main() {
           .customSelect('SELECT * FROM "$table" ORDER BY rowid')
           .get();
       out[table] = [
-        for (final row in rows) Map<String, dynamic>.from(row.data)
+        for (final row in rows)
+          // The restore epoch is this app's bookkeeping, written after the
+          // replacement; it is not part of the user's data and never travels in
+          // a backup.
+          if (table != 'app_settings' ||
+              !BackupFormat.internalSettingsKeys.contains(row.data['key']))
+            Map<String, dynamic>.from(row.data)
       ];
     }
     return out;
@@ -451,5 +457,198 @@ void main() {
       now: DateTime.utc(2026, 10, 18),
     ))) as Map<String, dynamic>;
     expect(first['checksum'], second['checksum']);
+  });
+
+  test('a pack path that escapes the root is refused on every platform',
+      () async {
+    final bytes = await BackupService.export(db: db);
+    // The backslash case is the one the first version missed: it split on '/'
+    // only, so `pack\..\..\evil` passed on Windows.
+    for (final evil in const [
+      'pack/../../evil.txt',
+      r'pack\..\..\evil.txt',
+      '/absolute.txt',
+      'C:/evil.txt',
+      'pack/./x.txt',
+      'pack//x.txt',
+    ]) {
+      final decoded = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+      final packs = decoded['packs'] as Map<String, dynamic>;
+      final files = packs['files'] as Map<String, dynamic>;
+      files[evil] = base64Encode(const [1, 2, 3]);
+      decoded.remove('checksum');
+      decoded['checksum'] = checksumFor(decoded);
+
+      final read = BackupReader.read(
+        Uint8List.fromList(utf8.encode(jsonEncode(decoded))),
+        currentSchema: db.schemaVersion,
+      );
+      expect(read.ok, isFalse, reason: evil);
+      expect(read.refusal, contains('不安全'), reason: evil);
+    }
+  });
+
+  test('a finishing session refuses the restore', () async {
+    final bytes = await BackupService.export(db: db);
+    final read = BackupReader.read(bytes, currentSchema: db.schemaVersion);
+
+    final target = await freshDb();
+    await seed(target);
+    // Ended but never saved: its focus time exists only in this row.
+    await target.customStatement(
+      'INSERT INTO focus_sessions (id,user_id,category_id,task_name,task_id,'
+      'planned_seconds,mode,timing_mode,start_at,pause_intervals_json,end_at,'
+      'status,timezone_offset_minutes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [
+        'finishing',
+        'local',
+        null,
+        null,
+        null,
+        1500,
+        'focus',
+        'countdown',
+        1,
+        '[]',
+        2,
+        'finishing',
+        480,
+      ],
+    );
+    final before = await dump(target);
+
+    await expectLater(
+      BackupService.restore(db: target, payload: read.payload!),
+      throwsA(isA<BackupException>()),
+    );
+    expect(await dump(target), before);
+  });
+
+  test('a running rest refuses the restore', () async {
+    final bytes = await BackupService.export(db: db);
+    final read = BackupReader.read(bytes, currentSchema: db.schemaVersion);
+
+    final target = await freshDb();
+    await seed(target);
+    await target.customStatement(
+      'INSERT INTO rest_sessions (id,user_id,planned_seconds,start_at,end_at,'
+      'status,created_at) VALUES (?,?,?,?,?,?,?)',
+      ['rest-live', 'local', 600, 1, null, 'running', 1],
+    );
+    final before = await dump(target);
+
+    await expectLater(
+      BackupService.restore(db: target, payload: read.payload!),
+      throwsA(isA<BackupException>()),
+    );
+    expect(await dump(target), before);
+  });
+
+  test('a restore clears the target device pending outbox', () async {
+    await seed(db);
+    final bytes = await BackupService.export(db: db);
+    final read = BackupReader.read(bytes, currentSchema: db.schemaVersion);
+
+    final target = await freshDb();
+    await seed(target);
+    await target.customStatement(
+      'INSERT INTO sync_outbox (id,table_name,record_id,operation,payload_json,'
+      'status,attempt_count,created_at,last_attempt_at,error_message) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?)',
+      [
+        'op-1',
+        'tasks',
+        'task-old',
+        'upsert',
+        '{}',
+        'pending',
+        0,
+        1,
+        null,
+        null
+      ],
+    );
+
+    await BackupService.restore(db: target, payload: read.payload!);
+
+    final outbox = await target
+        .customSelect('SELECT COUNT(*) AS c FROM sync_outbox')
+        .getSingle();
+    expect(outbox.data['c'], 0,
+        reason: 'an operation queued before the restore must not be replayed '
+            'against the restored world');
+  });
+
+  group('crash recovery', () {
+    late Directory parent;
+    late Directory live;
+    late Directory previous;
+    late File journal;
+
+    setUp(() {
+      parent = Directory.systemTemp.createTempSync('cozy_recover');
+      addTearDown(() => parent.deleteSync(recursive: true));
+      live = Directory('${parent.path}/companion_packs');
+      previous = Directory('${parent.path}/.cozy_restore_previous');
+      journal = File('${parent.path}/.cozy_restore_journal.json');
+    });
+
+    Future<void> writeJournal(String epoch) async {
+      await journal.writeAsString(jsonEncode({
+        'epoch': epoch,
+        'previous': previous.path,
+        'staging': '${parent.path}/.cozy_restore_staging',
+      }));
+    }
+
+    test('the data committed: the new packs are kept and the old are dropped',
+        () async {
+      live.createSync();
+      File('${live.path}/new.txt').writeAsStringSync('new');
+      previous.createSync();
+      File('${previous.path}/old.txt').writeAsStringSync('old');
+      await writeJournal('epoch-1');
+      await db.customStatement(
+        'INSERT OR REPLACE INTO app_settings (key, value) '
+        "VALUES ('backup_restore_epoch', 'epoch-1')",
+      );
+
+      await BackupService.recoverInterruptedRestore(db: db, packRoot: live);
+
+      expect(File('${live.path}/new.txt').existsSync(), isTrue);
+      expect(previous.existsSync(), isFalse);
+      expect(journal.existsSync(), isFalse);
+    });
+
+    test('the data did not commit: the old packs come back', () async {
+      live.createSync();
+      File('${live.path}/new.txt').writeAsStringSync('new');
+      previous.createSync();
+      File('${previous.path}/old.txt').writeAsStringSync('old');
+      await writeJournal('epoch-2');
+      // No matching epoch in app_settings.
+
+      await BackupService.recoverInterruptedRestore(db: db, packRoot: live);
+
+      expect(File('${live.path}/old.txt').existsSync(), isTrue);
+      expect(File('${live.path}/new.txt').existsSync(), isFalse);
+      expect(previous.existsSync(), isFalse);
+      expect(journal.existsSync(), isFalse);
+    });
+
+    test('a crash before the swap leaves the live root alone', () async {
+      live.createSync();
+      File('${live.path}/old.txt').writeAsStringSync('old');
+      final staging = Directory('${parent.path}/.cozy_restore_staging');
+      staging.createSync();
+      File('${staging.path}/new.txt').writeAsStringSync('new');
+      await writeJournal('epoch-3');
+
+      await BackupService.recoverInterruptedRestore(db: db, packRoot: live);
+
+      expect(File('${live.path}/old.txt').existsSync(), isTrue);
+      expect(staging.existsSync(), isFalse);
+      expect(journal.existsSync(), isFalse);
+    });
   });
 }

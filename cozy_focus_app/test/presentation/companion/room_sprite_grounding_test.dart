@@ -51,7 +51,10 @@ void main() {
 
     test('the correction makes the sprite paws meet the rig paws', () {
       const rigInset = MochiLayerAssets.feetInsetFraction;
-      final correction = spriteGroundOffsetFraction(rigInset);
+      final correction = spriteGroundOffsetFor(
+        targetFeetFraction: 1 - rigInset,
+        spriteFeetInsetFraction: kSpriteFeetInsetFraction,
+      );
 
       // Where each renderer's paws land, measured from the top of the same box.
       const rigPaws = 1 - rigInset;
@@ -69,7 +72,11 @@ void main() {
       // paws) than the rig's does (17.2%). Anchored by the rig constant, the
       // sprite's paws therefore sit *below* the contact line and the character
       // reads as sunk/floating against it depending on the surface's own depth.
-      expect(spriteGroundOffsetFraction(MochiLayerAssets.feetInsetFraction),
+      expect(
+          spriteGroundOffsetFor(
+            targetFeetFraction: 1 - MochiLayerAssets.feetInsetFraction,
+            spriteFeetInsetFraction: kSpriteFeetInsetFraction,
+          ),
           lessThan(0));
     });
   });
@@ -95,21 +102,38 @@ void main() {
         avatarSize: 92,
         feetInsetFraction: MochiLayerAssets.feetInsetFraction,
       );
-      expect(box.top, isNot(0));
+      const rigInset = MochiLayerAssets.feetInsetFraction;
+      final feet = CompanionPlacement.feetYFor(
+        anchor: anchor,
+        canvasHeight: 384,
+      );
+      // The exact contract, not "some number": the box is the rig's box, and
+      // no correction parameter exists to change it.
+      expect(box.top, closeTo(feet - 92 * (1 - rigInset), 1e-9));
       expect(box.size, 92);
     });
 
-    test('the correction is the same at every anchor and surface', () {
-      // A single constant, applied inside the box. There is no per-anchor term
-      // to drift, which is what lets the same fix cover the rug, the desk, the
-      // sofa and the chair.
-      final correction = spriteGroundOffsetFraction(
-        MochiLayerAssets.feetInsetFraction,
+    test('the corrected sprite paws land on the contact line at every anchor',
+        () {
+      // The real composition: box top + the sprite's own ink bottom + the
+      // in-box correction. This is what the previous version failed to assert -
+      // it compared a constant to itself.
+      final offset = spriteGroundOffsetFor(
+        targetFeetFraction: 1 - MochiLayerAssets.feetInsetFraction,
+        spriteFeetInsetFraction: kSpriteFeetInsetFraction,
       );
-      for (final surface in const [0.0, 0.25, 0.42, 0.5, 0.74, 1.0]) {
+
+      for (final (itemId, surface) in const [
+        ('', 0.0), // the floor anchor - the case that had no correction
+        ('desk', 0.25),
+        ('sofa', 0.42),
+        ('bed', 0.5),
+        ('chair', 0.74),
+        ('table', 1.0),
+      ]) {
         final anchor = AnchorPoint(
           id: 'a',
-          itemId: surface == 0.0 ? '' : 'desk',
+          itemId: itemId,
           roomItemId: 'r',
           x: 0.5,
           y: 0.7,
@@ -119,22 +143,26 @@ void main() {
           anchor: anchor,
           canvasHeight: 384,
         );
-        // feetY is independent of the renderer; the correction only changes
-        // where the drawing sits inside the box that feetY anchors.
-        expect(feet.isFinite, isTrue);
-        expect(
-            correction,
-            closeTo(
-                spriteGroundOffsetFraction(MochiLayerAssets.feetInsetFraction),
-                1e-12));
+        final box = CompanionPlacement.boxFor(
+          anchor: anchor,
+          canvasWidth: 360,
+          canvasHeight: 384,
+          avatarSize: 92,
+          feetInsetFraction: MochiLayerAssets.feetInsetFraction,
+        );
+        final paws = box.top +
+            box.size * (1 - kSpriteFeetInsetFraction) +
+            offset * box.size;
+        expect(paws, closeTo(feet, 1e-9),
+            reason: '$itemId: the sprite paws must land on the contact line');
       }
     });
   });
 
   group('scope', () {
-    test('the default is zero, so an unaware caller is unchanged', () {
+    test('the default is null, so an unaware caller is unchanged', () {
       const options = CompanionVisualOptions();
-      expect(options.spriteGroundOffsetFraction, 0);
+      expect(options.spriteFeetTargetFraction, isNull);
     });
 
     test('only the room asks for it', () {
@@ -145,27 +173,48 @@ void main() {
           .listSync(recursive: true)
           .whereType<File>()
           .where((f) => f.path.endsWith('.dart'))
-          .where((f) =>
-              f.readAsStringSync().contains('spriteGroundOffsetFraction:'))
+          .where(
+              (f) => f.readAsStringSync().contains('spriteFeetTargetFraction:'))
           .map((f) => f.path.replaceAll(r'\', '/'))
           .toList();
 
       expect(sources, isNotEmpty);
       for (final path in sources) {
         if (path.endsWith('companion_visual_provider.dart') ||
-            path.endsWith('companion_renderer.dart') ||
-            path.endsWith('mochi_visual_provider.dart') ||
-            path.endsWith('pet_avatar_widget.dart')) {
+            path.endsWith('companion_renderer.dart')) {
           continue; // the plumbing, not a caller
         }
         expect(path.endsWith('companion_avatar.dart'), isTrue,
-            reason: '$path passes a ground correction; only the room should');
+            reason: '$path passes a ground target; only the room should');
       }
 
       final avatar = File('lib/presentation/companion/companion_avatar.dart')
           .readAsStringSync();
-      expect(avatar.contains('widget.roomAnchor == null'), isTrue,
-          reason: 'the correction has to be gated on the room anchor');
+      // Gated on `inRoom`, not on the anchor: the floor anchor has no itemId,
+      // so its role is null and an anchor-based gate left the most common
+      // position without the correction.
+      expect(avatar.contains('!widget.inRoom'), isTrue,
+          reason: 'the correction has to be gated on the room flag');
+      expect(avatar.contains('widget.roomAnchor == null'), isFalse,
+          reason: 'the anchor is not the same fact as being in the room');
+
+      final roomPage =
+          File('lib/presentation/pages/room_page.dart').readAsStringSync();
+      expect(roomPage.contains('inRoom: true'), isTrue,
+          reason: 'the room must tell the avatar it is in the room');
+
+      // Every sprite entry point has to forward the option. The first version
+      // only did this on the dog's path, so the cat, the rabbit and imported
+      // packs silently lost it.
+      for (final path in const [
+        'lib/presentation/companion/runtime/companion_sprite_art.dart',
+        'lib/presentation/companion/placeholder_visual_providers.dart',
+        'lib/presentation/widgets/pet_avatar_widget.dart',
+      ]) {
+        final source = File(path).readAsStringSync();
+        expect(source.contains('groundOffsetFraction:'), isTrue,
+            reason: '$path drops the ground correction');
+      }
     });
   });
 }

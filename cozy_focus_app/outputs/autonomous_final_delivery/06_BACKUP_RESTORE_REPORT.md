@@ -64,13 +64,24 @@ The order is the safety property:
    paused or restored focus session refuses the restore.
 8. **Column check** against `PRAGMA table_info` before any delete. A backup that
    names a column this build does not have is refused.
-9. **Pack staging**: files are written to a sibling `.cozy_restore_*` directory.
-   Nothing in the live pack root is touched yet.
-10. **One transaction**: delete children-first, insert parents-first, then
-    verify each table's row count before commit. A mismatch throws and the
-    transaction rolls back.
-11. **Pack swap** by two renames. If it fails, the pre-restore database snapshot
-    is re-applied, so the two halves cannot disagree.
+9. **Pack staging**: files are written to a sibling `.cozy_restore_*` directory,
+   with the decoded size estimated **before** decoding and the path checked
+   again after canonicalisation.
+10. **Journal, then swap**: a journal naming the epoch, the old root and the
+    staging root is written and renamed into place, then the live root is moved
+    aside and the staging root moved in. A failure here puts the old root back.
+11. **One database transaction**: re-check unsettled work, delete
+    children-first (including `sync_outbox`), insert parents-first, verify every
+    table's row count, and write the epoch marker — all before commit. A
+    mismatch throws and the whole transaction rolls back, and the packs are
+    swapped back.
+12. **Cleanup**: the old root and the journal are deleted; a cleanup failure is
+    harmless because the committed state already agrees.
+13. **Crash recovery** (`recoverInterruptedRestore`, called from `main()` before
+    the app opens its connection): if the journal's epoch is in `app_settings`,
+    the data committed and the new packs stay; if not, the old packs are
+    restored and the staging directory removed. A crash before the first rename
+    leaves the live root untouched.
 
 The UI then invalidates the data controllers (`home`, `craft`, `growth`,
 `records`, `analytics`, `timeline`, `today plan`, `distraction`, `rest`,
@@ -79,8 +90,8 @@ re-reads the restored rows instead of showing a cached total.
 
 ## Tests
 
-`test/data/backup/backup_round_trip_test.dart` — 11 tests, all isolated (in-memory
-database, temporary directories):
+`test/data/backup/backup_round_trip_test.dart` — **18 tests**, all isolated
+(in-memory database, temporary directories):
 
 | Test | What it proves |
 |---|---|
@@ -95,6 +106,13 @@ database, temporary directories):
 | restoring the same backup twice is idempotent | no duplication |
 | custom packs travel and are replaced, not merged | stale files are gone |
 | the checksum is stable across two exports | canonical encoding |
+| a pack path that escapes the root is refused on every platform | six shapes, including the Windows backslash case |
+| a finishing session refuses the restore | its unsaved focus time is protected |
+| a running rest refuses the restore | the rest row is protected |
+| a restore clears the target device pending outbox | no pre-restore write is replayed |
+| crash: data committed | new packs kept, old dropped, journal cleared |
+| crash: data not committed | old packs restored, journal cleared |
+| crash before the swap | live root untouched, staging removed |
 
 ## Device walk
 

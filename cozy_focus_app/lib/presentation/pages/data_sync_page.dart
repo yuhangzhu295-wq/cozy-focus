@@ -18,10 +18,12 @@ import '../controllers/analytics_controller.dart';
 import '../controllers/app_preferences_controller.dart';
 import '../controllers/craft_controller.dart';
 import '../controllers/distraction_controller.dart';
+import '../controllers/focus_session_controller.dart';
 import '../controllers/growth_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/providers.dart';
 import '../controllers/records_controller.dart';
+import '../controllers/reports_controller.dart';
 import '../controllers/rest_controller.dart';
 import '../controllers/timeline_controller.dart';
 import '../controllers/today_plan_controller.dart';
@@ -187,11 +189,11 @@ class _DataSyncPageState extends ConsumerState<DataSyncPage> {
 
       // Checked before the confirmation so the user is not asked to approve
       // something that is going to be refused a moment later.
-      if (await BackupService.hasLiveSession(db)) {
+      if (await BackupService.hasUnsettledWork(db)) {
         if (!mounted) return;
         await _showResult(
           title: '无法恢复',
-          body: '正在专注中。请先结束或暂停并保存当前专注，再恢复备份。',
+          body: '还有未结束的专注或休息。请先保存当前专注、结束休息，再恢复备份。',
         );
         return;
       }
@@ -249,6 +251,15 @@ class _DataSyncPageState extends ConsumerState<DataSyncPage> {
     ref.invalidate(installedPackProfilesProvider);
     ref.invalidate(companionSelectionProvider);
     ref.invalidate(roomSimulationProvider);
+    // The engine and the session controller hold the *old* world in memory. A
+    // restore while they are alive would let a stale session settle against a
+    // ledger that no longer has its idempotency key. Recreating them is what
+    // makes "the restore replaced the dataset" true for the running app too.
+    ref.invalidate(focusSessionEngineProvider);
+    ref.invalidate(focusSessionControllerProvider);
+    ref.invalidate(reportsControllerProvider);
+    // Family providers: invalidating the family drops every open detail page.
+    ref.invalidate(taskDetailControllerProvider);
   }
 
   Future<bool?> _confirm(BackupPreview preview) {

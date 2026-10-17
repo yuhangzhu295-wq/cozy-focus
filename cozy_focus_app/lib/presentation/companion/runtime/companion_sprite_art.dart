@@ -111,12 +111,17 @@ class CompanionSpriteAvatar extends StatelessWidget {
   /// everything below them are unchanged either way.
   final CompanionFrameSource frameSource;
 
+  /// In-box vertical correction, computed by the provider from **its own**
+  /// manifest baseline. Zero when the caller is not the room.
+  final double groundOffsetFraction;
+
   const CompanionSpriteAvatar({
     super.key,
     required this.spec,
     required this.intent,
     required this.options,
     this.frameSource = const CompanionFrameSource.assets(),
+    this.groundOffsetFraction = 0,
   });
 
   @override
@@ -137,6 +142,7 @@ class CompanionSpriteAvatar extends StatelessWidget {
       restartToken: spec.loopMode == SpriteLoopMode.once
           ? intent.behaviorStartedAt
           : null,
+      groundOffsetFraction: groundOffsetFraction,
     );
 
     return Column(

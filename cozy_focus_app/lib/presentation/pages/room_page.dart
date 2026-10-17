@@ -629,6 +629,10 @@ class _RoomPageState extends ConsumerState<RoomPage>
           // The anchor's role places the companion and selects the ambient
           // recipe when nothing more specific is known.
           roomAnchor: _anchorRoleFor(anchor.itemId),
+          // A separate fact from the anchor: the floor anchor has no itemId, so
+          // its role is null, but the companion is still in the room and still
+          // needs the sprite ground correction.
+          inRoom: true,
           // ...but the simulation's committed action is what the companion is
           // actually doing, and it is the same action the furniture panel names
           // to the player. Passing it is what stops the room saying one thing

@@ -13,6 +13,7 @@ library;
 
 import 'package:flutter/widgets.dart';
 
+import '../room/companion_placement.dart';
 import '../runtime/companion_action_manifest.dart';
 import '../runtime/companion_frame_source.dart';
 import '../runtime/companion_pose.dart';
@@ -95,11 +96,25 @@ class PackBackedCompanionVisualProvider extends CompanionVisualProvider {
       return SizedBox.square(dimension: options.size);
     }
 
+    // The correction uses *this pack's* declared ground line. An imported pack
+    // may declare a different canvas and baseline from the built-in 512/458,
+    // and applying the built-in constant would leave its paws hovering or sunk.
+    final target = options.spriteFeetTargetFraction;
+    final offset = target == null || manifest.canvasHeight <= 0
+        ? 0.0
+        : spriteGroundOffsetFor(
+            targetFeetFraction: target,
+            spriteFeetInsetFraction:
+                (manifest.canvasHeight - manifest.groundBaseline) /
+                    manifest.canvasHeight,
+          );
+
     return CompanionSpriteAvatar(
       spec: spec,
       intent: intent,
       options: options,
       frameSource: frameSource,
+      groundOffsetFraction: offset,
     );
   }
 }

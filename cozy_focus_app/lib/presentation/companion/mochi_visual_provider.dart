@@ -13,8 +13,20 @@ import 'runtime/companion_action_manifest_data.dart';
 import 'runtime/companion_context.dart';
 import 'runtime/companion_pose.dart';
 import 'runtime/companion_presentation_intent.dart';
+import 'room/companion_placement.dart';
 import 'runtime/companion_sprite_art.dart';
 import 'runtime/companion_visual_provider.dart';
+
+/// The in-box correction for the built-in dog pack, whose manifest declares
+/// `groundBaseline = 458` on a 512 canvas.
+double _groundOffsetFor(CompanionVisualOptions options) {
+  final target = options.spriteFeetTargetFraction;
+  if (target == null) return 0;
+  return spriteGroundOffsetFor(
+    targetFeetFraction: target,
+    spriteFeetInsetFraction: kSpriteFeetInsetFraction,
+  );
+}
 
 /// Mochi's visual provider — the leaf where dog-specific drawing lives.
 ///
@@ -199,7 +211,7 @@ class _MochiPoseAvatar extends ConsumerWidget {
         spriteRestartToken: intent.behaviorStartedAt,
         // Zero unless the room asked for it: the other screens compose the
         // companion against their own layout and are not being retuned.
-        spriteGroundOffsetFraction: options.spriteGroundOffsetFraction,
+        spriteGroundOffsetFraction: _groundOffsetFor(options),
         semanticLabelOverride: intent.baseContext == CompanionBaseContext.room
             ? '${options.displayName} 在房间'
             : null,
