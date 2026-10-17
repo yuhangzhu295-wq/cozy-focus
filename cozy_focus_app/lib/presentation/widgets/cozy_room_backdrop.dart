@@ -4,6 +4,20 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'cozy_room_handdrawn_candidate.dart';
+
+/// Whether the hand-drawn room **candidate** replaces the shipped painter.
+///
+/// Off by default, and off in every build that does not pass
+/// `--dart-define=ROOM_CANDIDATE=true`. The candidate is not approved, so the
+/// production room must remain what a normal build draws; the flag exists only
+/// so the comparison screenshots can come from the real pages rather than from a
+/// separate mock-up, which is what the brief asks for.
+///
+/// A compile-time constant rather than a runtime setting on purpose: there is no
+/// path from the UI, a config file or a restored backup to the candidate.
+const bool kUseHandDrawnRoomCandidate =
+    bool.fromEnvironment('ROOM_CANDIDATE', defaultValue: false);
 
 /// The warm room the pet sits in, drawn rather than photographed.
 ///
@@ -46,6 +60,12 @@ class CozyRoomBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kUseHandDrawnRoomCandidate) {
+      // Same widget contract (deskLine / dim), so every host screen composes
+      // the candidate exactly as it composes the shipped room. Nothing else in
+      // the page knows which painter it got.
+      return CozyRoomHandDrawn(deskLine: deskLine, dim: dim);
+    }
     // Decorative: the screens using it already say what they are, so it must not
     // add a stop to the accessibility tree.
     return ExcludeSemantics(
