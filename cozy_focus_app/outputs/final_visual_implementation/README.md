@@ -422,3 +422,30 @@ hw.ramSize=2G
 设备侧另有一条实测结论：**每次模拟器重启后，已安装的 CozyFocus 的 Activity 会解析不到**
 （`am start` 报 `Activity class does not exist`，但 `pm list packages` 仍列出它）；
 `uninstall` + `install` 后立刻恢复。本窗口遇到两次，两次都是这样修好的。
+
+
+---
+
+## 5c. 房间宠物「贴地」：平面已对齐，剩下的是 sprite 内容
+
+房间里的宠物原本**悬在地毯上方约 187px**（2400px 场景）。根因是两个常量各写各的：画笔把毯子中心放在
+`deskLine + (1 - deskLine) * 0.26`，而宠物脚落在**它当前所在锚点**的 y；地板锚点与 deskLine 都是 0.70，
+于是毯子落在 0.778。
+
+**已修（`a5d8ab4`）**：不再硬编码 deskLine，改为**反算**——解 `deskLine + (1 - deskLine) * 0.26 == feetY`，
+让两个平面由构造保证是同一个数。两个关键细节都是一次改错才发现的：必须用
+`CompanionPlacement.feetYFor(anchor)` 而不是裸 `anchor.y`（家具锚点上脚比锚点高，座椅有厚度）；
+必须用**宠物当前所在的那个锚点**而不是固定的 floorAnchor（房间会把伙伴绑到刚用过的家具上，地毯锚点是
+0.74）。home / focus / growth **故意不改**——那三屏的 deskLine 是布局决定，宠物站在桌面上而不是毯子上。
+
+守卫读的是页面真正构建出来的东西：`room_presence_test.dart` 渲染真 `RoomPage`、从 widget 树里读那个
+`CozyRoomBackdrop` 的 deskLine、再和从 avatar 自身几何量出的脚 y 对账。反向证明走这条渲染级测试，
+改回 0.70 后报错精确到 **"mat at 0.778 but the paws are at 0.700 - a gap of 187px"**。
+
+**还差几像素，且原因已量化（本次未改）**：`feetInsetFraction = 83/482` 是 **rig**（`assets/mochi`）画布的
+墨迹底比例，假设爪底在盒高 82.78%；而狗 sprite 实测墨迹到 512 画布的 y=458，即 **89.45%**。
+差 6.67% 的盒高，在 92dp 的 avatar 上就是 **6.14dp**——这正是逻辑脚位算得比真实爪底高、设备上看着悬空的原因。
+
+没有顺手改它的理由：这个常量被 **19 处、7 个文件**共用（rig、房间存在性、座位几何、房间页、三个测试），
+改它等于同时改 rig 与 sprite 两套美术的混合契约，会牵连所有座位几何与布局断言。**这属于共享渲染契约的
+决定，不是视觉一致性修补**，留给所有者；要改的话应按 rig / sprite 分别给一套插入比例，而不是动共享常量。
