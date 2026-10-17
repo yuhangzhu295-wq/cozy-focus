@@ -17,6 +17,57 @@ one look identical to a finished one.
 
 below; re-verify the git state before acting on it.
 
+## 2026-10-18 — autonomous final delivery round
+
+**HEAD `6f03180` on `recovery/v4.2.1-rebuild`** (commits this round: `b9e19ee`,
+`599099a`, `df811ca`, `b068495`, `6f03180`). Local == remote after the push; if
+the push did not complete, `git push origin recovery/v4.2.1-rebuild` is the only
+step.
+
+### Delivered
+
+- **Room ground line for both renderers**: the sprite's paws are corrected
+  inside its box (the box does not move), zero outside the room, and the target
+  is converted per pack from its own manifest baseline. The room passes an
+  explicit `inRoom` flag because the floor anchor has no `itemId`.
+- **Hand-drawn room candidate** (V1 shelf, V2 side wall, V3 window, rug plane),
+  default-off behind `--dart-define=ROOM_CANDIDATE=true`.
+- **Local backup and restore**: versioned envelope, canonical SHA-256, preview,
+  explicit confirmation, unsettled-work refusal, path-safe pack staging,
+  journal + epoch crash recovery, one DB transaction, outbox cleared. Android
+  uses SAF with no storage permission.
+- **FLOW-01/02/04 gaps**: task edit, early finish, rest earns nothing.
+
+### Verification in this round
+
+- `flutter test`: **2146/2146**.
+- `flutter analyze --fatal-infos`: 0 issues.
+- `flutter build apk --debug`: 32.1 MB.
+- `flutter build appbundle --release`: 50.7 MB (after deleting a stale generated
+  plugin registrant that referenced the dev-only `integration_test`).
+- Device: export → create task → restore → task gone; candidate screenshots in
+  `outputs/autonomous_final_delivery/device/`.
+
+### Independent review
+
+Two rounds, both **FAIL**, all **P1** fixed (details in
+`outputs/autonomous_final_delivery/04_SUBAGENT_REVIEWS.md`). One P2 remains: no
+fault-injection hook for the pack rename itself (the three crash-recovery states
+are tested instead).
+
+### What is left
+
+1. Owner: release keystore, launcher-icon approval, room choice, visual gate.
+2. Physical GPU frame time; TalkBack walk.
+3. `WAITING_FOR_VISUAL_REVIEW` — no reviewer accepts Flutter screenshots.
+
+### Next command
+
+```
+python tools/qa/lease.py status
+python tools/cozy_gate.py --full --with-device
+```
+
 ## 2026-10-13T20:51+0800 — the owned collection item, and an independent code review
 
 **HEAD `c6ce43a9820290ee8ad8b82a449aadc144ffd7b8`, local == remote, worktree clean.**

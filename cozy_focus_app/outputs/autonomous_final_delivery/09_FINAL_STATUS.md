@@ -14,8 +14,9 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | see `07_BUILD_AND_PERFORMANCE.md` |
-| Analyze / format / APK | see `07_BUILD_AND_PERFORMANCE.md` |
+| Full suite | **2146/2146** |
+| Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
+| Full gate (`--with-device`) | **14 PASS / 3 BLOCKED / 1 DEFERRED / 0 FAIL** |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
 
 ## Not done, with the reason
@@ -44,6 +45,14 @@
 - The **device walk** covered FLOW-08 fully and parts of A/D/F. It is not a
   substitute for the full regression suite, and the suite is not a substitute
   for the walk.
+- **One review P2 is still open**: there is no fault-injection hook for the pack
+  rename itself. The three crash-recovery states (committed, not committed,
+  before swap) are tested, but `Directory.rename` is never made to throw. It is
+  recorded in `04_SUBAGENT_REVIEWS.md` rather than claimed as covered.
+- **The independent reviewer returned FAIL twice.** All P1 findings from both
+  rounds were fixed; the verdicts and the fix list are in
+  `04_SUBAGENT_REVIEWS.md`. A third full review round was not run, so the final
+  code has not been re-approved by that reviewer.
 
 ## The minimal list that needs the owner
 

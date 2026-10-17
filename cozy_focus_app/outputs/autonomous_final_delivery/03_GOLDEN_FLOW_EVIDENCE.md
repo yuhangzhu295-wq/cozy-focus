@@ -20,8 +20,7 @@ which was re-run in this round; the new FLOW-01…10 matrix is in
 
 ## What the full run actually said
 
-- Before the three new gap tests: **2134 / 2134 passed** (`flutter test`, this
-  round).
+- `flutter test`: **2146 / 2146 passed** in this round.
 - The new `test/integration/v1_flow_gaps_test.dart`: **3 / 3 passed**.
 - `dart format`: 0 changed; `flutter analyze --fatal-infos`: 0 issues.
 - The authoritative gate output is in `07_BUILD_AND_PERFORMANCE.md`; it is the
