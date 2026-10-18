@@ -19,7 +19,7 @@ python tools/cozy_gate.py --full --with-device
 |---|---|
 | `dart format` | 0 changed |
 | `flutter analyze --fatal-infos` | 0 issues |
-| `flutter test` | **2151 / 2151 passed** |
+| `flutter test` | **2158 / 2158 passed** |
 | `flutter build apk --debug` | succeeded, 32.1 MB |
 | `flutter build appbundle --release` | succeeded, **50.7 MB** (budget 55) |
 | `git diff --check` | clean |
@@ -34,7 +34,7 @@ that gate invocation produced.
 ```
 FORMAT            PASS   480 files, 0 changed
 ANALYZE           PASS   0 issues
-UNIT_TESTS        PASS   2151/2151 passed
+UNIT_TESTS        PASS   2158/2158 passed
 INTEGRATION_TESTS PASS   54/54 passed
 GOLDEN_FLOW       PASS   6/6 passed
 MIGRATION         PASS   16/16 passed

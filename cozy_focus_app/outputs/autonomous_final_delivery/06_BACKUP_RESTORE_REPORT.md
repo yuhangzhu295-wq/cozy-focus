@@ -89,7 +89,7 @@ re-reads the restored rows instead of showing a cached total.
 
 ## Tests
 
-`test/data/backup/backup_round_trip_test.dart` — **24 tests**, all isolated
+`test/data/backup/backup_round_trip_test.dart` — **30 tests**, all isolated
 (in-memory database, temporary directories):
 
 | Test | What it proves |
@@ -115,6 +115,13 @@ re-reads the restored rows instead of showing a cached total.
 | crash before the swap | live root untouched, staging removed |
 | a stale journal (swap marker disagrees) | nothing deleted, journal kept |
 | an unreadable journal | kept, not cleared |
+| a journal naming a foreign directory | refused, nothing deleted |
+| `hadLive == true` with no previous | unresolved, not "rolled back" |
+| a second restore while a journal exists | refused with a restart message |
+| a text value in an INTEGER column | refused before any write |
+| a null in a NOT NULL column | refused |
+| a nested value for a scalar column | refused |
+| an unknown table | refused at preview time |
 | a refused restore | staging directory removed |
 
 ## Device walk

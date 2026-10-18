@@ -175,7 +175,59 @@ run settled **once** at **05:00 / +10 coins / +25 XP**, and the records page
 showed **5 minutes, 1 session**. The paused time and the process death never
 reached the ledger.
 
+## Round 5 — FAIL, 5 P1 + 3 P2
+
+Scoped to hostile/corrupt input and failure honesty.
+
+### P1
+
+1. **A journal naming a foreign directory was trusted for a recursive delete.**
+2. **`hadLive == true` with no `previous` reported a completed rollback** while
+   the new packs sat next to the rolled-back data.
+3. **No cross-process mutex**: two restores could share a journal, and one would
+   clean up the other's evidence.
+4. **A failed swap-back still reported "original data unchanged"** — false for
+   the packs.
+5. **Column names were validated but not values.** SQLite affinity lets a string
+   land in an INTEGER column, which succeeds at write time and then explodes in
+   a typed read.
+
+### P2
+
+6. No per-table row cap or field-length budget.
+7. An unknown table could not be written, but its rows were counted as
+   restored.
+8. The service API did not itself reject a shallow/root pack root, and the
+   Android `MAX_BYTES` and the Dart constant were linked only by a comment.
+
+### What was done
+
+1. Recovery requires the staging path to be **this app's** `.cozy_restore_*`
+   directory under the pack root's parent; anything else is refused and nothing
+   is touched. A test asserts `/tmp` is not deleted.
+2. That state now returns `rollbackFailed` and keeps everything.
+3. A restore refuses to start while a journal exists, with a message telling the
+   user to restart first.
+4. The swap-back result is propagated; the message names which half came back
+   and asks for a restart.
+5. Rows are validated against `PRAGMA table_info` affinity and nullability,
+   nested values are refused, unknown tables are refused in the reader, a row
+   cap was added, and the success report counts only tables that exist.
+6. (from the independent find earlier the same round) Startup recovery outcome
+   is no longer discarded: `main` overrides `recoveryIncompleteProvider`, and
+   the data page shows a persistent "有未完成的恢复" card.
+
+**Guard reverse proof:** disabling the staging-path check or the mutex fails its
+test with the expected message.
+
 ## What is still not reviewed
+
+**No sixth review round was run.** The reviewer also marked one item **BLOCKED**
+for static determination: whether binding a nested `Map`/`List` to a scalar
+column throws depends on the Drift backend. The value-type check now refuses it
+before the INSERT, so the unverified path is unreachable — but that was not
+confirmed against a live backend.
+
 
 **No fifth review round was run.** Round 4's findings are fixed and tested, but
 the reviewer has not re-approved the recovery path. The remaining known gap is
