@@ -18,3 +18,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The directory installed packs live under, or null when none is known.
 final companionPackRootProvider = Provider<String?>((ref) => null);
+
+/// Whether a startup restore recovery could not finish.
+///
+/// A recovery can fail in ways that are not fatal: a locked database, a journal
+/// it cannot prove anything from, a rollback that could not complete. In all of
+/// them the app opens normally, but the packs and the data may not belong
+/// together until the next start resolves it. `main` overrides this so the
+/// settings page can say so instead of the user discovering it by finding their
+/// companion gone.
+final recoveryIncompleteProvider = Provider<bool>((ref) => false);

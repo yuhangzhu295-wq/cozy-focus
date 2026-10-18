@@ -38,6 +38,13 @@ abstract final class BackupFormat {
   /// memory problem before any validation runs.
   static const int maxBytes = 64 * 1024 * 1024;
 
+  /// A cap on the rows any one table may carry.
+  ///
+  /// A user with a year of focus sessions is a few thousand rows; 200,000 is
+  /// already far past real use, and it stops a crafted file from making the
+  /// restore allocate and rewrite an unreasonable amount of work.
+  static const int maxRowsPerTable = 200000;
+
   /// Caps on the pack payload, checked before decoding as well as after.
   static const int maxPackBytes = 32 * 1024 * 1024;
   static const int maxPackFiles = 2000;
@@ -208,6 +215,15 @@ abstract final class BackupReader {
     final rawTables = payload['tables'];
     if (rawTables is! Map<String, dynamic>) {
       return const BackupReadResult.refused('备份缺少数据表。');
+    }
+    // A table this build does not know is refused here as well as on the write
+    // path, so the caller is told at preview time rather than after confirming.
+    for (final extra in rawTables.keys) {
+      if (!BackupFormat.tables.contains(extra)) {
+        return BackupReadResult.refused(
+          '备份含当前版本没有的表 $extra，已拒绝恢复。',
+        );
+      }
     }
     final counts = <String, int>{};
     for (final table in BackupFormat.tables) {

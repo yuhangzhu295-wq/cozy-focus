@@ -105,6 +105,18 @@ class _DataSyncPageState extends ConsumerState<DataSyncPage> {
             const SizedBox(height: 20),
             const _SectionLabel('数据状态'),
             const SizedBox(height: 8),
+            // Before the reassuring card: if a restore recovery did not finish,
+            // the packs and the data may not belong together until the next
+            // start resolves it. Saying nothing here would be the app claiming a
+            // state it cannot verify.
+            if (ref.watch(recoveryIncompleteProvider))
+              const _DataStatusCard(
+                title: '有未完成的恢复',
+                subtitle: '上次恢复没能收尾，伙伴与数据暂时可能不一致。再打开一次应用通常会自动修好。',
+                icon: Icons.report_gmailerrorred_outlined,
+                iconColor: AppColors.accentGold,
+                iconBgColor: AppColors.accentGoldLight,
+              ),
             const _DataStatusCard(
               title: '本地数据已保存',
               subtitle: '你的专注数据已安全保存在本机',

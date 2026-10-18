@@ -595,7 +595,7 @@ void main() {
 
     /// The staging directory name this restore used. A local, because a group
     /// body cannot declare members.
-    String stagingPath() => '${parent.path}/.cozy_restore_staging';
+    String stagingPath() => '${parent.path}/.cozy_restore_staging_1';
 
     Future<void> writeJournal(String epoch, {bool hadLive = true}) async {
       await journal.writeAsString(jsonEncode({
@@ -664,18 +664,28 @@ void main() {
     });
 
     test('a crash before the swap leaves the live root alone', () async {
+      // Journal written, marker absent, live root still the old one, staging
+      // still on disk: the crash happened between the journal write and the
+      // first rename. `previous` does not exist because the rename that would
+      // have created it never ran, so recovery leaves `live` untouched rather
+      // than inventing a root to restore.
       live.createSync();
       File('${live.path}/old.txt').writeAsStringSync('old');
-      final staging = Directory('${parent.path}/.cozy_restore_staging');
+      final staging = Directory(stagingPath());
       staging.createSync();
       File('${staging.path}/new.txt').writeAsStringSync('new');
       await writeJournal('epoch-3');
 
-      await BackupService.recoverInterruptedRestore(db: db, packRoot: live);
+      final outcome =
+          await BackupService.recoverInterruptedRestore(db: db, packRoot: live);
 
       expect(File('${live.path}/old.txt').existsSync(), isTrue);
-      expect(staging.existsSync(), isFalse);
-      expect(journal.existsSync(), isFalse);
+      expect(staging.existsSync(), isTrue,
+          reason: 'staging is user-visible data until the swap actually ran');
+      // The journal is kept: the state is unresolved, not finished, and it is
+      // the only evidence that a swap may still happen.
+      expect(journal.existsSync(), isTrue);
+      expect(outcome.isResolved, isFalse);
     });
 
     test('a stale journal does not delete the live root the user has now',
@@ -789,6 +799,168 @@ void main() {
           .toList();
       expect(leftovers, isEmpty,
           reason: 'a refused restore must not leave a staging directory');
+    });
+
+    test('a journal naming a foreign directory is refused', () async {
+      // The journal is an editable file. A staging path outside this app's
+      // naming (or outside the pack root's parent) must never be trusted for a
+      // recursive delete.
+      live.createSync();
+      File('${live.path}/new.txt').writeAsStringSync('new');
+      await writeJournal('epoch-foreign');
+      await File('${journal.path}.swapped').writeAsString('/tmp');
+      await journal.writeAsString(jsonEncode({
+        'epoch': 'epoch-foreign',
+        'previous': previous.path,
+        'staging': '/tmp',
+        'hadLive': true,
+      }));
+
+      final outcome =
+          await BackupService.recoverInterruptedRestore(db: db, packRoot: live);
+
+      expect(outcome, BackupRecoveryOutcome.unreadableJournal);
+      expect(File('${live.path}/new.txt').existsSync(), isTrue);
+      expect(Directory('/tmp').existsSync(), isTrue,
+          reason: 'nothing outside the pack root was touched');
+      expect(journal.existsSync(), isTrue);
+    });
+
+    test('an old root that is missing is unresolved, not "rolled back"',
+        () async {
+      // hadLive == true, marker present and matching, but `previous` does not
+      // exist: the old root cannot be put back. Reporting success would leave
+      // the new packs next to the rolled-back data.
+      live.createSync();
+      File('${live.path}/new.txt').writeAsStringSync('new');
+      await writeJournal('epoch-7', hadLive: true);
+      await writeSwapMarker();
+
+      final outcome =
+          await BackupService.recoverInterruptedRestore(db: db, packRoot: live);
+
+      expect(outcome, BackupRecoveryOutcome.rollbackFailed);
+      expect(File('${live.path}/new.txt').existsSync(), isTrue);
+      expect(journal.existsSync(), isTrue);
+    });
+  });
+
+  group('a crafted payload', () {
+    Future<BackupReadResult> tamper(
+      Map<String, dynamic> Function(Map<String, dynamic>) mutate,
+    ) async {
+      await seed(db);
+      final bytes = await BackupService.export(db: db);
+      final decoded = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+      final mutated = mutate(decoded);
+      mutated.remove('checksum');
+      mutated['checksum'] = checksumFor(mutated);
+      return BackupReader.read(
+        Uint8List.fromList(utf8.encode(jsonEncode(mutated))),
+        currentSchema: db.schemaVersion,
+      );
+    }
+
+    test('a text value in an integer column is refused', () async {
+      final read = await tamper((decoded) {
+        final tasks =
+            (decoded['tables'] as Map<String, dynamic>)['tasks'] as List;
+        (tasks.first as Map<String, dynamic>)['estimated_seconds'] =
+            'not a number';
+        return decoded;
+      });
+
+      expect(read.ok, isTrue, reason: 'the envelope itself is valid');
+
+      final target = await freshDb();
+      await seed(target);
+      final before = await dump(target);
+      await expectLater(
+        BackupService.restore(db: target, payload: read.payload!),
+        throwsA(isA<BackupException>()),
+      );
+      expect(await dump(target), before);
+    });
+
+    test('a null in a required column is refused', () async {
+      final read = await tamper((decoded) {
+        final tasks =
+            (decoded['tables'] as Map<String, dynamic>)['tasks'] as List;
+        (tasks.first as Map<String, dynamic>)['title'] = null;
+        return decoded;
+      });
+
+      expect(read.ok, isTrue);
+
+      final target = await freshDb();
+      await seed(target);
+      final before = await dump(target);
+      await expectLater(
+        BackupService.restore(db: target, payload: read.payload!),
+        throwsA(isA<BackupException>()),
+      );
+      expect(await dump(target), before);
+    });
+
+    test('a nested value for a scalar column is refused', () async {
+      final read = await tamper((decoded) {
+        final tasks =
+            (decoded['tables'] as Map<String, dynamic>)['tasks'] as List;
+        (tasks.first as Map<String, dynamic>)['note'] = {'nested': true};
+        return decoded;
+      });
+
+      expect(read.ok, isTrue);
+
+      final target = await freshDb();
+      await seed(target);
+      final before = await dump(target);
+      await expectLater(
+        BackupService.restore(db: target, payload: read.payload!),
+        throwsA(isA<BackupException>()),
+      );
+      expect(await dump(target), before);
+    });
+
+    test('an unknown table is refused and not counted as restored', () async {
+      final read = await tamper((decoded) {
+        (decoded['tables'] as Map<String, dynamic>)['secret_table'] = [
+          {'anything': 'goes'},
+        ];
+        return decoded;
+      });
+
+      expect(read.ok, isFalse);
+      expect(read.refusal, contains('secret_table'));
+    });
+
+    test('a second restore is refused while a journal is unresolved', () async {
+      await seed(db);
+      final bytes = await BackupService.export(db: db);
+      final read = BackupReader.read(bytes, currentSchema: db.schemaVersion);
+
+      // The journal lives beside the pack root, which is where the real swap
+      // writes it.
+      final root = Directory.systemTemp.createTempSync('cozy_mutex');
+      addTearDown(() async {
+        // Windows keeps the journal file busy briefly; a failed cleanup must not
+        // fail the test.
+        try {
+          await root.delete(recursive: true);
+        } catch (_) {}
+      });
+      Directory('${root.path}/companion_packs').createSync();
+      File('${root.path}/.cozy_restore_journal.json')
+          .writeAsString('{"epoch":"stuck"}');
+
+      await expectLater(
+        BackupService.restore(
+          db: db,
+          payload: read.payload!,
+          packRoot: Directory('${root.path}/companion_packs'),
+        ),
+        throwsA(isA<BackupException>()),
+      );
     });
   });
 }

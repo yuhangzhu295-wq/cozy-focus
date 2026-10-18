@@ -27,18 +27,11 @@ Future<void> main() async {
   // directory together, and a process can die between the two. The journal is
   // resolved here, before the app opens its own connection, so no screen can
   // read a half-restored state.
-  final recoveryDb = AppDatabase();
-  try {
-    await BackupService.recoverInterruptedRestore(
-      db: recoveryDb,
-      packRoot: packRoot,
-    );
-  } catch (_) {
-    // Recovery is best-effort at startup: a failure here must not stop the app
-    // from opening. The journal stays for the next attempt.
-  } finally {
-    await recoveryDb.close();
-  }
+  //
+  // The outcome is kept, not discarded: a recovery that could not finish leaves
+  // the two halves in a state only the next start can resolve, and the owner
+  // is told rather than the app pretending the restore completed.
+  final recovery = await _recoverInterruptedRestore(packRoot);
 
   runApp(
     ProviderScope(
@@ -46,10 +39,30 @@ Future<void> main() async {
         companionPackRootProvider.overrideWithValue(
           '${documents.path}/${CompanionPackInstallRules.root}',
         ),
+        recoveryIncompleteProvider.overrideWithValue(!recovery.isResolved),
       ],
       child: const CozyFocusApp(),
     ),
   );
+}
+
+/// Runs startup recovery, swallowing only what must not stop the app opening.
+Future<BackupRecoveryOutcome> _recoverInterruptedRestore(
+  Directory packRoot,
+) async {
+  final recoveryDb = AppDatabase();
+  try {
+    return await BackupService.recoverInterruptedRestore(
+      db: recoveryDb,
+      packRoot: packRoot,
+    );
+  } catch (_) {
+    // Recovery is best-effort at startup: a failure here must not stop the app
+    // from opening. The journal stays for the next attempt.
+    return BackupRecoveryOutcome.rollbackFailed;
+  } finally {
+    await recoveryDb.close();
+  }
 }
 
 class CozyFocusApp extends StatelessWidget {

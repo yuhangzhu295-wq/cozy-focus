@@ -178,32 +178,85 @@ abstract final class BackupService {
       );
     }
 
+    // Refuse to start a second restore while an earlier one is unresolved.
+    // SQLite serialises database writes, not filesystem writes: two restores
+    // could share a journal and a `previous` directory, and one would then
+    // clean up the other's evidence. The journal is the signal - it exists only
+    // while a swap may be pending.
+    if (packRoot != null) {
+      final journalPath =
+          File('${packRoot.parent.path}/.cozy_restore_journal.json');
+      if (journalPath.existsSync()) {
+        throw const BackupException(
+          '上一次恢复还没有收尾。请先重启一次应用，让它完成或回退，再恢复备份。',
+        );
+      }
+    }
+
     final tables = payload['tables'];
     if (tables is! Map<String, dynamic>) {
       throw const BackupException('备份缺少数据表。');
     }
 
-    // Validate every table's columns against the live schema before deleting
-    // anything. A backup that names a column this build does not have would
-    // otherwise fail halfway through the replacement.
-    final columns = <String, List<String>>{};
+    // Validate every row against the live schema before deleting anything.
+    //
+    // Three checks, not one. A backup that names a column this build does not
+    // have would fail halfway through the replacement. A null in a NOT NULL
+    // column would fail the insert. And a value whose JSON type does not match
+    // the column's affinity would *succeed* at write time and then explode in a
+    // typed read - which is the one that reaches the user.
+    final columns = <String, Map<String, _ColumnShape>>{};
     for (final table in BackupFormat.tables) {
-      columns[table] = await _columnsOf(db, table);
+      columns[table] = await _shapesOf(db, table);
       final rows = tables[table];
       if (rows is! List) {
         throw BackupException('备份缺少表 $table。');
+      }
+      if (rows.length > BackupFormat.maxRowsPerTable) {
+        throw BackupException('备份的表 $table 行数超过上限，已拒绝恢复。');
       }
       for (final row in rows) {
         if (row is! Map<String, dynamic>) {
           throw BackupException('表 $table 含无效记录。');
         }
-        for (final key in row.keys) {
-          if (!columns[table]!.contains(key)) {
+        for (final entry in row.entries) {
+          final shape = columns[table]![entry.key];
+          if (shape == null) {
             throw BackupException(
-              '备份里的表 $table 含当前版本没有的字段 $key，已拒绝恢复。',
+              '备份里的表 $table 含当前版本没有的字段 ${entry.key}，已拒绝恢复。',
+            );
+          }
+          final value = entry.value;
+          if (value == null) {
+            if (shape.required) {
+              throw BackupException(
+                '备份的表 $table 字段 ${entry.key} 为空，但当前版本要求有值。',
+              );
+            }
+            continue;
+          }
+          if (value is Map || value is List) {
+            // A nested value cannot be bound to a scalar column. Name-only
+            // validation used to let this through to the INSERT.
+            throw BackupException(
+              '备份的表 $table 字段 ${entry.key} 是嵌套结构，不是单个值。',
+            );
+          }
+          if (!shape.accepts(value)) {
+            throw BackupException(
+              '备份的表 $table 字段 ${entry.key} 的类型与 ${shape.type} 列不符。',
             );
           }
         }
+      }
+    }
+
+    // A table the backup carries that this build does not know must not count
+    // toward the success report: it was never written.
+    final known = BackupFormat.tables.toSet();
+    for (final extra in tables.keys) {
+      if (!known.contains(extra)) {
+        throw BackupException('备份含当前版本没有的表 $extra，已拒绝恢复。');
       }
     }
 
@@ -260,7 +313,7 @@ abstract final class BackupService {
             // Only columns the row actually carries. A future schema may add a
             // column with a default; omitting it lets the default apply instead
             // of writing null into a NOT NULL column.
-            final names = cols.where(row.containsKey).toList();
+            final names = cols.keys.where(row.containsKey).toList();
             if (names.isEmpty) continue;
             final sql = 'INSERT INTO "$table" '
                 '(${names.map((n) => '"$n"').join(',')}) '
@@ -298,7 +351,16 @@ abstract final class BackupService {
       });
     } catch (error) {
       if (swap != null) {
-        await _swapPacksBack(swap!);
+        final restored = await _swapPacksBack(swap!);
+        if (!restored) {
+          // The database rolled back but the packs did not go back with it. The
+          // honest message names which half is wrong; "原数据没有改动" would be
+          // false for the packs and would send the user hunting in the database.
+          throw const BackupException(
+            '恢复失败，没能回退。数据库已回到恢复前的状态，但伙伴包没有还原，'
+            '请重启应用后再试一次。',
+          );
+        }
       } else if (stagedPacks != null) {
         // The transaction failed before the swap (unsettled work, a bad row, a
         // row-count mismatch), so the staging directory never became the live
@@ -313,9 +375,10 @@ abstract final class BackupService {
     // The transaction committed and the packs are swapped. The staging
     // directory is gone (it *became* the live root), so there is nothing to
     // clean up on the success path.
-    final rows = (tables.values)
-        .whereType<List>()
-        .fold<int>(0, (sum, list) => sum + list.length);
+    final rows = [
+      for (final table in BackupFormat.tables)
+        if (tables[table] is List) (tables[table] as List).length,
+    ].fold<int>(0, (sum, count) => sum + count);
     return RestoreReport(
       rowsRestored: rows,
       packsRestored: stagedPacks?.fileCount ?? 0,
@@ -397,7 +460,10 @@ abstract final class BackupService {
     // directory has since been replaced - could validate against a live
     // directory that belongs to the user now, and the rollback would delete it.
     final stagingPath = data['staging'];
-    if (stagingPath is! String) {
+    if (stagingPath is! String || !_isOwnStagingDirectory(live, stagingPath)) {
+      // The journal names a directory this app would never have created (or a
+      // path outside the pack root's parent). A journal is an editable file;
+      // trusting its path is a recursive delete of whatever it names.
       return BackupRecoveryOutcome.unreadableJournal;
     }
     final marker = File('${journal.path}.swapped');
@@ -450,6 +516,11 @@ abstract final class BackupService {
             // `previous` as garbage.
             return BackupRecoveryOutcome.rollbackFailed;
           }
+        } else {
+          // `hadLive == true` but `previous` is gone. The old root cannot be
+          // put back, so the new packs are next to rolled-back data. Declaring
+          // success here would be a lie; it is an unresolved state.
+          return BackupRecoveryOutcome.rollbackFailed;
         }
         if (!await _delete(Directory(stagingPath))) {
           return BackupRecoveryOutcome.rollbackFailed;
@@ -457,6 +528,22 @@ abstract final class BackupService {
         await _clearJournal(journal);
         await _clearMarker(marker);
         return BackupRecoveryOutcome.rolledBack;
+    }
+  }
+
+  /// Whether [path] is the staging directory this app would create for [live].
+  ///
+  /// Staging directories are generated here as `.cozy_restore_<microseconds>`
+  /// directly under the pack root's parent. A journal must never be able to
+  /// name anything else for recursive deletion.
+  static bool _isOwnStagingDirectory(Directory live, String path) {
+    if (path.contains('..')) return false;
+    final name = p.basename(path);
+    if (!name.startsWith('.cozy_restore_')) return false;
+    try {
+      return p.isWithin(live.parent.path, Directory(path).absolute.path);
+    } catch (_) {
+      return false;
     }
   }
 
@@ -476,9 +563,24 @@ abstract final class BackupService {
     } catch (_) {}
   }
 
-  static Future<List<String>> _columnsOf(AppDatabase db, String table) async {
+  /// The column shapes this build expects: name -> (type, required).
+  ///
+  /// `PRAGMA table_info` gives `type` (an affinity word) and `notnull`. Name
+  /// validation alone is not enough: SQLite applies type *affinity*, so a
+  /// TEXT-typed value can be stuffed into an INTEGER column without an error,
+  /// and the failure then surfaces later as a typed read throwing mid-screen.
+  static Future<Map<String, _ColumnShape>> _shapesOf(
+    AppDatabase db,
+    String table,
+  ) async {
     final rows = await db.customSelect('PRAGMA table_info("$table")').get();
-    return [for (final row in rows) row.data['name'] as String];
+    return {
+      for (final row in rows)
+        row.data['name'] as String: _ColumnShape(
+          type: (row.data['type'] as String? ?? '').toUpperCase(),
+          required: (row.data['notnull'] as int? ?? 0) == 1,
+        ),
+    };
   }
 
   // ── packs ───────────────────────────────────────────────────────────────
@@ -596,20 +698,26 @@ abstract final class BackupService {
   }
 
   /// Puts the old pack root back after the database transaction failed.
-  static Future<void> _swapPacksBack(_PackSwap swap) async {
+  ///
+  /// Returns false when the old root cannot be restored. That is not a detail:
+  /// the caller must not claim "原数据没有改动" when the packs no longer match.
+  static Future<bool> _swapPacksBack(_PackSwap swap) async {
     try {
       if (await swap.live.exists()) {
         await swap.live.delete(recursive: true);
       }
       if (await swap.previous.exists()) {
         await swap.previous.rename(swap.live.path);
+      } else {
+        return false;
       }
     } catch (_) {
       // The journal stays until the next start, which will retry this exact
       // recovery with the same information.
-      return;
+      return false;
     }
     await _clearJournal(swap.journal);
+    return true;
   }
 
   /// Committed: the old root and the journal are garbage.
@@ -656,6 +764,33 @@ abstract final class BackupService {
     final normalised = path.replaceAll(r'\', '/');
     if (!normalised.startsWith('$normalisedRoot/')) return null;
     return normalised.substring(normalisedRoot.length + 1);
+  }
+}
+
+/// One column's declared type affinity and whether it may be null.
+class _ColumnShape {
+  final String type;
+  final bool required;
+
+  const _ColumnShape({required this.type, required this.required});
+
+  /// Whether a JSON-decoded [value] is safe to bind to this column.
+  ///
+  /// SQLite's affinity means `INSERT INTO t (n) VALUES ('abc')` on an INTEGER
+  /// column stores 'abc' rather than failing, so the value has to be checked
+  /// here or the failure surfaces later in a typed read.
+  bool accepts(Object value) {
+    if (type.contains('INT') || type.contains('REAL') || type == 'NUM') {
+      return value is int || value is double || value is num;
+    }
+    if (type.contains('BOOL')) {
+      return value is bool || value is int;
+    }
+    if (type.contains('BLOB')) {
+      return value is List || value is String;
+    }
+    // TEXT, and the empty affinity a column with no declared type gets.
+    return value is String || value is int || value is double || value is num;
   }
 }
 
