@@ -326,7 +326,10 @@ class _Chip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? AppColors.primaryLight : AppColors.surface,
+            // The selected chip is a solid brand-green fill with white text, as
+            // board 13 draws it. It was a pale fill with a green border, which
+            // reads as a deselected chip that happens to have a coloured edge.
+            color: selected ? AppColors.primarySage : AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.pill),
             border: Border.all(
               color: selected ? AppColors.primarySage : AppColors.border,
@@ -337,7 +340,7 @@ class _Chip extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+              color: selected ? AppColors.textLight : AppColors.textSecondary,
             ),
           ),
         ),
@@ -383,12 +386,30 @@ class _NoteRow extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: const EdgeInsets.only(top: 2, right: 10),
-                  child: Icon(
-                    handled ? Icons.check_circle : Icons.radio_button_unchecked,
-                    size: 22,
-                    color: handled
-                        ? AppColors.primarySage
-                        : AppColors.textTertiary,
+                  // A rounded square, as board 13 draws the tick. It was a
+                  // circle, which reads as a radio button and implies only one
+                  // item can be chosen at a time.
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color:
+                          handled ? AppColors.primarySage : Colors.transparent,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: handled
+                            ? AppColors.primarySage
+                            : AppColors.textTertiary,
+                        width: 1.6,
+                      ),
+                    ),
+                    child: handled
+                        ? const Icon(
+                            Icons.check,
+                            size: 14,
+                            color: AppColors.textLight,
+                          )
+                        : null,
                   ),
                 ),
               ),

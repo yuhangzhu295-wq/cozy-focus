@@ -150,9 +150,9 @@ void main() {
       // Scrolled to first: the note this screen adds when the task is already
       // planned pushes the chips down, and a tap on an off-screen widget lands
       // nowhere — which reads as "the update did nothing".
-      await tester.ensureVisible(find.text('1 小时'));
+      await tester.ensureVisible(find.bySemanticsLabel('1 小时').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('1 小时'));
+      await tester.tap(find.bySemanticsLabel('1 小时').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('更新计划'));
       await tester.pumpAndSettle();
@@ -220,8 +220,8 @@ void main() {
     await pump(tester, c, id);
 
     // 40 is one of the presets, so it shows as a selected chip.
-    expect(find.text('40 分钟'), findsOneWidget);
-    expect(find.text('1 小时'), findsOneWidget);
+    expect(find.bySemanticsLabel('40 分钟'), findsOneWidget);
+    expect(find.bySemanticsLabel('1 小时'), findsOneWidget);
     expect(find.text('自定义'), findsOneWidget);
   });
 
@@ -256,7 +256,7 @@ void main() {
     final c = container();
     await pump(tester, c, id);
 
-    await tester.tap(find.text('1 小时'));
+    await tester.tap(find.bySemanticsLabel('1 小时').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('添加到今日计划'));
     await tester.pumpAndSettle();

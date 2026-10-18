@@ -1,84 +1,63 @@
-# 05 — Visual comparison: shipped room vs hand-drawn candidate
+# 05 — Visual review: design boards vs the shipped app
 
-**The candidate is not approved and is not production.** It is reachable only
-with `--dart-define=ROOM_CANDIDATE=true`; a normal build, every test and the
-release artifact draw the shipped painter. The owner's visual gate is untouched.
+**This file records what an independent review agent concluded when it actually
+looked at the images. It does not claim a pass anywhere.**
 
-## The three routes
+按所有者 2026-10-18 的裁定，视觉验收只能由审查代理给出：它必须同时看**设计展板**与
+**当前真机截图**，逐项比对后给出 PASS / FAIL。工程师不得自批，也不得用"有截图 / 有测试
+/ 结构已审"冒充视觉结论。
 
-| route | what it is | verdict |
-|---|---|---|
-| Shipped | flat vector room: wall, window, shelf, desk, mat | in production |
-| Photographic | board 01's room as a photo behind the 2D pet | **rejected** — the pet reads as a sticker on a photo; the brief forbids swapping the 2D Mochi for an inconsistent 3D |
-| Hand-drawn candidate | same illustration language, with depth, materials and light | **candidate, awaiting the owner** |
+## 状态总览
 
-## Same device, same session, same pet
-
-All screenshots are real Flutter composites on `emulator-5554`, not mock-ups.
-
-| | shipped | candidate |
-|---|---|---|
-| Home | `device/20_shipped_home.png` | `device/10_candidate_home.png` |
-| Room | `device/21_shipped_room.png` | `device/11_candidate_room.png` |
-| Focus | (previous rounds' `04_focus_current.png`) | `device/12_candidate_focus.png` |
-
-### What the candidate clearly adds
-
-- **A third dimension**: a side wall with a corner, floorboards with direction,
-  and a floor plane the furniture sits on. The shipped room is a backdrop.
-- **A window with a view** — frame, mullions, sill, curtain, sky and greenery —
-  and light that comes *from* it. The shipped window is a bright rectangle.
-- **Furniture**: a desk with legs and thickness, a lamp, a mug with steam, a
-  plant in a pot, books, and a woven rug with fringe. The shipped room has none
-  of these on the room page.
-- **A readable shelf**: after V1, the books have silhouettes and colour
-  separation instead of a blurred smudge.
-- **A rug the pet actually rests on**: after the device walk found the rug's
-  plane 200px below the paws, the candidate now centres the rug on the same
-  expression as the shipped `kCozyRoomMatCentre`. `device/11_candidate_room.png`
-  shows the pet on the rug.
-
-### What it does not close
-
-- **The pet is still a flat 2D sprite.** Board 01's pet is a 3D plush *in* the
-  room. Neither route can close that without violating the brief's prohibition
-  on replacing Mochi with inconsistent 3D art.
-- **The shelf is cropped at the top edge** in the 2400px room band: the top
-  board runs off-frame. It is readable, but it reads as "a shelf continuing out
-  of shot" rather than a composed object.
-- **The window view is very soft** (2.6 sigma on the far plane). The green
-  crowns are blobs. That is the depth-of-field choice, but it is less defined
-  than the shipped window's clean panes.
-- **On the focus page the pet sits on the desk**, because that page composes the
-  pet against the desk line rather than the floor anchor. The rug is behind the
-  desk there. That is a page-composition decision, not a grounding defect.
-
-## The three defects fixed in this round, and how they were measured
-
-The guards are pixel-level and calibrated between the two versions:
-
-| defect | fixed painter | original | threshold |
+| 组 | 展板 | 审查结论 | 说明 |
 |---|---|---|---|
-| V2 side-wall band | top-strip luma **135.9** | **150.7** | `< 143` |
-| V3 window area | bright fraction **0.563** | **0.427** | `> 0.49` |
-| V1 shelf readability | **127** colour bins | **92** | `> 108` |
+| A | 01–04 | **pending** | 首次派发超时（供应商 temporarily unavailable），已重试 |
+| B | 05–08 | **pending** | 首次派发超时，已重试 |
+| C | 09–12 | **pending** | 首次派发失败，已重试 |
+| D | 13–16 | **FAIL ×4** | 一轮返回，结论见下 |
 
-Replacing the candidate file with the branch's original fails all three; the
-fixed file passes. The reverse proof is recorded in the test file's comments.
+---
 
-## Performance
+## D 组（13–16）——审查结论与逐条核验
 
-The candidate's own frame-time runs from the previous round measured build p50
-0.3–1.4 ms and raster p50 3.3–12.5 ms, with two runs of the *same* build
-differing by ~4× on raster. The defensible claim is **inside the 16.67 ms budget
-and no consistent regression**; the apparent 3× speedup is recorded as not a
-finding. This round did not re-run the candidate performance harness, so no new
-number is claimed.
+审查给出的判词是四页全 FAIL。逐条核验后，**其中一部分是真差异，另一些是审查者拿错了
+对比对象或误判为缺陷**。把两者分开记录，是这份文件的意义。
 
-## What the owner has to decide
+### 成立的差异（保留，需修）
 
-1. Keep the shipped room, or adopt the candidate.
-2. If adopting: are the shelf crop and the soft window view the first fixes, or
-   is the room already busy enough?
-3. The final `OWNER_VISUAL_APPROVED` gate — engineering cannot claim it, and has
-   not.
+| 展板 | 差异 | 级别 |
+|---|---|---|
+| 13 | 分心箱的筛选用的是**处理状态**（待处理 / 已处理 / 全部），设计是**分类**（全部 / 生活 / 工作 / 学习）；行内缺少分类 pill | P0 |
+| 13 | 选中控件是圆形，设计是圆角方形 checkbox | P1 |
+| 13 | 顶部返回 / 更多是裸图标，设计在圆形胶囊底里 | P1 |
+| 13 | 激活的筛选 pill 是白底描边，设计是实心深绿 | P1 |
+| 14 | 时长 chip 文字横排导致换行成两行，设计是数字在上、单位在下的单行五列 | P1 |
+| 14 | 任务卡只有一行，设计有"标题 + 副标题"两层 | P1 |
+| 14 | 主按钮文案是「更新计划」，设计是「添加到今日计划」 | P1 |
+| 14 | 底部多出一句设计没有的提示文案 | P2 |
+| 15 | 设置项图标用了多种彩色，设计是统一的品牌绿 | P1 |
+| 15 | 通知 / 白噪音在设计里是拨动开关，实现是箭头 + 说明文字 | P1 |
+| 15 | 入口名称与设计不一致（通知提醒 → 通知，白噪音 → 声音与触感，数据备份与同步 → 数据与同步） | P2 |
+| 16 | 补拍的 `16_empty_state.png` 拍的是记录页，不是任务列表空态 | 送审材料错误，见下 |
+
+### 审查者的误判（不构成缺陷，理由记录在案）
+
+| 审查结论 | 为什么不成立 |
+|---|---|
+| 16：**"页面不对，两个 CTA 缺失"** | 我交给它的 `16_empty_state.png` 拍的是**记录页**，而 16 号板对应的任务列表空态在 `02_task_list.png`（矩阵明文记录：`还没有任务哦～` / `＋ 新建任务` / `▶ 开始第一次专注` 逐字一致且都能点）。是**送审图选错**，不是实现缺失 |
+| 13/16：**"底部导航 5 项 vs 3 项"** | `01_DESIGN_TO_CODE_MAP.md` 明文写主导航保持 3 项，展板自己画了 5 项而映射文件否掉了它。这是已经决策过的差异，不是漏做 |
+| 13/14：**"英文占位文案（buy milk / Write spec）"** | 那是当时真机走查灌进去的测试数据。属演示数据问题，不是 UI 缺陷；正式数据由用户自己产生 |
+| 16：**"满屏 0 分钟 / 0 次的墙"** | 16 号板画的是任务列表空态，实现同一屏另有数据卡。审查的对象本身错位，此条不成立 |
+
+---
+
+## 待办
+
+1. 重跑三组超时/失败的审查（A、B、C），拿到逐页 PASS/FAIL。
+2. **重新补拍 16 号板对应的任务列表空态截图**，用正确的对比对象重审该页。
+3. 对 D 组成立的 P0/P1 逐条修，修完重审该页；修完之前 13、14、15 保持 FAIL。
+4. 把 03 号板记录的「3 项导航是既定决策」写进后续每轮审查的提示，避免同一误判反复出现。
+
+> **没有任何一页现在可以标 `REVIEW_APPROVED`。** 在审查代理对该页明确说 PASS 之前，
+> `outputs/final_visual_implementation/README.md` 的 16 页一律是"截图存在、要素存在、
+> 视觉是否还原未验收"。

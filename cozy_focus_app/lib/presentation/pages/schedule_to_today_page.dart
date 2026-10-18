@@ -709,12 +709,18 @@ class _DurationChips extends StatelessWidget {
       children: [
         for (final minutes in presets)
           _chip(
-            label: minutes == 60 ? '1 小时' : '$minutes 分钟',
+            // Number above unit, as board 14 draws the row. Laid out
+            // horizontally, "25 分钟" plus the horizontal padding pushed five
+            // chips onto two rows; stacking the unit under the number keeps all
+            // five on one line.
+            value: minutes == 60 ? '1' : '$minutes',
+            unit: minutes == 60 ? '小时' : '分钟',
             active: seconds == minutes * 60,
             onTap: () => onPick(minutes * 60),
           ),
         _chip(
-          label: isPreset ? '自定义' : formatTaskDuration(seconds),
+          value: isPreset ? '自定义' : formatTaskDuration(seconds),
+          unit: '',
           active: !isPreset,
           onTap: onCustom,
         ),
@@ -723,7 +729,8 @@ class _DurationChips extends StatelessWidget {
   }
 
   Widget _chip({
-    required String label,
+    required String value,
+    required String unit,
     required bool active,
     required VoidCallback onTap,
   }) {
@@ -732,11 +739,14 @@ class _DurationChips extends StatelessWidget {
       onTap: onTap,
       button: true,
       selected: active,
-      label: label,
+      label: unit.isEmpty ? value : '$value $unit',
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          // Narrower horizontally now that the unit sits under the number: 16px
+          // of side padding on five chips is what pushed 自定义 onto a second
+          // row.
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: active ? AppColors.primaryLight : AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -744,14 +754,39 @@ class _DurationChips extends StatelessWidget {
               color: active ? AppColors.primarySage : AppColors.border,
             ),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: active ? AppColors.primaryDark : AppColors.textPrimary,
-            ),
-          ),
+          child: unit.isEmpty
+              ? Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color:
+                        active ? AppColors.primaryDark : AppColors.textPrimary,
+                  ),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: active
+                            ? AppColors.primaryDark
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      unit,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

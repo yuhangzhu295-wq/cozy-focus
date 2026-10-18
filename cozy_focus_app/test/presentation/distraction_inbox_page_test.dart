@@ -25,6 +25,12 @@ import 'package:cozy_focus_app/presentation/theme/app_theme.dart';
 /// deletion, so every action ends at a row: the task that was created, the
 /// placement that was scheduled, the note that left the inbox. A test that only
 /// checked the sheet closed would pass on a version whose buttons did nothing.
+// find.bySemanticsLabel needs the semantics tree switched on; the widget
+// itself carries the label, so match the Semantics node directly.
+Finder _toggle(String label) => find.byWidgetPredicate(
+      (w) => w is Semantics && w.properties.label == label,
+    );
+
 void main() {
   late AppDatabase db;
   late DriftDistractionRepository notes;
@@ -138,7 +144,7 @@ void main() {
     final c = container();
     await pump(tester, c);
 
-    await tester.tap(find.byIcon(Icons.radio_button_unchecked));
+    await tester.tap(_toggle('标记为已处理').last);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 120));
 
@@ -151,7 +157,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 120));
     expect(find.text('买充电线'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.check_circle));
+    await tester.tap(_toggle('标记为待处理').last);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 120));
     expect(await notes.countOpen(userId), 1);
