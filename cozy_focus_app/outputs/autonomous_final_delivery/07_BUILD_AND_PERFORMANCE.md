@@ -19,7 +19,7 @@ python tools/cozy_gate.py --full --with-device
 |---|---|
 | `dart format` | 0 changed |
 | `flutter analyze --fatal-infos` | 0 issues |
-| `flutter test` | **2147 / 2147 passed** |
+| `flutter test` | **2151 / 2151 passed** |
 | `flutter build apk --debug` | succeeded, 32.1 MB |
 | `flutter build appbundle --release` | succeeded, **50.7 MB** (budget 55) |
 | `git diff --check` | clean |
@@ -27,10 +27,14 @@ python tools/cozy_gate.py --full --with-device
 
 ### The gate's own output (generated 2026-10-18 04:04:31 at `b314c28d`)
 
+Note: the unit-test count below predates the fourth-round recovery tests. The
+current full-suite run is **2151/2151**; the gate numbers shown are the ones
+that gate invocation produced.
+
 ```
 FORMAT            PASS   480 files, 0 changed
 ANALYZE           PASS   0 issues
-UNIT_TESTS        PASS   2147/2147 passed
+UNIT_TESTS        PASS   2151/2151 passed
 INTEGRATION_TESTS PASS   54/54 passed
 GOLDEN_FLOW       PASS   6/6 passed
 MIGRATION         PASS   16/16 passed

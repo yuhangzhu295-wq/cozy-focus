@@ -136,7 +136,52 @@ The third pass checked only the round-2 P1s.
 tested, but the reviewer has not re-approved the final code. That is recorded
 here rather than claimed.
 
+## Round 4 — FAIL, 3 P1 + 1 P2
+
+Scoped to the round-2 P1s, and it found what the fixes had not closed.
+
+1. **P1 — a stale journal could delete the packs the user has now.** The journal
+   proved a swap happened, but not that *its* swap produced the live directory.
+   A journal from an earlier restore, whose directory had since been replaced,
+   would validate and the rollback would delete the user's packs.
+2. **P1 — a database read failure was treated as "not committed."** A locked or
+   unreadable database would have rolled back a *completed* restore.
+3. **P1 — a rollback that failed still cleared the journal**, which is the only
+   record that the two halves ever disagreed; the next start would then treat
+   `previous` as garbage and delete the user's packages.
+4. **P2 — a refused restore left its staging directory behind.**
+
+### What was done
+
+1. A **swap marker** is written after the rename, naming the directory that
+   became the live root. If the marker disagrees with the journal's staging
+   path, recovery returns `staleJournal` and changes nothing.
+2. The epoch check is three-valued (`committed` / `notCommitted` /
+   `unreadable`). Only a definite answer changes the filesystem.
+3. The journal is cleared **only after** the directory state is verified. Every
+   failure returns an outcome and leaves the journal.
+4. The `catch` discards the staged directory when the transaction failed before
+   the swap.
+
+**Guard reverse proof**: disabling the stale-journal check makes the new test
+fail with `expected stale_journal, got rolled_back` — the exact state that
+would delete the live root.
+
+### Device verification of the timeout path
+
+A real 5-minute session was paused at 02:25, the **process was killed**, and the
+app relaunched. It came back at **02:24, still paused**; resuming and letting it
+run settled **once** at **05:00 / +10 coins / +25 XP**, and the records page
+showed **5 minutes, 1 session**. The paused time and the process death never
+reached the ledger.
+
 ## What is still not reviewed
+
+**No fifth review round was run.** Round 4's findings are fixed and tested, but
+the reviewer has not re-approved the recovery path. The remaining known gap is
+unchanged: no fault-injection hook makes `Directory.rename` itself throw, so the
+"rollback could not finish" branch is covered by a state-reconstruction test
+rather than by an injected failure.
 
 - **The visual result.** The screenshots exist and the pixel guards pass; an
   independent visual sign-off does not exist and is not claimed.

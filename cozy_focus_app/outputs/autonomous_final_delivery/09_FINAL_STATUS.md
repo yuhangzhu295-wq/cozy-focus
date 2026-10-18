@@ -14,7 +14,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2147/2147** |
+| Full suite | **2151/2151** |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 3 BLOCKED / 1 DEFERRED / 0 FAIL** |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
