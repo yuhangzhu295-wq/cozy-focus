@@ -51,12 +51,68 @@ looked at the images. It does not claim a pass anywhere.**
 
 ---
 
+## 本轮已修（2026-10-18 第二轮）
+
+| 展板 | 修了什么 | 提交 |
+|---|---|---|
+| 13 | 选中的筛选 chip 改为实心 `primarySage` 胶囊（展板像素采样确认：x 30–117、y 110–155 的 `#44714B` 实心形状，圆角收窄） | `857735c` |
+| 13 | 行内勾选由圆形 `radio_button_unchecked` 改为 20×20 圆角方形（半径 6），选中填实心绿 | `857735c` |
+| 14 | 时长 chip 改为「数字在上、单位在下」，五枚同排；`自定义` 用 `WrapCrossAlignment.center` 与其他四枚对齐 | `857735c` + 本轮 |
+| 15 | 六行设置图标统一为 `primarySage` / `primaryLight` | `857735c` |
+
+### 真机数据暴露出的两个新缺陷（已修）
+
+1. **分心箱的类别筛选在真机上不可见。** 7 枚 chip 放在横向 `ListView` 里，
+   `工作 (1)` 落在 1080 宽屏幕之外；无障碍树只报可见节点，所以第一版截图与代码都
+   看起来"有分类筛选"。改成 `Wrap` 后两行全部可见。
+2. **`自定义` chip 比同排四枚高 25px。** 预设是两行文本、自定义是一行，`Wrap`
+   默认顶部对齐。加 `WrapCrossAlignment.center` 后五枚中心线一致（真机 y=1535）。
+
+两条都补了断言并做了反向证明：把旧布局改回去，测试分别报
+`work is outside the viewport` / `stretched to the full line instead of hugging its label`
+和 `25 and 自定义 are not on the same baseline`。
+
+### 送审材料已重拍
+
+`outputs/final_visual_implementation/current_2026-10-18/` 下有 27 张 1080×2400 真机
+截图，数据由新增的 `demo_day` QA 场景通过 App 自己的仓库播种（5 个任务、7 段专注、
+5 条分心笔记、5 件家具、Lv.13 / 1275 XP），不是手改 SQLite。清单与复现命令见该目录
+的 `README.md`。
+
+---
+
+## 送审通道：为什么现在仍没有 PASS
+
+所有者要求「视觉 UI 只有审查代理说过关才算过关」，并且指出 gpt-6-sol 本身能看图。
+模型确实能看图；**这条链路上拿不到图像**。逐个通道实测：
+
+| 通道 | 结果 | 证据 |
+|---|---|---|
+| `documents/pdf/presentations/spreadsheets:visual-judge` | 无授权套餐 | `coding-plan-cache.json`：`coding_plan_not_entitled`；`pdf:visual-judge` 重试原文返回 `[Media omitted from provider request because the selected model does not support image input.]` |
+| `code-reviewer` / `architecture-reviewer` / `final-gate`（gpt-6-sol） | 图像被剥离 | `metadata.json` 的 `profileSnapshot` 确认实际模型是 `32bb342b…/gpt-6-sol`（没有被同名文件遮蔽），但供应商侧返回同一句 `Media omitted…`；该 provider 的 baseURL 是 `http://127.0.0.1:8317/v1`，本地代理对传入的 key 返回 `{"error":"Invalid API key"}` |
+| `code-implementer`（gemini-3.8-flash-high） | 同样被剥离 | 本轮探针：`profileSnapshot` 为 `42ef786f…/gemini-3.8-flash-high`，Read 一张 PNG 后返回 `media was omitted … model does not support image input` |
+| `image-reader` skill（doubao-seed-2.0-pro） | key 非法 | `config.yaml` 的 key 只有 17 字符；`https://ark.cn-beijing.volces.com` 返回 `AuthenticationError: The API key format is incorrect` |
+| `qwen-vision` / `vision-bot` / `AB-Agents-Vision-MiniMax` | 无凭证 | 无 `~/.openclaw/openclaw.json`、无 `DASHSCOPE_API_KEY`、无 `/root/.openclaw/.minimax-env` |
+| `vision-recognition-ocr`（百度） | 无凭证 | 需要 `BAIDU_*` 环境变量，均未设置 |
+| `OPENAI_API_KEY`（环境变量，67 字符） | 401 | `api.openai.com/v1/models` 返回 401；本地 8317 代理也拒绝 |
+
+结论：**不是模型不能看图，是这台机器上没有任何一条能把 PNG 送进模型的通道。**
+需要所有者做下面任意一件事，审查才能开始：
+
+1. 给一个可用的图像模型 endpoint + key（任意 OpenAI 兼容协议）；或
+2. 让 bigmodel coding plan 生效（4 个 visual-judge 会自动恢复）；或
+3. 把 `image-reader` 的 `config.yaml` 换成有效 key。
+
+在此之前，`OWNER_VISUAL_GATE` 保持 `BLOCKED`，不是 `DEFERRED`、更不是 `PASS`。
+
+---
+
 ## 待办
 
-1. 重跑三组超时/失败的审查（A、B、C），拿到逐页 PASS/FAIL。
-2. **重新补拍 16 号板对应的任务列表空态截图**，用正确的对比对象重审该页。
-3. 对 D 组成立的 P0/P1 逐条修，修完重审该页；修完之前 13、14、15 保持 FAIL。
-4. 把 03 号板记录的「3 项导航是既定决策」写进后续每轮审查的提示，避免同一误判反复出现。
+1. 拿到可用图像通道后，用 `current_2026-10-18/` 的 27 张图与
+   `outputs/visual_qa/reference/` 的 16 张展板重跑 A/B/C/D 四组审查。
+2. 16 号板的任务列表空态需要空库另拍一次（与 `demo_day` 互斥）。
+3. 02/14/15 的 `_screen.png` 裁切是坏的（20×32 / 88×24 / 28×56），比对时用整张展板。
 
 > **没有任何一页现在可以标 `REVIEW_APPROVED`。** 在审查代理对该页明确说 PASS 之前，
 > `outputs/final_visual_implementation/README.md` 的 16 页一律是"截图存在、要素存在、

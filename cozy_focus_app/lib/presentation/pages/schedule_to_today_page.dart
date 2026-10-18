@@ -706,6 +706,10 @@ class _DurationChips extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
+      // The custom chip holds one short line and the presets hold two, so with
+      // the default start alignment 自定义 floated 25px above the row it sits
+      // in. Centring the run puts every chip on the same baseline.
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         for (final minutes in presets)
           _chip(

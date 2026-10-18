@@ -267,33 +267,35 @@ class _FilterChips extends StatelessWidget {
       (DistractionFilter.handled, '已处理', 0),
       (DistractionFilter.all, '全部', 0),
     ];
-    return SizedBox(
-      height: 46,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      // A Wrap, not a horizontal ListView. With real data the row is seven
+      // chips (three statuses plus one per used category), and a single
+      // scrolling line pushed 工作 off the right edge — a filter the user could
+      // only find by dragging a row that does not look draggable. Wrapping keeps
+      // every filter visible and still collapses to one line when the inbox is
+      // empty.
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
         children: [
-          for (final (filter, label, count) in chips) ...[
+          for (final (filter, label, count) in chips)
             _Chip(
               key: ValueKey('inbox_filter_${filter.id}'),
               label: count > 0 ? '$label ($count)' : label,
               selected: filter == active,
               onTap: () => onChanged(filter),
             ),
-            const SizedBox(width: 8),
-          ],
           // Then one chip per category that actually has something in it, so the
           // row never grows empty tabs for categories the user has not used.
           for (final category in taskCategories)
-            if ((counts[category.id] ?? 0) > 0) ...[
+            if ((counts[category.id] ?? 0) > 0)
               _Chip(
                 key: ValueKey('inbox_category_${category.id}'),
                 label: '${category.label} (${counts[category.id]})',
                 selected: activeCategory == category.id,
                 onTap: () => onCategory(category.id),
               ),
-              const SizedBox(width: 8),
-            ],
         ],
       ),
     );
@@ -324,7 +326,10 @@ class _Chip extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          alignment: Alignment.center,
+          // No `alignment` here on purpose: a Container with an alignment and
+          // no width expands to the widest constraint it is given, which inside
+          // a Wrap means one chip per row. Without it the chip is as wide as its
+          // label, which is what a pill is.
           decoration: BoxDecoration(
             // The selected chip is a solid brand-green fill with white text, as
             // board 13 draws it. It was a pale fill with a green border, which

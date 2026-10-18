@@ -8,6 +8,7 @@ import 'package:cozy_focus_app/domain/models/pet_models.dart' as domain;
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/companion/room/furniture_catalog.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
+import 'package:drift/drift.dart' show Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,6 +39,11 @@ void main() {
     harness = QaFixtureHarness(
       pets: container.read(petRepositoryProvider),
       craft: container.read(craftRepositoryProvider),
+      tasks: container.read(taskRepositoryProvider),
+      sessions: container.read(focusSessionRepositoryProvider),
+      records: container.read(focusRecordRepositoryProvider),
+      notes: container.read(distractionRepositoryProvider),
+      ledger: container.read(rewardLedgerRepositoryProvider),
       db: db,
       clock: container.read(focusClockProvider),
     );
@@ -153,6 +159,104 @@ void main() {
       expect(memories, hasLength(2));
       expect(memories.map((m) => m.id),
           everyElement(startsWith(QaFixtureHarness.idPrefix)));
+    });
+  });
+
+  group('demo_day is a week the app can actually present', () {
+    test('every row it writes is internally consistent', () async {
+      await harness.seed(QaScenario.demoDay);
+
+      final tasks = await db
+          .customSelect(
+            "select count(*) as n from tasks where id like 'qa_demo_task_%'",
+          )
+          .getSingle();
+      expect(tasks.data['n'], 5);
+
+      final records = await db
+          .customSelect(
+            'select * from focus_records where id like '
+            "'qa_demo_rec_%'",
+          )
+          .get();
+      expect(records, hasLength(7));
+
+      // A record without its session would be a history row that cannot be
+      // reopened; a session without its record would be a focus block the
+      // reports never count. Both directions are checked because either one
+      // alone passes when the fixture writes them together by accident.
+      for (final row in records) {
+        final sessionId = row.data['session_id'] as String;
+        final session = await db.customSelect(
+          'select * from focus_sessions where id = ?',
+          variables: [Variable.withString(sessionId)],
+        ).getSingleOrNull();
+        expect(session, isNotNull, reason: 'record $sessionId has no session');
+        expect(
+          session!.data['planned_seconds'],
+          row.data['duration_seconds'],
+          reason: 'a record must last exactly as long as its session',
+        );
+      }
+
+      // Coins and XP follow RewardService's own rule, so the ledger and the pet
+      // cannot disagree with the sessions that earned them.
+      final ledger = await db
+          .customSelect(
+            "select * from reward_ledger where session_id like 'qa_demo_sess_%'",
+          )
+          .get();
+      expect(ledger, hasLength(7));
+      var xp = 0;
+      for (final row in ledger) {
+        final minutes = (row.data['experience_earned'] as int) ~/ 5;
+        expect(row.data['focus_coins_earned'], minutes * 2);
+        xp += row.data['experience_earned'] as int;
+      }
+
+      final progress = await db.petDao.findProgress(
+        QaFixtureHarness.petId,
+      );
+      expect(progress, isNotNull);
+      expect(progress!.experiencePoints, xp);
+      expect(progress.level, GrowthLevelCurve.levelForXp(xp));
+
+      final openNotes = await db
+          .customSelect(
+            "select count(*) as n from distraction_notes "
+            "where id like 'qa_demo_note_%' and status = 'open'",
+          )
+          .getSingle();
+      expect(openNotes.data['n'], 4);
+    });
+
+    test('a second run does not double the week', () async {
+      await harness.seed(QaScenario.demoDay);
+      final firstXp = (await db.petDao.findProgress(
+        QaFixtureHarness.petId,
+      ))!
+          .experiencePoints;
+      await harness.seed(QaScenario.demoDay);
+
+      final counts = await db
+          .customSelect(
+            "select "
+            "(select count(*) from tasks where id like 'qa_demo_task_%') as t, "
+            "(select count(*) from focus_records where id like 'qa_demo_rec_%') "
+            "as r, "
+            "(select count(*) from distraction_notes "
+            "where id like 'qa_demo_note_%') as n",
+          )
+          .getSingle();
+      expect(counts.data['t'], 5);
+      expect(counts.data['r'], 7);
+      expect(counts.data['n'], 5);
+      expect(
+        (await db.petDao.findProgress(QaFixtureHarness.petId))!
+            .experiencePoints,
+        firstXp,
+        reason: 're-seeding must not award the week twice',
+      );
     });
   });
 

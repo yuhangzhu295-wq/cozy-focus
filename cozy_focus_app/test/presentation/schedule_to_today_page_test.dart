@@ -270,6 +270,36 @@ void main() {
     expect(day.single.schedule.status, TaskScheduleStatus.planned);
   });
 
+  testWidgets('the custom chip sits on the same baseline as the presets',
+      (tester) async {
+    // The presets stack a number over a unit; 自定义 is one short line. With the
+    // Wrap's default start alignment it floated above the row it shares with
+    // them — visible on a device as a chip that is not lined up with its
+    // neighbours.
+    final id = await task();
+    final c = container();
+    await pump(tester, c, id);
+
+    Rect chipOf(String label) => tester.getRect(
+          find
+              .ancestor(
+                of: find.text(label),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
+
+    final custom = chipOf('自定义');
+    for (final label in ['25', '40', '50', '1']) {
+      final preset = chipOf(label);
+      expect(
+        (preset.center.dy - custom.center.dy).abs(),
+        lessThan(2),
+        reason: '$label and 自定义 are not on the same baseline',
+      );
+    }
+  });
+
   testWidgets('saving pops with the placement id', (tester) async {
     // The create screen and the detail screen both use the returned id to know
     // the write happened; a form that saved and stayed put would leave the user

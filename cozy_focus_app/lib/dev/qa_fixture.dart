@@ -33,10 +33,22 @@ import '../core/auth/current_user.dart';
 import '../data/local/app_database.dart';
 import '../domain/growth/growth_level_curve.dart';
 import '../domain/models/craft_models.dart' as domain;
+import '../domain/models/distraction_note.dart' as m;
 import '../domain/models/enums.dart';
+import '../domain/models/enums.dart' as m;
+import '../domain/models/focus_record.dart' as m;
+import '../domain/models/focus_session.dart' as m;
 import '../domain/models/pet_models.dart' as domain;
+import '../domain/models/sync_models.dart' as m;
+import '../domain/models/task.dart' as m;
+import '../domain/models/task_schedule.dart' as m;
 import '../domain/repositories/i_craft_repository.dart';
+import '../domain/repositories/i_distraction_repository.dart';
+import '../domain/repositories/i_focus_record_repository.dart';
+import '../domain/repositories/i_focus_session_repository.dart';
 import '../domain/repositories/i_pet_repository.dart';
+import '../domain/repositories/i_reward_ledger_repository.dart';
+import '../domain/repositories/i_task_repository.dart';
 import '../domain/services/focus_clock.dart';
 import '../presentation/companion/room/furniture_catalog.dart';
 import '../presentation/companion/room/furniture_entity.dart';
@@ -67,7 +79,17 @@ enum QaScenario {
   craftActive('craft_active'),
 
   /// Memories present, so the growth page has something to show.
-  memoryReady('memory_ready');
+  memoryReady('memory_ready'),
+
+  /// A week of ordinary use: five tasks, today's plan, six finished focus
+  /// sessions, and an inbox with three open notes.
+  ///
+  /// Exists because screenshots taken against an empty database have twice been
+  /// read as missing features — the category chips only render for categories
+  /// that have notes, so an empty inbox looks like an inbox without filters.
+  /// Seeding through the repositories makes the screenshots show what a user
+  /// with a week of use would see, and makes that state repeatable.
+  demoDay('demo_day');
 
   /// The name used on the command line (`--dart-define=QA_SCENARIO=...`).
   final String id;
@@ -138,6 +160,11 @@ class QaFixtureHarness {
 
   final IPetRepository pets;
   final ICraftRepository craft;
+  final ITaskRepository tasks;
+  final IFocusSessionRepository sessions;
+  final IFocusRecordRepository records;
+  final IDistractionRepository notes;
+  final IRewardLedgerRepository ledger;
   final AppDatabase db;
   final FocusClock clock;
   final String userId;
@@ -145,6 +172,11 @@ class QaFixtureHarness {
   QaFixtureHarness({
     required this.pets,
     required this.craft,
+    required this.tasks,
+    required this.sessions,
+    required this.records,
+    required this.notes,
+    required this.ledger,
     required this.db,
     required this.clock,
     this.userId = localMvpUserId,
@@ -217,6 +249,8 @@ class QaFixtureHarness {
         await _addMemoryOnce(
             '${idPrefix}mem_level', domain.PetMemoryType.levelUp, '成长到 Lv.2');
         steps.add('memories');
+      case QaScenario.demoDay:
+        steps.addAll(await _seedDemoDay());
     }
 
     return QaSeedReport(
@@ -265,6 +299,278 @@ class QaFixtureHarness {
   }
 
   // ── primitives ─────────────────────────────────────────────────────────────
+
+  /// Seeds a week of ordinary use, and reports what it wrote.
+  ///
+  /// Every row goes through the same repository the app writes through, so the
+  /// fixture cannot produce a state the app could not: a record always has its
+  /// session, a reward always matches its minutes, and the pet's level is
+  /// derived from the XP it earned rather than typed in.
+  ///
+  /// Idempotent by existence check on fixed ids. Running it twice does not
+  /// double the week, which is what makes it safe to re-run before a screenshot
+  /// pass.
+  Future<List<String>> _seedDemoDay() async {
+    final now = _now;
+    final today = DateTime(now.year, now.month, now.day);
+    final steps = <String>[];
+
+    // ── tasks ────────────────────────────────────────────────────────────────
+    final taskSpecs =
+        <(String, String, String?, int, String?, m.TaskStatus, DateTime?)>[
+      (
+        '${idPrefix}demo_task_report',
+        '写完本周周报',
+        'work',
+        40 * 60,
+        '把三个项目的进展收一下',
+        m.TaskStatus.open,
+        null,
+      ),
+      (
+        '${idPrefix}demo_task_read',
+        '读完《深度工作》第三章',
+        'study',
+        50 * 60,
+        '做两页笔记',
+        m.TaskStatus.open,
+        null,
+      ),
+      (
+        '${idPrefix}demo_task_desk',
+        '整理书桌和阳台',
+        'life',
+        25 * 60,
+        null,
+        m.TaskStatus.open,
+        null,
+      ),
+      (
+        '${idPrefix}demo_task_mail',
+        '回复客户邮件',
+        'work',
+        25 * 60,
+        null,
+        m.TaskStatus.done,
+        today.add(const Duration(hours: 9, minutes: 40)),
+      ),
+      (
+        '${idPrefix}demo_task_walk',
+        '傍晚散步 30 分钟',
+        'life',
+        25 * 60,
+        null,
+        m.TaskStatus.done,
+        today.subtract(const Duration(days: 1)).add(
+              const Duration(hours: 19),
+            ),
+      ),
+    ];
+    for (final spec in taskSpecs) {
+      if (await tasks.findById(spec.$1) != null) continue;
+      await tasks.insert(m.Task(
+        id: spec.$1,
+        userId: userId,
+        title: spec.$2,
+        categoryId: spec.$3,
+        estimatedSeconds: spec.$4,
+        note: spec.$5,
+        status: spec.$6,
+        completedAt: spec.$7,
+        createdAt: today.subtract(const Duration(days: 3)),
+      ));
+    }
+    steps.add('tasks');
+
+    // A user with a week of focus has made something with the coins. Without
+    // this the room screen only ever shows its empty state, which reads as a
+    // missing feature rather than as a state the user has not reached yet.
+    for (final id in ['rug', 'sofa', 'desk', 'bookshelf', 'bed']) {
+      final entity = FurnitureCatalog.entities[id];
+      if (entity != null) await _own(entity);
+    }
+    steps.add('furniture');
+
+    // ── today's plan ─────────────────────────────────────────────────────────
+    await tasks.schedule(
+      taskId: '${idPrefix}demo_task_report',
+      userId: userId,
+      startAt: today.add(const Duration(hours: 14)),
+      plannedSeconds: 40 * 60,
+    );
+    await tasks.schedule(
+      taskId: '${idPrefix}demo_task_read',
+      userId: userId,
+      startAt: today.add(const Duration(hours: 20)),
+      plannedSeconds: 50 * 60,
+    );
+    await tasks.schedule(
+      taskId: '${idPrefix}demo_task_mail',
+      userId: userId,
+      startAt: today.add(const Duration(hours: 9, minutes: 30)),
+      plannedSeconds: 25 * 60,
+    );
+    final mailDate = m.dayKeyFor(today);
+    final mailPlan =
+        await tasks.findScheduleOn('${idPrefix}demo_task_mail', mailDate);
+    if (mailPlan != null && mailPlan.status != m.TaskScheduleStatus.done) {
+      await tasks.updateSchedule(
+        mailPlan.copyWith(status: m.TaskScheduleStatus.done),
+      );
+    }
+    steps.add('plan');
+
+    // ── a week of finished sessions ──────────────────────────────────────────
+    // (days ago, hour, minutes, category, task id, task name, mood, gains)
+    final sessionSpecs =
+        <(int, int, int, String?, String?, String?, String?, String?)>[
+      (
+        0,
+        10,
+        25,
+        'work',
+        '${idPrefix}demo_task_mail',
+        '回复客户邮件',
+        'good',
+        'finishedGoal'
+      ),
+      (
+        1,
+        15,
+        50,
+        'study',
+        '${idPrefix}demo_task_read',
+        '读完《深度工作》第三章',
+        'flow',
+        'clearerThinking,learnedSomething'
+      ),
+      (1, 21, 25, 'life', null, null, 'okay', 'betterMood'),
+      (
+        2,
+        14,
+        40,
+        'work',
+        '${idPrefix}demo_task_report',
+        '写完本周周报',
+        'good',
+        'moreFocused'
+      ),
+      (3, 9, 25, 'study', null, '整理笔记', 'okay', null),
+      (4, 16, 50, 'work', null, '写方案初稿', 'flow', 'newIdeas,moreFocused'),
+      (5, 20, 40, 'life', null, null, 'good', 'betterMood'),
+    ];
+
+    var insertedSessions = 0;
+    var addedMinutes = 0;
+    var addedXp = 0;
+    var index = 0;
+    for (final spec in sessionSpecs) {
+      index++;
+      final id = '${idPrefix}demo_sess_$index';
+      final recordId = '${idPrefix}demo_rec_$index';
+      final start =
+          today.subtract(Duration(days: spec.$1)).add(Duration(hours: spec.$2));
+      final end = start.add(Duration(minutes: spec.$3));
+      final minutes = spec.$3;
+
+      if (await sessions.findById(id) == null) {
+        await sessions.save(m.FocusSession(
+          id: id,
+          userId: userId,
+          categoryId: spec.$4,
+          taskName: spec.$6,
+          taskId: spec.$5,
+          plannedSeconds: minutes * 60,
+          mode: m.FocusMode.focus,
+          startAt: start,
+          pauseIntervals: const [],
+          endAt: end,
+          status: m.FocusSessionStatus.completed,
+          timezoneOffsetMinutes: now.timeZoneOffset.inMinutes,
+        ));
+        insertedSessions++;
+      }
+
+      if (await records.findBySessionId(id) == null) {
+        await records.insert(m.FocusRecord(
+          id: recordId,
+          sessionId: id,
+          userId: userId,
+          categoryId: spec.$4,
+          taskName: spec.$6,
+          taskId: spec.$5,
+          mood: spec.$7,
+          gains: spec.$8,
+          durationSeconds: minutes * 60,
+          startAt: start,
+          endAt: end,
+          recordedAt: end,
+          isCountedForReward: true,
+        ));
+      }
+
+      // Coins and XP come from the same rule `RewardService` applies, so the
+      // ledger and the pet agree with the sessions that produced them.
+      await ledger.settleReward(m.RewardLedger(
+        sessionId: id,
+        userId: userId,
+        focusCoinsEarned: minutes * 2,
+        experienceEarned: minutes * 5,
+        settledAt: end,
+      ));
+      addedMinutes += minutes;
+      addedXp += minutes * 5;
+    }
+
+    if (insertedSessions > 0) {
+      final current = await pets.findPetProgress(petId);
+      if (current != null) {
+        final newXp = current.experiencePoints + addedXp;
+        await pets.savePetProgress(domain.PetProgress(
+          id: current.id,
+          petId: current.petId,
+          level: GrowthLevelCurve.levelForXp(newXp),
+          experiencePoints: newXp,
+          totalFocusMinutes: current.totalFocusMinutes + addedMinutes,
+          happinessScore: 82,
+          updatedAt: now,
+        ));
+      }
+    }
+    steps.add('sessions');
+
+    // ── the inbox ────────────────────────────────────────────────────────────
+    final noteSpecs = <(String, String?, m.DistractionNoteStatus, int)>[
+      ('查一下明天的高铁票', 'life', m.DistractionNoteStatus.open, 0),
+      ('回复设计稿的评论', 'work', m.DistractionNoteStatus.open, 0),
+      ('把读书笔记同步到云盘', 'study', m.DistractionNoteStatus.open, 0),
+      ('顺手把快递取了', 'life', m.DistractionNoteStatus.handled, 1),
+      ('给妈妈打个电话', 'life', m.DistractionNoteStatus.open, 2),
+    ];
+    var noteIndex = 0;
+    for (final spec in noteSpecs) {
+      noteIndex++;
+      final id = '${idPrefix}demo_note_$noteIndex';
+      if (await notes.findById(id) != null) continue;
+      final createdAt =
+          now.subtract(Duration(days: spec.$4, minutes: 20 * noteIndex));
+      await notes.insert(m.DistractionNote(
+        id: id,
+        userId: userId,
+        text: spec.$1,
+        categoryId: spec.$2,
+        status: spec.$3,
+        createdAt: createdAt,
+        handledAt: spec.$3 == m.DistractionNoteStatus.handled
+            ? createdAt.add(const Duration(minutes: 12))
+            : null,
+        sessionId: spec.$4 == 0 ? '${idPrefix}demo_sess_1' : null,
+      ));
+    }
+    steps.add('inbox');
+
+    return steps;
+  }
 
   /// The adoption `HomeController` performs, with the same ids and defaults.
   Future<void> _ensureBasePet() async {

@@ -198,10 +198,29 @@ def gate_launcher_icon():
 
 
 def gate_owner_visual():
-    return DEFERRED, (
-        "OWNER_VISUAL_GATE is REQUIRED and is never decided by a measurement. "
-        "P21's technical gates pass; whether the art reads well is human "
-        "judgement.")
+    # BLOCKED, not DEFERRED. The owner made this gate mandatory on 2026-10-18:
+    # no page may be called visually accepted until a review agent has looked at
+    # both the board and the device screenshot. It has not run, and the reason is
+    # outside engineering: every image-capable channel on this machine drops the
+    # PNG before it reaches a model (four visual-judge agents on an unentitled
+    # plan; gpt-6-sol, gemini and claude subagents all return "media omitted ...
+    # does not support image input"; the image-reader key is malformed; no
+    # qwen/minimax/baidu credentials). The per-channel evidence is in
+    # outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md.
+    #
+    # DEFERRED would read as "not run by decision", which is the opposite of the
+    # truth: it is required and could not run. That distinction is the whole
+    # point of having BLOCKED.
+    return BLOCKED, (
+        "OWNER_VISUAL_GATE is REQUIRED and has not run: no review agent could "
+        "receive an image on this machine. Four visual-judge agents are bound to "
+        "an unentitled plan; every gpt-6-sol/gemini/claude subagent returns "
+        "'media omitted from provider request because the selected model does "
+        "not support image input'; image-reader's API key is malformed and no "
+        "other vision credential is configured. 27 current screenshots and 16 "
+        "boards are ready to review the moment a channel exists. Evidence: "
+        "outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md")
+
 
 
 def gate_device_matrix():

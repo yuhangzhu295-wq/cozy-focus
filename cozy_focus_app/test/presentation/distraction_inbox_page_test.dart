@@ -138,6 +138,49 @@ void main() {
     expect(find.text('待处理 (3)'), findsOneWidget);
   });
 
+  testWidgets('every category filter is on screen, not scrolled off the edge',
+      (tester) async {
+    // Seven chips (three statuses, four used categories) do not fit one row on
+    // a phone. When they lived in a horizontal ListView the last one sat off
+    // the right edge with no affordance saying the row scrolls, so 工作 was a
+    // filter the user could not find. A Wrap keeps all of them reachable.
+    await note('买充电线', categoryId: 'life');
+    await note('写周报', categoryId: 'work');
+    await note('背单词', categoryId: 'study');
+    await note('浇花', categoryId: 'other');
+    final c = container();
+    await pump(tester, c);
+
+    final viewport = tester.view.physicalSize / tester.view.devicePixelRatio;
+    final tops = <double>{};
+    for (final id in ['life', 'work', 'study', 'other']) {
+      final chip = find.byKey(ValueKey('inbox_category_$id'));
+      expect(chip, findsOneWidget);
+      final rect = tester.getRect(chip);
+      expect(rect.left, greaterThanOrEqualTo(0));
+      expect(rect.right, lessThanOrEqualTo(viewport.width),
+          reason: '$id is outside the viewport');
+      expect(rect.bottom, lessThanOrEqualTo(viewport.height),
+          reason: '$id is below the fold');
+      // A pill is as wide as its label. A Container with an alignment and no
+      // width expands to the whole line, which would put one chip per row and
+      // still pass the visibility checks above.
+      expect(rect.width, lessThan(viewport.width * 0.5),
+          reason:
+              '$id stretched to the full line instead of hugging its label');
+      tops.add(rect.top);
+    }
+    expect(tops.length, lessThanOrEqualTo(2),
+        reason: 'four short chips should not need more than two rows');
+
+    // And the one that used to be unreachable actually filters.
+    await tester.tap(find.byKey(const ValueKey('inbox_category_work')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(find.text('写周报'), findsOneWidget);
+    expect(find.text('买充电线'), findsNothing);
+  });
+
   testWidgets('ticking a note takes it out of the inbox, and it can come back',
       (tester) async {
     await note('买充电线');

@@ -44,6 +44,11 @@ Future<void> main() async {
   final harness = QaFixtureHarness(
     pets: container.read(petRepositoryProvider),
     craft: container.read(craftRepositoryProvider),
+    tasks: container.read(taskRepositoryProvider),
+    sessions: container.read(focusSessionRepositoryProvider),
+    records: container.read(focusRecordRepositoryProvider),
+    notes: container.read(distractionRepositoryProvider),
+    ledger: container.read(rewardLedgerRepositoryProvider),
     db: container.read(appDatabaseProvider),
     clock: container.read(focusClockProvider),
   );

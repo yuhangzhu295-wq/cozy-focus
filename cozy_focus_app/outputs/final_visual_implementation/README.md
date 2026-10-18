@@ -1,5 +1,11 @@
 # CozyFocus 2.0 — 视觉落地交付（final_visual_implementation）
 
+> **2026-10-18 第二轮：本目录下的旧截图已过期。** 当前真机截图（27 张，1080×2400，
+> 有内容的 `demo_day` 数据）在
+> [`current_2026-10-18/`](current_2026-10-18/README.md)。旧图拍摄于 10-12，数据是
+> `buy milk` / `Write spec` 一类英文占位，曾导致审查把"空数据"读成"缺功能"。
+> 两者冲突时以 `current_2026-10-18/` 为准。
+
 本文件是简报第 13 节要求的交付索引。**所有状态词只用 PASS / FAIL / BLOCKED / NOT_VERIFIED。**
 **未标记 `OWNER_VISUAL_APPROVED`，未标记 `STORE_RELEASE_READY`。**
 
@@ -393,7 +399,7 @@ ASSET_GATES 75/75、APK 32.0 MB、AAB 50.5 MB、DIFF_CHECK clean）。
 | 图鉴条目点击 | **已通过（真机走完整条）** | 上一版写「设备被别的 App 抢占，未完成」——那是个**环境状况，不是能力边界**，这轮设备没被抢，同一路径一次就走通了：`成长 → 图鉴` → 已拥有的 `原木茶几 已拥有 x1` 弹出详情（`获取方式 / 已经做好啦，可以摆到房间 / 去房间摆放`）→ 点按钮进到 `房间装修`（`拥有件数 1 / 房间中 0 / 可摆放 1`，截图 `23_collection_detail.png`）。**整条链路是真的通的，之前只是没跑** |
 | 帧时间（raster） | **已测（用 Flutter 自己的 timings，不用平台计数器）** | 上一版这两行是自相矛盾的：一边写"本机 AVD 无 GPU，数字不代表真机"，一边项目里**已经有** `integration_test/frame_time_test.dart` + `test_driver/perf_driver.dart` 并且接进了门禁（`DEVICE_MATRIX` 那一格）。**那条"所以只能上真机"的结论是错的**：缺的不是设备，是"到有帧的地方去量"——`SchedulerBinding.addTimingsCallback` 拿到的就是 Flutter 自己认定的每帧耗时，`flutter test` 用的是假时钟所以必须在真机上跑，而这台机器就能跑。**本轮真的跑了两次，两次都留了数**：我自己那次 `flutter drive --profile -d emulator-5554`（2 个用例全过，698 帧，`outputs/final_visual_implementation/perf/frame_time_2026-10-14.json`）build p50 **1.33ms** / p90 2.26ms / p99 3.87ms / 稳态 max 8.89ms，晚到的 build 帧 1 帧（0.14%，暖机后 0）。随后门禁自己那次 `--with-device` 报了 697 帧、**build p50 1426µs / p90 2222µs**，暖机后超 16.67ms 预算的帧 **0**。**两次数字不完全一样（p50 差 ~0.1ms）是正常的**——那是两次运行，宿主机负载不同；门禁里那句"迟到帧在 0–3 之间浮动，跟着宿主机负载走而不是跟着 App 走"说的就是这件事。**可复现的是量级与判据（p90 在一个 16.67ms 帧内、p50 在半个内），不是某一个具体数字**。total p50 18.2ms / p90 26.6ms / p99 57.0ms。**口径要说清楚**：build 是 Dart 侧、与 GPU 无关，是干净的；**raster 那半（p50 12.1ms、max 413ms）跑在 swiftshader 软件光栅上（`ro.hardware.egl=emulation`），只能当"这台机器上有没有崩"的下限信号，不能当目标真机的帧时间**。`gfxinfo` 数的是 Android 平台视图、`SurfaceFlinger --latency` 对这个图层全零——这两个仍然不能用。门禁里这一格 `--with-device` 默认关闭、报告 `DEFERRED`，原因写明是耗时约三分钟，**不是"测不了"** |
 | TalkBack / 真机 / release 签名 / 启动图标 | **BLOCKED_EXTERNAL** | 环境或所有者 |
-| `OWNER_VISUAL_GATE` | **DEFERRED** | 项目门禁标 REQUIRED，**永不由测量决定**，非我可声称 |
+| `OWNER_VISUAL_GATE` | **BLOCKED**（2026-10-18 起） | 门禁标 REQUIRED，永不由测量决定。它没有跑，原因是工程之外：这台机器上没有任何一条能把 PNG 送进模型的通道（4 个 visual-judge 绑无授权套餐；gpt-6-sol / gemini / claude 子代理全部返回 `media omitted … does not support image input`；`image-reader` 的 key 非法；qwen/minimax/baidu 无凭证）。逐条证据见 `outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md`。**不是 `DEFERRED`——它是必须做而做不了。** |
 | 独立评审 | **代码：PASS（本轮拿到）／ 展板视觉：仍 `WAITING`** | `code-reviewer` 这一类**不可达**：它被工作区定义 `ZCodeProject/.zcode/agents/code-reviewer.md` 钉在 `32bb342b-.../gpt-6-sol`，而这个供应商连不上 `chatgpt.com`（两次各跑满 ~12 分钟后超时）；`deep-reasoner` 报 `provider-not-found`（`gpt-6-astra` 未配置）、`general-purpose` 报 `auth_unavailable`（`oauth2.googleapis.com` 超时）、`local-private` 报 `provider-not-found`（本地 qwen 模型不存在）。**绕法不是改配置，而是换一个绑在可达供应商上的代理类型**：`architecture-reviewer` 只有用户级定义，绑 `new-provider-6/cn:glm-5.3`，本轮跑通并判 **PASS**（五条关注点，均带 `file:line`）。展板的**视觉**审查没有对应的可用代理（`visual-judge` 只对 pptx/docx/xlsx/pdf/poster/chart 开放），所以那一格保持未审。**实施者没有自批。** |
 
 ## 9a. 设备为什么一直不稳定 —— 是内存，不是 App
