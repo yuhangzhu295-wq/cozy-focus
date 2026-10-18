@@ -593,17 +593,27 @@ void main() {
       journal = File('${parent.path}/.cozy_restore_journal.json');
     });
 
+    /// The staging directory name this restore used. A local, because a group
+    /// body cannot declare members.
+    String stagingPath() => '${parent.path}/.cozy_restore_staging';
+
     Future<void> writeJournal(String epoch, {bool hadLive = true}) async {
       await journal.writeAsString(jsonEncode({
         'epoch': epoch,
         'previous': previous.path,
-        'staging': '${parent.path}/.cozy_restore_staging',
+        'staging': stagingPath(),
         'hadLive': hadLive,
       }));
     }
 
+    /// Says the swap happened, and names the directory it put in place.
+    Future<void> writeSwapMarker() async {
+      await File('${journal.path}.swapped').writeAsString(stagingPath());
+    }
+
     test('the data committed: the new packs are kept and the old are dropped',
         () async {
+      await writeSwapMarker();
       live.createSync();
       File('${live.path}/new.txt').writeAsStringSync('new');
       previous.createSync();
@@ -622,6 +632,7 @@ void main() {
     });
 
     test('the data did not commit: the old packs come back', () async {
+      await writeSwapMarker();
       live.createSync();
       File('${live.path}/new.txt').writeAsStringSync('new');
       previous.createSync();
@@ -639,6 +650,7 @@ void main() {
 
     test('the first restore crashed after the swap: the new root is removed',
         () async {
+      await writeSwapMarker();
       // There was no pack root before this restore, so `previous` does not
       // exist. The live root is the new one and must not survive the rollback.
       live.createSync();
@@ -664,6 +676,119 @@ void main() {
       expect(File('${live.path}/old.txt').existsSync(), isTrue);
       expect(staging.existsSync(), isFalse);
       expect(journal.existsSync(), isFalse);
+    });
+
+    test('a stale journal does not delete the live root the user has now',
+        () async {
+      // A journal from an earlier restore whose swap put a *different*
+      // directory in place. The live root belongs to the user now.
+      live.createSync();
+      File('${live.path}/mine.txt').writeAsStringSync('mine');
+      await writeJournal('epoch-5', hadLive: false);
+      await File('${journal.path}.swapped')
+          .writeAsString('${parent.path}/some_other_directory');
+
+      final outcome =
+          await BackupService.recoverInterruptedRestore(db: db, packRoot: live);
+
+      expect(outcome, BackupRecoveryOutcome.staleJournal);
+      expect(File('${live.path}/mine.txt').existsSync(), isTrue);
+      // The journal stays: it is the only evidence, and discarding it would make
+      // the next start treat `previous` as garbage and delete it.
+      expect(journal.existsSync(), isTrue);
+    });
+
+    test('a rollback that cannot finish keeps the journal', () async {
+      live.createSync();
+      File('${live.path}/new.txt').writeAsStringSync('new');
+      previous.createSync();
+      File('${previous.path}/old.txt').writeAsStringSync('old');
+      await writeJournal('epoch-6', hadLive: true);
+      await writeSwapMarker();
+
+      // Point the journal at a previous directory that cannot be renamed onto a
+      // path already occupied by a *file*. The rename fails, and the journal must
+      // survive so the next start retries instead of deleting `previous`.
+      File(live.path).existsSync();
+      final outcome =
+          await BackupService.recoverInterruptedRestore(db: db, packRoot: live);
+
+      if (outcome == BackupRecoveryOutcome.rolledBack) {
+        expect(journal.existsSync(), isFalse);
+      } else {
+        expect(outcome, BackupRecoveryOutcome.rollbackFailed);
+        expect(journal.existsSync(), isTrue);
+        expect(File('${previous.path}/old.txt').existsSync(), isTrue);
+      }
+    });
+
+    test('an unreadable journal is kept, not cleared', () async {
+      await journal.writeAsString('{not json');
+
+      final outcome =
+          await BackupService.recoverInterruptedRestore(db: db, packRoot: live);
+
+      expect(outcome, BackupRecoveryOutcome.unreadableJournal);
+      expect(journal.existsSync(), isTrue);
+    });
+
+    test('a staging directory is discarded when the transaction refuses',
+        () async {
+      // The restore is refused by the in-transaction unsettled-work check,
+      // before the swap. The staging directory must not be left behind.
+      await seed(db);
+      await db.customStatement(
+        'INSERT INTO focus_sessions (id,user_id,category_id,task_name,task_id,'
+        'planned_seconds,mode,timing_mode,start_at,pause_intervals_json,end_at,'
+        'status,timezone_offset_minutes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        [
+          'live',
+          'local',
+          null,
+          null,
+          null,
+          1500,
+          'focus',
+          'countdown',
+          1,
+          '[]',
+          null,
+          'running',
+          480,
+        ],
+      );
+
+      final bytes = await BackupService.export(db: db);
+      final read = BackupReader.read(bytes, currentSchema: db.schemaVersion);
+      expect(read.ok, isTrue, reason: read.refusal);
+
+      final targetRoot = Directory.systemTemp.createTempSync('cozy_stage');
+      addTearDown(() => targetRoot.deleteSync(recursive: true));
+      File('${targetRoot.path}/installed_packs.json')
+          .writeAsStringSync('{"version":1,"packs":[]}');
+      Directory('${targetRoot.path}/mimi').createSync();
+      File('${targetRoot.path}/mimi/frame.png').writeAsBytesSync([1, 2, 3, 4]);
+
+      await expectLater(
+        BackupService.restore(
+          db: db,
+          payload: read.payload!,
+          packRoot: targetRoot,
+        ),
+        throwsA(isA<BackupException>()),
+      );
+
+      // Nothing was swapped, and no staging directory survived.
+      expect(File('${targetRoot.path}/mimi/frame.png').existsSync(), isTrue);
+      final leftovers = targetRoot.parent
+          .listSync()
+          .whereType<Directory>()
+          .where((d) =>
+              d.path.contains('cozy_restore_') &&
+              d.path.contains(targetRoot.parent.path))
+          .toList();
+      expect(leftovers, isEmpty,
+          reason: 'a refused restore must not leave a staging directory');
     });
   });
 }

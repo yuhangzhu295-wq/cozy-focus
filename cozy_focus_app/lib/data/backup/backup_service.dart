@@ -297,12 +297,22 @@ abstract final class BackupService {
         );
       });
     } catch (error) {
-      if (swap != null) await _swapPacksBack(swap!);
+      if (swap != null) {
+        await _swapPacksBack(swap!);
+      } else if (stagedPacks != null) {
+        // The transaction failed before the swap (unsettled work, a bad row, a
+        // row-count mismatch), so the staging directory never became the live
+        // root. Leaving it behind would accumulate garbage beside the packs.
+        await _discardStaged(stagedPacks);
+      }
       if (error is BackupException) rethrow;
       throw BackupException('恢复失败，原数据没有改动：$error');
     }
 
     if (swap != null) await _finishSwap(swap!);
+    // The transaction committed and the packs are swapped. The staging
+    // directory is gone (it *became* the live root), so there is nothing to
+    // clean up on the success path.
     final rows = (tables.values)
         .whereType<List>()
         .fold<int>(0, (sum, list) => sum + list.length);
@@ -310,6 +320,31 @@ abstract final class BackupService {
       rowsRestored: rows,
       packsRestored: stagedPacks?.fileCount ?? 0,
     );
+  }
+
+  /// Whether the journal's epoch is present in `app_settings`.
+  ///
+  /// Three-valued on purpose. The previous version collapsed a *read error* into
+  /// "not committed", which is the one interpretation it must never have: a
+  /// database that is merely locked at startup would have rolled back a
+  /// completed restore.
+  static Future<BackupEpochCheck> _committedEpoch(
+    AppDatabase db,
+    String epoch,
+  ) async {
+    try {
+      final row = await db
+          .customSelect(
+            "SELECT value FROM app_settings WHERE key = 'backup_restore_epoch'",
+          )
+          .getSingleOrNull();
+      final committed = row?.data['value'] as String?;
+      return committed == epoch
+          ? BackupEpochCheck.committed
+          : BackupEpochCheck.notCommitted;
+    } catch (_) {
+      return BackupEpochCheck.unreadable;
+    }
   }
 
   /// Finishes or rolls back a restore that a previous process did not complete.
@@ -321,11 +356,16 @@ abstract final class BackupService {
   ///
   /// * epoch present -> the data committed, so the new packs are the right ones;
   /// * epoch absent  -> the data rolled back, so the old packs must come back.
-  static Future<void> recoverInterruptedRestore({
+  ///
+  /// **Every failure path preserves the journal.** It is the only record that
+  /// these two halves ever disagreed; clearing it after a failed rollback would
+  /// leave a live directory and a previous one and no way to tell which is
+  /// which - and the "no journal" branch deletes `previous` as garbage.
+  static Future<BackupRecoveryOutcome> recoverInterruptedRestore({
     required AppDatabase db,
     Directory? packRoot,
   }) async {
-    if (packRoot == null) return;
+    if (packRoot == null) return BackupRecoveryOutcome.nothingToDo;
     final live = packRoot;
     final journal = File('${live.parent.path}/.cozy_restore_journal.json');
     final previous = Directory('${live.parent.path}/.cozy_restore_previous');
@@ -337,63 +377,103 @@ abstract final class BackupService {
       try {
         if (await previous.exists()) await previous.delete(recursive: true);
       } catch (_) {}
-      return;
+      return BackupRecoveryOutcome.nothingToDo;
     }
 
     Map<String, dynamic> data;
     try {
       data = jsonDecode(await journal.readAsString()) as Map<String, dynamic>;
     } catch (_) {
-      await _clearJournal(journal);
-      return;
+      // An unreadable journal cannot be acted on. Keep it: deleting it would
+      // discard the only evidence that a swap may have happened.
+      return BackupRecoveryOutcome.unreadableJournal;
     }
 
     final epoch = data['epoch'];
-    String? committed;
-    try {
-      final row = await db
-          .customSelect(
-            "SELECT value FROM app_settings WHERE key = 'backup_restore_epoch'",
-          )
-          .getSingleOrNull();
-      committed = row?.data['value'] as String?;
-    } catch (_) {
-      committed = null;
+    if (epoch is! String) return BackupRecoveryOutcome.unreadableJournal;
+
+    // The swap marker records which staging directory was actually renamed into
+    // place. Without it a stale journal from an earlier restore - whose
+    // directory has since been replaced - could validate against a live
+    // directory that belongs to the user now, and the rollback would delete it.
+    final stagingPath = data['staging'];
+    if (stagingPath is! String) {
+      return BackupRecoveryOutcome.unreadableJournal;
+    }
+    final marker = File('${journal.path}.swapped');
+    if (await marker.exists()) {
+      final recorded = await marker.readAsString();
+      if (recorded != stagingPath) {
+        return BackupRecoveryOutcome.staleJournal;
+      }
+    } else if (live.existsSync() && data['hadLive'] == false) {
+      // No marker and `hadLive == false`: either the crash was before the swap
+      // (live must not exist) or the live root was created by something else
+      // since. Both are refused rather than guessed at.
+      return BackupRecoveryOutcome.staleJournal;
     }
 
-    if (epoch is String && epoch == committed) {
-      // The data committed. Keep the new packs; drop the old ones.
-      try {
-        if (await previous.exists()) await previous.delete(recursive: true);
-      } catch (_) {}
-    } else {
-      // The data did not commit. Put the old packs back.
-      //
-      // Two cases, and the first version only handled one:
-      // * there was an old root -> `previous` holds it, restore it;
-      // * there was no old root -> the live root is the *new* one and must be
-      //   removed, or the old (empty) data would sit next to packs that were
-      //   never part of it. A crash before the first rename is different again:
-      //   `hadLive == false` and `previous` absent, but `live` is also absent,
-      //   so there is nothing to delete.
-      final hadLive = data['hadLive'];
-      try {
-        if (hadLive == false) {
-          if (await live.exists()) await live.delete(recursive: true);
-        } else if (await previous.exists()) {
-          if (await live.exists()) await live.delete(recursive: true);
-          await previous.rename(live.path);
+    final epochState = await _committedEpoch(db, epoch);
+    switch (epochState.matches) {
+      case null:
+        return BackupRecoveryOutcome.unreadableEpoch;
+
+      case true:
+        // The data committed. Keep the new packs; drop the old ones.
+        if (!await _delete(previous)) {
+          return BackupRecoveryOutcome.rollbackFailed;
         }
-      } catch (_) {}
-      final stagingPath = data['staging'];
-      if (stagingPath is String) {
-        try {
-          final staging = Directory(stagingPath);
-          if (await staging.exists()) await staging.delete(recursive: true);
-        } catch (_) {}
-      }
+        await _clearJournal(journal);
+        await _clearMarker(marker);
+        return BackupRecoveryOutcome.committed;
+
+      case false:
+        // The data did not commit. Put the old packs back.
+        final hadLive = data['hadLive'];
+        if (hadLive == false) {
+          // There was no old root, so the live one is the new staging directory
+          // and must not survive the rollback. `live.exists()` is the proof the
+          // swap happened; if it is absent the crash was earlier and there is
+          // nothing to undo.
+          if (await live.exists() && !await _delete(live)) {
+            return BackupRecoveryOutcome.rollbackFailed;
+          }
+        } else if (await previous.exists()) {
+          if (await live.exists() && !await _delete(live)) {
+            return BackupRecoveryOutcome.rollbackFailed;
+          }
+          try {
+            await previous.rename(live.path);
+          } catch (_) {
+            // `live` is gone and `previous` still holds the user's packs. Keep
+            // the journal so the next start retries instead of treating
+            // `previous` as garbage.
+            return BackupRecoveryOutcome.rollbackFailed;
+          }
+        }
+        if (!await _delete(Directory(stagingPath))) {
+          return BackupRecoveryOutcome.rollbackFailed;
+        }
+        await _clearJournal(journal);
+        await _clearMarker(marker);
+        return BackupRecoveryOutcome.rolledBack;
     }
-    await _clearJournal(journal);
+  }
+
+  static Future<bool> _delete(Directory directory) async {
+    if (!await directory.exists()) return true;
+    try {
+      await directory.delete(recursive: true);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> _clearMarker(File marker) async {
+    try {
+      if (await marker.exists()) await marker.delete();
+    } catch (_) {}
   }
 
   static Future<List<String>> _columnsOf(AppDatabase db, String table) async {
@@ -476,6 +556,7 @@ abstract final class BackupService {
     final live = staged.liveRoot;
     final previous = Directory('${live.parent.path}/.cozy_restore_previous');
     final journal = File('${live.parent.path}/.cozy_restore_journal.json');
+    final marker = File('${journal.path}.swapped');
 
     if (await previous.exists()) {
       await previous.delete(recursive: true);
@@ -503,7 +584,15 @@ abstract final class BackupService {
       await _clearJournal(journal);
       rethrow;
     }
-    return _PackSwap(live: live, previous: previous, journal: journal);
+    // Written only after the rename succeeded, so recovery can tell "the swap
+    // happened" from "the journal was written but the swap never did".
+    await _writeText(marker, staged.staging.path);
+    return _PackSwap(
+      live: live,
+      previous: previous,
+      journal: journal,
+      marker: marker,
+    );
   }
 
   /// Puts the old pack root back after the database transaction failed.
@@ -539,10 +628,14 @@ abstract final class BackupService {
     File journal,
     Map<String, dynamic> data,
   ) async {
-    final temp = File('${journal.path}.tmp');
-    await temp.writeAsString(jsonEncode(data), flush: true);
+    await _writeText(journal, jsonEncode(data));
+  }
+
+  static Future<void> _writeText(File file, String text) async {
+    final temp = File('${file.path}.tmp');
+    await temp.writeAsString(text, flush: true);
     // Rename is the atomic step: a half-written journal must never be read.
-    await temp.rename(journal.path);
+    await temp.rename(file.path);
   }
 
   static Future<void> _clearJournal(File journal) async {
@@ -578,10 +671,47 @@ class _PackSwap {
   final Directory live;
   final Directory previous;
   final File journal;
+  final File marker;
 
   const _PackSwap({
     required this.live,
     required this.previous,
     required this.journal,
+    required this.marker,
   });
+}
+
+/// What `recoverInterruptedRestore` concluded.
+///
+/// Returned so `main` can tell the difference between "nothing to do" and "this
+/// needs another attempt". Anything other than [nothingToDo], [committed] or
+/// [rolledBack] leaves the state exactly as it was, with the journal intact.
+class BackupRecoveryOutcome {
+  final String state;
+  const BackupRecoveryOutcome(this.state);
+
+  static const nothingToDo = BackupRecoveryOutcome('nothing_to_do');
+  static const committed = BackupRecoveryOutcome('committed');
+  static const rolledBack = BackupRecoveryOutcome('rolled_back');
+  static const unreadableJournal = BackupRecoveryOutcome('unreadable_journal');
+  static const staleJournal = BackupRecoveryOutcome('stale_journal');
+  static const unreadableEpoch = BackupRecoveryOutcome('unreadable_epoch');
+  static const rollbackFailed = BackupRecoveryOutcome('rollback_failed');
+
+  /// Whether the filesystem is in a consistent, untouched state.
+  bool get isResolved =>
+      this == nothingToDo || this == committed || this == rolledBack;
+
+  @override
+  String toString() => 'BackupRecoveryOutcome($state)';
+}
+
+/// Whether the journal's epoch matched the one written in the data transaction.
+class BackupEpochCheck {
+  final bool? matches;
+  const BackupEpochCheck(this.matches);
+
+  static const committed = BackupEpochCheck(true);
+  static const notCommitted = BackupEpochCheck(false);
+  static const unreadable = BackupEpochCheck(null);
 }
