@@ -104,8 +104,14 @@ const _resetMustEmpty = <String>[
   'inventory_items',
   'room_items',
   'craft_jobs',
-  'app_settings',
 ];
+
+/// Fixture bookkeeping that outlives a reset on purpose.
+///
+/// `qa_inventory_revoked` records that the fixture's inventory unit has already
+/// been taken back, so a second reset does not subtract another unit from a row
+/// that holds real ones. It is not user data, and the next seed clears it.
+const _allowedBookkeeping = <String>['qa_inventory_revoked'];
 
 void main() {
   for (final a in QaScenario.values) {
@@ -176,6 +182,21 @@ void main() {
             .read<int>('c');
         expect(n, 0, reason: '${a.id} left $table rows after reset');
       }
+      final settings = await db
+          .customSelect('select key from app_settings order by key')
+          .get();
+      for (final row in settings) {
+        final key = row.read<String>('key');
+        expect(
+            key.startsWith('qa_') || _allowedBookkeeping.contains(key), isTrue,
+            reason: '${a.id} left a non-fixture app setting: $key');
+      }
+      final unexpected = settings
+          .map((r) => r.read<String>('key'))
+          .where((k) => !_allowedBookkeeping.contains(k))
+          .toList();
+      expect(unexpected, isEmpty,
+          reason: '${a.id} left bookkeeping that a seed would not recreate');
       final pets =
           (await db.customSelect('select count(*) as c from pets').getSingle())
               .read<int>('c');

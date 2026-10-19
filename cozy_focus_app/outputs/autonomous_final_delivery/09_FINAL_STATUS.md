@@ -14,7 +14,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2269/2269** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
+| Full suite | **2271/2271** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `5d30961`; regenerated after the round-9 fixes) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -111,6 +111,13 @@ round found a real defect, including ones introduced by the previous fix:
     units added to it. The query now matches settlement's exactly, the legacy
     record degrades to a delta-only fold, and a fixture row loses one unit
     rather than the row. Each has a test and a reverse proof.
+18. A second reset subtracted another fixture unit from a row holding real
+    ones, and a legacy pending could not attribute a completion. The first is
+    fixed by recording that the unit was taken back (`qa_inventory_revoked`,
+    cleared by the next seed); the second by recovering the baseline as
+    `current progress - seconds`, which is exact for a completion. The import
+    test's fixed 100 ms wait was replaced by waiting on the controller's own
+    installed set — the other observed test race, recorded rather than hidden.
 
 Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail), including the transaction: making the last write throw leaves

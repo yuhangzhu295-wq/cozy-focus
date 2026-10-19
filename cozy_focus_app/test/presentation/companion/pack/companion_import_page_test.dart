@@ -159,13 +159,25 @@ void main() {
       // files on disk, and under a full-suite load 400ms was not always enough:
       // the assertion then ran while the page was still showing the form, which
       // is why this test failed roughly one run in three and always passed alone.
+      // Wait for the installation itself, not for one of its side effects. The
+      // manifest can exist while the controller is still writing the pack's
+      // files, and a fixed 100 ms after that was not enough under load: the
+      // assertion ran against the form and the unfinished install then logged
+      // 'after dispose'. The controller's own state is the condition the screen
+      // is built from.
       final manifest = File('${root.path}/mimi/manifest.json');
       final deadline = DateTime.now().add(const Duration(seconds: 20));
       while (!manifest.existsSync() && DateTime.now().isBefore(deadline)) {
         await Future<void>.delayed(const Duration(milliseconds: 25));
       }
+      while (!c.read(installedPacksProvider.notifier).installedIds.contains(
+                'mimi',
+              ) &&
+          DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 25));
+      }
       // One more turn so the page's own future chain settles before the pump.
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
     });
     await tester.pump();
     await tester.pump();

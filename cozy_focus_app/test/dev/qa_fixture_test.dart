@@ -955,6 +955,76 @@ void main() {
           reason: 'only the fixture unit goes; the two real ones stay');
     });
 
+    test('a second reset does not take another fixture unit', () async {
+      await harness.seed(QaScenario.roomTwoAnchors);
+      await db.customStatement(
+        "update inventory_items set quantity = 3 where id = 'qa_inv_rug'",
+      );
+
+      await harness.reset();
+      var qty = (await db
+              .customSelect(
+                "select quantity from inventory_items where id = 'qa_inv_rug'",
+              )
+              .getSingleOrNull())
+          ?.read<int>('quantity');
+      expect(qty, 2);
+
+      await harness.reset();
+      qty = (await db
+              .customSelect(
+                "select quantity from inventory_items where id = 'qa_inv_rug'",
+              )
+              .getSingleOrNull())
+          ?.read<int>('quantity');
+      expect(qty, 2,
+          reason: 'the fixture unit was already taken back by the first reset');
+    });
+
+    test('a legacy pending still reopens a demo-completed job', () async {
+      await harness.seed(QaScenario.basePet);
+      await db.customStatement(
+        "update craft_recipes set required_minutes = 10 where id = 'table'",
+      );
+      await db.customStatement(
+        'insert into craft_jobs (id, user_id, recipe_id, status, '
+        'progress_seconds, started_at, reward_claimed) values '
+        "('real_job', 'default_user', 'table', 'inProgress', 0, 1790000000, 0)",
+      );
+      await harness.seed(QaScenario.demoDay);
+
+      // Rewind to an older build's bookkeeping: a three-field pending for the
+      // session that completed the job, and no completion/grant record.
+      await db.customStatement(
+        "delete from app_settings where key in "
+        "('qa_demo_craft_deltas', 'qa_demo_craft_completed', "
+        "'qa_demo_craft_granted')",
+      );
+      await db.customStatement(
+        'insert into app_settings (key, value) values (?, ?)',
+        ['qa_demo_craft_pending', 'qa_demo_sess_7|real_job|2400'],
+      );
+
+      await harness.reset();
+
+      final job = await db
+          .customSelect(
+            "select status, progress_seconds from craft_jobs where id = 'real_job'",
+          )
+          .getSingle();
+      expect(job.read<String>('status'), 'inProgress',
+          reason: 'the completion is recoverable from current - seconds');
+      expect(job.read<int>('progress_seconds'), 0);
+      final inv = (await db
+              .customSelect(
+                "select count(*) as c from inventory_items "
+                "where user_id = 'default_user' and item_id = 'table'",
+              )
+              .getSingle())
+          .read<int>('c');
+      expect(inv, 0, reason: 'the grant is recoverable from the recipe');
+    });
+
     test('a failure halfway through reset rolls the whole reset back',
         () async {
       await harness.seed(QaScenario.demoDay);

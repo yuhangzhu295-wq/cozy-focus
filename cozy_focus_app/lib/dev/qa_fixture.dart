@@ -223,6 +223,10 @@ class QaFixtureHarness {
     // not a snapshot. The base pet is 0 XP / 0 minutes, which is the pre-QA
     // state this restores.
     await _rememberProgressForReset();
+    await db.customStatement(
+      'delete from app_settings where key = ?',
+      [_inventoryRevokedKey],
+    );
 
     switch (scenario) {
       case QaScenario.basePet:
@@ -434,29 +438,40 @@ class QaFixtureHarness {
     // row would take those with it. A row that reaches zero is removed, because
     // a zero-quantity row is not a state a single seed produces.
     var revoked = 0;
-    final ownedRows = await db.customSelect(
-      'select id, quantity from inventory_items '
-      'where user_id = ? and substr(id, 1, ?) = ?',
-      variables: [
-        Variable.withString(userId),
-        Variable.withInt(idPrefix.length),
-        Variable.withString(idPrefix),
-      ],
-    ).get();
-    for (final row in ownedRows) {
-      final left = (row.read<int>('quantity') - 1).clamp(0, 1 << 40);
-      if (left == 0) {
-        await db.customStatement(
-          'delete from inventory_items where id = ?',
-          [row.read<String>('id')],
-        );
-      } else {
-        await db.customStatement(
-          'update inventory_items set quantity = ? where id = ?',
-          [left, row.read<String>('id')],
-        );
+    final alreadyRevoked = await db.customSelect(
+          'select 1 as present from app_settings where key = ?',
+          variables: [Variable.withString(_inventoryRevokedKey)],
+        ).getSingleOrNull() !=
+        null;
+    if (!alreadyRevoked) {
+      final ownedRows = await db.customSelect(
+        'select id, quantity from inventory_items '
+        'where user_id = ? and substr(id, 1, ?) = ?',
+        variables: [
+          Variable.withString(userId),
+          Variable.withInt(idPrefix.length),
+          Variable.withString(idPrefix),
+        ],
+      ).get();
+      for (final row in ownedRows) {
+        final left = (row.read<int>('quantity') - 1).clamp(0, 1 << 40);
+        if (left == 0) {
+          await db.customStatement(
+            'delete from inventory_items where id = ?',
+            [row.read<String>('id')],
+          );
+        } else {
+          await db.customStatement(
+            'update inventory_items set quantity = ? where id = ?',
+            [left, row.read<String>('id')],
+          );
+        }
+        revoked++;
       }
-      revoked++;
+      await db.customStatement(
+        'insert or replace into app_settings (key, value) values (?, ?)',
+        [_inventoryRevokedKey, '1'],
+      );
     }
 
     // The tasks, their placements and the inbox notes are this fixture's too.
@@ -1035,6 +1050,13 @@ class QaFixtureHarness {
     });
   }
 
+  /// Set once the fixture's inventory unit has been taken back.
+  ///
+  /// A second reset must not subtract another unit from a row that still holds
+  /// real ones. Cleared at the start of a seed, because a new QA cycle grants
+  /// its unit again.
+  static const String _inventoryRevokedKey = 'qa_inventory_revoked';
+
   static const String _craftDeltasKey = 'qa_demo_craft_deltas';
   static const String _craftCompletedKey = 'qa_demo_craft_completed';
   static const String _craftGrantedKey = 'qa_demo_craft_granted';
@@ -1145,17 +1167,23 @@ class QaFixtureHarness {
       // progress crosses the recipe's requirement, and the settlement adds
       // exactly `seconds`, so the arithmetic decides without a second record.
       final job = await db.customSelect(
-        'select status, recipe_id from craft_jobs where id = ?',
+        'select status, recipe_id, progress_seconds from craft_jobs '
+        'where id = ?',
         variables: [Variable.withString(jobId)],
       ).getSingleOrNull();
       if (job == null || job.read<String>('status') != 'completed') return;
-      // A pending written by an older build has three fields; without the
-      // progress baseline the completion cannot be attributed, so only the
-      // delta is folded.
-      final progressBefore = bits.length > 3 ? int.tryParse(bits[3]) : null;
+      // A pending written by an older build has three fields. The baseline is
+      // still recoverable: a completion means the settlement added exactly
+      // `seconds` to the progress it found, so `current - seconds` is that
+      // progress. Without this the legacy record folded the delta and left a
+      // completed job and its item behind.
+      final progressBefore = bits.length > 3
+          ? int.tryParse(bits[3])
+          : job.read<int>('progress_seconds') - seconds;
       if (progressBefore == null) return;
       final recipe = await db.customSelect(
-        'select required_minutes from craft_recipes where id = ?',
+        'select required_minutes, output_item_id from craft_recipes '
+        'where id = ?',
         variables: [Variable.withString(job.read<String>('recipe_id'))],
       ).getSingleOrNull();
       final required = recipe?.read<int>('required_minutes');
@@ -1167,7 +1195,9 @@ class QaFixtureHarness {
         completed.add(jobId);
         await _saveList(_craftCompletedKey, completed);
       }
-      final itemId = bits.length > 4 && bits[4].isNotEmpty ? bits[4] : null;
+      final itemId = bits.length > 4 && bits[4].isNotEmpty
+          ? bits[4]
+          : recipe?.read<String?>('output_item_id');
       if (itemId != null) {
         final granted = await _savedList(_craftGrantedKey);
         if (!granted.contains(itemId)) {
