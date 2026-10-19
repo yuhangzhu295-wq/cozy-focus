@@ -968,14 +968,38 @@ class QaFixtureHarness {
     if (existing != null) return;
     final progress = await pets.findPetProgress(petId);
     if (progress == null) return;
+    // The ledger totals at snapshot time, so reset can tell what a real
+    // settlement added AFTER the QA run started from what was already there.
+    // Without them, restoring the snapshot would wipe a genuine session the
+    // user completed between seeding and resetting — the session and its ledger
+    // row would survive, the XP would not.
+    final totals = await _nonDemoLedgerTotals();
     await db.customStatement(
       'insert or replace into app_settings (key, value) values (?, ?)',
       [
         _savedProgressKey,
         '${progress.experiencePoints},${progress.totalFocusMinutes},'
-            '${progress.happinessScore}',
+            '${progress.happinessScore},${totals.xp},${totals.minutes},'
+            '${totals.count}',
       ],
     );
+  }
+
+  /// XP, minutes and settlement count from real (non-demo) sessions.
+  ///
+  /// Only the demo week is the fixture's to undo. Every other ledger row is the
+  /// user's own work, including anything settled between the seed and the reset.
+  Future<({int xp, int minutes, int count})> _nonDemoLedgerTotals() async {
+    var xp = 0;
+    var minutes = 0;
+    var count = 0;
+    for (final row in await ledger.findForUser(userId)) {
+      if (row.sessionId.startsWith('${idPrefix}demo_sess_')) continue;
+      xp += row.experienceEarned;
+      minutes += row.experienceEarned ~/ 5;
+      count++;
+    }
+    return (xp: xp, minutes: minutes, count: count);
   }
 
   /// Whether a pre-QA snapshot exists.
@@ -1002,11 +1026,31 @@ class QaFixtureHarness {
       'delete from app_settings where key = ?',
       [_savedProgressKey],
     );
-    if (parts.length != 3) return;
-    final xp = int.tryParse(parts[0]);
-    final minutes = int.tryParse(parts[1]);
-    final happiness = int.tryParse(parts[2]);
+    if (parts.length < 3) return;
+    var xp = int.tryParse(parts[0]);
+    var minutes = int.tryParse(parts[1]);
+    var happiness = int.tryParse(parts[2]);
     if (xp == null || minutes == null || happiness == null) return;
+
+    // Add back what real sessions settled after the snapshot. The snapshot is
+    // the state before the QA run; the user's own work since then is not the
+    // fixture's to delete. Six-part snapshots carry the ledger totals that make
+    // this measurable; a three-part snapshot (older build) has no baseline, so
+    // nothing is added and the old behaviour stands.
+    if (parts.length >= 6) {
+      final snapXp = int.tryParse(parts[3]);
+      final snapMinutes = int.tryParse(parts[4]);
+      final snapCount = int.tryParse(parts[5]);
+      if (snapXp != null && snapMinutes != null && snapCount != null) {
+        final now = await _nonDemoLedgerTotals();
+        xp += (now.xp - snapXp).clamp(0, 1 << 40);
+        minutes += (now.minutes - snapMinutes).clamp(0, 1 << 40);
+        // Settlement adds 5 happiness per session, clamped at 100.
+        happiness = (happiness + 5 * (now.count - snapCount).clamp(0, 100))
+            .clamp(0, 100);
+      }
+    }
+
     final current = await pets.findPetProgress(petId);
     if (current == null) return;
     await pets.savePetProgress(domain.PetProgress(

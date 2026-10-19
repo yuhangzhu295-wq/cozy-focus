@@ -6,6 +6,7 @@ import 'package:cozy_focus_app/domain/growth/growth_level_curve.dart';
 import 'package:cozy_focus_app/domain/models/craft_models.dart' as domain;
 import 'package:cozy_focus_app/domain/models/enums.dart' show PetSpecies;
 import 'package:cozy_focus_app/domain/models/pet_models.dart' as domain;
+import 'package:cozy_focus_app/domain/models/sync_models.dart' as m;
 import 'package:cozy_focus_app/domain/services/companion_memory.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/companion/room/furniture_catalog.dart';
@@ -369,6 +370,54 @@ void main() {
             reason: '${scenario.id} after demoDay must not double the minutes');
       });
     }
+
+    test('reset keeps what a real session earned after the seed', () async {
+      // The QA seed is not the only thing that writes progress. A user can
+      // complete a real focus session between the seed and the reset; restoring
+      // the pre-QA snapshot unconditionally would delete that session's XP while
+      // leaving its ledger row and record in place.
+      await harness.seed(QaScenario.demoDay);
+
+      // The production settlement path, exactly as the app would run it.
+      await db.settlementDao.settleAtomically(
+        entry: m.RewardLedger(
+          sessionId: 'real_sess_1',
+          userId: 'default_user',
+          focusCoinsEarned: 100,
+          experienceEarned: 250,
+          settledAt: DateTime(2026, 10, 18, 12),
+        ),
+        addedFocusSeconds: 50 * 60,
+        now: DateTime(2026, 10, 18, 12),
+      );
+      final beforeReset = (await db.petDao.findProgress(
+        QaFixtureHarness.petId,
+      ))!;
+      expect(beforeReset.experiencePoints, 1275 + 250);
+
+      await harness.reset();
+
+      final after = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
+      expect(after.experiencePoints, 250,
+          reason: 'the demo week goes, the real session stays');
+      expect(after.totalFocusMinutes, 50, reason: 'and so do its minutes');
+
+      final realLedger = await db
+          .customSelect(
+            "select count(*) as c from reward_ledger "
+            "where session_id = 'real_sess_1'",
+          )
+          .getSingle();
+      expect(realLedger.read<int>('c'), 1,
+          reason: 'the real ledger row must survive');
+      final demoLedger = await db
+          .customSelect(
+            "select count(*) as c from reward_ledger "
+            "where session_id like 'qa_demo_sess_%'",
+          )
+          .getSingle();
+      expect(demoLedger.read<int>('c'), 0);
+    });
 
     test('reset removes the inventory rows the fixture created', () async {
       // Zeroing them left a database that differed from a single seed: the rows

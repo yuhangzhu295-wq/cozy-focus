@@ -14,9 +14,9 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2253/2253** (64 ordered scenario pairs + 8 reset-to-empty) |
+| Full suite | **2255/2255** (64 ordered pairs, 8 reset-to-empty, placement ids) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
-| Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `4baaa2e`) |
+| Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `5d30961`; regenerated after the round-9 fixes) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
 
 ## This round: eight review rounds on the same fixture
@@ -50,6 +50,13 @@ round found a real defect, including ones introduced by the previous fix:
    emulator). The snapshot is taken once, after adoption and before the
    scenario runs. Fixture inventory rows are now deleted rather than zeroed, so
    `seed → reset → seed` leaves the same rows as a single seed.
+9. Restoring that snapshot was still unconditional, so a real focus session the
+   user completed *between* the seed and the reset lost its XP while its ledger
+   row and record survived. The snapshot now also records the non-demo ledger
+   totals at snapshot time; reset adds back whatever real sessions settled since.
+   A test seeds the demo week, settles a 50-minute real session through the
+   production settlement DAO, resets, and requires 250 XP / 50 minutes to
+   remain — it fails with 0 when the delta is removed.
 
 Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail). `CompanionMemory.idFor` is now public so the fixture and
