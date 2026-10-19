@@ -1011,6 +1011,58 @@ void main() {
           reason: 'it is restored to the zero it had');
     });
 
+    test('a second grant does not relabel a fixture-created row', () async {
+      // The player empties the fixture's row, then a second seed grants it
+      // again. The first grant created the row, so reset must remove it — the
+      // second grant must not overwrite "created" with "pre-existed".
+      await harness.seed(QaScenario.roomTwoAnchors);
+      await db.customStatement(
+        "update inventory_items set quantity = 0 where id = 'qa_inv_rug'",
+      );
+      await harness.seed(QaScenario.roomTwoAnchors);
+
+      await harness.reset();
+
+      final row = await db
+          .customSelect(
+            "select quantity from inventory_items where id = 'qa_inv_rug'",
+          )
+          .getSingleOrNull();
+      expect(row, isNull,
+          reason: 'the fixture created this row; reset must remove it');
+    });
+
+    test('a craft completion leaves a pre-existing zero row at zero', () async {
+      // The completion adds a unit to a player row that existed at zero. Reset
+      // must take the unit back and keep the row, not delete it.
+      await db.customStatement(
+        'insert into inventory_items (id, user_id, item_id, quantity, '
+        "updated_at) values ('real_zero', 'default_user', 'table', 0, 1790990000)",
+      );
+      await harness.seed(QaScenario.basePet);
+      await db.customStatement(
+        "update craft_recipes set required_minutes = 10 where id = 'table'",
+      );
+      await db.customStatement(
+        'insert into craft_jobs (id, user_id, recipe_id, status, '
+        'progress_seconds, started_at, reward_claimed) values '
+        "('real_job', 'default_user', 'table', 'inProgress', 0, 1790000000, 0)",
+      );
+      await harness.seed(QaScenario.demoDay);
+
+      await harness.reset();
+
+      final row = await db
+          .customSelect(
+            "select id, quantity from inventory_items where item_id = 'table'",
+          )
+          .getSingleOrNull();
+      expect(row, isNotNull,
+          reason: 'the player row existed before the completion');
+      expect(row!.read<String>('id'), 'real_zero');
+      expect(row.read<int>('quantity'), 0);
+    });
+
     test('a second reset does not take another fixture unit', () async {
       await harness.seed(QaScenario.roomTwoAnchors);
       await db.customStatement(

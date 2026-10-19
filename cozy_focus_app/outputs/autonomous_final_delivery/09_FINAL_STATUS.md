@@ -14,7 +14,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2273/2273** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
+| Full suite | **2275/2275** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** at `697cccc`; DEVICE_MATRIX p50 5232 µs / p90 13656 µs, 2471 MB free. The gate now stops the Gradle daemon before measuring: with it resident the same harness measured p50 13 826 µs. |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -130,6 +130,12 @@ round found a real defect, including ones introduced by the previous fix:
     `_own` reuses the row and reset restores it to zero without deleting it.
     The ledger stores whether the row pre-existed, so reset removes a row only
     when the fixture created it.
+21. Two origin bugs in the same bookkeeping: a second grant in one cycle
+    overwrote "fixture created" with "pre-existed", leaving a zero row a single
+    seed never produces; and the craft rollback deleted any row that reached
+    zero, including a player's zero row. The first grant's origin is kept now,
+    and the craft grant records whether its row pre-existed (a legacy record
+    derives it from the settlement's `inv_<user>_<item>_<ms>` id shape).
 
 Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail), including the transaction: making the last write throw leaves

@@ -1114,7 +1114,8 @@ class QaFixtureHarness {
       'insert or replace into app_settings (key, value) values (?, ?)',
       [
         _craftPendingKey,
-        '$sessionId|$jobId|$seconds|${job.progress}|${job.itemId ?? ''}',
+        '$sessionId|$jobId|$seconds|${job.progress}|${job.itemId ?? ''}|'
+            '${job.quantity < 0 ? 0 : 1}',
       ],
     );
   }
@@ -1188,11 +1189,41 @@ class QaFixtureHarness {
           ? bits[4]
           : recipe?.read<String?>('output_item_id');
       if (itemId != null) {
-        final granted = await _savedList(_craftGrantedKey);
-        if (!granted.contains(itemId)) {
-          granted.add(itemId);
-          await _saveList(_craftGrantedKey, granted);
+        // Whether the inventory row existed before the completion. A legacy
+        // record has no flag, so it is derived from the row id: the settlement's
+        // completion path creates `inv_<user>_<item>_<ms>` when no row exists
+        // and increments the existing row otherwise. A row with that generated
+        // shape was created by the completion; anything else belonged to the
+        // player and is kept at zero rather than deleted.
+        String existed;
+        if (bits.length > 5) {
+          existed = bits[5];
+        } else {
+          final inv = await db.customSelect(
+            'select id from inventory_items '
+            'where user_id = ? and item_id = ?',
+            variables: [
+              Variable.withString(userId),
+              Variable.withString(itemId),
+            ],
+          ).getSingleOrNull();
+          existed =
+              inv != null && inv.read<String>('id').startsWith('inv_${userId}_')
+                  ? '0'
+                  : '1';
         }
+        final granted = <String, String>{
+          for (final pair in await _savedPairs(_craftGrantedKey))
+            pair.$1: pair.$2,
+        };
+        granted.putIfAbsent(itemId, () => existed);
+        await db.customStatement(
+          'insert or replace into app_settings (key, value) values (?, ?)',
+          [
+            _craftGrantedKey,
+            granted.entries.map((e) => '${e.key}:${e.value}').join(';'),
+          ],
+        );
       }
     });
   }
@@ -1264,7 +1295,9 @@ class QaFixtureHarness {
       if (seconds != null) deltas[part.$1] = seconds;
     }
     final completed = await _savedList(_craftCompletedKey);
-    final granted = await _savedList(_craftGrantedKey);
+    final granted = <String, String>{
+      for (final pair in await _savedPairs(_craftGrantedKey)) pair.$1: pair.$2,
+    };
     if (deltas.isEmpty && completed.isEmpty && granted.isEmpty) return;
 
     for (final entry in deltas.entries) {
@@ -1287,14 +1320,16 @@ class QaFixtureHarness {
         [jobId, 'completed'],
       );
     }
-    for (final itemId in granted) {
+    for (final entry in granted.entries) {
+      final itemId = entry.key;
+      final existed = entry.value != '0';
       final row = await db.customSelect(
         'select quantity from inventory_items where user_id = ? and item_id = ?',
         variables: [Variable.withString(userId), Variable.withString(itemId)],
       ).getSingleOrNull();
       if (row == null) continue;
       final left = (row.read<int>('quantity') - 1).clamp(0, 1 << 40);
-      if (left == 0) {
+      if (left == 0 && !existed) {
         await db.customStatement(
           'delete from inventory_items where user_id = ? and item_id = ?',
           [userId, itemId],
@@ -1437,8 +1472,10 @@ class QaFixtureHarness {
         // Whether a row already existed. Reset subtracts the one unit this
         // granted and removes the row only when it created it — restoring an
         // absolute pre-grant quantity would delete units the player gained
-        // afterwards.
-        granted[entity.id] = owned == null ? '-1' : '0';
+        // afterwards. The FIRST grant decides: if the fixture created the row,
+        // a later grant in the same cycle (after the player emptied it) must
+        // not relabel it as a pre-existing row.
+        granted.putIfAbsent(entity.id, () => owned == null ? '-1' : '0');
         await db.customStatement(
           'insert or replace into app_settings (key, value) values (?, ?)',
           [
