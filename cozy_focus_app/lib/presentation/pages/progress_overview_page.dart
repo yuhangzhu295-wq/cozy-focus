@@ -558,29 +558,29 @@ class _ProgressOverviewPageState extends ConsumerState<ProgressOverviewPage> {
         ),
       ),
       const SizedBox(height: 12),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-            children: cats.map((cat) {
+      // Wrapped, not scrolled. Six fixed categories plus 全部 do not fit one
+      // line on a phone, and a horizontal scroller with no scrollbar leaves
+      // 其他 as a filter the user has to guess exists.
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: cats.map((cat) {
           final id = cat['id'] as String?;
           final sel = state.selectedCategoryFilter == id;
-          return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(cat['name'] as String),
-                selected: sel,
-                selectedColor: AppColors.primaryLight,
-                backgroundColor: AppColors.surface,
-                labelStyle: TextStyle(
-                    color:
-                        sel ? AppColors.primarySage : AppColors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: sel ? FontWeight.bold : FontWeight.normal),
-                onSelected: (v) => ref
-                    .read(recordsControllerProvider.notifier)
-                    .setCategoryFilter(v ? id : null),
-              ));
-        }).toList()),
+          return ChoiceChip(
+            label: Text(cat['name'] as String),
+            selected: sel,
+            selectedColor: AppColors.primaryLight,
+            backgroundColor: AppColors.surface,
+            labelStyle: TextStyle(
+                color: sel ? AppColors.primarySage : AppColors.textSecondary,
+                fontSize: 13,
+                fontWeight: sel ? FontWeight.bold : FontWeight.normal),
+            onSelected: (v) => ref
+                .read(recordsControllerProvider.notifier)
+                .setCategoryFilter(v ? id : null),
+          );
+        }).toList(),
       ),
       const SizedBox(height: 16),
       if (recs.isEmpty)

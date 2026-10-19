@@ -97,19 +97,32 @@ def gate_analyze():
 
 
 def _test_gate(label, target):
+    """Runs a test target and reports what it actually said.
+
+    The exit code is the authority; the parsed count is the detail. A previous
+    version returned PASS as soon as the output contained "All tests passed",
+    which meant a command that printed a success-shaped line and *then* failed
+    — a crashed run that had already reported its summary, a pipe that
+    truncated the tail — would have been recorded as green. `ok` gates every
+    branch now, and the count is only ever used to describe a run that
+    succeeded.
+    """
     ok, out = run(f"flutter test --no-pub {target}")
+    if not ok:
+        m = re.search(r"\+(\d+)\s+-(\d+)", out)
+        if m:
+            return FAIL, f"{m.group(1)} passed, {m.group(2)} failed"
+        return FAIL, tail(out)
     m = re.search(r"\+(\d+)(?:\s+-(\d+))?:\s*All tests passed", out)
     if m:
         total = m.group(1)
         return PASS, f"{total}/{total} passed"
-    m = re.search(r"\+(\d+)\s+-(\d+)", out)
+    # The run succeeded but the wording did not match. Report the count when it
+    # is there rather than inventing a pass/fail it did not state.
+    m = re.search(r"\+(\d+)", out)
     if m:
-        return FAIL, f"{m.group(1)} passed, {m.group(2)} failed"
-    # Neither summary matched. The exit code is the authority, not the format: a
-    # clean run whose output wording changed must not be reported as a failure.
-    # An earlier version returned FAIL here unconditionally, which would turn a
-    # Flutter SDK wording change into a red gate.
-    return (PASS if ok else FAIL), tail(out)
+        return PASS, f"{m.group(1)} tests, format did not match; exit 0"
+    return PASS, tail(out)
 
 
 def gate_unit_tests():

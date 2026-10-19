@@ -527,34 +527,30 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
   }
 
   Widget _buildCategoryFilter(List<String> categories) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: categories.map((category) {
-          final isSelected = _selectedCategory == category;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: FilterChip(
-              label: Text(category),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedCategory = category;
-                });
-              },
-              selectedColor: AppColors.primaryLight,
-              checkmarkColor: AppColors.primarySage,
-              labelStyle: TextStyle(
-                color: isSelected
-                    ? AppColors.primaryDark
-                    : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-              backgroundColor: AppColors.surface,
-            ),
-          );
-        }).toList(),
-      ),
+    // Wrapped, not scrolled: 全部 plus four categories do not fit one line on a
+    // phone, and a filter that needs a guess to find is not a filter.
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: categories.map((category) {
+        final isSelected = _selectedCategory == category;
+        return FilterChip(
+          label: Text(category),
+          selected: isSelected,
+          onSelected: (selected) {
+            setState(() {
+              _selectedCategory = category;
+            });
+          },
+          selectedColor: AppColors.primaryLight,
+          checkmarkColor: AppColors.primarySage,
+          labelStyle: TextStyle(
+            color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+          backgroundColor: AppColors.surface,
+        );
+      }).toList(),
     );
   }
 

@@ -46,6 +46,7 @@ void main() {
       ledger: container.read(rewardLedgerRepositoryProvider),
       db: db,
       clock: container.read(focusClockProvider),
+      rewardService: container.read(rewardServiceProvider),
     );
   });
 
@@ -163,6 +164,129 @@ void main() {
   });
 
   group('demo_day is a week the app can actually present', () {
+    test('the timeline is causally possible', () async {
+      await harness.seed(QaScenario.demoDay);
+
+      // A task may not be completed before the focus that was about it, and no
+      // focus may predate the task that caused it. Both are display bugs the
+      // user reads as "the app is lying about when I did things".
+      final rows = await db
+          .customSelect(
+            "select t.id as task_id, t.created_at as created, "
+            "t.completed_at as completed, "
+            "min(s.start_at) as first_focus, max(s.end_at) as last_focus "
+            "from tasks t left join focus_sessions s "
+            "  on s.task_id = t.id and s.user_id = t.user_id "
+            "where t.id like 'qa_demo_task_%' "
+            "group by t.id",
+          )
+          .get();
+      expect(rows, isNotEmpty);
+      for (final row in rows) {
+        final created = row.data['created'] as int;
+        final firstFocus = row.data['first_focus'] as int?;
+        if (firstFocus != null) {
+          expect(firstFocus, greaterThanOrEqualTo(created),
+              reason: '${row.data['task_id']} was focused before it existed');
+        }
+        final completed = row.data['completed'] as int?;
+        if (completed != null && firstFocus != null) {
+          expect(completed, greaterThanOrEqualTo(firstFocus),
+              reason: '${row.data['task_id']} was completed before the focus '
+                  'that completed it');
+        }
+      }
+    });
+
+    test('settlement alone writes the memory a settled session earns',
+        () async {
+      await harness.seed(QaScenario.demoDay);
+
+      // The memory rule lives in settlement, not in the fixture. A fixture that
+      // wrote ledger rows and XP by hand produced seven settled sessions with no
+      // memory at all — a state the app cannot reach. This asserts the fixture
+      // produced the memories the reward rule requires instead.
+      final memories = await db.petDao.findMemories(QaFixtureHarness.petId);
+      final contents = memories.map((m) => m.content).toList();
+
+      // 第一次和你一起专注 — the first settled session of the week.
+      expect(contents, contains('第一次和你一起专注'));
+      // Growing from 0 XP into the 300-400 XP band crosses at least one level
+      // boundary, so a level-up memory must exist.
+      expect(contents.any((c) => c.startsWith('成长到 Lv.')), isTrue);
+      // The 50-minute sessions are at the long-session threshold.
+      expect(contents.any((c) => c.startsWith('陪你专注了 ')), isTrue);
+      // These ids are production-shaped (`mem_<pet>_<type>_<timestamp>`) because
+      // settlement generated them. That is the point: a fixture-invented id would
+      // prove the fixture wrote the memory, not the reward rule.
+      expect(memories.every((m) => m.id.startsWith('mem_')), isTrue,
+          reason: 'a settlement-generated memory must carry its production id');
+    });
+
+    test('reset removes the memories settlement wrote, and only those',
+        () async {
+      await harness.seed(QaScenario.demoDay);
+      final memories = await db.petDao.findMemories(QaFixtureHarness.petId);
+      expect(memories, isNotEmpty);
+
+      // A memory that predates the QA run, so this can show up a reset that
+      // removes everything it does not recognise.
+      await db.petDao.addMemory(domain.PetMemory(
+        id: 'mem_keep_me',
+        petId: QaFixtureHarness.petId,
+        memoryType: 'firstFocus',
+        content: '这条不是 QA 产生的',
+        happenedAt: DateTime(2020, 1, 1),
+      ));
+
+      await harness.reset();
+
+      final after = await db.petDao.findMemories(QaFixtureHarness.petId);
+      expect(after.map((m) => m.id), ['mem_keep_me'],
+          reason: 'reset must remove exactly what the fixture caused');
+    });
+
+    test('an interrupted seed resumed mid-week awards nothing twice', () async {
+      await harness.seed(QaScenario.demoDay);
+
+      // Simulate the state a killed process leaves: sessions 1-4 exist and are
+      // settled, but the pet's progress was never updated (which is exactly what
+      // the buggy version did — awarded nothing).
+      for (final id in const [
+        'qa_demo_sess_6',
+        'qa_demo_sess_7',
+      ]) {
+        await db.customStatement(
+            'delete from reward_ledger where session_id = ?', [id]);
+        await db.customStatement(
+            'delete from focus_records where session_id = ?', [id]);
+        await db
+            .customStatement('delete from focus_sessions where id = ?', [id]);
+      }
+      final before = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
+      final xpBefore = before.experiencePoints;
+      final minutesBefore = before.totalFocusMinutes;
+
+      await harness.seed(QaScenario.demoDay);
+      final after = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
+
+      // Only the two missing sessions may have been added: exactly 90 minutes
+      // (50 + 40) and the XP that goes with them, not the whole week again.
+      expect(after.totalFocusMinutes - minutesBefore, 90,
+          reason: 'a resumed seed must settle only what was missing');
+      expect(after.experiencePoints - xpBefore, 450,
+          reason: '90 minutes at 5 XP/min is 450 XP, not the week again');
+
+      // And the whole week is present exactly once.
+      final ledger = await db
+          .customSelect(
+            "select count(*) as n from reward_ledger where session_id like "
+            "'qa_demo_sess_%'",
+          )
+          .getSingle();
+      expect(ledger.data['n'], 7);
+    });
+
     test('every row it writes is internally consistent', () async {
       await harness.seed(QaScenario.demoDay);
 
@@ -175,8 +299,7 @@ void main() {
 
       final records = await db
           .customSelect(
-            'select * from focus_records where id like '
-            "'qa_demo_rec_%'",
+            "select * from focus_records where session_id like 'qa_demo_sess_%'",
           )
           .get();
       expect(records, hasLength(7));
@@ -242,7 +365,7 @@ void main() {
           .customSelect(
             "select "
             "(select count(*) from tasks where id like 'qa_demo_task_%') as t, "
-            "(select count(*) from focus_records where id like 'qa_demo_rec_%') "
+            "(select count(*) from focus_records where session_id like 'qa_demo_sess_%') "
             "as r, "
             "(select count(*) from distraction_notes "
             "where id like 'qa_demo_note_%') as n",

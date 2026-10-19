@@ -15,7 +15,8 @@
 /// A flag in the shipping entry point would put fixture code **inside the release
 /// binary**, reachable if the flag were ever set. This file is not referenced by
 /// `lib/main.dart` or by anything else in the shipping tree, so the release build
-/// does not contain a path to it at all — and `qa_fixture_guard_test.dart` fails
+/// does not contain a path to it at all — and the guard test in
+/// `test/dev/qa_fixture_test.dart` fails
 /// if that ever stops being true.
 ///
 /// ## What it does not do
@@ -51,6 +52,7 @@ Future<void> main() async {
     ledger: container.read(rewardLedgerRepositoryProvider),
     db: container.read(appDatabaseProvider),
     clock: container.read(focusClockProvider),
+    rewardService: container.read(rewardServiceProvider),
   );
 
   if (reset) {

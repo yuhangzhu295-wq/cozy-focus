@@ -13,4 +13,7 @@ abstract interface class IRewardLedgerRepository {
   /// settlement paths need to answer it: the atomic path counts the rows inside
   /// its transaction, the sequential path asks here.
   Future<int> countForUser(String userId);
+
+  /// Every settled row for [userId], newest first.
+  Future<List<RewardLedger>> findForUser(String userId);
 }

@@ -21,22 +21,39 @@ adb install -r build/app/outputs/flutter-apk/app-debug.apk
 flutter build apk --debug && adb install -r build/app/outputs/flutter-apk/app-debug.apk
 ```
 
-播种走的是 App 自己的仓库（`ITaskRepository`、`IFocusSessionRepository`、
-`IFocusRecordRepository`、`IDistractionRepository`、`IRewardLedgerRepository`），
-不是手改 SQLite，所以不会产生 App 自己到不了的状态：
+播种走的是 App 自己的仓库和**真实的结算路径**（`ITaskRepository`、
+`IFocusSessionRepository`、`IFocusRecordRepository`、`IDistractionRepository`、
+`RewardService`），不是手改 SQLite，也不是手写奖励行。所以它产生的是 App 自己真能
+到达的状态——包括结算自己写的 memory、幸福感变化和制作进度：
 
 | 内容 | 数量 |
 |---|---|
-| 任务 | 5（3 进行中、2 已完成） |
+| 任务 | 5（3 进行中、2 已完成），创建于 6 天前 |
 | 今日安排 | 3（含 1 项已完成） |
-| 已完成专注 | 7 段 / 255 分钟（另有截图时真实完成的一段 3 分钟） |
+| 已完成专注 | 7 段 / 255 分钟（15300 秒） |
 | 分心笔记 | 5（4 待处理：生活 2 / 工作 1 / 学习 1；1 已处理） |
 | 家具 | 5 件全部拥有并摆放 |
-| Mochi | Lv.13 / 1275 XP / 255 分钟 / 幸福感 82% |
+| Mochi | Lv.13 / 1275 XP / 255 分钟（实测值） |
+| 伙伴记忆 | 3 条：`第一次和你一起专注`、`成长到 Lv.2`、`陪你专注了 50 分钟` |
 
-`demo_day` 有两条测试保证它自洽：记录与 session 时长逐条相等、奖励币与 XP 符合
-`RewardService` 的规则（2 币/分钟、5 XP/分钟）、宠物等级由 `GrowthLevelCurve` 从 XP
-推导；重复播种不会把一周翻倍（变异验证过：去掉守卫后 XP 从 1275 变 2550，测试变红）。
+幸福感停在 100 是规则本身：结算每次 +5，而起点已经是上限，`clamp(0,100)` 把它夹住
+了——这是真实结算行为，不是播种写死。
+
+`demo_day` 有五条测试约束它（全部做过反向证明）：
+
+1. 每条 record 与它的 session 时长相等，且 session 存在——两个方向都查。
+2. 奖励币与 XP 符合 `RewardService` 的规则（2 币/分钟、5 XP/分钟），宠物等级由
+   `GrowthLevelCurve` 从 XP 推导，因为**测试读回账本而不是相信播种算的数**。
+3. 结算产生的 memory 带上它自己的生产 id（`mem_<pet>_<type>_<ts>`）——这证明是
+   奖励规则写的，不是播种编的。
+4. 时间线因果成立：任务不会在创建前被专注，也不会在完成它的专注开始前被标记完成。
+5. 重复播种不会翻倍；**中断后补播**只结算缺的那部分（删掉 2 段再播种，宠物只多拿
+   那 2 段的 450 XP，而不是整周再来一遍）。反向证明：把旧的"整周重算"写回去，测试报
+   `Expected: <450> Actual: <2235>`。
+
+`reset()` 也修过：结算写的 memory 不在 `qa_` 前缀里，前缀清理删不到它们。现在按账本里
+demo 会话的 `settledAt` 精确删，并有测试证明它只删这些、不碰一条 id 为 `mem_keep_me`
+的预先存在的记忆。
 
 ## 截图清单
 

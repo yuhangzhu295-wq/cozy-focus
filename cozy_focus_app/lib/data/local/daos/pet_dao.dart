@@ -86,6 +86,28 @@ class PetDao extends DatabaseAccessor<AppDatabase> with _$PetDaoMixin {
   /// **cannot delete real memories**: production ids are `mem_<pet>_<type>_<ts>`
   /// (see `CompanionMemory._idFor`) and never start with the QA prefix. That is
   /// the property the reset test pins.
+  /// Deletes memories for [petId] recorded at exactly one of [moments].
+  ///
+  /// The QA fixture needs this. Memories written by settlement carry
+  /// production-shaped ids (`mem_<pet>_<type>_<timestamp>`) — deliberately, so
+  /// the prefix-based cleanup cannot be tricked into deleting real ones. A
+  /// settlement-triggered memory is identified by the moment it was earned,
+  /// which is the settled timestamp of the session that earned it. Nothing in
+  /// production deletes by moment; this exists for the fixture's reset.
+  Future<int> deleteMemoriesAt({
+    required String petId,
+    required List<DateTime> moments,
+  }) async {
+    if (moments.isEmpty) return 0;
+    var removed = 0;
+    for (final moment in moments) {
+      removed += await (delete(petMemories)
+            ..where((t) => t.petId.equals(petId) & t.happenedAt.equals(moment)))
+          .go();
+    }
+    return removed;
+  }
+
   Future<int> deleteMemoriesWithIdPrefix(String prefix) {
     return (delete(petMemories)..where((t) => t.id.like('$prefix%'))).go();
   }

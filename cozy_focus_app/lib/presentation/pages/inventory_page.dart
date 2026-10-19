@@ -259,29 +259,28 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
           ),
         ),
         const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildViewChip(
-                view: _InventoryView.all,
-                label: '全部',
-                count: allCount,
-              ),
-              const SizedBox(width: 8),
-              _buildViewChip(
-                view: _InventoryView.available,
-                label: '可摆放',
-                count: availableCount,
-              ),
-              const SizedBox(width: 8),
-              _buildViewChip(
-                view: _InventoryView.placed,
-                label: '已摆放',
-                count: placedCount,
-              ),
-            ],
-          ),
+        // Three chips with counts fit one line on most phones, but the counts
+        // grow with the collection, and a row that silently clips its last
+        // option is the defect the inbox and the history list already had.
+        Wrap(
+          spacing: 8,
+          children: [
+            _buildViewChip(
+              view: _InventoryView.all,
+              label: '全部',
+              count: allCount,
+            ),
+            _buildViewChip(
+              view: _InventoryView.available,
+              label: '可摆放',
+              count: availableCount,
+            ),
+            _buildViewChip(
+              view: _InventoryView.placed,
+              label: '已摆放',
+              count: placedCount,
+            ),
+          ],
         ),
       ],
     );

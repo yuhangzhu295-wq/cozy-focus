@@ -25,7 +25,7 @@
 |---|---|---|
 | Release signing | BLOCKED | No keystore; the owner must generate and store it. No private key was written. |
 | Launcher icon | BLOCKED | Candidate exists; approval not given; `android/` untouched. |
-| Owner visual gate | DEFERRED | Never decided by measurement. |
+| Owner visual gate | BLOCKED | Required, and not run: no image-capable reviewer channel exists on this machine. See `05_VISUAL_COMPARISON.md`. |
 | Independent visual review | WAITING | No available reviewer accepts Flutter screenshots. |
 | Physical-GPU frame time | NOT MEASURED | Emulator uses swiftshader; raster numbers are not transferable. |
 | TalkBack walk | NOT MEASURED | Not run this round. |

@@ -15,4 +15,8 @@ class DriftRewardLedgerRepository implements IRewardLedgerRepository {
 
   @override
   Future<int> countForUser(String userId) => _dao.countForUser(userId);
+
+  @override
+  Future<List<RewardLedger>> findForUser(String userId) =>
+      _dao.findForUser(userId);
 }

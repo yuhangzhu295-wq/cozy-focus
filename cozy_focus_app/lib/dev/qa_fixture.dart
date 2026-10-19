@@ -17,8 +17,8 @@
 /// Nothing under `lib/` outside `lib/dev/` imports this file, and the release
 /// entry point is `lib/main.dart`. The fixture entry point is
 /// `lib/dev/qa_fixture_main.dart`, which is only reachable with
-/// `flutter run -t lib/dev/qa_fixture_main.dart`. `qa_fixture_guard_test.dart`
-/// fails if that stops being true, and [QaFixtureHarness.seed] refuses to run
+/// `flutter run -t lib/dev/qa_fixture_main.dart`. the guard test in
+/// `test/dev/qa_fixture_test.dart` fails if that stops being true, and [QaFixtureHarness.seed] refuses to run
 /// outside a debug build as a second line of defence.
 ///
 /// ## It is QA infrastructure, not product behaviour
@@ -39,7 +39,6 @@ import '../domain/models/enums.dart' as m;
 import '../domain/models/focus_record.dart' as m;
 import '../domain/models/focus_session.dart' as m;
 import '../domain/models/pet_models.dart' as domain;
-import '../domain/models/sync_models.dart' as m;
 import '../domain/models/task.dart' as m;
 import '../domain/models/task_schedule.dart' as m;
 import '../domain/repositories/i_craft_repository.dart';
@@ -50,6 +49,7 @@ import '../domain/repositories/i_pet_repository.dart';
 import '../domain/repositories/i_reward_ledger_repository.dart';
 import '../domain/repositories/i_task_repository.dart';
 import '../domain/services/focus_clock.dart';
+import '../domain/services/reward_service.dart';
 import '../presentation/companion/room/furniture_catalog.dart';
 import '../presentation/companion/room/furniture_entity.dart';
 
@@ -167,6 +167,14 @@ class QaFixtureHarness {
   final IRewardLedgerRepository ledger;
   final AppDatabase db;
   final FocusClock clock;
+
+  /// The production reward settlement, wired exactly as `providers.dart` wires
+  /// it (atomic DAO included). `demo_day` settles its sessions through this
+  /// rather than writing ledger and progress rows itself, so the state it
+  /// produces is indistinguishable from one the app reached on its own —
+  /// including the memories, the happiness bump and the craft progress that a
+  /// hand-written ledger row would silently omit.
+  final RewardService rewardService;
   final String userId;
 
   QaFixtureHarness({
@@ -179,6 +187,7 @@ class QaFixtureHarness {
     required this.ledger,
     required this.db,
     required this.clock,
+    required this.rewardService,
     this.userId = localMvpUserId,
   });
 
@@ -268,6 +277,21 @@ class QaFixtureHarness {
   /// There is no delete for inventory rows in the repository, and inventing one
   /// to satisfy a fixture would be a production change for a QA need.
   Future<QaResetReport> reset() async {
+    // Memories settlement wrote for demo_day first. Their ids are
+    // production-shaped (`mem_<pet>_<type>_<timestamp>`, from
+    // `CompanionMemory._idFor`) precisely because they were earned by the real
+    // settlement path — so `deleteMemoriesWithIdPrefix('qa_')` cannot touch
+    // them, and using a broader prefix would put real memories at risk. They
+    // are identified by the settled timestamp of the demo sessions that earned
+    // them, which this fixture recorded as it used to create them.
+    var memories = await db.petDao.deleteMemoriesAt(
+      petId: petId,
+      moments: await _demoSettlementMoments(),
+    );
+    if (memories == 0) {
+      memories = await db.petDao.deleteMemoriesWithIdPrefix(idPrefix);
+    }
+
     var roomItems = 0;
     for (final item in await craft.findRoomItems(userId)) {
       if (item.id.startsWith(idPrefix)) {
@@ -290,7 +314,6 @@ class QaFixtureHarness {
       }
     }
 
-    final memories = await db.petDao.deleteMemoriesWithIdPrefix(idPrefix);
     return QaResetReport(
       roomItems: roomItems,
       inventoryRowsRevoked: revoked,
@@ -299,6 +322,79 @@ class QaFixtureHarness {
   }
 
   // ── primitives ─────────────────────────────────────────────────────────────
+
+  /// Writes one finished focus session and settles it through production.
+  ///
+  /// ## Why this does not drive the engine
+  ///
+  /// `FocusSessionEngine` starts a session at `clock.now()`, and a QA run has a
+  /// fixed clock — so it can only ever produce a session that starts "now". A
+  /// week of history is the whole point of `demo_day`, so the timestamps have
+  /// to be written. Everything after the timestamps goes through production:
+  /// the record is inserted by [IFocusRecordRepository], and the reward is
+  /// settled by [RewardService] through [IAtomicSettlement], which is what
+  /// writes the ledger row, the pet's XP and minutes, the happiness bump, the
+  /// memories (first focus, level-up, long session) and any craft progress —
+  /// all in one transaction, exactly once per session.
+  ///
+  /// The alternative, which this replaces, computed the coins and XP here and
+  /// wrote them straight to the ledger and the pet. That produced a state the
+  /// app cannot reach: seven settled sessions with no memory at all, because
+  /// the reward rule lives in settlement, not at the call site. A screenshot of
+  /// it looked like a week of play and was missing everything play leaves
+  /// behind.
+  ///
+  /// Idempotent: [RewardService.settle] returns false for a session already in
+  /// the ledger, and the record insert is skipped when one exists.
+  Future<void> _settlePastSession({
+    required String id,
+    required String? categoryId,
+    required String? taskId,
+    required String? taskName,
+    required String? mood,
+    required String? gains,
+    required DateTime start,
+    required int minutes,
+  }) async {
+    final end = start.add(Duration(minutes: minutes));
+    final session = m.FocusSession(
+      id: id,
+      userId: userId,
+      categoryId: categoryId,
+      taskName: taskName,
+      taskId: taskId,
+      plannedSeconds: minutes * 60,
+      mode: m.FocusMode.focus,
+      startAt: start,
+      pauseIntervals: const [],
+      endAt: end,
+      status: m.FocusSessionStatus.completed,
+      timezoneOffsetMinutes: start.timeZoneOffset.inMinutes,
+    );
+    await sessions.save(session);
+
+    if (await records.findBySessionId(id) == null) {
+      await records.insert(m.FocusRecord(
+        id: '${id}_rec',
+        sessionId: id,
+        userId: userId,
+        categoryId: categoryId,
+        taskName: taskName,
+        taskId: taskId,
+        mood: mood,
+        gains: gains,
+        durationSeconds: minutes * 60,
+        startAt: start,
+        endAt: end,
+        recordedAt: end,
+        isCountedForReward: true,
+      ));
+    }
+
+    // Settlement, not this fixture, decides the reward. It writes the ledger,
+    // the pet, the memories and the craft job in one transaction.
+    await rewardService.settle(session);
+  }
 
   /// Seeds a week of ordinary use, and reports what it wrote.
   ///
@@ -352,7 +448,7 @@ class QaFixtureHarness {
         25 * 60,
         null,
         m.TaskStatus.done,
-        today.add(const Duration(hours: 9, minutes: 40)),
+        today.add(const Duration(hours: 10, minutes: 25)),
       ),
       (
         '${idPrefix}demo_task_walk',
@@ -362,7 +458,7 @@ class QaFixtureHarness {
         null,
         m.TaskStatus.done,
         today.subtract(const Duration(days: 1)).add(
-              const Duration(hours: 19),
+              const Duration(hours: 19, minutes: 40),
             ),
       ),
     ];
@@ -377,7 +473,12 @@ class QaFixtureHarness {
         note: spec.$5,
         status: spec.$6,
         completedAt: spec.$7,
-        createdAt: today.subtract(const Duration(days: 3)),
+        // Six days back, so it predates the oldest focus session below. A task
+        // created after the focus it was done for would be a timeline where the
+        // work happened before the thing that caused it.
+        createdAt: today.subtract(const Duration(days: 6)).add(
+              const Duration(hours: 9),
+            ),
       ));
     }
     steps.add('tasks');
@@ -460,83 +561,45 @@ class QaFixtureHarness {
       (5, 20, 40, 'life', null, null, 'good', 'betterMood'),
     ];
 
-    var insertedSessions = 0;
-    var addedMinutes = 0;
-    var addedXp = 0;
+    var seededSessions = 0;
     var index = 0;
     for (final spec in sessionSpecs) {
       index++;
       final id = '${idPrefix}demo_sess_$index';
-      final recordId = '${idPrefix}demo_rec_$index';
-      final start =
-          today.subtract(Duration(days: spec.$1)).add(Duration(hours: spec.$2));
-      final end = start.add(Duration(minutes: spec.$3));
       final minutes = spec.$3;
 
-      if (await sessions.findById(id) == null) {
-        await sessions.save(m.FocusSession(
-          id: id,
-          userId: userId,
-          categoryId: spec.$4,
-          taskName: spec.$6,
-          taskId: spec.$5,
-          plannedSeconds: minutes * 60,
-          mode: m.FocusMode.focus,
-          startAt: start,
-          pauseIntervals: const [],
-          endAt: end,
-          status: m.FocusSessionStatus.completed,
-          timezoneOffsetMinutes: now.timeZoneOffset.inMinutes,
-        ));
-        insertedSessions++;
-      }
+      // A session already in the database is left alone. Settlement is
+      // idempotent per session, but re-running the whole week would still
+      // re-walk every one of them; skipping is what makes a second seed cheap.
+      if (await sessions.findById(id) != null) continue;
 
-      if (await records.findBySessionId(id) == null) {
-        await records.insert(m.FocusRecord(
-          id: recordId,
-          sessionId: id,
-          userId: userId,
-          categoryId: spec.$4,
-          taskName: spec.$6,
-          taskId: spec.$5,
-          mood: spec.$7,
-          gains: spec.$8,
-          durationSeconds: minutes * 60,
-          startAt: start,
-          endAt: end,
-          recordedAt: end,
-          isCountedForReward: true,
-        ));
-      }
-
-      // Coins and XP come from the same rule `RewardService` applies, so the
-      // ledger and the pet agree with the sessions that produced them.
-      await ledger.settleReward(m.RewardLedger(
-        sessionId: id,
-        userId: userId,
-        focusCoinsEarned: minutes * 2,
-        experienceEarned: minutes * 5,
-        settledAt: end,
-      ));
-      addedMinutes += minutes;
-      addedXp += minutes * 5;
+      // Only sessions in the future of the app's own start are re-created; the
+      // clock is fixed for a QA run, so a session "in the past" cannot be
+      // started. _settlePastSession writes it directly instead.
+      await _settlePastSession(
+        id: id,
+        categoryId: spec.$4,
+        taskId: spec.$5,
+        taskName: spec.$6,
+        mood: spec.$7,
+        gains: spec.$8,
+        start: today
+            .subtract(Duration(days: spec.$1))
+            .add(Duration(hours: spec.$2)),
+        minutes: minutes,
+      );
+      seededSessions++;
     }
 
-    if (insertedSessions > 0) {
-      final current = await pets.findPetProgress(petId);
-      if (current != null) {
-        final newXp = current.experiencePoints + addedXp;
-        await pets.savePetProgress(domain.PetProgress(
-          id: current.id,
-          petId: current.petId,
-          level: GrowthLevelCurve.levelForXp(newXp),
-          experiencePoints: newXp,
-          totalFocusMinutes: current.totalFocusMinutes + addedMinutes,
-          happinessScore: 82,
-          updatedAt: now,
-        ));
-      }
+    if (seededSessions == 0) {
+      debugPrint('demo_day: every session already settled, nothing to add');
     }
+
+    // The pet's XP, minutes, happiness, memories and craft progress were all
+    // written by settlement itself, exactly once, inside its transaction. This
+    // fixture deliberately writes none of that: a fixture that recomputed the
+    // reward rule would be a second copy of a rule that already exists, and the
+    // two would drift on the day the rule changes.
     steps.add('sessions');
 
     // ── the inbox ────────────────────────────────────────────────────────────
@@ -570,6 +633,21 @@ class QaFixtureHarness {
     steps.add('inbox');
 
     return steps;
+  }
+
+  /// The `settledAt` of every demo session that ever settled.
+  ///
+  /// Read back from the ledger rather than stored, so it survives a fixture
+  /// rebuild. A session deleted before its memory was wiped keeps its ledger
+  /// row and so still lists its moment.
+  Future<List<DateTime>> _demoSettlementMoments() async {
+    final moments = <DateTime>[];
+    for (final row in await ledger.findForUser(userId)) {
+      if (row.sessionId.startsWith('${idPrefix}demo_sess_')) {
+        moments.add(row.settledAt);
+      }
+    }
+    return moments;
   }
 
   /// The adoption `HomeController` performs, with the same ids and defaults.

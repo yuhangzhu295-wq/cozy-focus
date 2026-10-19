@@ -51,6 +51,19 @@ class RewardLedgerDao extends DatabaseAccessor<AppDatabase>
     return row.read(rewardLedgerTable.sessionId.count()) ?? 0;
   }
 
+  /// Every settled row for [userId], newest first.
+  ///
+  /// Exists so a QA fixture can find the moments its own sessions settled at,
+  /// and clean up what those settlements left behind. Nothing in production
+  /// reads the whole ledger for a user.
+  Future<List<RewardLedger>> findForUser(String userId) async {
+    final rows = await (select(rewardLedgerTable)
+          ..where((t) => t.userId.equals(userId))
+          ..orderBy([(t) => OrderingTerm.desc(t.settledAt)]))
+        .get();
+    return rows.map(_map).toList();
+  }
+
   RewardLedger _map(RewardLedgerTableData row) {
     return RewardLedger(
       sessionId: row.sessionId,

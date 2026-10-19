@@ -1,18 +1,18 @@
 # Automated product gate
 
-Generated 2026-10-19 01:55:53 at `857735c1`. Local equals remote: **YES**.
+Generated 2026-10-19 11:28:44 at `ba082a14`. Local equals remote: **YES**.
 
 | Gate | Status | Evidence |
 |---|---|---|
 | `FORMAT` | **PASS** | 480 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
-| `UNIT_TESTS` | **PASS** | 2163/2163 passed |
+| `UNIT_TESTS` | **PASS** | 2167/2167 passed |
 | `INTEGRATION_TESTS` | **PASS** | 54/54 passed |
 | `GOLDEN_FLOW` | **PASS** | 6/6 passed |
 | `MIGRATION` | **PASS** | 16/16 passed |
 | `LIFECYCLE` | **PASS** | 81/81 passed |
 | `ASSET_GATES` | **PASS** | 75/75 passed |
-| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 681 frames on emulator-5554, 651 after the 30-frame startup warmup; steady-state UI-thread build p50 2021 us / p90 4311 us / p99 11350 us; frames over the 16.67 ms budget after the warmup: 2. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
+| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 692 frames on emulator-5554, 662 after the 30-frame startup warmup; steady-state UI-thread build p50 1743 us / p90 6721 us / p99 14883 us; frames over the 16.67 ms budget after the warmup: 5. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
 | `APK` | **PASS** | 32.1 MB (budget 34 MB) |
 | `AAB` | **PASS** | 50.7 MB (budget 55 MB) |
 | `DIFF_CHECK` | **PASS** | no whitespace errors |
