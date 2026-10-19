@@ -14,7 +14,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2255/2255** (64 ordered pairs, 8 reset-to-empty, placement ids) |
+| Full suite | **2258/2258** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `5d30961`; regenerated after the round-9 fixes) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -57,6 +57,12 @@ round found a real defect, including ones introduced by the previous fix:
    A test seeds the demo week, settles a 50-minute real session through the
    production settlement DAO, resets, and requires 250 XP / 50 minutes to
    remain — it fails with 0 when the delta is removed.
+10. Those two reads (pet progress, then ledger totals) were separate, so a real
+    settlement landing between them produced a snapshot of "0 XP, ledger already
+    has 250" and reset deleted the 250. They now run inside one transaction, so
+    the pair describes one instant. Three orderings are covered: a real session
+    after the seed, one from before the first seed (not counted twice), and two
+    after the seed (both survive). Removing the delta fails all three.
 
 Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail). `CompanionMemory.idFor` is now public so the fixture and

@@ -961,28 +961,36 @@ class QaFixtureHarness {
   /// runs), and an in-memory field would not survive that. The key carries the
   /// QA prefix so it is visibly fixture bookkeeping.
   Future<void> _rememberProgressForReset() async {
-    final existing = await db.customSelect(
-      'select value from app_settings where key = ?',
-      variables: [Variable.withString(_savedProgressKey)],
-    ).getSingleOrNull();
-    if (existing != null) return;
-    final progress = await pets.findPetProgress(petId);
-    if (progress == null) return;
-    // The ledger totals at snapshot time, so reset can tell what a real
-    // settlement added AFTER the QA run started from what was already there.
-    // Without them, restoring the snapshot would wipe a genuine session the
-    // user completed between seeding and resetting — the session and its ledger
-    // row would survive, the XP would not.
-    final totals = await _nonDemoLedgerTotals();
-    await db.customStatement(
-      'insert or replace into app_settings (key, value) values (?, ?)',
-      [
-        _savedProgressKey,
-        '${progress.experiencePoints},${progress.totalFocusMinutes},'
-            '${progress.happinessScore},${totals.xp},${totals.minutes},'
-            '${totals.count}',
-      ],
-    );
+    // One transaction, because the two reads have to describe the same instant.
+    // Read the pet first and the ledger second, and a real settlement landing
+    // between them writes a snapshot of "0 XP, ledger already contains 250":
+    // reset then computes a delta of zero and deletes the 250 the user earned.
+    // The transaction is what makes the pair a consistent snapshot; the ledger
+    // totals alone cannot tell whether the pet read saw the same settlement.
+    await db.transaction(() async {
+      final existing = await db.customSelect(
+        'select value from app_settings where key = ?',
+        variables: [Variable.withString(_savedProgressKey)],
+      ).getSingleOrNull();
+      if (existing != null) return;
+      final progress = await pets.findPetProgress(petId);
+      if (progress == null) return;
+      // The ledger totals at snapshot time, so reset can tell what a real
+      // settlement added AFTER the QA run started from what was already there.
+      // Without them, restoring the snapshot would wipe a genuine session the
+      // user completed between seeding and resetting — the session and its
+      // ledger row would survive, the XP would not.
+      final totals = await _nonDemoLedgerTotals();
+      await db.customStatement(
+        'insert or replace into app_settings (key, value) values (?, ?)',
+        [
+          _savedProgressKey,
+          '${progress.experiencePoints},${progress.totalFocusMinutes},'
+              '${progress.happinessScore},${totals.xp},${totals.minutes},'
+              '${totals.count}',
+        ],
+      );
+    });
   }
 
   /// XP, minutes and settlement count from real (non-demo) sessions.

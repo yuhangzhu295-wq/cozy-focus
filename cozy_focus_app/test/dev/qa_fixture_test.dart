@@ -419,6 +419,78 @@ void main() {
       expect(demoLedger.read<int>('c'), 0);
     });
 
+    Future<void> settleReal(String id, int minutes, DateTime at) =>
+        db.settlementDao.settleAtomically(
+          entry: m.RewardLedger(
+            sessionId: id,
+            userId: 'default_user',
+            focusCoinsEarned: minutes * 2,
+            experienceEarned: minutes * 5,
+            settledAt: at,
+          ),
+          addedFocusSeconds: minutes * 60,
+          now: at,
+        );
+
+    test('a real session after the seed survives, then the week adds once',
+        () async {
+      await harness.seed(QaScenario.demoDay);
+      await settleReal('real_a', 50, DateTime(2026, 10, 18, 12));
+
+      await harness.reset();
+      var progress = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
+      expect(progress.experiencePoints, 250);
+
+      await harness.seed(QaScenario.demoDay);
+      progress = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
+      expect(progress.experiencePoints, 250 + 1275,
+          reason: 'the real session and exactly one demo week');
+      expect(progress.totalFocusMinutes, 50 + 255);
+    });
+
+    test('a real session from before the seed is not counted twice', () async {
+      // A pet the app already has, then a real session, then the QA seed. The
+      // snapshot includes the session, so reset must not add it back on top of
+      // itself. The pet is created the way the app creates it: settlement
+      // before adoption would write a ledger row with no pet to award.
+      await db.petDao.upsertPet(domain.Pet(
+        id: QaFixtureHarness.petId,
+        userId: 'default_user',
+        species: PetSpecies.dog,
+        characterId: 'mochi',
+        name: 'Mochi',
+        adoptedAt: DateTime(2026, 10, 1),
+      ));
+      await db.petDao.upsertProgress(domain.PetProgress(
+        id: QaFixtureHarness.progressId,
+        petId: QaFixtureHarness.petId,
+        level: 1,
+        experiencePoints: 0,
+        totalFocusMinutes: 0,
+        happinessScore: 100,
+        updatedAt: DateTime(2026, 10, 1),
+      ));
+      await settleReal('real_b', 50, DateTime(2026, 10, 18, 9));
+      await harness.seed(QaScenario.demoDay);
+
+      await harness.reset();
+      final progress = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
+      expect(progress.experiencePoints, 250,
+          reason: 'the pre-seed session stays, once');
+      expect(progress.totalFocusMinutes, 50);
+    });
+
+    test('two real sessions after the seed both survive', () async {
+      await harness.seed(QaScenario.demoDay);
+      await settleReal('real_c', 50, DateTime(2026, 10, 18, 12));
+      await settleReal('real_d', 20, DateTime(2026, 10, 18, 13));
+
+      await harness.reset();
+      final progress = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
+      expect(progress.experiencePoints, 350);
+      expect(progress.totalFocusMinutes, 70);
+    });
+
     test('reset removes the inventory rows the fixture created', () async {
       // Zeroing them left a database that differed from a single seed: the rows
       // were invisible to ownership but still there, and the next seed reused
