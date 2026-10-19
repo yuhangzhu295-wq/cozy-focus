@@ -14,10 +14,42 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2158/2158** |
+| Full suite | **2173/2173** |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
-| Full gate (`--with-device`) | **14 PASS / 3 BLOCKED / 1 DEFERRED / 0 FAIL** |
+| Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `cba2896`) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
+
+## This round: five review rounds on the same fixture
+
+The QA fixture that produces the screenshot data was reviewed five times. Each
+round found a real defect, including ones introduced by the previous fix:
+
+1. It wrote ledger rows and XP by hand. Settlement also writes the memories, the
+   happiness bump and the craft progress, so the fixture showed a week of play
+   with no memory of it.
+2. That fix left `reset()` unable to delete the memories settlement wrote, and
+   its two cleanups were an either/or.
+3. `reset()` used `like 'qa_demo_sess_%'` — `_` is a SQL wildcard — and every
+   session settled at one instant, so two 50-minute sessions shared a memory id
+   and one was silently dropped.
+4. Sessions settled in reverse chronological order, so the pet remembered its
+   newest session as its first and reached Lv.2 before Lv.13.
+5. Memories were deleted by (pet, moment), which also removed a real memory that
+   happened to share the moment; and `reset()` left the tasks, plans and notes
+   the same seed created.
+
+Every fix carries a test and a reverse proof (the old behaviour restored makes
+that test fail). `CompanionMemory.idFor` is now public so the fixture and
+settlement share one definition of a memory id.
+
+**One gate run failed and was re-run.** The first `--with-device` run at
+`cba2896` reported DEVICE_MATRIX FAIL: p50 4251 µs / p90 20316 µs, 96 late
+frames. Nothing in that commit touches the measured screen (the changes are a QA
+fixture and three filter rows), and a standalone run of the same harness
+immediately after reported p50 2906 / p90 8578, then the full gate reported
+p50 3279 / p90 6886 with 10 late frames. The first run is recorded here rather
+than dropped: it measured a loaded host, and a later run is not a re-measurement
+of the same conditions.
 
 ## Not done, with the reason
 
