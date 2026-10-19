@@ -27,7 +27,7 @@
 /// visible affordance to the shipping UI.
 library;
 
-import 'package:drift/drift.dart' show UpdateKind, Variable;
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter/foundation.dart';
 
 import '../core/auth/current_user.dart';
@@ -403,59 +403,14 @@ class QaFixtureHarness {
     // increment behind would make a later reset look like it cleaned up while
     // the player still owned something the QA week produced. The job itself
     // must go or re-seeding craftActive hits its primary key.
-    final job = await db.customSelect(
-      'select recipe_id, status from craft_jobs where id = ?',
-      variables: [Variable.withString('${idPrefix}craft_job')],
-    ).getSingleOrNull();
-    if (job != null) {
-      final recipeId = job.data['recipe_id'] as String?;
-      final wasCompleted = job.data['status'] == 'completed';
-      await db.customStatement(
-        'delete from craft_jobs where id = ?',
-        ['${idPrefix}craft_job'],
-      );
-      if (wasCompleted && recipeId != null) {
-        final recipe = await db.customSelect(
-          'select output_item_id, output_quantity from craft_recipes '
-          'where id = ?',
-          variables: [Variable.withString(recipeId)],
-        ).getSingleOrNull();
-        final itemId = recipe?.data['output_item_id'] as String?;
-        // Settlement's completion path adds ONE unit (`_incrementInventory`
-        // writes `existing.quantity + 1` and inserts `quantity: 1`), so that is
-        // what has to come back. Subtracting the recipe's `output_quantity`
-        // would take more than the completion ever added whenever a recipe
-        // produces more than one.
-        const produced = 1;
-        if (itemId != null) {
-          final inv = await db.customSelect(
-            'select id, quantity from inventory_items '
-            'where user_id = ? and item_id = ?',
-            variables: [
-              Variable.withString(userId),
-              Variable.withString(itemId),
-            ],
-          ).getSingleOrNull();
-          if (inv != null) {
-            final invId = inv.data['id'] as String;
-            final left =
-                ((inv.data['quantity'] as int) - produced).clamp(0, 1 << 30);
-            if (left == 0 && !invId.startsWith(idPrefix)) {
-              // Created by the completion, so it goes with it.
-              await db.customStatement(
-                'delete from inventory_items where id = ?',
-                [invId],
-              );
-            } else {
-              await db.customStatement(
-                'update inventory_items set quantity = ? where id = ?',
-                [left, invId],
-              );
-            }
-          }
-        }
-      }
-    }
+    //
+    // Only the row. The unit its completion granted is taken back by
+    // `_restoreCraftFromReset`, which records it as a demo grant; rolling it
+    // back here as well would decrement the same item twice.
+    await db.customStatement(
+      'delete from craft_jobs where id = ?',
+      ['${idPrefix}craft_job'],
+    );
 
     await _restoreCraftFromReset();
 
@@ -474,15 +429,35 @@ class QaFixtureHarness {
     // "restore the pre-QA state". Player-owned rows have no prefix and are not
     // touched here; the craft rollback above already took back the one unit a
     // completed job added to one of those.
-    var revoked = await db.customUpdate(
-      'delete from inventory_items where user_id = ? and substr(id, 1, ?) = ?',
+    // One unit per fixture-owned row, not the row. `_own` grants exactly one,
+    // but settlement or a real gain can add more to the same row; deleting the
+    // row would take those with it. A row that reaches zero is removed, because
+    // a zero-quantity row is not a state a single seed produces.
+    var revoked = 0;
+    final ownedRows = await db.customSelect(
+      'select id, quantity from inventory_items '
+      'where user_id = ? and substr(id, 1, ?) = ?',
       variables: [
         Variable.withString(userId),
         Variable.withInt(idPrefix.length),
         Variable.withString(idPrefix),
       ],
-      updateKind: UpdateKind.delete,
-    );
+    ).get();
+    for (final row in ownedRows) {
+      final left = (row.read<int>('quantity') - 1).clamp(0, 1 << 40);
+      if (left == 0) {
+        await db.customStatement(
+          'delete from inventory_items where id = ?',
+          [row.read<String>('id')],
+        );
+      } else {
+        await db.customStatement(
+          'update inventory_items set quantity = ? where id = ?',
+          [left, row.read<String>('id')],
+        );
+      }
+      revoked++;
+    }
 
     // The tasks, their placements and the inbox notes are this fixture's too.
     // They used to survive a reset, so a seed → reset → seed cycle started on
@@ -1068,18 +1043,16 @@ class QaFixtureHarness {
   /// The in-progress craft jobs, in the order settlement will consider them.
   Future<Map<String, ({int progress, String? itemId, int quantity})>>
       _activeCraftState() async {
-    // Same user scope as settlement, and rowid order so `keys.first` is the
-    // row settlement's unordered `.first` picks. Without both, a database with
-    // two in-progress jobs (or another user's) could attribute the advance to
-    // the wrong job.
+    // The same predicate settlement uses, with no extra filter and no extra
+    // ordering. Settlement excludes nothing and sorts nothing, so a fixture
+    // that excluded its own job or imposed rowid order could disagree with it
+    // when several jobs are active — and then attribute the advance to a job
+    // settlement never touched. Repeating the query is the closest the fixture
+    // can get to "the job settlement will pick".
     final jobs = await db.customSelect(
       "select id, recipe_id, progress_seconds from craft_jobs "
-      "where status = 'inProgress' and user_id = ? and id != ? "
-      'order by rowid',
-      variables: [
-        Variable.withString(userId),
-        Variable.withString('${idPrefix}craft_job'),
-      ],
+      "where user_id = ? and status = 'inProgress'",
+      variables: [Variable.withString(userId)],
     ).get();
     final state = <String, ({int progress, String? itemId, int quantity})>{};
     for (final job in jobs) {
@@ -1176,13 +1149,17 @@ class QaFixtureHarness {
         variables: [Variable.withString(jobId)],
       ).getSingleOrNull();
       if (job == null || job.read<String>('status') != 'completed') return;
-      final progressBefore = int.tryParse(bits[3]);
+      // A pending written by an older build has three fields; without the
+      // progress baseline the completion cannot be attributed, so only the
+      // delta is folded.
+      final progressBefore = bits.length > 3 ? int.tryParse(bits[3]) : null;
+      if (progressBefore == null) return;
       final recipe = await db.customSelect(
         'select required_minutes from craft_recipes where id = ?',
         variables: [Variable.withString(job.read<String>('recipe_id'))],
       ).getSingleOrNull();
       final required = recipe?.read<int>('required_minutes');
-      if (progressBefore == null || required == null) return;
+      if (required == null) return;
       if (progressBefore + seconds < required * 60) return;
 
       final completed = await _savedList(_craftCompletedKey);

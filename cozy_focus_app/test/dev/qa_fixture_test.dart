@@ -832,6 +832,129 @@ void main() {
       expect(afterB.read<int>('progress_seconds'), 0);
     });
 
+    test('the QA job and a real job: the one settlement advanced is undone',
+        () async {
+      // The fixture used to exclude its own job from the active list while
+      // settlement did not, so with both active the fixture could attribute the
+      // advance to the job settlement never touched.
+      await harness.seed(QaScenario.craftActive);
+      await db.customStatement(
+        "update craft_recipes set required_minutes = 10 where id = 'table'",
+      );
+      await db.customStatement(
+        'insert into craft_jobs (id, user_id, recipe_id, status, '
+        'progress_seconds, started_at, reward_claimed) values '
+        "('real_job', 'default_user', 'table', 'inProgress', 0, 1790000000, 0)",
+      );
+
+      await harness.seed(QaScenario.demoDay);
+
+      // Settlement advances the first active job; when it completes, the next
+      // one takes the rest of the week. Both can therefore move.
+      final rows = await db
+          .customSelect(
+            "select id, progress_seconds from craft_jobs "
+            "where id in ('qa_craft_job', 'real_job') order by id",
+          )
+          .get();
+      final realBefore = rows
+          .where((r) => r.read<String>('id') == 'real_job')
+          .map((r) => r.read<int>('progress_seconds'))
+          .firstOrNull;
+      expect(realBefore, isNotNull);
+
+      // The recorded deltas must name exactly the jobs that actually moved.
+      // This is the direct check for the selection mismatch: excluding the QA
+      // job from the fixture's query recorded a delta against a job settlement
+      // never advanced.
+      final recorded = (await db
+              .customSelect(
+                "select value from app_settings "
+                "where key = 'qa_demo_craft_deltas'",
+              )
+              .getSingleOrNull())
+          ?.read<String>('value');
+      final recordedIds = <String>{
+        if (recorded != null)
+          for (final part in recorded.split(';'))
+            if (part.contains(':')) part.split(':').first,
+      };
+      final advancedIds = <String>{
+        for (final r in rows)
+          if (r.read<int>('progress_seconds') > 0) r.read<String>('id'),
+      };
+      expect(recordedIds, advancedIds,
+          reason: 'every advanced job must be recorded, and only those');
+
+      await harness.reset();
+
+      final after = await db
+          .customSelect(
+            "select id, progress_seconds from craft_jobs "
+            "where id = 'real_job'",
+          )
+          .getSingleOrNull();
+      // The QA job is deleted by reset; the real one is either untouched or
+      // fully unwound, never left with demo progress.
+      if (after != null) {
+        expect(after.read<int>('progress_seconds'), 0,
+            reason: 'no demo progress may remain on a real job');
+      }
+    });
+
+    test('a legacy three-field pending does not break reset', () async {
+      await harness.seed(QaScenario.basePet);
+      await db.customStatement(
+        "update craft_recipes set required_minutes = 10 where id = 'table'",
+      );
+      await db.customStatement(
+        'insert into craft_jobs (id, user_id, recipe_id, status, '
+        'progress_seconds, started_at, reward_claimed) values '
+        "('real_job', 'default_user', 'table', 'inProgress', 0, 1790000000, 0)",
+      );
+      await harness.seed(QaScenario.demoDay);
+      await db.customStatement(
+        "delete from app_settings where key in "
+        "('qa_demo_craft_deltas', 'qa_demo_craft_completed', "
+        "'qa_demo_craft_granted')",
+      );
+      // Three fields, as an older build wrote them.
+      await db.customStatement(
+        'insert into app_settings (key, value) values (?, ?)',
+        ['qa_demo_craft_pending', 'qa_demo_sess_7|real_job|2400'],
+      );
+
+      await harness.reset();
+
+      final pending = (await db
+              .customSelect(
+                "select count(*) as c from app_settings "
+                "where key = 'qa_demo_craft_pending'",
+              )
+              .getSingle())
+          .read<int>('c');
+      expect(pending, 0, reason: 'the legacy record is consumed, not fatal');
+    });
+
+    test('a fixture inventory row keeps real units added to it', () async {
+      await harness.seed(QaScenario.roomTwoAnchors);
+      // The fixture owns one rug; the user gains two more on the same row.
+      await db.customStatement(
+        "update inventory_items set quantity = 3 where id = 'qa_inv_rug'",
+      );
+
+      await harness.reset();
+
+      final qty = (await db
+              .customSelect(
+                "select quantity from inventory_items where id = 'qa_inv_rug'",
+              )
+              .getSingleOrNull())
+          ?.read<int>('quantity');
+      expect(qty, 2,
+          reason: 'only the fixture unit goes; the two real ones stay');
+    });
+
     test('a failure halfway through reset rolls the whole reset back',
         () async {
       await harness.seed(QaScenario.demoDay);
