@@ -97,6 +97,15 @@ abstract final class CompanionMemory {
   /// Derived from the pet, the type and the moment rather than generated
   /// randomly, so two settlements that earn the same memory at the same
   /// microsecond collapse onto one row instead of producing two.
-  static String _idFor(String petId, String type, DateTime at) =>
+  ///
+  /// Public because the QA fixture has to name the exact rows a demo
+  /// settlement wrote in order to remove them. Deleting by (pet, timestamp)
+  /// instead would also remove a real memory that happens to share the moment —
+  /// same moment is not same origin. Deriving the ids here keeps one definition
+  /// of the format.
+  static String idFor(String petId, String type, DateTime at) =>
       'mem_${petId}_${type}_${at.microsecondsSinceEpoch}';
+
+  static String _idFor(String petId, String type, DateTime at) =>
+      idFor(petId, type, at);
 }

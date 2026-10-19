@@ -5,6 +5,7 @@ import 'package:cozy_focus_app/dev/qa_fixture.dart';
 import 'package:cozy_focus_app/domain/growth/growth_level_curve.dart';
 import 'package:cozy_focus_app/domain/models/craft_models.dart' as domain;
 import 'package:cozy_focus_app/domain/models/pet_models.dart' as domain;
+import 'package:cozy_focus_app/domain/services/companion_memory.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
 import 'package:cozy_focus_app/presentation/companion/room/furniture_catalog.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
@@ -409,6 +410,69 @@ void main() {
           reason: 'and it must not write any extra demo session');
     });
 
+    test('reset clears the tasks, plans and notes the fixture created',
+        () async {
+      await harness.seed(QaScenario.demoDay);
+      // A row the fixture did not create, at the same table.
+      await db.customStatement(
+        "insert into tasks (id, user_id, title, estimated_seconds, status, "
+        "created_at, sort_order) values "
+        "('real_task', 'default_user', '真实任务', 1500, 'open', 1790990000, 0)",
+      );
+
+      await harness.reset();
+
+      for (final table in const [
+        'tasks',
+        'task_schedules',
+        'distraction_notes'
+      ]) {
+        final n = (await db
+                .customSelect(
+                  'select count(*) as c from $table where '
+                  "${table == 'tasks' ? 'id' : table == 'task_schedules' ? 'task_id' : 'id'} "
+                  "like 'qa_demo_%'",
+                )
+                .getSingle())
+            .read<int>('c');
+        expect(n, 0, reason: '$table still holds fixture rows after reset');
+      }
+      final real = (await db
+              .customSelect(
+                "select count(*) as c from tasks where id = 'real_task'",
+              )
+              .getSingle())
+          .read<int>('c');
+      expect(real, 1, reason: 'reset must not touch a task it did not create');
+    });
+
+    test('a real memory at the same moment as a demo settlement survives',
+        () async {
+      await harness.seed(QaScenario.demoDay);
+
+      // The demo settlements wrote memories at their own end times. A real
+      // memory can share one of those moments; deleting by (pet, moment) took it
+      // with them, because the same moment is not the same origin.
+      final demoMoment = (await db.petDao.findMemories(
+        QaFixtureHarness.petId,
+      ))
+          .first
+          .happenedAt;
+      await db.petDao.addMemory(domain.PetMemory(
+        id: 'mem_real_at_same_moment',
+        petId: QaFixtureHarness.petId,
+        memoryType: 'first_focus',
+        content: '真实记忆，只是时间相同',
+        happenedAt: demoMoment,
+      ));
+
+      await harness.reset();
+
+      final after = await db.petDao.findMemories(QaFixtureHarness.petId);
+      expect(after.map((m) => m.id), ['mem_real_at_same_moment'],
+          reason: 'only the ids settlement wrote may be removed');
+    });
+
     test('an interrupted seed resumed mid-week awards nothing twice', () async {
       await harness.seed(QaScenario.demoDay);
 
@@ -453,10 +517,15 @@ void main() {
       }
       final memoriesBefore =
           await db.petDao.findMemories(QaFixtureHarness.petId);
-      await db.petDao.deleteMemoriesAt(
-        petId: QaFixtureHarness.petId,
-        moments: moments,
-      );
+      await db.petDao.deleteMemoriesByIds([
+        for (final moment in moments)
+          for (final type in const [
+            domain.PetMemoryType.firstFocus,
+            domain.PetMemoryType.levelUp,
+            domain.PetMemoryType.longSession,
+          ])
+            CompanionMemory.idFor(QaFixtureHarness.petId, type, moment),
+      ]);
       final memoriesAfterCut =
           await db.petDao.findMemories(QaFixtureHarness.petId);
       expect(memoriesAfterCut.length, lessThan(memoriesBefore.length),

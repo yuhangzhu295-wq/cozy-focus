@@ -49,6 +49,7 @@ import '../domain/repositories/i_pet_repository.dart';
 import '../domain/repositories/i_reward_ledger_repository.dart';
 import '../domain/repositories/i_task_repository.dart';
 import '../domain/services/focus_clock.dart';
+import '../domain/services/companion_memory.dart';
 import '../domain/services/reward_service.dart';
 import '../presentation/companion/room/furniture_catalog.dart';
 import '../presentation/companion/room/furniture_entity.dart';
@@ -332,7 +333,20 @@ class QaFixtureHarness {
       ));
     }
 
-    final moments = await _demoSettlementMoments();
+    // The exact memory ids those settlements wrote. Deleting by (pet, moment)
+    // would also take a real memory that happens to share the moment — same
+    // moment is not same origin — so the ids are built with the same function
+    // settlement uses.
+    final memoryIds = <String>[
+      for (final moment in await _demoSettlementMoments())
+        for (final type in const [
+          domain.PetMemoryType.firstFocus,
+          domain.PetMemoryType.levelUp,
+          domain.PetMemoryType.longSession,
+        ])
+          CompanionMemory.idFor(petId, type, moment),
+    ];
+
     for (final table in const ['reward_ledger', 'focus_records']) {
       await db.customStatement(
         "delete from $table where session_id in "
@@ -345,10 +359,7 @@ class QaFixtureHarness {
       '(${List.filled(demoIds.length, '?').join(',')})',
       demoIds,
     );
-    var memories = await db.petDao.deleteMemoriesAt(
-      petId: petId,
-      moments: moments,
-    );
+    var memories = await db.petDao.deleteMemoriesByIds(memoryIds);
     // Plus the ones other scenarios wrote, whose ids do carry the prefix. Both
     // paths run, never one instead of the other: demo_day + memory_ready leaves
     // memories of two shapes, and an either/or left one kind behind.
@@ -375,6 +386,38 @@ class QaFixtureHarness {
         revoked++;
       }
     }
+
+    // The tasks, their placements and the inbox notes are this fixture's too.
+    // They used to survive a reset, so a seed → reset → seed cycle started on
+    // top of the previous week's tasks and notes.
+    final taskIds = <String>[
+      for (final name in const [
+        'report',
+        'read',
+        'desk',
+        'mail',
+        'walk',
+      ])
+        '${idPrefix}demo_task_$name',
+    ];
+    await db.customStatement(
+      'delete from task_schedules where task_id in '
+      '(${List.filled(taskIds.length, '?').join(',')})',
+      taskIds,
+    );
+    await db.customStatement(
+      'delete from tasks where id in '
+      '(${List.filled(taskIds.length, '?').join(',')})',
+      taskIds,
+    );
+    final noteIds = <String>[
+      for (var n = 1; n <= 5; n++) '${idPrefix}demo_note_$n',
+    ];
+    await db.customStatement(
+      'delete from distraction_notes where id in '
+      '(${List.filled(noteIds.length, '?').join(',')})',
+      noteIds,
+    );
 
     return QaResetReport(
       roomItems: roomItems,
