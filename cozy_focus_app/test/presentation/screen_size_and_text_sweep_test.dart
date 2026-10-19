@@ -73,6 +73,11 @@ void main() {
     '/records/inbox': '分心箱清单',
     '/settings': '设置',
     '/rest': '开始休息',
+    // The three screens whose filter rows moved from a horizontal scroller to a
+    // Wrap. They were not swept before, so "the fix does not overflow" was
+    // asserted by nobody. Each marker is text only that screen draws.
+    '/collection': 'Mochi 的收藏屋',
+    '/inventory': '房间装修',
   };
 
   for (final size in sizes) {

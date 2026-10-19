@@ -190,10 +190,18 @@ void main() {
               reason: '${row.data['task_id']} was focused before it existed');
         }
         final completed = row.data['completed'] as int?;
-        if (completed != null && firstFocus != null) {
-          expect(completed, greaterThanOrEqualTo(firstFocus),
-              reason: '${row.data['task_id']} was completed before the focus '
-                  'that completed it');
+        if (completed != null) {
+          if (firstFocus != null) {
+            expect(completed, greaterThanOrEqualTo(firstFocus),
+                reason: '${row.data['task_id']} was completed before the focus '
+                    'that completed it');
+          } else {
+            // No focus at all: the task still may not be completed before it
+            // existed. Asserted separately so "no focus" is not a free pass.
+            expect(completed, greaterThanOrEqualTo(created),
+                reason: '${row.data['task_id']} was completed before it was '
+                    'created');
+          }
         }
       }
     });
@@ -246,22 +254,79 @@ void main() {
           reason: 'reset must remove exactly what the fixture caused');
     });
 
+    test('reset undoes the whole demo week, and a re-seed rebuilds it',
+        () async {
+      await harness.seed(QaScenario.demoDay);
+      final afterFirst = await db.petDao.findProgress(QaFixtureHarness.petId);
+      expect(afterFirst!.experiencePoints, greaterThan(0));
+      expect(await db.petDao.findMemories(QaFixtureHarness.petId), isNotEmpty);
+
+      await harness.reset();
+
+      // The sessions, records and ledger rows are what a re-seed skips, so if
+      // they survive, the second seed does not re-run and the memories are never
+      // rebuilt. A pet that earned a week and remembers none of it is the exact
+      // bug this asserts is gone.
+      final left = await db
+          .customSelect(
+            "select "
+            "(select count(*) from focus_sessions where id like 'qa_demo_sess_%') s, "
+            "(select count(*) from focus_records where session_id like "
+            "'qa_demo_sess_%') r, "
+            "(select count(*) from reward_ledger where session_id like "
+            "'qa_demo_sess_%') l",
+          )
+          .getSingle();
+      expect(left.data['s'], 0, reason: 'demo sessions must not outlive reset');
+      expect(left.data['r'], 0, reason: 'demo records must not outlive reset');
+      expect(left.data['l'], 0,
+          reason: 'demo ledger rows must not outlive reset');
+
+      await harness.seed(QaScenario.demoDay);
+      final afterSecond = await db.petDao.findProgress(QaFixtureHarness.petId);
+      expect(afterSecond!.experiencePoints, afterFirst.experiencePoints,
+          reason: 'the week must come back exactly once, not twice');
+      expect(await db.petDao.findMemories(QaFixtureHarness.petId), isNotEmpty,
+          reason: 'the memories settlement earns must be rebuilt');
+    });
+
+    test('reset removes memories of both shapes, never an either/or', () async {
+      // demo_day leaves settlement-generated memories (production ids);
+      // memory_ready leaves qa_-prefixed ones. A reset that only ran one of the
+      // two cleanups left the other kind behind.
+      await harness.seed(QaScenario.demoDay);
+      await harness.seed(QaScenario.memoryReady);
+      await db.petDao.addMemory(domain.PetMemory(
+        id: 'mem_keep_me',
+        petId: QaFixtureHarness.petId,
+        memoryType: 'firstFocus',
+        content: '这条不是 QA 产生的',
+        happenedAt: DateTime(2020, 1, 1),
+      ));
+      final before = await db.petDao.findMemories(QaFixtureHarness.petId);
+      expect(before.length, greaterThan(3),
+          reason: 'both kinds of memory should be present before reset');
+
+      await harness.reset();
+
+      final after = await db.petDao.findMemories(QaFixtureHarness.petId);
+      expect(after.map((m) => m.id), ['mem_keep_me'],
+          reason: 'both memory shapes must go, and nothing else');
+    });
+
     test('an interrupted seed resumed mid-week awards nothing twice', () async {
       await harness.seed(QaScenario.demoDay);
 
-      // Simulate the state a killed process leaves: sessions 1-4 exist and are
-      // settled, but the pet's progress was never updated (which is exactly what
-      // the buggy version did — awarded nothing).
+      // The state a process killed between writing a session and settling it
+      // leaves: the session and its record are there, the ledger row is not.
+      // Only the ledger is removed — the hostile case, because the previous
+      // version skipped on "session exists" and so never repaired it.
       for (final id in const [
         'qa_demo_sess_6',
         'qa_demo_sess_7',
       ]) {
         await db.customStatement(
             'delete from reward_ledger where session_id = ?', [id]);
-        await db.customStatement(
-            'delete from focus_records where session_id = ?', [id]);
-        await db
-            .customStatement('delete from focus_sessions where id = ?', [id]);
       }
       final before = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
       final xpBefore = before.experiencePoints;

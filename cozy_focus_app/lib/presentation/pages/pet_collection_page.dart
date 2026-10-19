@@ -593,11 +593,15 @@ class _PetCollectionPageState extends ConsumerState<PetCollectionPage> {
       // Reference 10B lays the catalogue out as a dense four-column grid so the
       // whole collection is readable at a glance. Two columns made the page
       // scroll for several screens and hid how much of the set exists.
+      // The ratio is width/height in Flutter's SliverGridDelegate: a SMALLER
+      // number is a TALLER tile. 0.72 left the tile 1.4px short of its contents
+      // at 1.3x text, where 已摆放 / 未收集 wraps to a taller line than the
+      // tile was measured for.
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
         crossAxisSpacing: 8,
         mainAxisSpacing: 10,
-        childAspectRatio: 0.72,
+        childAspectRatio: 0.62,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {

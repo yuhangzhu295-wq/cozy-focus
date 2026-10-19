@@ -277,20 +277,69 @@ class QaFixtureHarness {
   /// There is no delete for inventory rows in the repository, and inventing one
   /// to satisfy a fixture would be a production change for a QA need.
   Future<QaResetReport> reset() async {
-    // Memories settlement wrote for demo_day first. Their ids are
-    // production-shaped (`mem_<pet>_<type>_<timestamp>`, from
-    // `CompanionMemory._idFor`) precisely because they were earned by the real
-    // settlement path — so `deleteMemoriesWithIdPrefix('qa_')` cannot touch
-    // them, and using a broader prefix would put real memories at risk. They
-    // are identified by the settled timestamp of the demo sessions that earned
-    // them, which this fixture recorded as it used to create them.
+    // Everything demo_day caused, in reverse order of what caused it. The
+    // sessions, records and ledger rows carry the QA prefix, so "the rows this
+    // fixture created" is answerable by id — no guessing by timestamp.
+    //
+    // The memories are the one thing that does NOT carry the prefix: settlement
+    // generated them with production-shaped ids (`mem_<pet>_<type>_<ts>`),
+    // deliberately, and that is exactly why deleting them has to be tied to the
+    // sessions that earned them. Their `happenedAt` is the settled moment of one
+    // of the demo sessions, so the ledger rows are the source of truth for which
+    // moments to remove. Deleting the ledger rows FIRST would lose that link, so
+    // the moments are collected before anything is deleted.
+    //
+    // This is also why the sessions must go: they are what a re-seed skips. With
+    // the session left behind, settlement's idempotency gate returns false and
+    // the memory is never rebuilt, so a seed → reset → seed cycle would leave a
+    // pet that earned the week and remembers none of it.
+    // Unwind the pet first. Settlement already added the demo week's XP,
+    // minutes and happiness to the pet, so deleting the ledger without giving
+    // those back leaves a pet that has earned the week twice — once before the
+    // reset and once after the re-seed. What to remove is read from the ledger
+    // rows that are about to go, so it is exactly what was awarded.
+    var demoXp = 0;
+    var demoMinutes = 0;
+    for (final row in await ledger.findForUser(userId)) {
+      if (!row.sessionId.startsWith('${idPrefix}demo_sess_')) continue;
+      demoXp += row.experienceEarned;
+      demoMinutes += row.experienceEarned ~/ 5;
+    }
+    final beforeReset = await pets.findPetProgress(petId);
+    if (beforeReset != null && (demoXp > 0 || demoMinutes > 0)) {
+      final newXp = (beforeReset.experiencePoints - demoXp).clamp(0, 1 << 40);
+      await pets.savePetProgress(domain.PetProgress(
+        id: beforeReset.id,
+        petId: beforeReset.petId,
+        level: GrowthLevelCurve.levelForXp(newXp),
+        experiencePoints: newXp,
+        totalFocusMinutes:
+            (beforeReset.totalFocusMinutes - demoMinutes).clamp(0, 1 << 40),
+        // Left as it is: happiness is a state, not an event, and unwinding it
+        // would invent a number the app never had.
+        happinessScore: beforeReset.happinessScore,
+        updatedAt: _now,
+      ));
+    }
+
+    final moments = await _demoSettlementMoments();
+    await db.customStatement(
+      "delete from reward_ledger where session_id like '${idPrefix}demo_sess_%'",
+    );
+    await db.customStatement(
+      "delete from focus_records where session_id like '${idPrefix}demo_sess_%'",
+    );
+    await db.customStatement(
+      "delete from focus_sessions where id like '${idPrefix}demo_sess_%'",
+    );
     var memories = await db.petDao.deleteMemoriesAt(
       petId: petId,
-      moments: await _demoSettlementMoments(),
+      moments: moments,
     );
-    if (memories == 0) {
-      memories = await db.petDao.deleteMemoriesWithIdPrefix(idPrefix);
-    }
+    // Plus the ones other scenarios wrote, whose ids do carry the prefix. Both
+    // paths run, never one instead of the other: demo_day + memory_ready leaves
+    // memories of two shapes, and an either/or left one kind behind.
+    memories += await db.petDao.deleteMemoriesWithIdPrefix(idPrefix);
 
     var roomItems = 0;
     for (final item in await craft.findRoomItems(userId)) {
@@ -568,10 +617,13 @@ class QaFixtureHarness {
       final id = '${idPrefix}demo_sess_$index';
       final minutes = spec.$3;
 
-      // A session already in the database is left alone. Settlement is
-      // idempotent per session, but re-running the whole week would still
-      // re-walk every one of them; skipping is what makes a second seed cheap.
-      if (await sessions.findById(id) != null) continue;
+      // An unfinished session is finished, not skipped. A process killed
+      // between the session write and settlement leaves exactly that: a session
+      // with no ledger row, which settlement's idempotency gate would let
+      // through — if anything called it. Skipping on "session exists" is what
+      // made that state permanent, so the check is on the ledger instead: an
+      // already-settled session is left alone, an unsettled one is settled now.
+      if (await ledger.findBySessionId(id) != null) continue;
 
       // Only sessions in the future of the app's own start are re-created; the
       // clock is fixed for a QA run, so a session "in the past" cannot be
