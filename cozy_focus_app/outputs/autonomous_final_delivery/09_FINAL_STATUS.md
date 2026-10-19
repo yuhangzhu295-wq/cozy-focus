@@ -14,12 +14,12 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2173/2173** |
+| Full suite | **2178/2178** |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `4baaa2e`) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
 
-## This round: five review rounds on the same fixture
+## This round: seven review rounds on the same fixture
 
 The QA fixture that produces the screenshot data was reviewed five times. Each
 round found a real defect, including ones introduced by the previous fix:
@@ -37,6 +37,12 @@ round found a real defect, including ones introduced by the previous fix:
 5. Memories were deleted by (pet, moment), which also removed a real memory that
    happened to share the moment; and `reset()` left the tasks, plans and notes
    the same seed created.
+6. `reset()` left `qa_craft_job` behind (re-seeding craftActive collided), and
+   `deleteMemoriesWithIdPrefix` still matched `qa_` with a SQL wildcard.
+7. Overwriting scenarios were not undone: `lateGrowth → reset` left the pet at
+   Lv.20 forever and `highMood → reset` turned a real 40% happiness into 100%.
+   The craft rollback also subtracted the recipe's `output_quantity` while
+   settlement adds exactly one unit.
 
 Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail). `CompanionMemory.idFor` is now public so the fixture and

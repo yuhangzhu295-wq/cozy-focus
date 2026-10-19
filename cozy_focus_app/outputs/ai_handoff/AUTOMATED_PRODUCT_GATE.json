@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-19 16:36:15",
-  "head": "4baaa2e7c8413844a1cf26144e9361b377b48590",
-  "remote_head": "4baaa2e7c8413844a1cf26144e9361b377b48590",
+  "generated_at": "2026-10-19 16:49:34",
+  "head": "2834c32adb3c8e9d8474195cfc540930ca3897f5",
+  "remote_head": "2834c32adb3c8e9d8474195cfc540930ca3897f5",
   "local_equals_remote": true,
   "counts": {
     "PASS": 14,
@@ -11,32 +11,32 @@
     {
       "gate": "DEVICE_MATRIX",
       "status": "PASS",
-      "evidence": "FRAME_TIME 679 frames on emulator-5554, 649 after the 30-frame startup warmup; host free memory at measurement: 2153 MB; steady-state UI-thread build p50 2809 us / p90 7800 us / p99 12809 us; frames over the 16.67 ms budget after the warmup: 2. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
-      "seconds": 114.5
+      "evidence": "FRAME_TIME 678 frames on emulator-5554, 648 after the 30-frame startup warmup; host free memory at measurement: 2097 MB; steady-state UI-thread build p50 3534 us / p90 9449 us / p99 16343 us; frames over the 16.67 ms budget after the warmup: 5. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
+      "seconds": 203.7
     },
     {
       "gate": "FORMAT",
       "status": "PASS",
       "evidence": "481 files, 0 changed",
-      "seconds": 3.7
+      "seconds": 3.6
     },
     {
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 13.3
+      "seconds": 16.4
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
       "evidence": "2177/2177 passed",
-      "seconds": 223.7
+      "seconds": 164.6
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "54/54 passed",
-      "seconds": 18.4
+      "seconds": 18.2
     },
     {
       "gate": "GOLDEN_FLOW",
@@ -48,31 +48,31 @@
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 10.5
+      "seconds": 12.7
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "81/81 passed",
-      "seconds": 14.5
+      "seconds": 11.0
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 8.4
+      "seconds": 7.7
     },
     {
       "gate": "APK",
       "status": "PASS",
       "evidence": "32.1 MB (budget 34 MB)",
-      "seconds": 26.2
+      "seconds": 19.0
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "50.7 MB (budget 55 MB)",
-      "seconds": 11.7
+      "seconds": 15.7
     },
     {
       "gate": "DIFF_CHECK",
@@ -108,7 +108,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 3.9
+      "seconds": 4.6
     },
     {
       "gate": "FLOW_GENERATION",

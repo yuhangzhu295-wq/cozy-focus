@@ -1,10 +1,10 @@
 # Automated product gate
 
-Generated 2026-10-19 16:36:15 at `4baaa2e7`. Local equals remote: **YES**.
+Generated 2026-10-19 16:49:34 at `2834c32a`. Local equals remote: **YES**.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 679 frames on emulator-5554, 649 after the 30-frame startup warmup; host free memory at measurement: 2153 MB; steady-state UI-thread build p50 2809 us / p90 7800 us / p99 12809 us; frames over the 16.67 ms budget after the warmup: 2. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
+| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 678 frames on emulator-5554, 648 after the 30-frame startup warmup; host free memory at measurement: 2097 MB; steady-state UI-thread build p50 3534 us / p90 9449 us / p99 16343 us; frames over the 16.67 ms budget after the warmup: 5. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
 | `FORMAT` | **PASS** | 481 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
 | `UNIT_TESTS` | **PASS** | 2177/2177 passed |

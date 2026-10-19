@@ -342,13 +342,107 @@ void main() {
           reason: 'both memory shapes must go, and nothing else');
     });
 
+    test('reset puts back progress that a scenario overwrote', () async {
+      // A pet with real progress: 100 XP, 10 minutes, 40% happiness.
+      await harness.seed(QaScenario.basePet);
+      await db.petDao.upsertProgress(domain.PetProgress(
+        id: QaFixtureHarness.progressId,
+        petId: QaFixtureHarness.petId,
+        level: GrowthLevelCurve.levelForXp(100),
+        experiencePoints: 100,
+        totalFocusMinutes: 10,
+        happinessScore: 40,
+        updatedAt: DateTime(2026, 10, 1),
+      ));
+
+      await harness.seed(QaScenario.lateGrowth);
+      final grown = await db.petDao.findProgress(QaFixtureHarness.petId);
+      expect(grown!.experiencePoints, greaterThan(100),
+          reason: 'the scenario must actually overwrite the XP');
+
+      await harness.reset();
+      var after = await db.petDao.findProgress(QaFixtureHarness.petId);
+      expect(after!.experiencePoints, 100,
+          reason: 'lateGrowth has no ledger row, so reset must restore the '
+              'value it overwrote');
+      expect(after.totalFocusMinutes, 10);
+
+      await harness.seed(QaScenario.highMood);
+      expect(
+          (await db.petDao.findProgress(QaFixtureHarness.petId))!
+              .happinessScore,
+          100);
+      await harness.reset();
+      after = await db.petDao.findProgress(QaFixtureHarness.petId);
+      expect(after!.happinessScore, 40,
+          reason: 'highMood must not permanently raise a real 40% to 100%');
+      expect(after.experiencePoints, 100,
+          reason: 'and the second reset must not lose the XP either');
+    });
+
     test('reset clears the craft job, and re-seeding it does not collide',
         () async {
       await harness.seed(QaScenario.craftActive);
+      // Make the recipe produce two, and give the player a real stack of the
+      // output. Settlement still adds exactly ONE unit when the job completes;
+      // rolling back `output_quantity` would take two and eat into the stack.
+      final job = await db.customSelect(
+        'select recipe_id from craft_jobs where id = ?',
+        variables: [Variable.withString('qa_craft_job')],
+      ).getSingle();
+      final recipeId = job.read<String>('recipe_id');
+      final recipe = await db.customSelect(
+        'select output_item_id from craft_recipes where id = ?',
+        variables: [Variable.withString(recipeId)],
+      ).getSingle();
+      final outputItem = recipe.read<String>('output_item_id');
+      await db.customStatement(
+        'update craft_recipes set output_quantity = 2 where id = ?',
+        [recipeId],
+      );
+      await db.customStatement(
+        'insert into inventory_items (id, user_id, item_id, quantity, updated_at) '
+        "values ('real_inv', 'default_user', ?, 5, 1790990000)",
+        [outputItem],
+      );
+
       // demoDay's settlements advance and likely complete that job.
       await harness.seed(QaScenario.demoDay);
 
+      // Whether the week completed it, so the inventory check only runs when
+      // there was something to produce.
+      final completed = (await db
+                  .customSelect(
+                    "select status from craft_jobs where id = 'qa_craft_job'",
+                  )
+                  .getSingle())
+              .read<String>('status') ==
+          'completed';
+
       await harness.reset();
+
+      if (completed) {
+        final stack = (await db
+                .customSelect(
+                  "select quantity from inventory_items where id = 'real_inv'",
+                )
+                .getSingle())
+            .read<int>('quantity');
+        expect(stack, 5,
+            reason: 'reset must take back exactly the one unit the completion '
+                'added, not the recipe output_quantity (2)');
+        final rows = (await db.customSelect(
+          'select count(*) as c from inventory_items '
+          'where user_id = ? and item_id = ?',
+          variables: [
+            Variable.withString('default_user'),
+            Variable.withString(outputItem),
+          ],
+        ).getSingle())
+            .read<int>('c');
+        expect(rows, 1,
+            reason: 'and it must not delete the row the player owned');
+      }
 
       final jobs = (await db
               .customSelect(

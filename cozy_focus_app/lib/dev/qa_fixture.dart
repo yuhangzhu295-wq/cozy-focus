@@ -389,7 +389,12 @@ class QaFixtureHarness {
           variables: [Variable.withString(recipeId)],
         ).getSingleOrNull();
         final itemId = recipe?.data['output_item_id'] as String?;
-        final produced = (recipe?.data['output_quantity'] as int?) ?? 1;
+        // Settlement's completion path adds ONE unit (`_incrementInventory`
+        // writes `existing.quantity + 1` and inserts `quantity: 1`), so that is
+        // what has to come back. Subtracting the recipe's `output_quantity`
+        // would take more than the completion ever added whenever a recipe
+        // produces more than one.
+        const produced = 1;
         if (itemId != null) {
           final inv = await db.customSelect(
             'select id, quantity from inventory_items '
@@ -473,6 +478,9 @@ class QaFixtureHarness {
       '(${List.filled(noteIds.length, '?').join(',')})',
       noteIds,
     );
+
+    // Last, so it overrides the demo unwind when both happened.
+    await _restoreProgressFromReset();
 
     return QaResetReport(
       roomItems: roomItems,
@@ -900,6 +908,13 @@ class QaFixtureHarness {
     if (current == null) {
       throw StateError('base pet missing; _ensureBasePet must run first');
     }
+    // Scenarios that OVERWRITE progress (lateGrowth sets XP, highMood sets
+    // happiness) have nothing in a ledger for reset to reverse. Without this,
+    // `lateGrowth → reset` left the pet at Lv.20 forever and `highMood → reset`
+    // left a real 40% happiness at 100. The value is saved once, before the
+    // first overwrite, so a second scenario cannot save a mutated value as if
+    // it were the original.
+    await _rememberProgressForReset();
     final newXp = xp ?? current.experiencePoints;
     await pets.savePetProgress(domain.PetProgress(
       id: current.id,
@@ -908,6 +923,66 @@ class QaFixtureHarness {
       experiencePoints: newXp,
       totalFocusMinutes: current.totalFocusMinutes,
       happinessScore: happiness ?? current.happinessScore,
+      updatedAt: _now,
+    ));
+  }
+
+  /// The `app_settings` key holding the progress a scenario overwrote.
+  static const String _savedProgressKey = 'qa_saved_progress';
+
+  /// Saves the pet's progress once, before a scenario overwrites it.
+  ///
+  /// `app_settings` rather than a field: a seed and a reset can be separate
+  /// process runs (the QA entry point seeds, the app then runs, a later reset
+  /// runs), and an in-memory field would not survive that. The key carries the
+  /// QA prefix so it is visibly fixture bookkeeping.
+  Future<void> _rememberProgressForReset() async {
+    final existing = await db.customSelect(
+      'select value from app_settings where key = ?',
+      variables: [Variable.withString(_savedProgressKey)],
+    ).getSingleOrNull();
+    if (existing != null) return;
+    final progress = await pets.findPetProgress(petId);
+    if (progress == null) return;
+    await db.customStatement(
+      'insert or replace into app_settings (key, value) values (?, ?)',
+      [
+        _savedProgressKey,
+        '${progress.experiencePoints},${progress.totalFocusMinutes},'
+            '${progress.happinessScore}',
+      ],
+    );
+  }
+
+  /// Puts the saved progress back, and forgets it.
+  ///
+  /// Runs after the demo ledger unwind, so when both an overwriting scenario
+  /// and `demo_day` ran, the saved value (the true pre-QA state) wins.
+  Future<void> _restoreProgressFromReset() async {
+    final row = await db.customSelect(
+      'select value from app_settings where key = ?',
+      variables: [Variable.withString(_savedProgressKey)],
+    ).getSingleOrNull();
+    if (row == null) return;
+    final parts = row.read<String>('value').split(',');
+    await db.customStatement(
+      'delete from app_settings where key = ?',
+      [_savedProgressKey],
+    );
+    if (parts.length != 3) return;
+    final xp = int.tryParse(parts[0]);
+    final minutes = int.tryParse(parts[1]);
+    final happiness = int.tryParse(parts[2]);
+    if (xp == null || minutes == null || happiness == null) return;
+    final current = await pets.findPetProgress(petId);
+    if (current == null) return;
+    await pets.savePetProgress(domain.PetProgress(
+      id: current.id,
+      petId: current.petId,
+      level: GrowthLevelCurve.levelForXp(xp),
+      experiencePoints: xp,
+      totalFocusMinutes: minutes,
+      happinessScore: happiness,
       updatedAt: _now,
     ));
   }
