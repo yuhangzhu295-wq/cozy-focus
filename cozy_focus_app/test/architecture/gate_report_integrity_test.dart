@@ -183,13 +183,27 @@ void main() {
       expect(evidence, contains('NOT TRANSFERABLE'),
           reason: 'the raster caveat must travel with the numbers, or the '
               'numbers get quoted as a phone result: $evidence');
-    } else {
-      expect(status, 'DEFERRED',
-          reason: 'DEVICE_MATRIX is either measured or deferred with a reason, '
-              'never NOT_TESTED or BLOCKED for a missing device: $status');
+    } else if (status == 'DEFERRED') {
       expect(evidence, contains('--with-device'),
           reason: 'a deferred DEVICE_MATRIX must say how to make it run: '
               '$evidence');
+      expect(evidence, contains('still driven by hand'),
+          reason: 'the harness covers one row of the matrix, and the row must '
+              'not imply it covers the rest: $evidence');
+    } else {
+      // BLOCKED is allowed for exactly one reason: the host could not take a
+      // valid measurement. It has to name the measured headroom and the AVD's
+      // own RAM, so a reader can tell it from "we could not be bothered". Any
+      // other status (NOT_TESTED, or a BLOCKED without those numbers) is the
+      // thing this test exists to stop.
+      expect(status, 'BLOCKED',
+          reason: 'DEVICE_MATRIX is measured, deferred, or blocked on a host '
+              'that cannot measure it: $status');
+      expect(evidence, contains('MB free'),
+          reason: 'a blocked measurement must carry the headroom it measured: '
+              '$evidence');
+      expect(evidence, contains('hw.ramSize'),
+          reason: 'and the guest RAM it compared that against: $evidence');
       expect(evidence, contains('still driven by hand'),
           reason: 'the harness covers one row of the matrix, and the row must '
               'not imply it covers the rest: $evidence');

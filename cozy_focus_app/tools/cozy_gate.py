@@ -96,6 +96,41 @@ def gate_analyze():
     return (PASS if ok else FAIL, f"{issues} issues")
 
 
+def available_memory_mb():
+    """Free physical memory in MB, or None when it cannot be read.
+
+    The frame-time harness runs on an AVD, so its numbers describe the host as
+    much as the app. Two runs at the same commit have measured p50 2906 us
+    standalone and p50 4251 us inside the gate, on a host that was down to
+    1.4 GB free with WSL, the IDE and the emulator all resident. Recording the
+    headroom is what lets a reader tell "the app got slower" from "the host had
+    nothing left".
+    """
+    try:
+        import ctypes
+
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", ctypes.c_ulong),
+                ("dwMemoryLoad", ctypes.c_ulong),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+
+        m = MEMORYSTATUSEX()
+        m.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m)):
+            return None
+        return int(m.ullAvailPhys // (1024 * 1024))
+    except Exception:
+        return None
+
+
 def _test_gate(label, target):
     """Runs a test target and reports what it actually said.
 
@@ -280,6 +315,31 @@ def gate_device_matrix():
             "run. `flutter devices --machine` said: "
             f"{devices.strip()[-200:] or '(nothing)'}. " + hand_driven)
 
+    # The AVD's own guest RAM, read from its config: hw.ramSize=2G. If the host
+    # cannot spare that much, the guest is being paged and the frame timings
+    # measure the page file, not the app. Two runs at one commit measured p50
+    # 2906 us standalone and 4251 us inside the gate on a host down to 1.4 GB
+    # free; the difference was the host, not the code. BLOCKED is the honest
+    # status for an instrument that could not take a valid measurement - it is
+    # not a pass, and the measured headroom travels with it.
+    # Polled, not sampled once. The first version read the figure immediately
+    # after the previous gate's process had exited and caught the teardown
+    # (929 MB), then the same host reported 3.5 GB a minute later. A guard that
+    # fires on a transient is as misleading as one that never fires.
+    avail_mb = available_memory_mb()
+    for _ in range(12):
+        if avail_mb is None or avail_mb >= 2048:
+            break
+        time.sleep(5)
+        avail_mb = available_memory_mb()
+    if avail_mb is not None and avail_mb < 2048:
+        return BLOCKED, (
+            f"the frame-time harness cannot be measured: the host has only "
+            f"{avail_mb} MB free after a minute of settling, and the AVD's guest "
+            f"RAM alone is 2048 MB (hw.ramSize=2G), so the emulator is being "
+            f"paged. The measurement would describe the host. Free memory and "
+            f"re-run. " + hand_driven)
+
     # Removed first: a stale file from an earlier run would be read as this run's
     # measurement, which is the one way this gate could report a number it did
     # not take.
@@ -338,7 +398,9 @@ def gate_device_matrix():
     # build cost shows up first, as a p50 that has moved with it.
     measured = (
         f"FRAME_TIME {frames} frames on {device_id}, {steady_n} after the "
-        f"30-frame startup warmup; steady-state UI-thread build p50 {p50} us / "
+        f"30-frame startup warmup; host free memory at measurement: "
+        f"{avail_mb if avail_mb is not None else 'unreadable'} MB; "
+        f"steady-state UI-thread build p50 {p50} us / "
         f"p90 {p90} us / p99 {p99} us; frames over the 16.67 ms budget after the "
         f"warmup: {late}. Criterion: p90 within one 16.67 ms frame and p50 "
         f"within half of one. The late-frame count is reported but does not "
@@ -458,6 +520,14 @@ def gate_flow_video():
 
 
 GATES = [
+    # First, before every other check, and that ordering is load-bearing. The
+    # frame-time harness measures a device on a host that is also running it, so
+    # anything else the gate does is contention the harness would report as the
+    # app's problem. Run after the APK/AAB builds it measured 3 late frames where
+    # quiet runs measured none; run after the six test suites it measured p50
+    # 3877 us with 1.7 GB free, while the same build measured p50 2906 us on a
+    # quiet host. Measure first, do everything else after.
+    ("DEVICE_MATRIX", gate_device_matrix, True),
     ("FORMAT", gate_format, True),
     ("ANALYZE", gate_analyze, True),
     ("UNIT_TESTS", gate_unit_tests, True),
@@ -466,12 +536,6 @@ GATES = [
     ("MIGRATION", gate_migration, True),
     ("LIFECYCLE", gate_lifecycle, True),
     ("ASSET_GATES", gate_assets, True),
-    # Before APK/AAB, and that ordering is load-bearing. The frame-time harness
-    # measures a device while the host also runs it, so a Gradle build running
-    # alongside it is contention the harness would report as the app's problem:
-    # run after the builds it measured 3 late frames where two quiet runs
-    # measured none. Measure first, build after.
-    ("DEVICE_MATRIX", gate_device_matrix, True),
     ("APK", gate_apk, False),
     ("AAB", gate_aab, False),
     ("DIFF_CHECK", gate_diff_check, True),
