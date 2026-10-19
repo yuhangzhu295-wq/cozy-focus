@@ -631,10 +631,39 @@ class QaFixtureHarness {
       (5, 20, 40, 'life', null, null, 'good', 'betterMood'),
     ];
 
+    // Settle in the order the sessions happened, oldest first.
+    //
+    // The ids stay tied to the spec's position, but the ORDER matters:
+    // `CompanionMemory` decides "第一次和你一起专注" from settledCount == 1 and
+    // decides a level-up by comparing the XP before and after each settlement.
+    // Walking the list as written (today, then backwards) gave the first-focus
+    // memory to today's session and wrote level-ups in reverse chronological
+    // order — a timeline where the pet remembered its newest session as its
+    // first, and reached Lv.2 before Lv.13.
+    final ordered =
+        <(int, (int, int, int, String?, String?, String?, String?, String?))>[
+      for (var n = 0; n < sessionSpecs.length; n++) (n + 1, sessionSpecs[n]),
+    ]..sort((a, b) {
+            int endOf(
+                    (
+                      int,
+                      int,
+                      int,
+                      String?,
+                      String?,
+                      String?,
+                      String?,
+                      String?
+                    ) spec) =>
+                today
+                    .subtract(Duration(days: spec.$1))
+                    .add(Duration(hours: spec.$2, minutes: spec.$3))
+                    .millisecondsSinceEpoch;
+            return endOf(a.$2).compareTo(endOf(b.$2));
+          });
+
     var seededSessions = 0;
-    var index = 0;
-    for (final spec in sessionSpecs) {
-      index++;
+    for (final (index, spec) in ordered) {
       final id = '${idPrefix}demo_sess_$index';
       final minutes = spec.$3;
 

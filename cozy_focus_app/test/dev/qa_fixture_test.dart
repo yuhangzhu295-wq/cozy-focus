@@ -231,6 +231,26 @@ void main() {
         ['陪你专注了 50 分钟', '陪你专注了 50 分钟'],
         reason: 'each long session must leave its own memory',
       );
+
+      // The memories must also be in the order the sessions happened. Settling
+      // the list as written (today first) gave the first-focus memory to today's
+      // session and wrote level-ups backwards: the pet remembered its newest
+      // session as its first, and reached Lv.2 before Lv.13.
+      final byMoment = [...memories]
+        ..sort((a, b) => a.happenedAt.compareTo(b.happenedAt));
+      expect(byMoment.first.memoryType, 'first_focus',
+          reason: 'the oldest settlement is the first focus');
+      final levelUps = byMoment
+          .where((m) => m.memoryType == 'level_up')
+          .map((m) => m.content)
+          .toList();
+      expect(levelUps, isNotEmpty);
+      final levels = levelUps
+          .map((c) => int.parse(c.replaceAll(RegExp(r'[^0-9]'), '')))
+          .toList();
+      expect(levels, orderedEquals([...levels]..sort()),
+          reason: 'levels must rise with time, not arrive out of order: '
+              '$levels');
       // These ids are production-shaped (`mem_<pet>_<type>_<timestamp>`) because
       // settlement generated them. That is the point: a fixture-invented id would
       // prove the fixture wrote the memory, not the reward rule.
@@ -362,17 +382,31 @@ void main() {
       expect(ledger, 1, reason: 'and so must its ledger row');
     });
 
-    test('demoSessionCount matches what the seed actually writes', () async {
+    test('every id reset will delete actually exists after a seed', () async {
       await harness.seed(QaScenario.demoDay);
-      final seeded = (await db
+
+      // Not a LIKE count. `_` is a wildcard, so a count with
+      // `like 'qa_demo_sess_%'` stays at 7 if one exact id is missing and a
+      // look-alike such as `qaXdemo_sess_7` is present — the same trap that made
+      // the old reset delete rows it did not create. Check the ids themselves.
+      for (var n = 1; n <= QaFixtureHarness.demoSessionCount; n++) {
+        final found = await db.customSelect(
+          'select count(*) as c from focus_sessions where id = ?',
+          variables: [Variable.withString('qa_demo_sess_$n')],
+        ).getSingle();
+        expect(found.read<int>('c'), 1,
+            reason:
+                'reset deletes by this exact id, so the seed must write it');
+      }
+      final total = (await db
               .customSelect(
                 "select count(*) as c from focus_sessions "
                 "where id like 'qa_demo_sess_%'",
               )
               .getSingle())
           .read<int>('c');
-      expect(seeded, QaFixtureHarness.demoSessionCount,
-          reason: 'reset builds its exact-id list from this constant');
+      expect(total, QaFixtureHarness.demoSessionCount,
+          reason: 'and it must not write any extra demo session');
     });
 
     test('an interrupted seed resumed mid-week awards nothing twice', () async {
@@ -403,6 +437,31 @@ void main() {
         happinessScore: beforeUnwind.happinessScore,
         updatedAt: beforeUnwind.updatedAt,
       ));
+      // The memories those two settlements wrote have to go too. Leaving them
+      // means re-settling lands on the same (pet, type, timestamp) ids and is
+      // ignored by INSERT OR IGNORE, so the test could not tell "rebuilt" from
+      // "never removed" — it would pass either way.
+      final moments = <DateTime>[];
+      for (final id in const ['qa_demo_sess_6', 'qa_demo_sess_7']) {
+        final session = await db.customSelect(
+          'select end_at from focus_sessions where id = ?',
+          variables: [Variable.withString(id)],
+        ).getSingle();
+        moments.add(DateTime.fromMillisecondsSinceEpoch(
+          (session.read<int?>('end_at') ?? 0) * 1000,
+        ));
+      }
+      final memoriesBefore =
+          await db.petDao.findMemories(QaFixtureHarness.petId);
+      await db.petDao.deleteMemoriesAt(
+        petId: QaFixtureHarness.petId,
+        moments: moments,
+      );
+      final memoriesAfterCut =
+          await db.petDao.findMemories(QaFixtureHarness.petId);
+      expect(memoriesAfterCut.length, lessThan(memoriesBefore.length),
+          reason: 'the interrupted settlements must leave no memory behind');
+
       final before = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
       final xpBefore = before.experiencePoints;
       final minutesBefore = before.totalFocusMinutes;
@@ -425,6 +484,24 @@ void main() {
           )
           .getSingle();
       expect(ledger.data['n'], 7);
+      // The memories those settlements earn are back, and the two long-session
+      // ones are exact because they depend only on the session's length. The
+      // TOTAL is not asserted: a level-up memory is derived from the XP before
+      // and after its own settlement, so replaying two sessions on top of an
+      // already-earned week can cross a different number of levels than the
+      // original run did. That is the app's own behaviour — settlement continues
+      // from the XP the pet has, it does not rewrite history — and pinning the
+      // count would encode an invariant the product does not have.
+      final memoriesAfter = await db.petDao.findMemories(
+        QaFixtureHarness.petId,
+      );
+      expect(memoriesAfter.length, greaterThan(memoriesAfterCut.length),
+          reason: 'the missing settlements must earn their memories back');
+      expect(
+        memoriesAfter.where((m) => m.content.startsWith('陪你专注了 ')).length,
+        2,
+        reason: 'both 50-minute sessions still earn their long-session memory',
+      );
     });
 
     test('every row it writes is internally consistent', () async {
