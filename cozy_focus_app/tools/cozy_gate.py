@@ -96,6 +96,41 @@ def gate_analyze():
     return (PASS if ok else FAIL, f"{issues} issues")
 
 
+def host_cpu_busy_percent(sample_ms=600):
+    """Host-wide CPU busy fraction over a short window, or None.
+
+    Same reason as `available_memory_mb`: the frame-time harness shares the
+    host with everything else. A host at 2 GB free but 60% busy still produces
+    a p90 that describes the other work. Sampling twice is what makes this a
+    rate rather than a lifetime average.
+    """
+    try:
+        import ctypes
+        import time as _time
+
+        class FILETIME(ctypes.Structure):
+            _fields_ = [("lo", ctypes.c_ulong), ("hi", ctypes.c_ulong)]
+
+        def read():
+            idle, kernel, user = FILETIME(), FILETIME(), FILETIME()
+            ctypes.windll.kernel32.GetSystemTimes(
+                ctypes.byref(idle), ctypes.byref(kernel), ctypes.byref(user))
+            def val(ft):
+                return (ft.hi << 32) | ft.lo
+            return val(idle), val(kernel), val(user)
+
+        i0, k0, u0 = read()
+        _time.sleep(sample_ms / 1000.0)
+        i1, k1, u1 = read()
+        idle = i1 - i0
+        total = (k1 - k0) + (u1 - u0)
+        if total <= 0:
+            return None
+        return round(100.0 * (1.0 - idle / total), 1)
+    except Exception:
+        return None
+
+
 def available_memory_mb():
     """Free physical memory in MB, or None when it cannot be read.
 
@@ -358,6 +393,24 @@ def gate_device_matrix():
             f"paged. The measurement would describe the host. Free memory and "
             f"re-run. " + hand_driven)
 
+    # CPU is the other half of the same condition. Runs at 2.1 GB free with the
+    # host busy produced p50 6646 / p90 17792 (over the p90 line by 7%) where a
+    # quiet host produced p50 5232 / p90 13656. The gate is not a load test, so
+    # it says BLOCKED with the measured figure instead of calling the host's
+    # other work an app regression.
+    busy = host_cpu_busy_percent()
+    for _ in range(6):
+        if busy is None or busy <= 40.0:
+            break
+        time.sleep(5)
+        busy = host_cpu_busy_percent()
+    if busy is not None and busy > 40.0:
+        return BLOCKED, (
+            f"the frame-time harness cannot be measured: the host was "
+            f"{busy}% busy after settling, so the frame times would describe the "
+            f"other work rather than the app. Quit the heavy processes and "
+            f"re-run. " + hand_driven)
+
     # Removed first: a stale file from an earlier run would be read as this run's
     # measurement, which is the one way this gate could report a number it did
     # not take.
@@ -417,7 +470,8 @@ def gate_device_matrix():
     measured = (
         f"FRAME_TIME {frames} frames on {device_id}, {steady_n} after the "
         f"30-frame startup warmup; host free memory at measurement: "
-        f"{avail_mb if avail_mb is not None else 'unreadable'} MB; "
+        f"{avail_mb if avail_mb is not None else 'unreadable'} MB, CPU busy: "
+        f"{busy if busy is not None else 'unreadable'}%; "
         f"steady-state UI-thread build p50 {p50} us / "
         f"p90 {p90} us / p99 {p99} us; frames over the 16.67 ms budget after the "
         f"warmup: {late}. Criterion: p90 within one 16.67 ms frame and p50 "

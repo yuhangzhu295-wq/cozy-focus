@@ -16,7 +16,7 @@
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
 | Full suite | **2275/2275** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
-| Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** at `697cccc`; DEVICE_MATRIX p50 5232 µs / p90 13656 µs, 2471 MB free. The gate now stops the Gradle daemon before measuring: with it resident the same harness measured p50 13 826 µs. |
+| Full gate (`--with-device`) | **13 PASS / 5 BLOCKED / 0 FAIL** at `e033f6b`; DEVICE_MATRIX is BLOCKED (host 1244 MB free after a cold emulator boot; AVD guest RAM 2048 MB). The last passing device measurement was at `697cccc`: p50 5232 µs / p90 13656 µs, 2471 MB free. |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
 
 ## This round: eight review rounds on the same fixture
@@ -167,11 +167,13 @@ should be contention the harness reports as the app's problem.
 frames) and the gate reported FAIL; at `697cccc` the gate measured p50
 13 826 µs / p90 50 456 µs (291 late) before the Gradle daemon was stopped.
 Both are recorded as host-load measurements, not as app regressions and not as
-passes. The fix is structural: `gate_device_matrix` now stops the Gradle daemon
-before it measures, because that daemon keeps doing work after the build that
-started it returns. With it stopped the same gate measured p50 5232 / p90
-13 656 and passed. A BLOCKED device row (host below the AVD's 2 GB) is likewise
-not a pass.
+passes. Two structural fixes followed: `gate_device_matrix` stops the Gradle
+daemon before it measures (it keeps doing work after the build that started it
+returns), and it refuses to measure while the host is over 40% busy — a run at
+2.1 GB free and a busy host measured p50 6646 / p90 17792, 7% over the p90 line,
+where a quiet host measured 5232 / 13656. With both guards the gate either
+measures on a quiet host or reports BLOCKED with the figure it read. A BLOCKED
+device row is not a pass.
 
 **One unit-test run failed and did not reproduce.** The gate's first run after
 the seventh-round fixes reported `UNIT_TESTS 808 passed, 1 failed`, while the

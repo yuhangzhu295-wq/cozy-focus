@@ -199,11 +199,14 @@ void main() {
       expect(status, 'BLOCKED',
           reason: 'DEVICE_MATRIX is measured, deferred, or blocked on a host '
               'that cannot measure it: $status');
-      expect(evidence, contains('MB free'),
-          reason: 'a blocked measurement must carry the headroom it measured: '
+      // A blocked measurement must name the condition it measured, and the
+      // figure it read: memory against the AVD's guest RAM, or CPU busy.
+      final memoryBlock =
+          evidence.contains('MB free') && evidence.contains('hw.ramSize');
+      final cpuBlock = evidence.contains('% busy');
+      expect(memoryBlock || cpuBlock, isTrue,
+          reason: 'a blocked measurement must carry the figure it measured: '
               '$evidence');
-      expect(evidence, contains('hw.ramSize'),
-          reason: 'and the guest RAM it compared that against: $evidence');
       expect(evidence, contains('still driven by hand'),
           reason: 'the harness covers one row of the matrix, and the row must '
               'not imply it covers the rest: $evidence');
