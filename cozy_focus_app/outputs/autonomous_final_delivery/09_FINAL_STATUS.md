@@ -67,6 +67,15 @@ The device phase now runs first in the gate, before the six test suites: run
 after them it measured p50 3877 with 1.7 GB free, and nothing else the gate does
 should be contention the harness reports as the app's problem.
 
+**One unit-test run failed and did not reproduce.** The gate's first run after
+the seventh-round fixes reported `UNIT_TESTS 808 passed, 1 failed`, while the
+same command run directly reported 2178/2178 and the immediate re-run of the
+whole gate reported 2178/2178. The failing test's name was not in the evidence,
+which is why the gate now appends the `[E]` lines to any failing test row: a
+count without a name cannot be reproduced or told from a flake. This is recorded
+as an **unreproduced flake, not as a pass** — if it recurs, the report will name
+the test.
+
 ## Not done, with the reason
 
 | Item | Status | Reason |

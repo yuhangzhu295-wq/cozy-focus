@@ -145,9 +145,19 @@ def _test_gate(label, target):
     ok, out = run(f"flutter test --no-pub {target}")
     if not ok:
         m = re.search(r"\+(\d+)\s+-(\d+)", out)
+        # Name the failing tests. A count with no name ("808 passed, 1 failed")
+        # is not actionable: it cannot be reproduced, and it cannot be told from
+        # a flake without another full run.
+        failing = []
+        for line in out.splitlines():
+            if "[E]" in line:
+                name = line.split(":", 1)[-1].strip()
+                if name and name not in failing:
+                    failing.append(name)
+        detail = "; ".join(failing[:3]) or tail(out)
         if m:
-            return FAIL, f"{m.group(1)} passed, {m.group(2)} failed"
-        return FAIL, tail(out)
+            return FAIL, f"{m.group(1)} passed, {m.group(2)} failed: {detail}"
+        return FAIL, detail
     m = re.search(r"\+(\d+)(?:\s+-(\d+))?:\s*All tests passed", out)
     if m:
         total = m.group(1)
