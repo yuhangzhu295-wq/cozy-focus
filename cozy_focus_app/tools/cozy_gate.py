@@ -414,9 +414,10 @@ def gate_device_matrix():
         f"p90 {p90} us / p99 {p99} us; frames over the 16.67 ms budget after the "
         f"warmup: {late}. Criterion: p90 within one 16.67 ms frame and p50 "
         f"within half of one. The late-frame count is reported but does not "
-        "decide: it ranged 0 to 3 across the runs taken while building this "
-        "harness, tracking host load rather than the app, and it is recorded "
-        "here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has "
+        "decide. HISTORICAL NOTE, not this run's figure: across the runs taken "
+        "while building this harness it ranged 0 to 3, tracking host load rather "
+        "than the app; this run's count is the number above, and it is recorded "
+        "rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has "
         "no GPU and Flutter falls back to swiftshader, so the raster numbers "
         "describe a software rasteriser, not a phone. The build numbers are Dart "
         "CPU work and do transfer. ")

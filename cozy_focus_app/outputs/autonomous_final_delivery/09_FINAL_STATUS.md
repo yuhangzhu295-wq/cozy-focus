@@ -1,6 +1,6 @@
 # 09 — Final status
 
-**ENGINEERING_COMPLETE = YES for the scope below.**
+**ENGINEERING_COMPLETE = YES for the scope below — this is a claim about the work, not the review. The review rounds are recorded further down, and the last recorded round's verdict is the authority on whether engineering defects remain.**
 **STORE_RELEASE_READY = NO.**
 **OWNER_VISUAL_APPROVED = NO — not claimed.**
 
@@ -14,14 +14,14 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2178/2178** |
+| Full suite | **2181/2181** |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `4baaa2e`) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
 
-## This round: seven review rounds on the same fixture
+## This round: eight review rounds on the same fixture
 
-The QA fixture that produces the screenshot data was reviewed five times. Each
+The QA fixture that produces the screenshot data has been through eight review rounds. Each
 round found a real defect, including ones introduced by the previous fix:
 
 1. It wrote ledger rows and XP by hand. Settlement also writes the memories, the
@@ -43,6 +43,13 @@ round found a real defect, including ones introduced by the previous fix:
    Lv.20 forever and `highMood → reset` turned a real 40% happiness into 100%.
    The craft rollback also subtracted the recipe's `output_quantity` while
    settlement adds exactly one unit.
+8. That fix snapshotted progress when the *overwriting scenario* ran, which is
+   after `demoDay` had awarded the week. `demoDay → highMood → reset → demoDay`
+   then restored the post-demo snapshot after unwinding it, and the second seed
+   doubled the week (2550 XP / 510 minutes; reproduced across processes on the
+   emulator). The snapshot is taken once, after adoption and before the
+   scenario runs. Fixture inventory rows are now deleted rather than zeroed, so
+   `seed → reset → seed` leaves the same rows as a single seed.
 
 Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail). `CompanionMemory.idFor` is now public so the fixture and

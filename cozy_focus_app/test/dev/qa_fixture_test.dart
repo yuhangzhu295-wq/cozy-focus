@@ -4,6 +4,7 @@ import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/dev/qa_fixture.dart';
 import 'package:cozy_focus_app/domain/growth/growth_level_curve.dart';
 import 'package:cozy_focus_app/domain/models/craft_models.dart' as domain;
+import 'package:cozy_focus_app/domain/models/enums.dart' show PetSpecies;
 import 'package:cozy_focus_app/domain/models/pet_models.dart' as domain;
 import 'package:cozy_focus_app/domain/services/companion_memory.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
@@ -342,9 +343,64 @@ void main() {
           reason: 'both memory shapes must go, and nothing else');
     });
 
+    for (final scenario in const [
+      QaScenario.highMood,
+      QaScenario.lateGrowth,
+    ]) {
+      test('${scenario.id} after demoDay cannot make the week count twice',
+          () async {
+        // The snapshot used to be taken when the overwriting scenario ran, which
+        // is after demoDay had awarded the week. Reset then unwound the XP and
+        // wrote the post-demo snapshot straight back, so the week survived and
+        // the next demoDay awarded it again: 2550 XP / 510 minutes where one
+        // week is 1275 / 255. Both overwriting scenarios are exercised, because
+        // the bug is in the snapshot's timing, not in which field it overwrote.
+        await harness.seed(QaScenario.demoDay);
+        await harness.seed(scenario);
+        await harness.reset();
+        await harness.seed(QaScenario.demoDay);
+
+        final progress = await db.petDao.findProgress(
+          QaFixtureHarness.petId,
+        );
+        expect(progress!.experiencePoints, 1275,
+            reason: '${scenario.id} after demoDay must not double the week');
+        expect(progress.totalFocusMinutes, 255,
+            reason: '${scenario.id} after demoDay must not double the minutes');
+      });
+    }
+
+    test('reset removes the inventory rows the fixture created', () async {
+      // Zeroing them left a database that differed from a single seed: the rows
+      // were invisible to ownership but still there, and the next seed reused
+      // them.
+      await harness.seed(QaScenario.roomTwoAnchors);
+      await harness.reset();
+
+      final rows = (await db
+              .customSelect(
+                "select count(*) as c from inventory_items "
+                "where substr(id, 1, 2) = 'qa'",
+              )
+              .getSingle())
+          .read<int>('c');
+      expect(rows, 0,
+          reason: 'fixture inventory rows must be gone, not zeroed');
+    });
+
     test('reset puts back progress that a scenario overwrote', () async {
-      // A pet with real progress: 100 XP, 10 minutes, 40% happiness.
-      await harness.seed(QaScenario.basePet);
+      // A pet with real progress, created the way the app would have created it
+      // and BEFORE the first QA seed: 100 XP, 10 minutes, 40% happiness. The
+      // snapshot is taken at the first seed, so setting this after a seed would
+      // be testing a state the fixture never sees.
+      await db.petDao.upsertPet(domain.Pet(
+        id: QaFixtureHarness.petId,
+        userId: 'default_user',
+        species: PetSpecies.dog,
+        characterId: 'mochi',
+        name: 'Mochi',
+        adoptedAt: DateTime(2026, 10, 1),
+      ));
       await db.petDao.upsertProgress(domain.PetProgress(
         id: QaFixtureHarness.progressId,
         petId: QaFixtureHarness.petId,

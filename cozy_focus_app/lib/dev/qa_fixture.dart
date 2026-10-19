@@ -27,7 +27,7 @@
 /// visible affordance to the shipping UI.
 library;
 
-import 'package:drift/drift.dart' show Variable;
+import 'package:drift/drift.dart' show UpdateKind, Variable;
 import 'package:flutter/foundation.dart';
 
 import '../core/auth/current_user.dart';
@@ -211,6 +211,19 @@ class QaFixtureHarness {
     await _ensureBasePet();
     steps.add('base_pet');
 
+    // The pre-QA progress, captured before the scenario changes anything. It has
+    // to be here and not at the overwrite: `demoDay -> highMood` would otherwise
+    // snapshot the pet *after* the demo week was awarded, and reset would write
+    // that snapshot back after unwinding the same XP — the week survived, and
+    // the next demoDay awarded it a second time (reproduced on a device:
+    // 2550 XP / 510 minutes where one week is 1275 / 255).
+    //
+    // After `_ensureBasePet` rather than before: on a fresh database there is no
+    // progress row until adoption creates one, and a snapshot of "nothing" is
+    // not a snapshot. The base pet is 0 XP / 0 minutes, which is the pre-QA
+    // state this restores.
+    await _rememberProgressForReset();
+
     switch (scenario) {
       case QaScenario.basePet:
         break;
@@ -305,17 +318,25 @@ class QaFixtureHarness {
       for (var n = 1; n <= demoSessionCount; n++) '${idPrefix}demo_sess_$n',
     ];
 
-    // Unwind the pet first. Settlement already added the demo week's XP and
-    // minutes to the pet, so deleting the ledger without giving those back
-    // leaves a pet that has earned the week twice — once before the reset and
-    // once after the re-seed. What to remove is read from those exact ledger
-    // rows, so it is precisely what was awarded, never a wildcard's guess.
+    // The pet's progress. When a snapshot exists it is authoritative: it was
+    // taken before the first seed touched anything, so restoring it undoes both
+    // the demo week and any scenario that overwrote XP or happiness. Restoring
+    // *and* unwinding would apply the removal twice in one order and cancel it
+    // in another; this is one rule, not two.
+    //
+    // The ledger unwind below is the fallback for a database seeded before the
+    // snapshot existed (or by an older build): settlement already added the
+    // week's XP, and deleting the ledger without giving it back would leave a
+    // pet that earns it again on the next seed.
+    final hasSnapshot = await _hasSavedProgress();
     var demoXp = 0;
     var demoMinutes = 0;
-    for (final row in await ledger.findForUser(userId)) {
-      if (!demoIds.contains(row.sessionId)) continue;
-      demoXp += row.experienceEarned;
-      demoMinutes += row.experienceEarned ~/ 5;
+    if (!hasSnapshot) {
+      for (final row in await ledger.findForUser(userId)) {
+        if (!demoIds.contains(row.sessionId)) continue;
+        demoXp += row.experienceEarned;
+        demoMinutes += row.experienceEarned ~/ 5;
+      }
     }
     final beforeReset = await pets.findPetProgress(petId);
     if (beforeReset != null && (demoXp > 0 || demoMinutes > 0)) {
@@ -433,19 +454,22 @@ class QaFixtureHarness {
       }
     }
 
-    var revoked = 0;
-    for (final item in await craft.findInventory(userId)) {
-      if (item.id.startsWith(idPrefix) && item.quantity > 0) {
-        await craft.upsertInventoryItem(domain.InventoryItem(
-          id: item.id,
-          userId: item.userId,
-          itemId: item.itemId,
-          quantity: 0,
-          updatedAt: _now,
-        ));
-        revoked++;
-      }
-    }
+    // Deleted, not zeroed. A zero-quantity row is invisible to ownership (the
+    // app reads `quantity > 0`) but it is still a row: after reset -> seed the
+    // database differs from a single seed, and the old rows get reused. The
+    // prefix says the fixture created them, so removing them is exactly
+    // "restore the pre-QA state". Player-owned rows have no prefix and are not
+    // touched here; the craft rollback above already took back the one unit a
+    // completed job added to one of those.
+    var revoked = await db.customUpdate(
+      'delete from inventory_items where user_id = ? and substr(id, 1, ?) = ?',
+      variables: [
+        Variable.withString(userId),
+        Variable.withInt(idPrefix.length),
+        Variable.withString(idPrefix),
+      ],
+      updateKind: UpdateKind.delete,
+    );
 
     // The tasks, their placements and the inbox notes are this fixture's too.
     // They used to survive a reset, so a seed → reset → seed cycle started on
@@ -952,6 +976,15 @@ class QaFixtureHarness {
             '${progress.happinessScore}',
       ],
     );
+  }
+
+  /// Whether a pre-QA snapshot exists.
+  Future<bool> _hasSavedProgress() async {
+    final row = await db.customSelect(
+      'select 1 as present from app_settings where key = ?',
+      variables: [Variable.withString(_savedProgressKey)],
+    ).getSingleOrNull();
+    return row != null;
   }
 
   /// Puts the saved progress back, and forgets it.
