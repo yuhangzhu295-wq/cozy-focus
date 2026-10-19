@@ -14,7 +14,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2272/2272** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
+| Full suite | **2273/2273** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **13 PASS / 5 BLOCKED / 0 FAIL** at `f6e5423`; DEVICE_MATRIX is BLOCKED because the host had 1260 MB free (AVD guest RAM 2048 MB). The last valid device measurement was at `5d30961`: p50 3111 µs / p90 7982 µs, 2699 MB free. |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -123,6 +123,13 @@ round found a real defect, including ones introduced by the previous fix:
     ledger: `_own` records the items it actually granted, reset subtracts
     exactly those and clears the list. A cycle that granted nothing arms
     nothing, and a second reset is a no-op.
+20. The grant's write and its ledger entry were separate, so a process stopped
+    between them left a unit no later seed could attribute; they are one
+    transaction now. A zero-quantity row with a non-fixture id already occupied
+    `(user_id, item_id)`, so inserting a fixture row threw a UNIQUE error;
+    `_own` reuses the row and reset restores it to zero without deleting it.
+    The ledger stores whether the row pre-existed, so reset removes a row only
+    when the fixture created it.
 
 Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail), including the transaction: making the last write throw leaves

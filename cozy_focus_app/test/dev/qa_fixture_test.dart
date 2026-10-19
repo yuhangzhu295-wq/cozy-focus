@@ -979,6 +979,38 @@ void main() {
               'basePet grants nothing, so it must not enable a subtraction');
     });
 
+    test('a pre-existing zero-quantity row is reused, not duplicated',
+        () async {
+      // (user_id, item_id) is unique. A zero-quantity row with a non-fixture id
+      // already occupies it, so inserting a fixture row would throw; the fixture
+      // must reuse the row and put it back to zero on reset.
+      await db.customStatement(
+        'insert into inventory_items (id, user_id, item_id, quantity, '
+        "updated_at) values ('real_zero', 'default_user', 'rug', 0, 1790990000)",
+      );
+
+      await harness.seed(QaScenario.roomTwoAnchors);
+      final owned = await db
+          .customSelect(
+            "select id, quantity from inventory_items where item_id = 'rug'",
+          )
+          .get();
+      expect(owned, hasLength(1), reason: 'no second row for the same item');
+      expect(owned.single.read<int>('quantity'), 1);
+
+      await harness.reset();
+      final after = await db
+          .customSelect(
+            "select id, quantity from inventory_items where item_id = 'rug'",
+          )
+          .get();
+      expect(after, hasLength(1));
+      expect(after.single.read<String>('id'), 'real_zero',
+          reason: 'the player row is the one that survives');
+      expect(after.single.read<int>('quantity'), 0,
+          reason: 'it is restored to the zero it had');
+    });
+
     test('a second reset does not take another fixture unit', () async {
       await harness.seed(QaScenario.roomTwoAnchors);
       await db.customStatement(

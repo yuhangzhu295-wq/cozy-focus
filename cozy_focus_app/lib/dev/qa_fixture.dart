@@ -429,28 +429,30 @@ class QaFixtureHarness {
     // "restore the pre-QA state". Player-owned rows have no prefix and are not
     // touched here; the craft rollback above already took back the one unit a
     // completed job added to one of those.
-    // Exactly the units the fixture granted, one per item. Not "every qa_ row":
-    // a row can hold real units too, and a cycle that granted nothing must not
-    // enable a subtraction. `_own` records a grant only when it creates one.
+    // Exactly the units the fixture granted, restored to the quantity each row
+    // had before the grant: `-1` means the row did not exist and is removed,
+    // `0` means a zero-quantity row existed and is left at zero.
     var revoked = 0;
-    final grantedItems = await _savedList(_inventoryGrantedKey);
-    for (final itemId in grantedItems) {
+    for (final part in await _savedPairs(_inventoryGrantedKey)) {
+      final itemId = part.$1;
+      final created = part.$2 == '-1';
       final row = await db.customSelect(
         'select id, quantity from inventory_items '
         'where user_id = ? and item_id = ?',
         variables: [Variable.withString(userId), Variable.withString(itemId)],
       ).getSingleOrNull();
       if (row == null) continue;
+      final id = row.read<String>('id');
       final left = (row.read<int>('quantity') - 1).clamp(0, 1 << 40);
-      if (left == 0) {
+      if (left == 0 && created) {
         await db.customStatement(
           'delete from inventory_items where id = ?',
-          [row.read<String>('id')],
+          [id],
         );
       } else {
         await db.customStatement(
           'update inventory_items set quantity = ? where id = ?',
-          [left, row.read<String>('id')],
+          [left, id],
         );
       }
       revoked++;
@@ -1414,18 +1416,37 @@ class QaFixtureHarness {
 
     final owned = await craft.findInventoryItem(userId, entity.id);
     if (owned == null || owned.quantity <= 0) {
-      await craft.upsertInventoryItem(domain.InventoryItem(
-        id: '${idPrefix}inv_${entity.id}',
-        userId: userId,
-        itemId: entity.id,
-        quantity: 1,
-        updatedAt: _now,
-      ));
-      final granted = await _savedList(_inventoryGrantedKey);
-      if (!granted.contains(entity.id)) {
-        granted.add(entity.id);
-        await _saveList(_inventoryGrantedKey, granted);
-      }
+      // The write and its bookkeeping are one transaction: a process stopped
+      // between them would leave a unit no later seed records (the item now
+      // looks owned) and no reset can attribute.
+      await db.transaction(() async {
+        // Reuse the existing row when there is one. A zero-quantity row with a
+        // non-fixture id already occupies (user, item), which is unique, so
+        // inserting a fixture row for the same item would violate it.
+        await craft.upsertInventoryItem(domain.InventoryItem(
+          id: owned?.id ?? '${idPrefix}inv_${entity.id}',
+          userId: userId,
+          itemId: entity.id,
+          quantity: 1,
+          updatedAt: _now,
+        ));
+        final granted = <String, String>{
+          for (final pair in await _savedPairs(_inventoryGrantedKey))
+            pair.$1: pair.$2,
+        };
+        // Whether a row already existed. Reset subtracts the one unit this
+        // granted and removes the row only when it created it — restoring an
+        // absolute pre-grant quantity would delete units the player gained
+        // afterwards.
+        granted[entity.id] = owned == null ? '-1' : '0';
+        await db.customStatement(
+          'insert or replace into app_settings (key, value) values (?, ?)',
+          [
+            _inventoryGrantedKey,
+            granted.entries.map((e) => '${e.key}:${e.value}').join(';'),
+          ],
+        );
+      });
     }
 
     final placed = await craft.findRoomItems(userId);
