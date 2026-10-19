@@ -1063,6 +1063,44 @@ void main() {
       expect(row.read<int>('quantity'), 0);
     });
 
+    test('a legacy comma-separated grant list is still honoured', () async {
+      // The craft completion adds one to the fixture's own sofa row (2), and an
+      // older build recorded the grant as a bare comma list. Reset must still
+      // take that unit back — 2 -> 1 — rather than leaving both.
+      await harness.seed(QaScenario.basePet);
+      await db.customStatement(
+        "update craft_recipes set required_minutes = 10 where id = 'sofa'",
+      );
+      await db.customStatement(
+        'insert into craft_jobs (id, user_id, recipe_id, status, '
+        'progress_seconds, started_at, reward_claimed) values '
+        "('real_job', 'default_user', 'sofa', 'inProgress', 0, 1790000000, 0)",
+      );
+      await harness.seed(QaScenario.demoDay);
+
+      // The legacy format, and no fixture-ownership grant so the inventory
+      // cleanup cannot do the work instead.
+      await db.customStatement(
+        "delete from app_settings where key = 'qa_inventory_granted'",
+      );
+      await db.customStatement(
+        'insert or replace into app_settings (key, value) values (?, ?)',
+        ['qa_demo_craft_granted', 'sofa'],
+      );
+
+      await harness.reset();
+
+      final qty = (await db
+              .customSelect(
+                "select quantity from inventory_items "
+                "where user_id = 'default_user' and item_id = 'sofa'",
+              )
+              .getSingleOrNull())
+          ?.read<int>('quantity');
+      expect(qty, 1,
+          reason: 'the completion unit is removed from the fixture row');
+    });
+
     test('a second reset does not take another fixture unit', () async {
       await harness.seed(QaScenario.roomTwoAnchors);
       await db.customStatement(
@@ -1123,14 +1161,18 @@ void main() {
       expect(job.read<String>('status'), 'inProgress',
           reason: 'the completion is recoverable from current - seconds');
       expect(job.read<int>('progress_seconds'), 0);
-      final inv = (await db
-              .customSelect(
-                "select count(*) as c from inventory_items "
-                "where user_id = 'default_user' and item_id = 'table'",
-              )
-              .getSingle())
-          .read<int>('c');
-      expect(inv, 0, reason: 'the grant is recoverable from the recipe');
+      // A legacy record cannot prove whether the row existed, and the
+      // generated id shape is also what an earlier settlement creates. The safe
+      // answer keeps the row at zero rather than deleting a player's.
+      final inv = await db
+          .customSelect(
+            "select quantity from inventory_items "
+            "where user_id = 'default_user' and item_id = 'table'",
+          )
+          .getSingleOrNull();
+      expect(inv, isNotNull);
+      expect(inv!.read<int>('quantity'), 0,
+          reason: 'the granted unit is taken back; the row is kept');
     });
 
     test('a failure halfway through reset rolls the whole reset back',

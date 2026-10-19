@@ -1190,32 +1190,12 @@ class QaFixtureHarness {
           : recipe?.read<String?>('output_item_id');
       if (itemId != null) {
         // Whether the inventory row existed before the completion. A legacy
-        // record has no flag, so it is derived from the row id: the settlement's
-        // completion path creates `inv_<user>_<item>_<ms>` when no row exists
-        // and increments the existing row otherwise. A row with that generated
-        // shape was created by the completion; anything else belonged to the
-        // player and is kept at zero rather than deleted.
-        String existed;
-        if (bits.length > 5) {
-          existed = bits[5];
-        } else {
-          final inv = await db.customSelect(
-            'select id from inventory_items '
-            'where user_id = ? and item_id = ?',
-            variables: [
-              Variable.withString(userId),
-              Variable.withString(itemId),
-            ],
-          ).getSingleOrNull();
-          existed =
-              inv != null && inv.read<String>('id').startsWith('inv_${userId}_')
-                  ? '0'
-                  : '1';
-        }
-        final granted = <String, String>{
-          for (final pair in await _savedPairs(_craftGrantedKey))
-            pair.$1: pair.$2,
-        };
+        // record has no flag and its origin cannot be proved: the generated
+        // `inv_<user>_<item>_<ms>` shape is also what an earlier settlement
+        // creates. The safe answer is "existed", which keeps the row at zero
+        // instead of deleting what may be the player's.
+        final existed = bits.length > 5 ? bits[5] : '1';
+        final granted = await _savedCraftGrants();
         granted.putIfAbsent(itemId, () => existed);
         await db.customStatement(
           'insert or replace into app_settings (key, value) values (?, ?)',
@@ -1264,6 +1244,34 @@ class QaFixtureHarness {
     );
   }
 
+  /// The craft grants, in both formats this file has written.
+  ///
+  /// Current: `item:existed;...`. Older builds wrote a comma-separated list of
+  /// item ids; those carry `?` as the origin, which reset resolves from the row
+  /// id (a `qa_` row was created by the fixture) or, when that is not decisive,
+  /// treats as pre-existing so a player row is kept.
+  Future<Map<String, String>> _savedCraftGrants() async {
+    final row = await db.customSelect(
+      'select value from app_settings where key = ?',
+      variables: [Variable.withString(_craftGrantedKey)],
+    ).getSingleOrNull();
+    if (row == null) return <String, String>{};
+    final value = row.read<String>('value');
+    if (value.isEmpty) return <String, String>{};
+    final out = <String, String>{};
+    if (value.contains(':')) {
+      for (final part in value.split(';')) {
+        final bits = part.split(':');
+        if (bits.length == 2 && bits[0].isNotEmpty) out[bits[0]] = bits[1];
+      }
+    } else {
+      for (final item in value.split(',')) {
+        if (item.isNotEmpty) out[item] = '?';
+      }
+    }
+    return out;
+  }
+
   Future<List<(String, String)>> _savedPairs(String key) async {
     final row = await db.customSelect(
       'select value from app_settings where key = ?',
@@ -1295,9 +1303,7 @@ class QaFixtureHarness {
       if (seconds != null) deltas[part.$1] = seconds;
     }
     final completed = await _savedList(_craftCompletedKey);
-    final granted = <String, String>{
-      for (final pair in await _savedPairs(_craftGrantedKey)) pair.$1: pair.$2,
-    };
+    final granted = await _savedCraftGrants();
     if (deltas.isEmpty && completed.isEmpty && granted.isEmpty) return;
 
     for (final entry in deltas.entries) {
@@ -1322,12 +1328,19 @@ class QaFixtureHarness {
     }
     for (final entry in granted.entries) {
       final itemId = entry.key;
-      final existed = entry.value != '0';
       final row = await db.customSelect(
-        'select quantity from inventory_items where user_id = ? and item_id = ?',
+        'select id, quantity from inventory_items '
+        'where user_id = ? and item_id = ?',
         variables: [Variable.withString(userId), Variable.withString(itemId)],
       ).getSingleOrNull();
       if (row == null) continue;
+      final existed = entry.value == '0'
+          ? true
+          : entry.value == '-1'
+              ? false
+              // Unknown legacy origin: a fixture-prefixed row was created by
+              // this fixture; anything else is kept.
+              : !row.read<String>('id').startsWith(idPrefix);
       final left = (row.read<int>('quantity') - 1).clamp(0, 1 << 40);
       if (left == 0 && !existed) {
         await db.customStatement(
