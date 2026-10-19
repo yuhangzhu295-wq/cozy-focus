@@ -14,7 +14,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2181/2181** |
+| Full suite | **2245/2245** (includes all 64 ordered scenario pairs) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `4baaa2e`) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -82,6 +82,18 @@ which is why the gate now appends the `[E]` lines to any failing test row: a
 count without a name cannot be reproduced or told from a flake. This is recorded
 as an **unreproduced flake, not as a pass** — if it recurs, the report will name
 the test.
+
+**All 64 ordered scenario pairs now round-trip.** `qa_fixture_scenario_matrix_test.dart`
+runs `seed(A) -> seed(B) -> reset -> seed(A)` for every ordered pair of the eight
+scenarios and compares the database with a single `seed(A)` — 12 tables, on the
+columns that are properties of the seeded state. The comparison excludes
+`task_schedules.id` and `task_schedules.created_at`, which the app generates per
+call; two identical seeds legitimately differ there, and including them would
+report the app's own id generation as a fixture defect.
+
+This is the check the review rounds kept asking for and not running. The matrix
+was written before round 9 and found the `demoDay` snapshot bug immediately,
+which is why it is now a permanent test rather than a one-off probe.
 
 ## Not done, with the reason
 
