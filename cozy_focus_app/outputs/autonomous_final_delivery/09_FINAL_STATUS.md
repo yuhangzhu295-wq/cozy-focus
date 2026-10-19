@@ -14,7 +14,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2245/2245** (includes all 64 ordered scenario pairs) |
+| Full suite | **2253/2253** (64 ordered scenario pairs + 8 reset-to-empty) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `4baaa2e`) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -94,6 +94,12 @@ report the app's own id generation as a fixture defect.
 This is the check the review rounds kept asking for and not running. The matrix
 was written before round 9 and found the `demoDay` snapshot bug immediately,
 which is why it is now a permanent test rather than a one-off probe.
+
+The same file also asserts `seed(A) -> reset` leaves only the base pet: every
+table the fixture touches is empty afterwards, and `pets` / `pet_progress` hold
+the production adoption row (`mochi_pet_id`, 0 XP, 0 minutes). That row stays on
+purpose — it is what the app creates on first launch, and deleting it would let a
+QA cleanup remove a real user's companion.
 
 ## Not done, with the reason
 

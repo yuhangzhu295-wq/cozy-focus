@@ -80,6 +80,26 @@ QaFixtureHarness harnessFor(AppDatabase db, ProviderContainer c) =>
       clock: c.read(focusClockProvider),
     );
 
+/// Every table `reset()` must empty, and the two rows it deliberately keeps.
+///
+/// The base pet is the production adoption row (`mochi_pet_id`), which the app
+/// creates on first launch. Reset leaves it because removing it would let a QA
+/// cleanup delete a real user's companion — and because the app reaches that
+/// state on its own. Everything else the fixture touches must be gone.
+const _resetMustEmpty = <String>[
+  'tasks',
+  'task_schedules',
+  'distraction_notes',
+  'focus_sessions',
+  'focus_records',
+  'reward_ledger',
+  'pet_memories',
+  'inventory_items',
+  'room_items',
+  'craft_jobs',
+  'app_settings',
+];
+
 void main() {
   for (final a in QaScenario.values) {
     for (final b in QaScenario.values) {
@@ -129,5 +149,37 @@ void main() {
                 'single ${a.id}');
       });
     }
+  }
+
+  for (final a in QaScenario.values) {
+    test('${a.id}: reset leaves only the base pet', () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      final c = ProviderContainer(overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        focusClockProvider.overrideWithValue(_C()),
+      ]);
+      final h = harnessFor(db, c);
+      await h.seed(a);
+      await h.reset();
+
+      for (final table in _resetMustEmpty) {
+        final n = (await db
+                .customSelect('select count(*) as c from $table')
+                .getSingle())
+            .read<int>('c');
+        expect(n, 0, reason: '${a.id} left $table rows after reset');
+      }
+      final pets =
+          (await db.customSelect('select count(*) as c from pets').getSingle())
+              .read<int>('c');
+      expect(pets, 1,
+          reason: 'the base pet is the production adoption row and stays');
+      final progress = await db.petDao.findProgress(QaFixtureHarness.petId);
+      expect(progress!.experiencePoints, 0);
+      expect(progress.totalFocusMinutes, 0);
+
+      c.dispose();
+      await db.close();
+    });
   }
 }
