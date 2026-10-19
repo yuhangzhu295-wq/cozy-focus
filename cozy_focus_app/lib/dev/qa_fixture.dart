@@ -155,6 +155,14 @@ class QaFixtureHarness {
   /// invented: a fixture pet with a different id would be a *second* pet, and
   /// every assertion made against it would be about a companion the app never
   /// shows.
+  /// How many sessions `demo_day` creates.
+  ///
+  /// Named because `reset()` needs the exact id set, and deriving it from a
+  /// pattern is what let `LIKE 'qa_demo_sess_%'` also match `qaXdemo_sess_1`
+  /// (`_` is a single-character wildcard in SQL). A test asserts this matches
+  /// the number actually seeded, so the two cannot drift.
+  static const int demoSessionCount = 7;
+
   static const String petId = 'mochi_pet_id';
   static const String progressId = 'mochi_progress_id';
 
@@ -168,13 +176,6 @@ class QaFixtureHarness {
   final AppDatabase db;
   final FocusClock clock;
 
-  /// The production reward settlement, wired exactly as `providers.dart` wires
-  /// it (atomic DAO included). `demo_day` settles its sessions through this
-  /// rather than writing ledger and progress rows itself, so the state it
-  /// produces is indistinguishable from one the app reached on its own —
-  /// including the memories, the happiness bump and the craft progress that a
-  /// hand-written ledger row would silently omit.
-  final RewardService rewardService;
   final String userId;
 
   QaFixtureHarness({
@@ -187,7 +188,6 @@ class QaFixtureHarness {
     required this.ledger,
     required this.db,
     required this.clock,
-    required this.rewardService,
     this.userId = localMvpUserId,
   });
 
@@ -293,15 +293,25 @@ class QaFixtureHarness {
     // the session left behind, settlement's idempotency gate returns false and
     // the memory is never rebuilt, so a seed → reset → seed cycle would leave a
     // pet that earned the week and remembers none of it.
-    // Unwind the pet first. Settlement already added the demo week's XP,
-    // minutes and happiness to the pet, so deleting the ledger without giving
-    // those back leaves a pet that has earned the week twice — once before the
-    // reset and once after the re-seed. What to remove is read from the ledger
-    // rows that are about to go, so it is exactly what was awarded.
+    // Everything below is scoped by the ids this fixture created, not by a
+    // pattern. `like 'qa_demo_sess_%'` looks equivalent and is not: `_` is a
+    // single-character wildcard in SQL LIKE, so it also matches `qaXdemo_sess_1`,
+    // and it carries no user scoping at all. A pattern-based delete that catches
+    // a session the fixture did not create would remove its ledger row without
+    // unwinding its reward.
+    final demoIds = <String>[
+      for (var n = 1; n <= demoSessionCount; n++) '${idPrefix}demo_sess_$n',
+    ];
+
+    // Unwind the pet first. Settlement already added the demo week's XP and
+    // minutes to the pet, so deleting the ledger without giving those back
+    // leaves a pet that has earned the week twice — once before the reset and
+    // once after the re-seed. What to remove is read from those exact ledger
+    // rows, so it is precisely what was awarded, never a wildcard's guess.
     var demoXp = 0;
     var demoMinutes = 0;
     for (final row in await ledger.findForUser(userId)) {
-      if (!row.sessionId.startsWith('${idPrefix}demo_sess_')) continue;
+      if (!demoIds.contains(row.sessionId)) continue;
       demoXp += row.experienceEarned;
       demoMinutes += row.experienceEarned ~/ 5;
     }
@@ -323,14 +333,17 @@ class QaFixtureHarness {
     }
 
     final moments = await _demoSettlementMoments();
+    for (final table in const ['reward_ledger', 'focus_records']) {
+      await db.customStatement(
+        "delete from $table where session_id in "
+        "(${List.filled(demoIds.length, '?').join(',')})",
+        demoIds,
+      );
+    }
     await db.customStatement(
-      "delete from reward_ledger where session_id like '${idPrefix}demo_sess_%'",
-    );
-    await db.customStatement(
-      "delete from focus_records where session_id like '${idPrefix}demo_sess_%'",
-    );
-    await db.customStatement(
-      "delete from focus_sessions where id like '${idPrefix}demo_sess_%'",
+      'delete from focus_sessions where id in '
+      '(${List.filled(demoIds.length, '?').join(',')})',
+      demoIds,
     );
     var memories = await db.petDao.deleteMemoriesAt(
       petId: petId,
@@ -442,7 +455,15 @@ class QaFixtureHarness {
 
     // Settlement, not this fixture, decides the reward. It writes the ledger,
     // the pet, the memories and the craft job in one transaction.
-    await rewardService.settle(session);
+    //
+    // It is given a clock that reads THIS session's end. The shared QA clock is
+    // a single instant, so settling all seven at "now" gives every memory the
+    // same timestamp — and `CompanionMemory._idFor` builds the id from
+    // (pet, type, timestamp). Two 50-minute sessions would then earn one
+    // `longSession` memory between them, the second silently dropped by the
+    // INSERT OR IGNORE. Settling at each session's own end keeps the ids
+    // distinct, which is also what a real week looks like.
+    await _rewardServiceAt(end).settle(session);
   }
 
   /// Seeds a week of ordinary use, and reports what it wrote.
@@ -687,17 +708,31 @@ class QaFixtureHarness {
     return steps;
   }
 
+  /// The production [RewardService], told what time it is.
+  ///
+  /// Same repositories, same atomic settlement DAO as `providers.dart`; only the
+  /// clock differs, so settlement records the moment the session actually
+  /// ended. Constructing it here is not a second copy of the reward rule — the
+  /// rule still lives in [RewardService] and [IAtomicSettlement].
+  RewardService _rewardServiceAt(DateTime when) => RewardService(
+        ledgerRepo: ledger,
+        petRepo: pets,
+        clock: _FixedMoment(when),
+        atomicSettlement: db.settlementDao,
+      );
+
   /// The `settledAt` of every demo session that ever settled.
   ///
   /// Read back from the ledger rather than stored, so it survives a fixture
   /// rebuild. A session deleted before its memory was wiped keeps its ledger
   /// row and so still lists its moment.
   Future<List<DateTime>> _demoSettlementMoments() async {
+    final ids = <String>{
+      for (var n = 1; n <= demoSessionCount; n++) '${idPrefix}demo_sess_$n',
+    };
     final moments = <DateTime>[];
     for (final row in await ledger.findForUser(userId)) {
-      if (row.sessionId.startsWith('${idPrefix}demo_sess_')) {
-        moments.add(row.settledAt);
-      }
+      if (ids.contains(row.sessionId)) moments.add(row.settledAt);
     }
     return moments;
   }
@@ -820,4 +855,13 @@ class QaFixtureHarness {
       'memories': memories.length,
     };
   }
+}
+
+/// A clock pinned to one instant, for seeding a session that already ended.
+class _FixedMoment implements FocusClock {
+  const _FixedMoment(this.moment);
+  final DateTime moment;
+
+  @override
+  DateTime now() => moment;
 }

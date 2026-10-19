@@ -52,7 +52,6 @@ Future<void> main() async {
     ledger: container.read(rewardLedgerRepositoryProvider),
     db: container.read(appDatabaseProvider),
     clock: container.read(focusClockProvider),
-    rewardService: container.read(rewardServiceProvider),
   );
 
   if (reset) {

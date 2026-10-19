@@ -46,7 +46,6 @@ void main() {
       ledger: container.read(rewardLedgerRepositoryProvider),
       db: db,
       clock: container.read(focusClockProvider),
-      rewardService: container.read(rewardServiceProvider),
     );
   });
 
@@ -222,8 +221,16 @@ void main() {
       // Growing from 0 XP into the 300-400 XP band crosses at least one level
       // boundary, so a level-up memory must exist.
       expect(contents.any((c) => c.startsWith('成长到 Lv.')), isTrue);
-      // The 50-minute sessions are at the long-session threshold.
-      expect(contents.any((c) => c.startsWith('陪你专注了 ')), isTrue);
+      // Two sessions are 50 minutes. Both are at the long-session threshold, so
+      // both must leave a memory. Settling all seven at one fixed instant gave
+      // them the same (pet, type, timestamp) id and the second was silently
+      // dropped by INSERT OR IGNORE — a seed that looked complete and was one
+      // memory short.
+      expect(
+        contents.where((c) => c.startsWith('陪你专注了 ')).toList(),
+        ['陪你专注了 50 分钟', '陪你专注了 50 分钟'],
+        reason: 'each long session must leave its own memory',
+      );
       // These ids are production-shaped (`mem_<pet>_<type>_<timestamp>`) because
       // settlement generated them. That is the point: a fixture-invented id would
       // prove the fixture wrote the memory, not the reward rule.
@@ -314,13 +321,68 @@ void main() {
           reason: 'both memory shapes must go, and nothing else');
     });
 
+    test('reset is scoped by id, not by a LIKE pattern', () async {
+      await harness.seed(QaScenario.demoDay);
+
+      // `_` is a single-character wildcard in SQL LIKE, so the old
+      // `like 'qa_demo_sess_%'` also matched this row. Reset would have deleted
+      // it without unwinding its reward — removing data the fixture never
+      // created. The exact-id delete must leave it alone.
+      await db.customStatement(
+        "insert into focus_sessions (id, user_id, planned_seconds, mode, "
+        "timing_mode, start_at, pause_intervals_json, end_at, status, "
+        "timezone_offset_minutes) values "
+        "('qaXdemo_sess_1', 'default_user', 1500, 'focus', 'countdown', "
+        "1790990000, '[]', 1790991500, 'completed', 480)",
+      );
+      await db.customStatement(
+        "insert into reward_ledger (session_id, user_id, focus_coins_earned, "
+        "experience_earned, settled_at) values "
+        "('qaXdemo_sess_1', 'default_user', 50, 125, 1790991500)",
+      );
+
+      await harness.reset();
+
+      final survivor = (await db
+              .customSelect(
+                "select count(*) as c from focus_sessions "
+                "where id = 'qaXdemo_sess_1'",
+              )
+              .getSingle())
+          .read<int>('c');
+      final ledger = (await db
+              .customSelect(
+                "select count(*) as c from reward_ledger "
+                "where session_id = 'qaXdemo_sess_1'",
+              )
+              .getSingle())
+          .read<int>('c');
+      expect(survivor, 1,
+          reason: 'a row the fixture did not create must survive');
+      expect(ledger, 1, reason: 'and so must its ledger row');
+    });
+
+    test('demoSessionCount matches what the seed actually writes', () async {
+      await harness.seed(QaScenario.demoDay);
+      final seeded = (await db
+              .customSelect(
+                "select count(*) as c from focus_sessions "
+                "where id like 'qa_demo_sess_%'",
+              )
+              .getSingle())
+          .read<int>('c');
+      expect(seeded, QaFixtureHarness.demoSessionCount,
+          reason: 'reset builds its exact-id list from this constant');
+    });
+
     test('an interrupted seed resumed mid-week awards nothing twice', () async {
       await harness.seed(QaScenario.demoDay);
 
       // The state a process killed between writing a session and settling it
-      // leaves: the session and its record are there, the ledger row is not.
-      // Only the ledger is removed — the hostile case, because the previous
-      // version skipped on "session exists" and so never repaired it.
+      // leaves: the session and its record are there, the ledger row is not,
+      // AND the pet never got the reward. Removing only the ledger would leave
+      // the XP already awarded, which is a different state ("the ledger row was
+      // lost after settlement") — the one this test used to build by accident.
       for (final id in const [
         'qa_demo_sess_6',
         'qa_demo_sess_7',
@@ -328,6 +390,19 @@ void main() {
         await db.customStatement(
             'delete from reward_ledger where session_id = ?', [id]);
       }
+      final beforeUnwind = (await db.petDao.findProgress(
+        QaFixtureHarness.petId,
+      ))!;
+      // 50 + 40 minutes at 5 XP/min.
+      await db.petDao.upsertProgress(domain.PetProgress(
+        id: beforeUnwind.id,
+        petId: beforeUnwind.petId,
+        level: beforeUnwind.level,
+        experiencePoints: beforeUnwind.experiencePoints - 450,
+        totalFocusMinutes: beforeUnwind.totalFocusMinutes - 90,
+        happinessScore: beforeUnwind.happinessScore,
+        updatedAt: beforeUnwind.updatedAt,
+      ));
       final before = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
       final xpBefore = before.experiencePoints;
       final minutesBefore = before.totalFocusMinutes;
