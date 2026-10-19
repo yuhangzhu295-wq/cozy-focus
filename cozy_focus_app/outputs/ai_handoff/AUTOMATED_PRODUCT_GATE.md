@@ -1,13 +1,13 @@
 # Automated product gate
 
-Generated 2026-10-19 17:40:58 at `120553d3`. Local equals remote: **YES**.
+Generated 2026-10-19 19:22:10 at `6c2bbd93`. Local equals remote: **YES**.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 683 frames on emulator-5554, 653 after the 30-frame startup warmup; host free memory at measurement: 2069 MB; steady-state UI-thread build p50 3145 us / p90 8824 us / p99 15899 us; frames over the 16.67 ms budget after the warmup: 6. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
-| `FORMAT` | **PASS** | 481 files, 0 changed |
+| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 683 frames on emulator-5554, 653 after the 30-frame startup warmup; host free memory at measurement: 3422 MB; steady-state UI-thread build p50 3626 us / p90 11891 us / p99 21502 us; frames over the 16.67 ms budget after the warmup: 24. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
+| `FORMAT` | **PASS** | 482 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
-| `UNIT_TESTS` | **PASS** | 2178/2178 passed |
+| `UNIT_TESTS` | **PASS** | 2245/2245 passed |
 | `INTEGRATION_TESTS` | **PASS** | 54/54 passed |
 | `GOLDEN_FLOW` | **PASS** | 6/6 passed |
 | `MIGRATION` | **PASS** | 16/16 passed |
