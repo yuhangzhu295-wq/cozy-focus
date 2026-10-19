@@ -635,6 +635,95 @@ void main() {
       expect(inv, 0, reason: 'the item was granted by the demo completion');
     });
 
+    test('reset does not reopen a job a real session completed', () async {
+      // The demo week added part of the progress and recorded a delta; a real
+      // session then finished the job. Reset must subtract the demo seconds but
+      // leave the job completed — the completion was not the fixture's.
+      await harness.seed(QaScenario.basePet);
+      final recipe = await db
+          .customSelect('select id, output_item_id from craft_recipes limit 1')
+          .getSingle();
+      final recipeId = recipe.read<String>('id');
+      await db.customStatement(
+        'update craft_recipes set required_minutes = 600 where id = ?',
+        [recipeId],
+      );
+      await db.customStatement(
+        'insert into craft_jobs (id, user_id, recipe_id, status, '
+        'progress_seconds, started_at, reward_claimed) values '
+        "('real_job', 'default_user', ?, 'inProgress', 0, 1790000000, 0)",
+        [recipeId],
+      );
+
+      // 15300 seconds of demo focus: not enough for 36000.
+      await harness.seed(QaScenario.demoDay);
+      // 360 minutes of real focus finishes it (15300 + 21600 > 36000).
+      await settleReal('real_f', 360, DateTime(2026, 10, 18, 13));
+      var job = await db
+          .customSelect(
+            "select status, progress_seconds from craft_jobs where id = 'real_job'",
+          )
+          .getSingle();
+      expect(job.read<String>('status'), 'completed');
+
+      await harness.reset();
+
+      job = await db
+          .customSelect(
+            "select status, progress_seconds from craft_jobs where id = 'real_job'",
+          )
+          .getSingle();
+      expect(job.read<String>('status'), 'completed',
+          reason: 'a real completion is not the fixture to undo');
+      expect(job.read<int>('progress_seconds'), 21600,
+          reason: '15300 demo seconds go, the real 21600 stay');
+    });
+
+    test('reset takes back one granted item, not the whole stack', () async {
+      await harness.seed(QaScenario.basePet);
+      // `table` is not one of the five items demoDay owns, so the row the
+      // completion creates is not a qa_ row that reset removes outright.
+      final recipe = await db
+          .customSelect(
+            "select id, output_item_id from craft_recipes where id = 'table'",
+          )
+          .getSingle();
+      final recipeId = recipe.read<String>('id');
+      final itemId = recipe.read<String>('output_item_id');
+      await db.customStatement(
+        'update craft_recipes set required_minutes = 10 where id = ?',
+        [recipeId],
+      );
+      await db.customStatement(
+        'insert into craft_jobs (id, user_id, recipe_id, status, '
+        'progress_seconds, started_at, reward_claimed) values '
+        "('real_job', 'default_user', ?, 'inProgress', 0, 1790000000, 0)",
+        [recipeId],
+      );
+      await harness.seed(QaScenario.demoDay);
+
+      // The user gains one more of the same item after the demo week.
+      await db.customStatement(
+        'update inventory_items set quantity = quantity + 1 '
+        'where user_id = ? and item_id = ?',
+        ['default_user', itemId],
+      );
+
+      await harness.reset();
+
+      final qty = (await db.customSelect(
+        'select quantity from inventory_items '
+        'where user_id = ? and item_id = ?',
+        variables: [
+          Variable.withString('default_user'),
+          Variable.withString(itemId),
+        ],
+      ).getSingleOrNull())
+          ?.read<int>('quantity');
+      expect(qty, 1,
+          reason: 'only the demo-granted unit goes; the later real one stays');
+    });
+
     test('a failure halfway through reset rolls the whole reset back',
         () async {
       await harness.seed(QaScenario.demoDay);

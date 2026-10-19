@@ -38,8 +38,28 @@ class _PresetHomeController extends HomeController {
 ///
 /// The store touches the file system, so a single microtask turn is not enough;
 /// this is a real (short) delay rather than a `pump` because there is no widget
-/// tree involved.
+/// tree involved. It is only used where the assertion does not name a state to
+/// wait for — where it does, `waitFor` polls the condition instead. A fixed
+/// 60 ms was the cause of a real flake: one run read the file before the
+/// restore finished and failed, and re-running passed.
 Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 60));
+
+/// Polls [predicate] until it holds, or fails after [timeout].
+///
+/// A test that waits a fixed time is a test that passes on an idle machine and
+/// fails on a busy one. The condition is the thing the assertion actually needs.
+Future<void> waitFor(
+  bool Function() predicate, {
+  Duration timeout = const Duration(seconds: 3),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (!predicate()) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('condition not met within $timeout');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
+}
 
 /// Deletes [dir], ignoring the Windows case where a handle is still open.
 Future<void> _deleteQuietly(Directory dir) async {
@@ -54,7 +74,7 @@ void main() {
   group('CompanionSelection', () {
     test('defaults to the shipped default companion', () async {
       final selection = CompanionSelection(InMemoryCompanionSelectionStore());
-      await settle();
+      await waitFor(() => selection.state == CompanionId.dog);
       expect(selection.state, CompanionId.dog);
     });
 
@@ -82,7 +102,7 @@ void main() {
       final selection = CompanionSelection(
         InMemoryCompanionSelectionStore(CompanionId.rabbit),
       );
-      await settle();
+      await waitFor(() => selection.state == CompanionId.rabbit);
       expect(selection.state, CompanionId.rabbit);
     });
 
@@ -108,7 +128,7 @@ void main() {
       final second = CompanionSelection(
         FileCompanionSelectionStore(directoryOverride: dir),
       );
-      await settle();
+      await waitFor(() => second.state == CompanionId.cat);
       expect(second.state, CompanionId.cat);
     });
 

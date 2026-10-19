@@ -14,7 +14,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2262/2262** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
+| Full suite | **2264/2264** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `5d30961`; regenerated after the round-9 fixes) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -84,6 +84,17 @@ round found a real defect, including ones introduced by the previous fix:
     are likewise recorded as "absent before the settlement" rather than diffed
     from the latest 500 rows, which removes both the list-limit window and the
     crash window between settling and recording.
+14. The delta bookkeeping had three holes of its own: it reopened a job a real
+    session had completed, it lost the delta if the process died between the
+    settlement and the totals, and it restored inventory to an absolute quantity
+    (swallowing items gained later). The fixture now records which completion
+    was demo-caused, writes the expected delta *before* settling and folds it
+    only when the ledger proves the settlement ran, and takes back exactly one
+    unit per demo-granted item. Tests cover a real completion, a later real
+    item, and the crash ordering.
+15. The one flaky unit test was a fixed 60 ms wait for an async file restore;
+    it now polls the condition. That is a test defect, not a product one, and it
+    is recorded rather than hidden.
 
 Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail), including the transaction: making the last write throw leaves

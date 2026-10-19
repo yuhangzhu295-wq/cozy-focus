@@ -619,9 +619,17 @@ class QaFixtureHarness {
     // `longSession` memory between them, the second silently dropped by the
     // INSERT OR IGNORE. Settling at each session's own end keeps the ids
     // distinct, which is also what a real week looks like.
+    // Recover an expectation left by a previous crash before writing this one.
+    await _foldPendingCraft();
     final craftBefore = await _activeCraftState();
+    await _writeCraftPending(
+      sessionId: id,
+      seconds: minutes * 60,
+      before: craftBefore,
+    );
     await _rewardServiceAt(end).settle(session);
-    await _recordCraftDelta(craftBefore);
+    await _foldPendingCraft();
+    await _recordCraftCompletion(craftBefore);
   }
 
   /// Seeds a week of ordinary use, and reports what it wrote.
@@ -1050,15 +1058,11 @@ class QaFixtureHarness {
   }
 
   static const String _craftDeltasKey = 'qa_demo_craft_deltas';
-  static const String _craftItemsKey = 'qa_demo_craft_items';
+  static const String _craftCompletedKey = 'qa_demo_craft_completed';
+  static const String _craftGrantedKey = 'qa_demo_craft_granted';
+  static const String _craftPendingKey = 'qa_demo_craft_pending';
 
-  /// The in-progress craft jobs, and the inventory quantity of each output.
-  ///
-  /// Settlement advances the first in-progress job whatever started it, so a
-  /// demo week can move a real job. What reset has to undo is the *delta the
-  /// demo settlements added*, not the job's absolute state: recording an
-  /// absolute snapshot would also undo real focus the user completed between
-  /// the seed and the reset.
+  /// The in-progress craft jobs, in the order settlement will consider them.
   Future<Map<String, ({int progress, String? itemId, int quantity})>>
       _activeCraftState() async {
     final jobs = await db.customSelect(
@@ -1093,58 +1097,117 @@ class QaFixtureHarness {
     return state;
   }
 
-  /// Adds what this settlement did to the recorded demo-caused deltas.
-  Future<void> _recordCraftDelta(
+  /// Writes what the settlement about to run is expected to do, before it runs.
+  ///
+  /// Settlement adds exactly `addedFocusSeconds` to the first in-progress job.
+  /// Recording that expectation first is what makes the bookkeeping survive a
+  /// process killed between the settlement committing and the totals being
+  /// updated: `_foldPendingCraft` reads the ledger to decide whether the
+  /// expectation actually happened.
+  Future<void> _writeCraftPending({
+    required String sessionId,
+    required int seconds,
+    required Map<String, ({int progress, String? itemId, int quantity})> before,
+  }) async {
+    if (before.isEmpty) return;
+    final jobId = before.keys.first;
+    await db.customStatement(
+      'insert or replace into app_settings (key, value) values (?, ?)',
+      [_craftPendingKey, '$sessionId|$jobId|$seconds'],
+    );
+  }
+
+  /// Folds a pending expectation into the totals if its settlement committed.
+  ///
+  /// The ledger row is the proof: `settleAtomically` writes it in the same
+  /// transaction that advances the job, so a ledger row means the progress was
+  /// added. No row means the settlement never ran, and the expectation is
+  /// discarded rather than subtracted from progress that was never added.
+  Future<void> _foldPendingCraft() async {
+    final row = await db.customSelect(
+      'select value from app_settings where key = ?',
+      variables: [Variable.withString(_craftPendingKey)],
+    ).getSingleOrNull();
+    if (row == null) return;
+    await db.customStatement(
+      'delete from app_settings where key = ?',
+      [_craftPendingKey],
+    );
+    final bits = row.read<String>('value').split('|');
+    if (bits.length != 3) return;
+    final sessionId = bits[0];
+    final jobId = bits[1];
+    final seconds = int.tryParse(bits[2]);
+    if (seconds == null) return;
+    final settled = await db.customSelect(
+      'select 1 as present from reward_ledger where session_id = ?',
+      variables: [Variable.withString(sessionId)],
+    ).getSingleOrNull();
+    if (settled == null) return;
+    await _addCraftDelta(jobId, seconds);
+  }
+
+  Future<void> _addCraftDelta(String jobId, int seconds) async {
+    final deltas = <String, int>{};
+    for (final part in await _savedPairs(_craftDeltasKey)) {
+      final value = int.tryParse(part.$2);
+      if (value != null) deltas[part.$1] = value;
+    }
+    deltas[jobId] = (deltas[jobId] ?? 0) + seconds;
+    await db.customStatement(
+      'insert or replace into app_settings (key, value) values (?, ?)',
+      [
+        _craftDeltasKey,
+        deltas.entries.map((e) => '${e.key}:${e.value}').join(';'),
+      ],
+    );
+  }
+
+  /// Records what the settlement that just ran did beyond the progress delta:
+  /// whether it completed the job, and which item that granted.
+  Future<void> _recordCraftCompletion(
     Map<String, ({int progress, String? itemId, int quantity})> before,
   ) async {
     if (before.isEmpty) return;
-    final deltas = <String, int>{};
-    for (final part in await _savedPairs(_craftDeltasKey)) {
-      final seconds = int.tryParse(part.$2);
-      if (seconds != null) deltas[part.$1] = seconds;
+    final jobId = before.keys.first;
+    final row = await db.customSelect(
+      'select status from craft_jobs where id = ?',
+      variables: [Variable.withString(jobId)],
+    ).getSingleOrNull();
+    if (row == null || row.read<String>('status') != 'completed') return;
+    final completed = await _savedList(_craftCompletedKey);
+    if (!completed.contains(jobId)) {
+      completed.add(jobId);
+      await _saveList(_craftCompletedKey, completed);
     }
-    final items = <String, int>{};
-    for (final part in await _savedPairs(_craftItemsKey)) {
-      final qty = int.tryParse(part.$2);
-      if (qty != null) items[part.$1] = qty;
-    }
-
-    for (final entry in before.entries) {
-      final row = await db.customSelect(
-        'select status, progress_seconds from craft_jobs where id = ?',
-        variables: [Variable.withString(entry.key)],
-      ).getSingleOrNull();
-      if (row == null) continue;
-      final added = row.read<int>('progress_seconds') - entry.value.progress;
-      if (added > 0) {
-        deltas[entry.key] = (deltas[entry.key] ?? 0) + added;
-      }
-      if (row.read<String>('status') == 'completed') {
-        final itemId = entry.value.itemId;
-        // The quantity before this completion, so reset can take back exactly
-        // the unit the completion added (or the row it created).
-        if (itemId != null) items[itemId] = entry.value.quantity;
+    final itemId = before[jobId]?.itemId;
+    if (itemId != null) {
+      final granted = await _savedList(_craftGrantedKey);
+      if (!granted.contains(itemId)) {
+        granted.add(itemId);
+        await _saveList(_craftGrantedKey, granted);
       }
     }
+  }
 
-    if (deltas.isNotEmpty) {
-      await db.customStatement(
-        'insert or replace into app_settings (key, value) values (?, ?)',
-        [
-          _craftDeltasKey,
-          deltas.entries.map((e) => '${e.key}:${e.value}').join(';'),
-        ],
-      );
-    }
-    if (items.isNotEmpty) {
-      await db.customStatement(
-        'insert or replace into app_settings (key, value) values (?, ?)',
-        [
-          _craftItemsKey,
-          items.entries.map((e) => '${e.key}:${e.value}').join(';'),
-        ],
-      );
-    }
+  Future<List<String>> _savedList(String key) async {
+    final row = await db.customSelect(
+      'select value from app_settings where key = ?',
+      variables: [Variable.withString(key)],
+    ).getSingleOrNull();
+    if (row == null) return <String>[];
+    return row
+        .read<String>('value')
+        .split(',')
+        .where((v) => v.isNotEmpty)
+        .toList();
+  }
+
+  Future<void> _saveList(String key, List<String> values) async {
+    await db.customStatement(
+      'insert or replace into app_settings (key, value) values (?, ?)',
+      [key, values.join(',')],
+    );
   }
 
   Future<List<(String, String)>> _savedPairs(String key) async {
@@ -1153,32 +1216,37 @@ class QaFixtureHarness {
       variables: [Variable.withString(key)],
     ).getSingleOrNull();
     if (row == null) return const [];
-    final parts = row.read<String>('value').split(';');
     final out = <(String, String)>[];
-    for (final part in parts) {
+    for (final part in row.read<String>('value').split(';')) {
       final bits = part.split(':');
       if (bits.length == 2 && bits[0].isNotEmpty) out.add((bits[0], bits[1]));
     }
     return out;
   }
 
-  /// Takes back the progress the demo settlements added, and nothing else.
+  /// Takes back exactly what the demo settlements caused.
+  ///
+  /// - progress: subtract the summed delta (the demo's own seconds), leaving any
+  ///   real progress made before, between, or after;
+  /// - status: reopen only a job the demo settlements completed. A job a real
+  ///   settlement completed is left completed — the comment that said this was
+  ///   impossible was wrong, because real focus can finish the job between two
+  ///   demo settlements;
+  /// - inventory: take back one unit per item the demo completion granted, so
+  ///   items the user gained afterwards survive.
   Future<void> _restoreCraftFromReset() async {
     final deltas = <String, int>{};
     for (final part in await _savedPairs(_craftDeltasKey)) {
       final seconds = int.tryParse(part.$2);
       if (seconds != null) deltas[part.$1] = seconds;
     }
-    final items = <String, int>{};
-    for (final part in await _savedPairs(_craftItemsKey)) {
-      final qty = int.tryParse(part.$2);
-      if (qty != null) items[part.$1] = qty;
-    }
-    if (deltas.isEmpty && items.isEmpty) return;
+    final completed = await _savedList(_craftCompletedKey);
+    final granted = await _savedList(_craftGrantedKey);
+    if (deltas.isEmpty && completed.isEmpty && granted.isEmpty) return;
 
     for (final entry in deltas.entries) {
       final row = await db.customSelect(
-        'select progress_seconds, status from craft_jobs where id = ?',
+        'select progress_seconds from craft_jobs where id = ?',
         variables: [Variable.withString(entry.key)],
       ).getSingleOrNull();
       if (row == null) continue;
@@ -1188,34 +1256,42 @@ class QaFixtureHarness {
         'update craft_jobs set progress_seconds = ? where id = ?',
         [left, entry.key],
       );
-      // A completion caused by the demo week is reopened. A job completed by
-      // real focus after the demo is impossible: it would already be completed
-      // when the demo settlements ran, so no delta would be recorded for it.
-      if (row.read<String>('status') == 'completed') {
-        await db.customStatement(
-          "update craft_jobs set status = 'inProgress', completed_at = null "
-          'where id = ?',
-          [entry.key],
-        );
-      }
     }
-    for (final entry in items.entries) {
-      if (entry.value < 0) {
+    for (final jobId in completed) {
+      await db.customStatement(
+        "update craft_jobs set status = 'inProgress', completed_at = null "
+        'where id = ? and status = ?',
+        [jobId, 'completed'],
+      );
+    }
+    for (final itemId in granted) {
+      final row = await db.customSelect(
+        'select quantity from inventory_items where user_id = ? and item_id = ?',
+        variables: [Variable.withString(userId), Variable.withString(itemId)],
+      ).getSingleOrNull();
+      if (row == null) continue;
+      final left = (row.read<int>('quantity') - 1).clamp(0, 1 << 40);
+      if (left == 0) {
         await db.customStatement(
           'delete from inventory_items where user_id = ? and item_id = ?',
-          [userId, entry.key],
+          [userId, itemId],
         );
       } else {
         await db.customStatement(
           'update inventory_items set quantity = ? '
           'where user_id = ? and item_id = ?',
-          [entry.value, userId, entry.key],
+          [left, userId, itemId],
         );
       }
     }
     await db.customStatement(
-      'delete from app_settings where key in (?, ?)',
-      [_craftDeltasKey, _craftItemsKey],
+      'delete from app_settings where key in (?, ?, ?, ?)',
+      [
+        _craftDeltasKey,
+        _craftCompletedKey,
+        _craftGrantedKey,
+        _craftPendingKey,
+      ],
     );
   }
 
