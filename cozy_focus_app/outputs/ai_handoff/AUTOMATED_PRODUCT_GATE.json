@@ -1,78 +1,79 @@
 {
-  "generated_at": "2026-10-19 20:26:50",
-  "head": "7de582fcd28a6c71a937c1ed7857c285c529b58e",
-  "remote_head": "7de582fcd28a6c71a937c1ed7857c285c529b58e",
+  "generated_at": "2026-10-19 23:34:59",
+  "head": "0443aa38015aee4f0195c2941c6a70e6dd4a8d2f",
+  "remote_head": "0443aa38015aee4f0195c2941c6a70e6dd4a8d2f",
   "local_equals_remote": true,
   "counts": {
-    "PASS": 14,
+    "FAIL": 1,
+    "PASS": 13,
     "BLOCKED": 4
   },
   "gates": [
     {
       "gate": "DEVICE_MATRIX",
-      "status": "PASS",
-      "evidence": "FRAME_TIME 680 frames on emulator-5554, 650 after the 30-frame startup warmup; host free memory at measurement: 2699 MB; steady-state UI-thread build p50 3111 us / p90 7982 us / p99 14032 us; frames over the 16.67 ms budget after the warmup: 4. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
-      "seconds": 73.6
+      "status": "FAIL",
+      "evidence": "FRAME_TIME 680 frames on emulator-5554, 650 after the 30-frame startup warmup; host free memory at measurement: 2463 MB; steady-state UI-thread build p50 5251 us / p90 18053 us / p99 89795 us; frames over the 16.67 ms budget after the warmup: 75. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. p90 18053 us against the 16667 us frame and p50 5251 us against the 8333 us line. Unlike the tail count, a p50 that has moved means the app is doing more work per frame. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
+      "seconds": 116.0
     },
     {
       "gate": "FORMAT",
       "status": "PASS",
       "evidence": "482 files, 0 changed",
-      "seconds": 3.5
+      "seconds": 6.9
     },
     {
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 11.6
+      "seconds": 27.4
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
-      "evidence": "2253/2253 passed",
-      "seconds": 206.4
+      "evidence": "2258/2258 passed",
+      "seconds": 318.7
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "54/54 passed",
-      "seconds": 13.7
+      "seconds": 31.8
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 5.0
+      "seconds": 5.6
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 11.1
+      "seconds": 14.3
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "81/81 passed",
-      "seconds": 11.4
+      "seconds": 18.2
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 9.2
+      "seconds": 12.1
     },
     {
       "gate": "APK",
       "status": "PASS",
       "evidence": "32.1 MB (budget 34 MB)",
-      "seconds": 24.7
+      "seconds": 29.5
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "50.7 MB (budget 55 MB)",
-      "seconds": 13.0
+      "seconds": 14.8
     },
     {
       "gate": "DIFF_CHECK",
@@ -108,7 +109,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 4.4
+      "seconds": 9.4
     },
     {
       "gate": "FLOW_GENERATION",

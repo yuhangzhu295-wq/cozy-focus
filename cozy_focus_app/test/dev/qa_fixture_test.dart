@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cozy_focus_app/data/local/app_database.dart';
+import 'package:cozy_focus_app/data/repositories/drift_pet_repository.dart';
 import 'package:cozy_focus_app/dev/qa_fixture.dart';
 import 'package:cozy_focus_app/domain/growth/growth_level_curve.dart';
 import 'package:cozy_focus_app/domain/models/craft_models.dart' as domain;
@@ -489,6 +490,40 @@ void main() {
       final progress = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
       expect(progress.experiencePoints, 350);
       expect(progress.totalFocusMinutes, 70);
+    });
+
+    test('a failure halfway through reset rolls the whole reset back',
+        () async {
+      await harness.seed(QaScenario.demoDay);
+      final failing = QaFixtureHarness(
+        // Fails on the LAST write of reset (the progress restore), after every
+        // delete has already run. A failure at the first step would prove
+        // nothing: nothing would have been deleted yet either way.
+        pets: _FailingPets(db.petDao),
+        craft: container.read(craftRepositoryProvider),
+        tasks: container.read(taskRepositoryProvider),
+        sessions: container.read(focusSessionRepositoryProvider),
+        records: container.read(focusRecordRepositoryProvider),
+        notes: container.read(distractionRepositoryProvider),
+        ledger: container.read(rewardLedgerRepositoryProvider),
+        db: db,
+        clock: container.read(focusClockProvider),
+      );
+
+      await expectLater(failing.reset(), throwsA(isA<StateError>()));
+
+      // Reset is one transaction, so the room failure must take back the
+      // ledger, session and progress work that ran before it.
+      final demo = (await db
+              .customSelect(
+                "select count(*) as c from reward_ledger "
+                "where session_id like 'qa_demo_sess_%'",
+              )
+              .getSingle())
+          .read<int>('c');
+      expect(demo, 7, reason: 'a failed reset must not half-delete the week');
+      final progress = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
+      expect(progress.experiencePoints, 1275);
     });
 
     test('reset removes the inventory rows the fixture created', () async {
@@ -1127,4 +1162,18 @@ void main() {
       }
     });
   });
+}
+
+/// A pet repository whose progress write throws, to prove reset is atomic.
+///
+/// The restore is the last write reset performs, so this failure lands after
+/// every delete. Without the enclosing transaction the week would be gone and
+/// the test would see a half-reset database.
+class _FailingPets extends DriftPetRepository {
+  _FailingPets(super.dao);
+
+  @override
+  Future<void> savePetProgress(domain.PetProgress progress) async {
+    throw StateError('the progress restore failed');
+  }
 }

@@ -291,7 +291,16 @@ class QaFixtureHarness {
   /// the quantity takes the item away through the same contract the app reads.
   /// There is no delete for inventory rows in the repository, and inventing one
   /// to satisfy a fixture would be a production change for a QA need.
-  Future<QaResetReport> reset() async {
+  /// Removes every row this fixture created, atomically.
+  ///
+  /// One transaction for the whole reset, not one per step. The restore path
+  /// reads the non-demo ledger and then writes the pet's progress; a settlement
+  /// landing between those two statements would have its XP overwritten while
+  /// its ledger row survived. A transaction also makes reset all-or-nothing: a
+  /// failure halfway leaves the previous state rather than half the demo week.
+  Future<QaResetReport> reset() => db.transaction(_reset);
+
+  Future<QaResetReport> _reset() async {
     // Everything demo_day caused, in reverse order of what caused it. The
     // sessions, records and ledger rows carry the QA prefix, so "the rows this
     // fixture created" is answerable by id — no guessing by timestamp.

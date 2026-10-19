@@ -14,7 +14,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2258/2258** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings) |
+| Full suite | **2259/2259** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `5d30961`; regenerated after the round-9 fixes) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -63,10 +63,17 @@ round found a real defect, including ones introduced by the previous fix:
     the pair describes one instant. Three orderings are covered: a real session
     after the seed, one from before the first seed (not counted twice), and two
     after the seed (both survive). Removing the delta fails all three.
+11. `reset()` itself still read the ledger and then wrote the pet's progress as
+    two steps, so a settlement between them lost the same XP. The whole reset is
+    now one transaction — which also makes it all-or-nothing. A test makes the
+    last write throw and requires the demo week to still be present; without the
+    transaction it fails with 0 rows where 7 are required.
 
 Every fix carries a test and a reverse proof (the old behaviour restored makes
-that test fail). `CompanionMemory.idFor` is now public so the fixture and
-settlement share one definition of a memory id.
+that test fail), including the transaction: making the last write throw leaves
+the week deleted without the transaction and intact with it.
+`CompanionMemory.idFor` is now public so the fixture and settlement share one
+definition of a memory id.
 
 **The device measurement is now guarded, and the guard is what made it valid.** Across this
 session the same build measured p50 2906 µs / p90 8578 µs on a quiet host and

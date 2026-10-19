@@ -1,13 +1,13 @@
 # Automated product gate
 
-Generated 2026-10-19 20:26:50 at `7de582fc`. Local equals remote: **YES**.
+Generated 2026-10-19 23:34:59 at `0443aa38`. Local equals remote: **YES**.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 680 frames on emulator-5554, 650 after the 30-frame startup warmup; host free memory at measurement: 2699 MB; steady-state UI-thread build p50 3111 us / p90 7982 us / p99 14032 us; frames over the 16.67 ms budget after the warmup: 4. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
+| `DEVICE_MATRIX` | **FAIL** | FRAME_TIME 680 frames on emulator-5554, 650 after the 30-frame startup warmup; host free memory at measurement: 2463 MB; steady-state UI-thread build p50 5251 us / p90 18053 us / p99 89795 us; frames over the 16.67 ms budget after the warmup: 75. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. p90 18053 us against the 16667 us frame and p50 5251 us against the 8333 us line. Unlike the tail count, a p50 that has moved means the app is doing more work per frame. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
 | `FORMAT` | **PASS** | 482 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
-| `UNIT_TESTS` | **PASS** | 2253/2253 passed |
+| `UNIT_TESTS` | **PASS** | 2258/2258 passed |
 | `INTEGRATION_TESTS` | **PASS** | 54/54 passed |
 | `GOLDEN_FLOW` | **PASS** | 6/6 passed |
 | `MIGRATION` | **PASS** | 16/16 passed |
@@ -25,7 +25,8 @@ Generated 2026-10-19 20:26:50 at `7de582fc`. Local equals remote: **YES**.
 
 ## Counts
 
-- **PASS**: 14
+- **PASS**: 13
+- **FAIL**: 1
 - **BLOCKED**: 4
 
 ---
