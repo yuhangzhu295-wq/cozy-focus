@@ -897,6 +897,53 @@ class QaFixtureHarness {
         atomicSettlement: db.settlementDao,
       );
 
+  /// Percent-encodes a value used as a field in `app_settings`.
+  ///
+  /// Item ids come from `craft_recipes.output_item_id`, which is free text, so
+  /// a delimiter-joined record cannot be parsed without escaping. `Uri` does
+  /// exactly the escaping this needs and is in the SDK.
+  static String _enc(String value) => Uri.encodeComponent(value);
+
+  static String _dec(String value) => Uri.decodeComponent(value);
+
+  /// Reads a `key:value;...` record, throwing on anything else.
+  ///
+  /// The fixture is dev-only and every writer in this tree uses the current
+  /// format, so an unreadable record means a stale database from an older
+  /// checkout, not something to guess at. Failing loudly with the key name is
+  /// better than silently skipping the bookkeeping and deleting the wrong row.
+  Future<Map<String, String>> _savedMap(String key) async {
+    final row = await db.customSelect(
+      'select value from app_settings where key = ?',
+      variables: [Variable.withString(key)],
+    ).getSingleOrNull();
+    if (row == null) return <String, String>{};
+    final value = row.read<String>('value');
+    if (value.isEmpty) return <String, String>{};
+    final out = <String, String>{};
+    for (final part in value.split(';')) {
+      final bits = part.split(':');
+      if (bits.length != 2 || bits[0].isEmpty) {
+        throw StateError(
+          'app_settings[$key] is not in the current format; reset the QA '
+          'database before seeding again',
+        );
+      }
+      out[_dec(bits[0])] = _dec(bits[1]);
+    }
+    return out;
+  }
+
+  Future<void> _saveMap(String key, Map<String, String> value) async {
+    await db.customStatement(
+      'insert or replace into app_settings (key, value) values (?, ?)',
+      [
+        key,
+        value.entries.map((e) => '${_enc(e.key)}:${_enc(e.value)}').join(';'),
+      ],
+    );
+  }
+
   /// The memory ids the demo settlements created, in `app_settings`.
   ///
   /// Recorded by `_settlePastSession` after each settlement, because the only
@@ -1114,8 +1161,8 @@ class QaFixtureHarness {
       'insert or replace into app_settings (key, value) values (?, ?)',
       [
         _craftPendingKey,
-        '$sessionId|$jobId|$seconds|${job.progress}|${job.itemId ?? ''}|'
-            '${job.quantity < 0 ? 0 : 1}',
+        '${_enc(sessionId)}|${_enc(jobId)}|$seconds|${job.progress}|'
+            '${_enc(job.itemId ?? '')}|${job.quantity < 0 ? 0 : 1}',
       ],
     );
   }
@@ -1141,9 +1188,14 @@ class QaFixtureHarness {
         [_craftPendingKey],
       );
       final bits = row.read<String>('value').split('|');
-      if (bits.length < 3) return;
-      final sessionId = bits[0];
-      final jobId = bits[1];
+      if (bits.length != 6) {
+        throw StateError(
+          'app_settings[$_craftPendingKey] is not in the current format; '
+          'reset the QA database before seeding again',
+        );
+      }
+      final sessionId = _dec(bits[0]);
+      final jobId = _dec(bits[1]);
       final seconds = int.tryParse(bits[2]);
       if (seconds == null) return;
       final settled = await db.customSelect(
@@ -1162,14 +1214,7 @@ class QaFixtureHarness {
         variables: [Variable.withString(jobId)],
       ).getSingleOrNull();
       if (job == null || job.read<String>('status') != 'completed') return;
-      // A pending written by an older build has three fields. The baseline is
-      // still recoverable: a completion means the settlement added exactly
-      // `seconds` to the progress it found, so `current - seconds` is that
-      // progress. Without this the legacy record folded the delta and left a
-      // completed job and its item behind.
-      final progressBefore = bits.length > 3
-          ? int.tryParse(bits[3])
-          : job.read<int>('progress_seconds') - seconds;
+      final progressBefore = int.tryParse(bits[3]);
       if (progressBefore == null) return;
       final recipe = await db.customSelect(
         'select required_minutes, output_item_id from craft_recipes '
@@ -1189,21 +1234,11 @@ class QaFixtureHarness {
           ? bits[4]
           : recipe?.read<String?>('output_item_id');
       if (itemId != null) {
-        // Whether the inventory row existed before the completion. A legacy
-        // record has no flag and its origin cannot be proved: the generated
-        // `inv_<user>_<item>_<ms>` shape is also what an earlier settlement
-        // creates. The safe answer is "existed", which keeps the row at zero
-        // instead of deleting what may be the player's.
-        final existed = bits.length > 5 ? bits[5] : '1';
-        final granted = await _savedCraftGrants();
+        // `0` means the completion created the row, `1` means it pre-existed.
+        final existed = bits[5];
+        final granted = await _savedMap(_craftGrantedKey);
         granted.putIfAbsent(itemId, () => existed);
-        await db.customStatement(
-          'insert or replace into app_settings (key, value) values (?, ?)',
-          [
-            _craftGrantedKey,
-            granted.entries.map((e) => '${e.key}:${e.value}').join(';'),
-          ],
-        );
+        await _saveMap(_craftGrantedKey, granted);
       }
     });
   }
@@ -1244,46 +1279,9 @@ class QaFixtureHarness {
     );
   }
 
-  /// The craft grants, in both formats this file has written.
-  ///
-  /// Current: `item:existed;...`. Older builds wrote a comma-separated list of
-  /// item ids; those carry `?` as the origin, which reset resolves from the row
-  /// id (a `qa_` row was created by the fixture) or, when that is not decisive,
-  /// treats as pre-existing so a player row is kept.
-  Future<Map<String, String>> _savedCraftGrants() async {
-    final row = await db.customSelect(
-      'select value from app_settings where key = ?',
-      variables: [Variable.withString(_craftGrantedKey)],
-    ).getSingleOrNull();
-    if (row == null) return <String, String>{};
-    final value = row.read<String>('value');
-    if (value.isEmpty) return <String, String>{};
-    final out = <String, String>{};
-    if (value.contains(':')) {
-      for (final part in value.split(';')) {
-        final bits = part.split(':');
-        if (bits.length == 2 && bits[0].isNotEmpty) out[bits[0]] = bits[1];
-      }
-    } else {
-      for (final item in value.split(',')) {
-        if (item.isNotEmpty) out[item] = '?';
-      }
-    }
-    return out;
-  }
-
   Future<List<(String, String)>> _savedPairs(String key) async {
-    final row = await db.customSelect(
-      'select value from app_settings where key = ?',
-      variables: [Variable.withString(key)],
-    ).getSingleOrNull();
-    if (row == null) return const [];
-    final out = <(String, String)>[];
-    for (final part in row.read<String>('value').split(';')) {
-      final bits = part.split(':');
-      if (bits.length == 2 && bits[0].isNotEmpty) out.add((bits[0], bits[1]));
-    }
-    return out;
+    final map = await _savedMap(key);
+    return [for (final e in map.entries) (e.key, e.value)];
   }
 
   /// Takes back exactly what the demo settlements caused.
@@ -1303,7 +1301,7 @@ class QaFixtureHarness {
       if (seconds != null) deltas[part.$1] = seconds;
     }
     final completed = await _savedList(_craftCompletedKey);
-    final granted = await _savedCraftGrants();
+    final granted = await _savedMap(_craftGrantedKey);
     if (deltas.isEmpty && completed.isEmpty && granted.isEmpty) return;
 
     for (final entry in deltas.entries) {
@@ -1334,13 +1332,10 @@ class QaFixtureHarness {
         variables: [Variable.withString(userId), Variable.withString(itemId)],
       ).getSingleOrNull();
       if (row == null) continue;
-      final existed = entry.value == '0'
-          ? true
-          : entry.value == '-1'
-              ? false
-              // Unknown legacy origin: a fixture-prefixed row was created by
-              // this fixture; anything else is kept.
-              : !row.read<String>('id').startsWith(idPrefix);
+      // `0` was written by the completion that created the row; `1` means the
+      // row pre-existed. The two were inverted once, which left a zero row for
+      // a row the completion created.
+      final existed = entry.value == '1';
       final left = (row.read<int>('quantity') - 1).clamp(0, 1 << 40);
       if (left == 0 && !existed) {
         await db.customStatement(
@@ -1407,7 +1402,12 @@ class QaFixtureHarness {
       'delete from app_settings where key = ?',
       [_savedProgressKey],
     );
-    if (parts.length < 3) return;
+    if (parts.length != 6) {
+      throw StateError(
+        'app_settings[$_savedProgressKey] is not in the current format; reset '
+        'the QA database before seeding again',
+      );
+    }
     var xp = int.tryParse(parts[0]);
     var minutes = int.tryParse(parts[1]);
     var happiness = int.tryParse(parts[2]);
@@ -1478,10 +1478,7 @@ class QaFixtureHarness {
           quantity: 1,
           updatedAt: _now,
         ));
-        final granted = <String, String>{
-          for (final pair in await _savedPairs(_inventoryGrantedKey))
-            pair.$1: pair.$2,
-        };
+        final granted = await _savedMap(_inventoryGrantedKey);
         // Whether a row already existed. Reset subtracts the one unit this
         // granted and removes the row only when it created it — restoring an
         // absolute pre-grant quantity would delete units the player gained
@@ -1489,13 +1486,7 @@ class QaFixtureHarness {
         // a later grant in the same cycle (after the player emptied it) must
         // not relabel it as a pre-existing row.
         granted.putIfAbsent(entity.id, () => owned == null ? '-1' : '0');
-        await db.customStatement(
-          'insert or replace into app_settings (key, value) values (?, ?)',
-          [
-            _inventoryGrantedKey,
-            granted.entries.map((e) => '${e.key}:${e.value}').join(';'),
-          ],
-        );
+        await _saveMap(_inventoryGrantedKey, granted);
       });
     }
 

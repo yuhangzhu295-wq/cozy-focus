@@ -14,7 +14,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2276/2276** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
+| Full suite | **2275/2275** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **13 PASS / 5 BLOCKED / 0 FAIL** at `e033f6b`; DEVICE_MATRIX is BLOCKED (host 1244 MB free after a cold emulator boot; AVD guest RAM 2048 MB). The last passing device measurement was at `697cccc`: p50 5232 µs / p90 13656 µs, 2471 MB free. |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -140,6 +140,13 @@ round found a real defect, including ones introduced by the previous fix:
     settlement's generated id, which an earlier settlement also produces. The
     reader accepts both formats, and an unprovable legacy origin is treated as
     pre-existing — the row is kept at zero rather than deleted.
+23. That compatibility was the wrong call: no shipped build ever wrote those
+    formats, and guessing an origin cannot be verified. It is removed. Records
+    are now percent-encoded (item ids come from free-text
+    `craft_recipes.output_item_id`), and a record this build cannot read throws
+    a `StateError` naming the key instead of being skipped. The origin mapping
+    was also inverted — `0` means "the completion created the row" and reset
+    read it as "pre-existed", leaving a zero row a single seed never produces.
 
 Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail), including the transaction: making the last write throw leaves

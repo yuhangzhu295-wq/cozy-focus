@@ -756,7 +756,7 @@ void main() {
       );
       await db.customStatement(
         'insert into app_settings (key, value) values (?, ?)',
-        ['qa_demo_craft_pending', 'qa_demo_sess_7|real_job|2400|0|table'],
+        ['qa_demo_craft_pending', 'qa_demo_sess_7|real_job|2400|0|table|0'],
       );
 
       await harness.reset();
@@ -902,40 +902,6 @@ void main() {
       }
     });
 
-    test('a legacy three-field pending does not break reset', () async {
-      await harness.seed(QaScenario.basePet);
-      await db.customStatement(
-        "update craft_recipes set required_minutes = 10 where id = 'table'",
-      );
-      await db.customStatement(
-        'insert into craft_jobs (id, user_id, recipe_id, status, '
-        'progress_seconds, started_at, reward_claimed) values '
-        "('real_job', 'default_user', 'table', 'inProgress', 0, 1790000000, 0)",
-      );
-      await harness.seed(QaScenario.demoDay);
-      await db.customStatement(
-        "delete from app_settings where key in "
-        "('qa_demo_craft_deltas', 'qa_demo_craft_completed', "
-        "'qa_demo_craft_granted')",
-      );
-      // Three fields, as an older build wrote them.
-      await db.customStatement(
-        'insert into app_settings (key, value) values (?, ?)',
-        ['qa_demo_craft_pending', 'qa_demo_sess_7|real_job|2400'],
-      );
-
-      await harness.reset();
-
-      final pending = (await db
-              .customSelect(
-                "select count(*) as c from app_settings "
-                "where key = 'qa_demo_craft_pending'",
-              )
-              .getSingle())
-          .read<int>('c');
-      expect(pending, 0, reason: 'the legacy record is consumed, not fatal');
-    });
-
     test('a fixture inventory row keeps real units added to it', () async {
       await harness.seed(QaScenario.roomTwoAnchors);
       // The fixture owns one rug; the user gains two more on the same row.
@@ -1063,42 +1029,46 @@ void main() {
       expect(row.read<int>('quantity'), 0);
     });
 
-    test('a legacy comma-separated grant list is still honoured', () async {
-      // The craft completion adds one to the fixture's own sofa row (2), and an
-      // older build recorded the grant as a bare comma list. Reset must still
-      // take that unit back — 2 -> 1 — rather than leaving both.
+    test('an unreadable bookkeeping record fails loudly', () async {
+      // The fixture is dev-only and every writer in this tree uses the current
+      // format. A stale record means a database from an older checkout; the
+      // fixture refuses rather than guessing which row it may delete.
       await harness.seed(QaScenario.basePet);
       await db.customStatement(
-        "update craft_recipes set required_minutes = 10 where id = 'sofa'",
+        'insert or replace into app_settings (key, value) values (?, ?)',
+        ['qa_demo_craft_pending', 'old|format|only'],
+      );
+      await expectLater(
+        harness.reset(),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('a completion-created row is removed, not left at zero', () async {
+      // The writer records `0` when the completion created the row and `1` when
+      // it pre-existed. Treating `0` as "existed" left a zero row a single seed
+      // never produces.
+      await harness.seed(QaScenario.basePet);
+      await db.customStatement(
+        "update craft_recipes set required_minutes = 10 where id = 'table'",
       );
       await db.customStatement(
         'insert into craft_jobs (id, user_id, recipe_id, status, '
         'progress_seconds, started_at, reward_claimed) values '
-        "('real_job', 'default_user', 'sofa', 'inProgress', 0, 1790000000, 0)",
+        "('real_job', 'default_user', 'table', 'inProgress', 0, 1790000000, 0)",
       );
       await harness.seed(QaScenario.demoDay);
 
-      // The legacy format, and no fixture-ownership grant so the inventory
-      // cleanup cannot do the work instead.
-      await db.customStatement(
-        "delete from app_settings where key = 'qa_inventory_granted'",
-      );
-      await db.customStatement(
-        'insert or replace into app_settings (key, value) values (?, ?)',
-        ['qa_demo_craft_granted', 'sofa'],
-      );
-
       await harness.reset();
 
-      final qty = (await db
-              .customSelect(
-                "select quantity from inventory_items "
-                "where user_id = 'default_user' and item_id = 'sofa'",
-              )
-              .getSingleOrNull())
-          ?.read<int>('quantity');
-      expect(qty, 1,
-          reason: 'the completion unit is removed from the fixture row');
+      final row = await db
+          .customSelect(
+            "select quantity from inventory_items "
+            "where user_id = 'default_user' and item_id = 'table'",
+          )
+          .getSingleOrNull();
+      expect(row, isNull,
+          reason: 'the completion created this row; reset must remove it');
     });
 
     test('a second reset does not take another fixture unit', () async {
@@ -1125,54 +1095,6 @@ void main() {
           ?.read<int>('quantity');
       expect(qty, 2,
           reason: 'the fixture unit was already taken back by the first reset');
-    });
-
-    test('a legacy pending still reopens a demo-completed job', () async {
-      await harness.seed(QaScenario.basePet);
-      await db.customStatement(
-        "update craft_recipes set required_minutes = 10 where id = 'table'",
-      );
-      await db.customStatement(
-        'insert into craft_jobs (id, user_id, recipe_id, status, '
-        'progress_seconds, started_at, reward_claimed) values '
-        "('real_job', 'default_user', 'table', 'inProgress', 0, 1790000000, 0)",
-      );
-      await harness.seed(QaScenario.demoDay);
-
-      // Rewind to an older build's bookkeeping: a three-field pending for the
-      // session that completed the job, and no completion/grant record.
-      await db.customStatement(
-        "delete from app_settings where key in "
-        "('qa_demo_craft_deltas', 'qa_demo_craft_completed', "
-        "'qa_demo_craft_granted')",
-      );
-      await db.customStatement(
-        'insert into app_settings (key, value) values (?, ?)',
-        ['qa_demo_craft_pending', 'qa_demo_sess_7|real_job|2400'],
-      );
-
-      await harness.reset();
-
-      final job = await db
-          .customSelect(
-            "select status, progress_seconds from craft_jobs where id = 'real_job'",
-          )
-          .getSingle();
-      expect(job.read<String>('status'), 'inProgress',
-          reason: 'the completion is recoverable from current - seconds');
-      expect(job.read<int>('progress_seconds'), 0);
-      // A legacy record cannot prove whether the row existed, and the
-      // generated id shape is also what an earlier settlement creates. The safe
-      // answer keeps the row at zero rather than deleting a player's.
-      final inv = await db
-          .customSelect(
-            "select quantity from inventory_items "
-            "where user_id = 'default_user' and item_id = 'table'",
-          )
-          .getSingleOrNull();
-      expect(inv, isNotNull);
-      expect(inv!.read<int>('quantity'), 0,
-          reason: 'the granted unit is taken back; the row is kept');
     });
 
     test('a failure halfway through reset rolls the whole reset back',
