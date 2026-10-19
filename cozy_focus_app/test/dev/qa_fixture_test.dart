@@ -581,6 +581,60 @@ void main() {
           reason: 'the item the demo week granted must be taken back');
     });
 
+    test('real craft progress made after the seed survives reset', () async {
+      // The snapshot used to be an absolute state taken at the first seed. Real
+      // focus completed between then and the reset was rolled back with the
+      // demo week's own progress. Only the demo deltas may be removed.
+      await harness.seed(QaScenario.basePet);
+      final recipe = await db
+          .customSelect('select id, output_item_id from craft_recipes limit 1')
+          .getSingle();
+      final recipeId = recipe.read<String>('id');
+      final itemId = recipe.read<String>('output_item_id');
+      await db.customStatement(
+        'update craft_recipes set required_minutes = 10 where id = ?',
+        [recipeId],
+      );
+      await db.customStatement(
+        'insert into craft_jobs (id, user_id, recipe_id, status, '
+        'progress_seconds, started_at, reward_claimed) values '
+        "('real_job', 'default_user', ?, 'inProgress', 0, 1790000000, 0)",
+        [recipeId],
+      );
+
+      // A real 5-minute session, after the first seed: 300 seconds of the job.
+      await settleReal('real_e', 5, DateTime(2026, 10, 18, 11));
+      var job = await db
+          .customSelect(
+            "select progress_seconds from craft_jobs where id = 'real_job'",
+          )
+          .getSingle();
+      expect(job.read<int>('progress_seconds'), 300);
+
+      await harness.seed(QaScenario.demoDay);
+      await harness.reset();
+
+      job = await db
+          .customSelect(
+            "select status, progress_seconds from craft_jobs where id = 'real_job'",
+          )
+          .getSingle();
+      expect(job.read<int>('progress_seconds'), 300,
+          reason: 'the demo week 15300 seconds go, the real 300 stay');
+      expect(job.read<String>('status'), 'inProgress',
+          reason: 'the completion was caused by the demo week');
+      final inv = (await db.customSelect(
+        'select count(*) as c from inventory_items '
+        'where user_id = ? and item_id = ?',
+        variables: [
+          Variable.withString('default_user'),
+          Variable.withString(itemId),
+        ],
+      ).getSingle())
+          .read<int>('c');
+      expect(inv, 0, reason: 'the item was granted by the demo completion');
+    });
+
     test('a failure halfway through reset rolls the whole reset back',
         () async {
       await harness.seed(QaScenario.demoDay);
