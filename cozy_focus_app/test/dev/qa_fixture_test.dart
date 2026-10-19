@@ -724,6 +724,114 @@ void main() {
           reason: 'only the demo-granted unit goes; the later real one stays');
     });
 
+    test('reset repairs a crash between settling and bookkeeping', () async {
+      // Simulate the state a killed process leaves: the settlement committed
+      // (ledger row present, job advanced) but the fold never ran, so there is
+      // a pending record and no delta. Reset must fold it before undoing.
+      await harness.seed(QaScenario.basePet);
+      final recipe = await db
+          .customSelect(
+            "select id, output_item_id from craft_recipes where id = 'table'",
+          )
+          .getSingle();
+      final recipeId = recipe.read<String>('id');
+      await db.customStatement(
+        'update craft_recipes set required_minutes = 10 where id = ?',
+        [recipeId],
+      );
+      await db.customStatement(
+        'insert into craft_jobs (id, user_id, recipe_id, status, '
+        'progress_seconds, started_at, reward_claimed) values '
+        "('real_job', 'default_user', ?, 'inProgress', 0, 1790000000, 0)",
+        [recipeId],
+      );
+      await harness.seed(QaScenario.demoDay);
+
+      // Rewind the bookkeeping to the crash point: no delta, no completion
+      // record, but a pending entry for a session the ledger proves settled.
+      await db.customStatement(
+        "delete from app_settings where key in "
+        "('qa_demo_craft_deltas', 'qa_demo_craft_completed', "
+        "'qa_demo_craft_granted')",
+      );
+      await db.customStatement(
+        'insert into app_settings (key, value) values (?, ?)',
+        ['qa_demo_craft_pending', 'qa_demo_sess_7|real_job|2400|0|table'],
+      );
+
+      await harness.reset();
+
+      final job = await db
+          .customSelect(
+            "select status, progress_seconds from craft_jobs where id = 'real_job'",
+          )
+          .getSingle();
+      expect(job.read<int>('progress_seconds'), 0,
+          reason: 'the pending delta must be folded and then undone');
+      expect(job.read<String>('status'), 'inProgress',
+          reason: 'the demo completion must be reopened');
+      final pending = (await db
+              .customSelect(
+                "select count(*) as c from app_settings "
+                "where key = 'qa_demo_craft_pending'",
+              )
+              .getSingle())
+          .read<int>('c');
+      expect(pending, 0);
+    });
+
+    test('two in-progress jobs: the one settlement advances is undone',
+        () async {
+      await harness.seed(QaScenario.basePet);
+      // A is inserted first, so rowid order picks it, which is what
+      // settlement's unordered `.first` sees.
+      await db.customStatement(
+        "update craft_recipes set required_minutes = 10 where id = 'table'",
+      );
+      await db.customStatement(
+        "update craft_recipes set required_minutes = 600 where id = 'lamp'",
+      );
+      await db.customStatement(
+        'insert into craft_jobs (id, user_id, recipe_id, status, '
+        'progress_seconds, started_at, reward_claimed) values '
+        "('job_a', 'default_user', 'table', 'inProgress', 0, 1790000000, 0), "
+        "('job_b', 'default_user', 'lamp', 'inProgress', 0, 1790000001, 0)",
+      );
+
+      await harness.seed(QaScenario.demoDay);
+      final a = (await db
+          .customSelect(
+            "select status, progress_seconds from craft_jobs where id = 'job_a'",
+          )
+          .getSingle());
+      final b = (await db
+          .customSelect(
+            "select status, progress_seconds from craft_jobs where id = 'job_b'",
+          )
+          .getSingle());
+      expect(a.read<String>('status'), 'completed');
+      expect(a.read<int>('progress_seconds'), 2400);
+      expect(b.read<int>('progress_seconds'), 12900,
+          reason: 'once job_a completed, settlement advanced the next active '
+              'job for the rest of the week');
+
+      await harness.reset();
+
+      final afterA = (await db
+          .customSelect(
+            "select status, progress_seconds from craft_jobs where id = 'job_a'",
+          )
+          .getSingle());
+      final afterB = (await db
+          .customSelect(
+            "select status, progress_seconds from craft_jobs where id = 'job_b'",
+          )
+          .getSingle());
+      expect(afterA.read<String>('status'), 'inProgress');
+      expect(afterA.read<int>('progress_seconds'), 0);
+      expect(afterB.read<int>('progress_seconds'), 0);
+    });
+
     test('a failure halfway through reset rolls the whole reset back',
         () async {
       await harness.seed(QaScenario.demoDay);

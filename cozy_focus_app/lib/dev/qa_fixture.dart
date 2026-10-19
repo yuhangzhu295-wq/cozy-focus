@@ -301,6 +301,10 @@ class QaFixtureHarness {
   Future<QaResetReport> reset() => db.transaction(_reset);
 
   Future<QaResetReport> _reset() async {
+    // Repair a crash that landed between a settlement and its bookkeeping
+    // before deciding what to undo. The ledger proves whether it ran.
+    await _foldPendingCraft();
+
     // Everything demo_day caused, in reverse order of what caused it. The
     // sessions, records and ledger rows carry the QA prefix, so "the rows this
     // fixture created" is answerable by id — no guessing by timestamp.
@@ -629,7 +633,6 @@ class QaFixtureHarness {
     );
     await _rewardServiceAt(end).settle(session);
     await _foldPendingCraft();
-    await _recordCraftCompletion(craftBefore);
   }
 
   /// Seeds a week of ordinary use, and reports what it wrote.
@@ -1065,10 +1068,18 @@ class QaFixtureHarness {
   /// The in-progress craft jobs, in the order settlement will consider them.
   Future<Map<String, ({int progress, String? itemId, int quantity})>>
       _activeCraftState() async {
+    // Same user scope as settlement, and rowid order so `keys.first` is the
+    // row settlement's unordered `.first` picks. Without both, a database with
+    // two in-progress jobs (or another user's) could attribute the advance to
+    // the wrong job.
     final jobs = await db.customSelect(
       "select id, recipe_id, progress_seconds from craft_jobs "
-      "where status = 'inProgress' and id != ?",
-      variables: [Variable.withString('${idPrefix}craft_job')],
+      "where status = 'inProgress' and user_id = ? and id != ? "
+      'order by rowid',
+      variables: [
+        Variable.withString(userId),
+        Variable.withString('${idPrefix}craft_job'),
+      ],
     ).get();
     final state = <String, ({int progress, String? itemId, int quantity})>{};
     for (final job in jobs) {
@@ -1111,9 +1122,16 @@ class QaFixtureHarness {
   }) async {
     if (before.isEmpty) return;
     final jobId = before.keys.first;
+    final job = before[jobId]!;
+    // `progressBefore` lets the fold decide whether THIS settlement completed
+    // the job, without needing a separate completion record that could be lost
+    // to a crash.
     await db.customStatement(
       'insert or replace into app_settings (key, value) values (?, ?)',
-      [_craftPendingKey, '$sessionId|$jobId|$seconds'],
+      [
+        _craftPendingKey,
+        '$sessionId|$jobId|$seconds|${job.progress}|${job.itemId ?? ''}',
+      ],
     );
   }
 
@@ -1124,27 +1142,63 @@ class QaFixtureHarness {
   /// added. No row means the settlement never ran, and the expectation is
   /// discarded rather than subtracted from progress that was never added.
   Future<void> _foldPendingCraft() async {
-    final row = await db.customSelect(
-      'select value from app_settings where key = ?',
-      variables: [Variable.withString(_craftPendingKey)],
-    ).getSingleOrNull();
-    if (row == null) return;
-    await db.customStatement(
-      'delete from app_settings where key = ?',
-      [_craftPendingKey],
-    );
-    final bits = row.read<String>('value').split('|');
-    if (bits.length != 3) return;
-    final sessionId = bits[0];
-    final jobId = bits[1];
-    final seconds = int.tryParse(bits[2]);
-    if (seconds == null) return;
-    final settled = await db.customSelect(
-      'select 1 as present from reward_ledger where session_id = ?',
-      variables: [Variable.withString(sessionId)],
-    ).getSingleOrNull();
-    if (settled == null) return;
-    await _addCraftDelta(jobId, seconds);
+    // One transaction: read, decide, accumulate, clear. A crash between the
+    // delete and the write would otherwise lose the only record that the
+    // settlement advanced the job.
+    await db.transaction(() async {
+      final row = await db.customSelect(
+        'select value from app_settings where key = ?',
+        variables: [Variable.withString(_craftPendingKey)],
+      ).getSingleOrNull();
+      if (row == null) return;
+      await db.customStatement(
+        'delete from app_settings where key = ?',
+        [_craftPendingKey],
+      );
+      final bits = row.read<String>('value').split('|');
+      if (bits.length < 3) return;
+      final sessionId = bits[0];
+      final jobId = bits[1];
+      final seconds = int.tryParse(bits[2]);
+      if (seconds == null) return;
+      final settled = await db.customSelect(
+        'select 1 as present from reward_ledger where session_id = ?',
+        variables: [Variable.withString(sessionId)],
+      ).getSingleOrNull();
+      if (settled == null) return;
+      await _addCraftDelta(jobId, seconds);
+
+      // Was the job completed by THIS settlement? It completes when the
+      // progress crosses the recipe's requirement, and the settlement adds
+      // exactly `seconds`, so the arithmetic decides without a second record.
+      final job = await db.customSelect(
+        'select status, recipe_id from craft_jobs where id = ?',
+        variables: [Variable.withString(jobId)],
+      ).getSingleOrNull();
+      if (job == null || job.read<String>('status') != 'completed') return;
+      final progressBefore = int.tryParse(bits[3]);
+      final recipe = await db.customSelect(
+        'select required_minutes from craft_recipes where id = ?',
+        variables: [Variable.withString(job.read<String>('recipe_id'))],
+      ).getSingleOrNull();
+      final required = recipe?.read<int>('required_minutes');
+      if (progressBefore == null || required == null) return;
+      if (progressBefore + seconds < required * 60) return;
+
+      final completed = await _savedList(_craftCompletedKey);
+      if (!completed.contains(jobId)) {
+        completed.add(jobId);
+        await _saveList(_craftCompletedKey, completed);
+      }
+      final itemId = bits.length > 4 && bits[4].isNotEmpty ? bits[4] : null;
+      if (itemId != null) {
+        final granted = await _savedList(_craftGrantedKey);
+        if (!granted.contains(itemId)) {
+          granted.add(itemId);
+          await _saveList(_craftGrantedKey, granted);
+        }
+      }
+    });
   }
 
   Future<void> _addCraftDelta(String jobId, int seconds) async {
@@ -1161,33 +1215,6 @@ class QaFixtureHarness {
         deltas.entries.map((e) => '${e.key}:${e.value}').join(';'),
       ],
     );
-  }
-
-  /// Records what the settlement that just ran did beyond the progress delta:
-  /// whether it completed the job, and which item that granted.
-  Future<void> _recordCraftCompletion(
-    Map<String, ({int progress, String? itemId, int quantity})> before,
-  ) async {
-    if (before.isEmpty) return;
-    final jobId = before.keys.first;
-    final row = await db.customSelect(
-      'select status from craft_jobs where id = ?',
-      variables: [Variable.withString(jobId)],
-    ).getSingleOrNull();
-    if (row == null || row.read<String>('status') != 'completed') return;
-    final completed = await _savedList(_craftCompletedKey);
-    if (!completed.contains(jobId)) {
-      completed.add(jobId);
-      await _saveList(_craftCompletedKey, completed);
-    }
-    final itemId = before[jobId]?.itemId;
-    if (itemId != null) {
-      final granted = await _savedList(_craftGrantedKey);
-      if (!granted.contains(itemId)) {
-        granted.add(itemId);
-        await _saveList(_craftGrantedKey, granted);
-      }
-    }
   }
 
   Future<List<String>> _savedList(String key) async {
