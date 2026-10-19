@@ -50,7 +50,6 @@ import '../domain/repositories/i_pet_repository.dart';
 import '../domain/repositories/i_reward_ledger_repository.dart';
 import '../domain/repositories/i_task_repository.dart';
 import '../domain/services/focus_clock.dart';
-import '../domain/services/companion_memory.dart';
 import '../domain/services/reward_service.dart';
 import '../presentation/companion/room/furniture_catalog.dart';
 import '../presentation/companion/room/furniture_entity.dart';
@@ -364,19 +363,13 @@ class QaFixtureHarness {
       ));
     }
 
-    // The exact memory ids those settlements wrote. Deleting by (pet, moment)
-    // would also take a real memory that happens to share the moment — same
-    // moment is not same origin — so the ids are built with the same function
-    // settlement uses.
-    final memoryIds = <String>[
-      for (final moment in await _demoSettlementMoments())
-        for (final type in const [
-          domain.PetMemoryType.firstFocus,
-          domain.PetMemoryType.levelUp,
-          domain.PetMemoryType.longSession,
-        ])
-          CompanionMemory.idFor(petId, type, moment),
-    ];
+    // The exact memory ids the demo settlements inserted, recorded as they were
+    // created. Deriving them from (moment, type) looked equivalent and is not:
+    // a real session that settled at the same instant can own the id for one of
+    // the three types, and the demo settlement then creates nothing of that
+    // type — deleting the derived id would take the real memory. Only the ids
+    // this fixture actually saw appear are removed.
+    final memoryIds = await _demoMemoryIds();
 
     for (final table in const ['reward_ledger', 'focus_records']) {
       await db.customStatement(
@@ -391,6 +384,10 @@ class QaFixtureHarness {
       demoIds,
     );
     var memories = await db.petDao.deleteMemoriesByIds(memoryIds);
+    await db.customStatement(
+      'delete from app_settings where key = ?',
+      [_demoMemoryIdsKey],
+    );
     // Plus the ones other scenarios wrote, whose ids do carry the prefix. Both
     // paths run, never one instead of the other: demo_day + memory_ready leaves
     // memories of two shapes, and an either/or left one kind behind.
@@ -454,6 +451,8 @@ class QaFixtureHarness {
         }
       }
     }
+
+    await _restoreRealCraftFromReset();
 
     var roomItems = 0;
     for (final item in await craft.findRoomItems(userId)) {
@@ -592,6 +591,10 @@ class QaFixtureHarness {
       ));
     }
 
+    // What settlement is about to create, so reset can remove exactly that.
+    final memoriesBefore =
+        (await pets.findMemories(petId, limit: 500)).map((m) => m.id).toSet();
+
     // Settlement, not this fixture, decides the reward. It writes the ledger,
     // the pet, the memories and the craft job in one transaction.
     //
@@ -603,6 +606,7 @@ class QaFixtureHarness {
     // INSERT OR IGNORE. Settling at each session's own end keeps the ids
     // distinct, which is also what a real week looks like.
     await _rewardServiceAt(end).settle(session);
+    await _recordNewMemoryIds(memoriesBefore);
   }
 
   /// Seeds a week of ordinary use, and reports what it wrote.
@@ -889,20 +893,37 @@ class QaFixtureHarness {
         atomicSettlement: db.settlementDao,
       );
 
-  /// The `settledAt` of every demo session that ever settled.
+  /// The memory ids the demo settlements created, in `app_settings`.
   ///
-  /// Read back from the ledger rather than stored, so it survives a fixture
-  /// rebuild. A session deleted before its memory was wiped keeps its ledger
-  /// row and so still lists its moment.
-  Future<List<DateTime>> _demoSettlementMoments() async {
-    final ids = <String>{
-      for (var n = 1; n <= demoSessionCount; n++) '${idPrefix}demo_sess_$n',
-    };
-    final moments = <DateTime>[];
-    for (final row in await ledger.findForUser(userId)) {
-      if (ids.contains(row.sessionId)) moments.add(row.settledAt);
-    }
-    return moments;
+  /// Recorded by `_settlePastSession` after each settlement, because the only
+  /// honest answer to "which memories are the fixture's" is "the ones it saw
+  /// appear". A comma-separated list is enough: ids are
+  /// `mem_<pet>_<type>_<microseconds>` and contain no commas.
+  static const String _demoMemoryIdsKey = 'qa_demo_memory_ids';
+
+  Future<List<String>> _demoMemoryIds() async {
+    final row = await db.customSelect(
+      'select value from app_settings where key = ?',
+      variables: [Variable.withString(_demoMemoryIdsKey)],
+    ).getSingleOrNull();
+    if (row == null) return const [];
+    return row
+        .read<String>('value')
+        .split(',')
+        .where((id) => id.isNotEmpty)
+        .toList();
+  }
+
+  Future<void> _recordNewMemoryIds(Set<String> before) async {
+    final now = await pets.findMemories(petId, limit: 500);
+    final added = now.map((m) => m.id).where((id) => !before.contains(id));
+    if (added.isEmpty) return;
+    final existing = await _demoMemoryIds();
+    final merged = <String>{...existing, ...added}.toList();
+    await db.customStatement(
+      'insert or replace into app_settings (key, value) values (?, ?)',
+      [_demoMemoryIdsKey, merged.join(',')],
+    );
   }
 
   /// The adoption `HomeController` performs, with the same ids and defaults.
@@ -977,6 +998,11 @@ class QaFixtureHarness {
     // The transaction is what makes the pair a consistent snapshot; the ledger
     // totals alone cannot tell whether the pet read saw the same settlement.
     await db.transaction(() async {
+      // The craft record is separate from the progress snapshot: a scenario
+      // seeded earlier (basePet) creates the progress snapshot, and a real job
+      // started after that still has to be recorded before demoDay advances it.
+      await _rememberRealCraftForReset();
+
       final existing = await db.customSelect(
         'select value from app_settings where key = ?',
         variables: [Variable.withString(_savedProgressKey)],
@@ -1000,6 +1026,112 @@ class QaFixtureHarness {
         ],
       );
     });
+  }
+
+  static const String _savedCraftJobsKey = 'qa_saved_craft_jobs';
+  static const String _savedCraftItemsKey = 'qa_saved_craft_items';
+
+  /// Records any real craft job the demo settlements could advance.
+  ///
+  /// Settlement's completion path advances the user's first in-progress job,
+  /// whatever created it. A demo week can therefore finish a real job and grant
+  /// its output; reset has to put the job back and take the item away, or the
+  /// user is left with a completed job they never finished and a free item.
+  ///
+  /// `item:qty` where qty is `-1` means the inventory row did not exist at
+  /// snapshot time, so reset removes it rather than setting it to zero.
+  Future<void> _rememberRealCraftForReset() async {
+    // First record wins, like the progress snapshot: a later seed must not
+    // record a job the earlier one already advanced.
+    final already = await db.customSelect(
+      'select 1 as present from app_settings where key = ?',
+      variables: [Variable.withString(_savedCraftJobsKey)],
+    ).getSingleOrNull();
+    if (already != null) return;
+    final jobs = await db.customSelect(
+      "select id, progress_seconds from craft_jobs "
+      "where status = 'inProgress' and id != ?",
+      variables: [Variable.withString('${idPrefix}craft_job')],
+    ).get();
+    if (jobs.isEmpty) return;
+    final jobParts = <String>[];
+    final itemParts = <String>[];
+    for (final job in jobs) {
+      final id = job.read<String>('id');
+      jobParts.add('$id:${job.read<int>('progress_seconds')}');
+      final recipe = await db.customSelect(
+        'select output_item_id from craft_recipes where id = '
+        '(select recipe_id from craft_jobs where id = ?)',
+        variables: [Variable.withString(id)],
+      ).getSingleOrNull();
+      final itemId = recipe?.read<String?>('output_item_id');
+      if (itemId == null) continue;
+      final inv = await db.customSelect(
+        'select quantity from inventory_items where user_id = ? and item_id = ?',
+        variables: [Variable.withString(userId), Variable.withString(itemId)],
+      ).getSingleOrNull();
+      itemParts.add('$itemId:${inv?.read<int>('quantity') ?? -1}');
+    }
+    await db.customStatement(
+      'insert or replace into app_settings (key, value) values (?, ?)',
+      [_savedCraftJobsKey, jobParts.join(';')],
+    );
+    await db.customStatement(
+      'insert or replace into app_settings (key, value) values (?, ?)',
+      [_savedCraftItemsKey, itemParts.join(';')],
+    );
+  }
+
+  /// Puts the recorded real craft jobs and inventory back.
+  Future<void> _restoreRealCraftFromReset() async {
+    final jobRow = await db.customSelect(
+      'select value from app_settings where key = ?',
+      variables: [Variable.withString(_savedCraftJobsKey)],
+    ).getSingleOrNull();
+    final itemRow = await db.customSelect(
+      'select value from app_settings where key = ?',
+      variables: [Variable.withString(_savedCraftItemsKey)],
+    ).getSingleOrNull();
+    if (jobRow == null && itemRow == null) return;
+
+    if (jobRow != null) {
+      for (final part in jobRow.read<String>('value').split(';')) {
+        final bits = part.split(':');
+        if (bits.length != 2) continue;
+        final progress = int.tryParse(bits[1]);
+        if (progress == null) continue;
+        await db.customStatement(
+          "update craft_jobs set status = 'inProgress', "
+          'progress_seconds = ?, completed_at = null where id = ?',
+          [progress, bits[0]],
+        );
+      }
+    }
+    if (itemRow != null) {
+      for (final part in itemRow.read<String>('value').split(';')) {
+        final bits = part.split(':');
+        if (bits.length != 2) continue;
+        final qty = int.tryParse(bits[1]);
+        if (qty == null) continue;
+        if (qty < 0) {
+          // Did not exist before the seed, so the completion created it.
+          await db.customStatement(
+            'delete from inventory_items where user_id = ? and item_id = ?',
+            [userId, bits[0]],
+          );
+        } else {
+          await db.customStatement(
+            'update inventory_items set quantity = ? '
+            'where user_id = ? and item_id = ?',
+            [qty, userId, bits[0]],
+          );
+        }
+      }
+    }
+    await db.customStatement(
+      'delete from app_settings where key in (?, ?)',
+      [_savedCraftJobsKey, _savedCraftItemsKey],
+    );
   }
 
   /// XP, minutes and settlement count from real (non-demo) sessions.

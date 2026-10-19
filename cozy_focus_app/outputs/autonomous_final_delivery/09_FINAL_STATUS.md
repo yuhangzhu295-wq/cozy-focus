@@ -14,7 +14,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2259/2259** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity) |
+| Full suite | **2261/2261** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `5d30961`; regenerated after the round-9 fixes) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -68,6 +68,14 @@ round found a real defect, including ones introduced by the previous fix:
     now one transaction — which also makes it all-or-nothing. A test makes the
     last write throw and requires the demo week to still be present; without the
     transaction it fails with 0 rows where 7 are required.
+12. Two more cases of "derived, not observed". Reset deleted three candidate
+    memory ids per demo moment, so a real memory that already owned one of those
+    ids was deleted even though the demo settlement never created it; the ids
+    the fixture actually saw appear are now recorded and only those are removed.
+    And a demo week advances the user's real in-progress craft job and grants
+    its output; reset now records that job's progress and the inventory quantity
+    before seeding and puts both back. Each has a test that fails when the
+    behaviour is reverted.
 
 Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail), including the transaction: making the last write throw leaves

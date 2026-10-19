@@ -492,6 +492,95 @@ void main() {
       expect(progress.totalFocusMinutes, 70);
     });
 
+    test('a real memory at a demo settlement moment is not deleted', () async {
+      // The old reset derived three ids per demo moment and deleted them all.
+      // If a real session had already created one of those ids, the demo
+      // settlement created nothing of that type (INSERT OR IGNORE) and reset
+      // still deleted the real memory. Only ids the fixture saw appear may go.
+      await harness.seed(QaScenario.basePet);
+
+      // The oldest demo session: today-5 days at 20:00 for 40 minutes. The
+      // fixture's clock is fixed at 2026-10-03 12:00 in this file.
+      final moment = DateTime(2026, 10, 3)
+          .subtract(const Duration(days: 5))
+          .add(const Duration(hours: 20, minutes: 40));
+      final realId = CompanionMemory.idFor(
+        QaFixtureHarness.petId,
+        domain.PetMemoryType.firstFocus,
+        moment,
+      );
+      await db.petDao.addMemory(domain.PetMemory(
+        id: realId,
+        petId: QaFixtureHarness.petId,
+        memoryType: domain.PetMemoryType.firstFocus,
+        content: '真实记忆，与演示结算同一时刻',
+        happenedAt: moment,
+      ));
+
+      await harness.seed(QaScenario.demoDay);
+      await harness.reset();
+
+      final left = await db.petDao.findMemories(QaFixtureHarness.petId);
+      expect(left.map((m) => m.id), contains(realId),
+          reason: 'the fixture must not delete a memory it did not create');
+    });
+
+    test('reset puts a real craft job back and takes its item away', () async {
+      await harness.seed(QaScenario.basePet);
+      final recipe = await db
+          .customSelect('select id, output_item_id from craft_recipes limit 1')
+          .getSingle();
+      final recipeId = recipe.read<String>('id');
+      final itemId = recipe.read<String>('output_item_id');
+      // Ten minutes, so the demo week's 255 minutes certainly finishes it. The
+      // point is the rollback, not whether the seeded recipe happens to be
+      // short enough.
+      await db.customStatement(
+        'update craft_recipes set required_minutes = 10 where id = ?',
+        [recipeId],
+      );
+      await db.customStatement(
+        'insert into craft_jobs (id, user_id, recipe_id, status, '
+        'progress_seconds, started_at, reward_claimed) values '
+        "('real_job', 'default_user', ?, 'inProgress', 0, 1790000000, 0)",
+        [recipeId],
+      );
+
+      await harness.seed(QaScenario.demoDay);
+
+      // The demo week's focus is far more than any recipe needs, so the real
+      // job completes and its output lands in the inventory.
+      final completed = (await db
+              .customSelect(
+                  "select status from craft_jobs where id = 'real_job'")
+              .getSingle())
+          .read<String>('status');
+      expect(completed, 'completed',
+          reason: 'the setup must actually complete the real job');
+
+      await harness.reset();
+
+      final job = await db
+          .customSelect(
+            "select status, progress_seconds from craft_jobs where id = 'real_job'",
+          )
+          .getSingle();
+      expect(job.read<String>('status'), 'inProgress',
+          reason: 'a real job must not be left completed by a QA seed');
+      expect(job.read<int>('progress_seconds'), 0);
+      final inv = (await db.customSelect(
+        'select count(*) as c from inventory_items '
+        'where user_id = ? and item_id = ?',
+        variables: [
+          Variable.withString('default_user'),
+          Variable.withString(itemId),
+        ],
+      ).getSingle())
+          .read<int>('c');
+      expect(inv, 0,
+          reason: 'the item the demo week granted must be taken back');
+    });
+
     test('a failure halfway through reset rolls the whole reset back',
         () async {
       await harness.seed(QaScenario.demoDay);
