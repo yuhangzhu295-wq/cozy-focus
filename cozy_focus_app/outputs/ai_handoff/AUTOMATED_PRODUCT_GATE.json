@@ -1,84 +1,84 @@
 {
-  "generated_at": "2026-10-20 02:04:09",
-  "head": "181177def59d610072832eb816e7541919c12ceb",
-  "remote_head": "181177def59d610072832eb816e7541919c12ceb",
+  "generated_at": "2026-10-20 03:47:58",
+  "head": "f6e542312b3b43f166b9b23cb0feb8513f77458e",
+  "remote_head": "f6e542312b3b43f166b9b23cb0feb8513f77458e",
   "local_equals_remote": true,
   "counts": {
-    "PASS": 14,
-    "BLOCKED": 4
+    "BLOCKED": 5,
+    "PASS": 13
   },
   "gates": [
     {
       "gate": "DEVICE_MATRIX",
-      "status": "PASS",
-      "evidence": "FRAME_TIME 679 frames on emulator-5554, 649 after the 30-frame startup warmup; host free memory at measurement: 2633 MB; steady-state UI-thread build p50 4453 us / p90 11774 us / p99 25662 us; frames over the 16.67 ms budget after the warmup: 31. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
-      "seconds": 122.6
+      "status": "BLOCKED",
+      "evidence": "the frame-time harness cannot be measured: the host has only 1260 MB free after a minute of settling, and the AVD's guest RAM alone is 2048 MB (hw.ramSize=2G), so the emulator is being paged. The measurement would describe the host. Free memory and re-run. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
+      "seconds": 62.3
     },
     {
       "gate": "FORMAT",
       "status": "PASS",
       "evidence": "482 files, 0 changed",
-      "seconds": 4.7
+      "seconds": 3.8
     },
     {
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 19.4
+      "seconds": 15.0
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
-      "evidence": "2266/2266 passed",
-      "seconds": 271.5
+      "evidence": "2272/2272 passed",
+      "seconds": 250.0
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "54/54 passed",
-      "seconds": 24.2
+      "seconds": 16.5
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 4.9
+      "seconds": 4.6
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 13.5
+      "seconds": 9.3
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "81/81 passed",
-      "seconds": 16.3
+      "seconds": 11.8
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 11.1
+      "seconds": 8.6
     },
     {
       "gate": "APK",
       "status": "PASS",
       "evidence": "32.1 MB (budget 34 MB)",
-      "seconds": 32.3
+      "seconds": 31.6
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "50.7 MB (budget 55 MB)",
-      "seconds": 22.8
+      "seconds": 19.5
     },
     {
       "gate": "DIFF_CHECK",
       "status": "PASS",
       "evidence": "no whitespace errors",
-      "seconds": 0.3
+      "seconds": 0.1
     },
     {
       "gate": "RELEASE_SIGNING",
@@ -108,7 +108,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 6.1
+      "seconds": 5.3
     },
     {
       "gate": "FLOW_GENERATION",

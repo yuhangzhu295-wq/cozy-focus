@@ -1,13 +1,13 @@
 # Automated product gate
 
-Generated 2026-10-20 02:04:09 at `181177de`. Local equals remote: **YES**.
+Generated 2026-10-20 03:47:58 at `f6e54231`. Local equals remote: **YES**.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 679 frames on emulator-5554, 649 after the 30-frame startup warmup; host free memory at measurement: 2633 MB; steady-state UI-thread build p50 4453 us / p90 11774 us / p99 25662 us; frames over the 16.67 ms budget after the warmup: 31. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
+| `DEVICE_MATRIX` | **BLOCKED** | the frame-time harness cannot be measured: the host has only 1260 MB free after a minute of settling, and the AVD's guest RAM alone is 2048 MB (hw.ramSize=2G), so the emulator is being paged. The measurement would describe the host. Free memory and re-run. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
 | `FORMAT` | **PASS** | 482 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
-| `UNIT_TESTS` | **PASS** | 2266/2266 passed |
+| `UNIT_TESTS` | **PASS** | 2272/2272 passed |
 | `INTEGRATION_TESTS` | **PASS** | 54/54 passed |
 | `GOLDEN_FLOW` | **PASS** | 6/6 passed |
 | `MIGRATION` | **PASS** | 16/16 passed |
@@ -25,8 +25,8 @@ Generated 2026-10-20 02:04:09 at `181177de`. Local equals remote: **YES**.
 
 ## Counts
 
-- **PASS**: 14
-- **BLOCKED**: 4
+- **PASS**: 13
+- **BLOCKED**: 5
 
 ---
 
