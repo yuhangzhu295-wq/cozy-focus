@@ -223,10 +223,6 @@ class QaFixtureHarness {
     // not a snapshot. The base pet is 0 XP / 0 minutes, which is the pre-QA
     // state this restores.
     await _rememberProgressForReset();
-    await db.customStatement(
-      'delete from app_settings where key = ?',
-      [_inventoryRevokedKey],
-    );
 
     switch (scenario) {
       case QaScenario.basePet:
@@ -433,46 +429,36 @@ class QaFixtureHarness {
     // "restore the pre-QA state". Player-owned rows have no prefix and are not
     // touched here; the craft rollback above already took back the one unit a
     // completed job added to one of those.
-    // One unit per fixture-owned row, not the row. `_own` grants exactly one,
-    // but settlement or a real gain can add more to the same row; deleting the
-    // row would take those with it. A row that reaches zero is removed, because
-    // a zero-quantity row is not a state a single seed produces.
+    // Exactly the units the fixture granted, one per item. Not "every qa_ row":
+    // a row can hold real units too, and a cycle that granted nothing must not
+    // enable a subtraction. `_own` records a grant only when it creates one.
     var revoked = 0;
-    final alreadyRevoked = await db.customSelect(
-          'select 1 as present from app_settings where key = ?',
-          variables: [Variable.withString(_inventoryRevokedKey)],
-        ).getSingleOrNull() !=
-        null;
-    if (!alreadyRevoked) {
-      final ownedRows = await db.customSelect(
+    final grantedItems = await _savedList(_inventoryGrantedKey);
+    for (final itemId in grantedItems) {
+      final row = await db.customSelect(
         'select id, quantity from inventory_items '
-        'where user_id = ? and substr(id, 1, ?) = ?',
-        variables: [
-          Variable.withString(userId),
-          Variable.withInt(idPrefix.length),
-          Variable.withString(idPrefix),
-        ],
-      ).get();
-      for (final row in ownedRows) {
-        final left = (row.read<int>('quantity') - 1).clamp(0, 1 << 40);
-        if (left == 0) {
-          await db.customStatement(
-            'delete from inventory_items where id = ?',
-            [row.read<String>('id')],
-          );
-        } else {
-          await db.customStatement(
-            'update inventory_items set quantity = ? where id = ?',
-            [left, row.read<String>('id')],
-          );
-        }
-        revoked++;
+        'where user_id = ? and item_id = ?',
+        variables: [Variable.withString(userId), Variable.withString(itemId)],
+      ).getSingleOrNull();
+      if (row == null) continue;
+      final left = (row.read<int>('quantity') - 1).clamp(0, 1 << 40);
+      if (left == 0) {
+        await db.customStatement(
+          'delete from inventory_items where id = ?',
+          [row.read<String>('id')],
+        );
+      } else {
+        await db.customStatement(
+          'update inventory_items set quantity = ? where id = ?',
+          [left, row.read<String>('id')],
+        );
       }
-      await db.customStatement(
-        'insert or replace into app_settings (key, value) values (?, ?)',
-        [_inventoryRevokedKey, '1'],
-      );
+      revoked++;
     }
+    await db.customStatement(
+      'delete from app_settings where key = ?',
+      [_inventoryGrantedKey],
+    );
 
     // The tasks, their placements and the inbox notes are this fixture's too.
     // They used to survive a reset, so a seed → reset → seed cycle started on
@@ -1050,12 +1036,13 @@ class QaFixtureHarness {
     });
   }
 
-  /// Set once the fixture's inventory unit has been taken back.
+  /// The items this fixture actually granted a unit of.
   ///
-  /// A second reset must not subtract another unit from a row that still holds
-  /// real ones. Cleared at the start of a seed, because a new QA cycle grants
-  /// its unit again.
-  static const String _inventoryRevokedKey = 'qa_inventory_revoked';
+  /// Recorded by `_own` only when it grants (the player did not already own the
+  /// item), and cleared by reset. Subtracting "one unit from every qa_ row" was
+  /// wrong in both directions: a seed that granted nothing still enabled the
+  /// subtraction, and a row holding real units lost one per reset cycle.
+  static const String _inventoryGrantedKey = 'qa_inventory_granted';
 
   static const String _craftDeltasKey = 'qa_demo_craft_deltas';
   static const String _craftCompletedKey = 'qa_demo_craft_completed';
@@ -1434,6 +1421,11 @@ class QaFixtureHarness {
         quantity: 1,
         updatedAt: _now,
       ));
+      final granted = await _savedList(_inventoryGrantedKey);
+      if (!granted.contains(entity.id)) {
+        granted.add(entity.id);
+        await _saveList(_inventoryGrantedKey, granted);
+      }
     }
 
     final placed = await craft.findRoomItems(userId);

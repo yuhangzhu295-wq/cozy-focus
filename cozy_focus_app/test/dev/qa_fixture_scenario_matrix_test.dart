@@ -108,10 +108,10 @@ const _resetMustEmpty = <String>[
 
 /// Fixture bookkeeping that outlives a reset on purpose.
 ///
-/// `qa_inventory_revoked` records that the fixture's inventory unit has already
-/// been taken back, so a second reset does not subtract another unit from a row
-/// that holds real ones. It is not user data, and the next seed clears it.
-const _allowedBookkeeping = <String>['qa_inventory_revoked'];
+/// Empty: reset clears every key it wrote, including the inventory grant
+/// ledger. The list stays because the test's shape should not change the day a
+/// legitimate marker is added — it should be a deliberate edit.
+const _allowedBookkeeping = <String>[];
 
 void main() {
   for (final a in QaScenario.values) {

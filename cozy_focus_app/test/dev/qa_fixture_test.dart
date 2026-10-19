@@ -955,6 +955,30 @@ void main() {
           reason: 'only the fixture unit goes; the two real ones stay');
     });
 
+    test('a seed that grants nothing does not arm the subtraction', () async {
+      // The marker used to be cleared by ANY seed, including basePet, which
+      // grants no inventory. The next reset then took a real unit.
+      await harness.seed(QaScenario.roomTwoAnchors);
+      await db.customStatement(
+        "update inventory_items set quantity = 3 where id = 'qa_inv_rug'",
+      );
+      await harness.reset();
+      await harness.reset();
+
+      await harness.seed(QaScenario.basePet);
+      await harness.reset();
+
+      final qty = (await db
+              .customSelect(
+                "select quantity from inventory_items where id = 'qa_inv_rug'",
+              )
+              .getSingleOrNull())
+          ?.read<int>('quantity');
+      expect(qty, 2,
+          reason:
+              'basePet grants nothing, so it must not enable a subtraction');
+    });
+
     test('a second reset does not take another fixture unit', () async {
       await harness.seed(QaScenario.roomTwoAnchors);
       await db.customStatement(
