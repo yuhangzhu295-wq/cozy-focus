@@ -332,6 +332,14 @@ def gate_device_matrix():
     # free; the difference was the host, not the code. BLOCKED is the honest
     # status for an instrument that could not take a valid measurement - it is
     # not a pass, and the measured headroom travels with it.
+    # Stop the Gradle daemon before measuring. It holds several gigabytes and
+    # keeps doing GC and file work after the build that started it returns;
+    # measurements taken with it resident came out three to four times worse
+    # than the same harness run alone (p50 13 826 us vs 4 896 us). Stopping it
+    # is best effort: a failure here must not turn into a red gate.
+    run(os.path.join("android", "gradlew.bat") + " --stop", timeout=180)
+    time.sleep(5)
+
     # Polled, not sampled once. The first version read the figure immediately
     # after the previous gate's process had exited and caught the teardown
     # (929 MB), then the same host reported 3.5 GB a minute later. A guard that

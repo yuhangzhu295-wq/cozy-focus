@@ -16,7 +16,7 @@
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
 | Full suite | **2273/2273** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
-| Full gate (`--with-device`) | **13 PASS / 5 BLOCKED / 0 FAIL** at `f6e5423`; DEVICE_MATRIX is BLOCKED because the host had 1260 MB free (AVD guest RAM 2048 MB). The last valid device measurement was at `5d30961`: p50 3111 µs / p90 7982 µs, 2699 MB free. |
+| Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** at `697cccc`; DEVICE_MATRIX p50 5232 µs / p90 13656 µs, 2471 MB free. The gate now stops the Gradle daemon before measuring: with it resident the same harness measured p50 13 826 µs. |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
 
 ## This round: eight review rounds on the same fixture
@@ -156,13 +156,16 @@ The device phase now runs first in the gate, before the six test suites: run
 after them it measured p50 3877 with 1.7 GB free, and nothing else the gate does
 should be contention the harness reports as the app's problem.
 
-**A device run failed under load and is not counted as a pass.** At `4935b01`
-the reviewer's standalone `--with-device` measured p50 13 314 µs / p90 51 071 µs
-with 275 late frames, and the gate reported FAIL. The same host has since
-reported 668–2400 MB free across a few minutes, so the guard now refuses the
-measurement (BLOCKED) rather than reporting a number that describes the page
-file. The 13 314 µs run is recorded here as a host-load measurement, not as an
-app regression and not as a pass. A valid measurement needs a quiet host.
+**Two device runs failed under load and are not counted as passes.** At
+`4935b01` a standalone run measured p50 13 314 µs / p90 51 071 µs (275 late
+frames) and the gate reported FAIL; at `697cccc` the gate measured p50
+13 826 µs / p90 50 456 µs (291 late) before the Gradle daemon was stopped.
+Both are recorded as host-load measurements, not as app regressions and not as
+passes. The fix is structural: `gate_device_matrix` now stops the Gradle daemon
+before it measures, because that daemon keeps doing work after the build that
+started it returns. With it stopped the same gate measured p50 5232 / p90
+13 656 and passed. A BLOCKED device row (host below the AVD's 2 GB) is likewise
+not a pass.
 
 **One unit-test run failed and did not reproduce.** The gate's first run after
 the seventh-round fixes reported `UNIT_TESTS 808 passed, 1 failed`, while the
