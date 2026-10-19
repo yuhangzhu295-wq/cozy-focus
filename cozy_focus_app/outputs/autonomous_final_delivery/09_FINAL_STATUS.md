@@ -16,7 +16,7 @@
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
 | Full suite | **2173/2173** |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
-| Full gate (`--with-device`) | **13 PASS / 5 BLOCKED / 0 FAIL** (report at `531fa22`; DEVICE_MATRIX is one of the five — see below) |
+| Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** (report at `4baaa2e`) |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
 
 ## This round: five review rounds on the same fixture
@@ -42,22 +42,20 @@ Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail). `CompanionMemory.idFor` is now public so the fixture and
 settlement share one definition of a memory id.
 
-**The device measurement is now guarded, and currently blocked.** Across this
+**The device measurement is now guarded, and the guard is what made it valid.** Across this
 session the same build measured p50 2906 µs / p90 8578 µs on a quiet host and
 p50 4251 µs / p90 20316 µs inside the gate on a host down to 1.4 GB free — a
 spread that tracks the host, not the code. The gate therefore reads free
 physical memory before it measures, polls for a minute, and reports BLOCKED
 rather than FAIL when the host has less than the AVD's own 2 GB (`hw.ramSize=2G`):
 
-> the host has only 1806 MB free after a minute of settling, and the AVD's guest
-> RAM alone is 2048 MB (hw.ramSize=2G), so the emulator is being paged.
-
-This host (16 GB, WSL and the IDE resident, emulator running) cannot currently
-give a valid frame-time measurement. **BLOCKED is not a pass and not a
-regression claim.** The last valid measurements at this build family were
-p50 2906 / p90 8578 (standalone) and p50 3279 / p90 6886 (full gate), both
-inside the criterion; they were taken when the host had headroom, and they are
-quoted as history, not as this run's result.
+Run with the device phase first, the same gate measured **p50 2809 µs /
+p90 7800 µs, 2 late frames, host free memory 2153 MB** — inside the criterion.
+An earlier run, taken after the test suites with 1806 MB free, reported BLOCKED
+instead of a number. Both outcomes come from the same guard: it either has the
+headroom to measure or it says it does not. **BLOCKED is not a pass and not a
+regression claim**, and the headroom now travels in every evidence line so the
+two cannot be confused.
 
 The device phase now runs first in the gate, before the six test suites: run
 after them it measured p50 3877 with 1.7 GB free, and nothing else the gate does

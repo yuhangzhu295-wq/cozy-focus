@@ -1,24 +1,24 @@
 {
-  "generated_at": "2026-10-19 16:23:40",
-  "head": "531fa22ce6f9d303d64ede9ea1b40a64f985dcd9",
-  "remote_head": "531fa22ce6f9d303d64ede9ea1b40a64f985dcd9",
+  "generated_at": "2026-10-19 16:36:15",
+  "head": "4baaa2e7c8413844a1cf26144e9361b377b48590",
+  "remote_head": "4baaa2e7c8413844a1cf26144e9361b377b48590",
   "local_equals_remote": true,
   "counts": {
-    "BLOCKED": 5,
-    "PASS": 13
+    "PASS": 14,
+    "BLOCKED": 4
   },
   "gates": [
     {
       "gate": "DEVICE_MATRIX",
-      "status": "BLOCKED",
-      "evidence": "the frame-time harness cannot be measured: the host has only 1806 MB free after a minute of settling, and the AVD's guest RAM alone is 2048 MB (hw.ramSize=2G), so the emulator is being paged. The measurement would describe the host. Free memory and re-run. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
-      "seconds": 62.0
+      "status": "PASS",
+      "evidence": "FRAME_TIME 679 frames on emulator-5554, 649 after the 30-frame startup warmup; host free memory at measurement: 2153 MB; steady-state UI-thread build p50 2809 us / p90 7800 us / p99 12809 us; frames over the 16.67 ms budget after the warmup: 2. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide: it ranged 0 to 3 across the runs taken while building this harness, tracking host load rather than the app, and it is recorded here rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
+      "seconds": 114.5
     },
     {
       "gate": "FORMAT",
       "status": "PASS",
       "evidence": "481 files, 0 changed",
-      "seconds": 3.2
+      "seconds": 3.7
     },
     {
       "gate": "ANALYZE",
@@ -30,49 +30,49 @@
       "gate": "UNIT_TESTS",
       "status": "PASS",
       "evidence": "2177/2177 passed",
-      "seconds": 210.3
+      "seconds": 223.7
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "54/54 passed",
-      "seconds": 15.4
+      "seconds": 18.4
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 4.2
+      "seconds": 4.0
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 10.2
+      "seconds": 10.5
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "81/81 passed",
-      "seconds": 12.4
+      "seconds": 14.5
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 7.6
+      "seconds": 8.4
     },
     {
       "gate": "APK",
       "status": "PASS",
       "evidence": "32.1 MB (budget 34 MB)",
-      "seconds": 22.0
+      "seconds": 26.2
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "50.7 MB (budget 55 MB)",
-      "seconds": 15.7
+      "seconds": 11.7
     },
     {
       "gate": "DIFF_CHECK",
@@ -108,7 +108,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 4.3
+      "seconds": 3.9
     },
     {
       "gate": "FLOW_GENERATION",
