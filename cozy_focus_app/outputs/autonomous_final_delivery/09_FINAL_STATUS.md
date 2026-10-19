@@ -62,7 +62,7 @@ of the same conditions.
 | Physical-GPU frame time | NOT MEASURED | Emulator uses swiftshader; raster numbers are not transferable. |
 | TalkBack walk | NOT MEASURED | Not run this round. |
 | Cloud sync / white noise / notifications / dress | NOT IMPLEMENTED | Product decisions; the UI says so honestly. |
-| FLOW-10 keyboard/loading/failure states | PARTIAL | Named in `02_BUSINESS_FLOW_MATRIX.md`; not asserted. |
+| FLOW-10 keyboard/loading/failure states | CLOSED | `flow10_keyboard_and_retry_test.dart`; the remaining PARTIAL items are device-only (resume visual state, live companion-switch smoothness). |
 | Candidate promotion | NOT DONE | Requires the owner's choice. |
 
 ## Evidence gaps that are not hidden

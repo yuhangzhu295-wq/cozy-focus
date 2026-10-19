@@ -27,6 +27,7 @@
 /// visible affordance to the shipping UI.
 library;
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter/foundation.dart';
 
 import '../core/auth/current_user.dart';
@@ -364,6 +365,60 @@ class QaFixtureHarness {
     // paths run, never one instead of the other: demo_day + memory_ready leaves
     // memories of two shapes, and an either/or left one kind behind.
     memories += await db.petDao.deleteMemoriesWithIdPrefix(idPrefix);
+
+    // The craft job a scenario started, and what settlement did to it. A
+    // completed job added its recipe's output to the inventory; leaving that
+    // increment behind would make a later reset look like it cleaned up while
+    // the player still owned something the QA week produced. The job itself
+    // must go or re-seeding craftActive hits its primary key.
+    final job = await db.customSelect(
+      'select recipe_id, status from craft_jobs where id = ?',
+      variables: [Variable.withString('${idPrefix}craft_job')],
+    ).getSingleOrNull();
+    if (job != null) {
+      final recipeId = job.data['recipe_id'] as String?;
+      final wasCompleted = job.data['status'] == 'completed';
+      await db.customStatement(
+        'delete from craft_jobs where id = ?',
+        ['${idPrefix}craft_job'],
+      );
+      if (wasCompleted && recipeId != null) {
+        final recipe = await db.customSelect(
+          'select output_item_id, output_quantity from craft_recipes '
+          'where id = ?',
+          variables: [Variable.withString(recipeId)],
+        ).getSingleOrNull();
+        final itemId = recipe?.data['output_item_id'] as String?;
+        final produced = (recipe?.data['output_quantity'] as int?) ?? 1;
+        if (itemId != null) {
+          final inv = await db.customSelect(
+            'select id, quantity from inventory_items '
+            'where user_id = ? and item_id = ?',
+            variables: [
+              Variable.withString(userId),
+              Variable.withString(itemId),
+            ],
+          ).getSingleOrNull();
+          if (inv != null) {
+            final invId = inv.data['id'] as String;
+            final left =
+                ((inv.data['quantity'] as int) - produced).clamp(0, 1 << 30);
+            if (left == 0 && !invId.startsWith(idPrefix)) {
+              // Created by the completion, so it goes with it.
+              await db.customStatement(
+                'delete from inventory_items where id = ?',
+                [invId],
+              );
+            } else {
+              await db.customStatement(
+                'update inventory_items set quantity = ? where id = ?',
+                [left, invId],
+              );
+            }
+          }
+        }
+      }
+    }
 
     var roomItems = 0;
     for (final item in await craft.findRoomItems(userId)) {

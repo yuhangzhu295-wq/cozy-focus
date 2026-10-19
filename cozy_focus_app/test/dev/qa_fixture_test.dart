@@ -342,6 +342,60 @@ void main() {
           reason: 'both memory shapes must go, and nothing else');
     });
 
+    test('reset clears the craft job, and re-seeding it does not collide',
+        () async {
+      await harness.seed(QaScenario.craftActive);
+      // demoDay's settlements advance and likely complete that job.
+      await harness.seed(QaScenario.demoDay);
+
+      await harness.reset();
+
+      final jobs = (await db
+              .customSelect(
+                "select count(*) as c from craft_jobs where id = 'qa_craft_job'",
+              )
+              .getSingle())
+          .read<int>('c');
+      expect(jobs, 0, reason: 'the fixture job must not outlive reset');
+
+      // The exact failure this fixes: a second craftActive on a job that still
+      // exists throws on the primary key.
+      await harness.seed(QaScenario.craftActive);
+      final again = (await db
+              .customSelect(
+                "select count(*) as c from craft_jobs where id = 'qa_craft_job'",
+              )
+              .getSingle())
+          .read<int>('c');
+      expect(again, 1, reason: 'the job must be re-creatable after reset');
+    });
+
+    test('the QA prefix cleanup does not treat _ as a wildcard', () async {
+      // `qa_` as a LIKE pattern also matches `qaXmemory`. A real memory with a
+      // look-alike id must survive the prefix cleanup.
+      await db.petDao.addMemory(domain.PetMemory(
+        id: 'qaXmemory',
+        petId: QaFixtureHarness.petId,
+        memoryType: 'first_focus',
+        content: '不是 QA 创建的',
+        happenedAt: DateTime(2020, 1, 2),
+      ));
+      await db.petDao.addMemory(domain.PetMemory(
+        id: 'qa_mem_lookalike',
+        petId: QaFixtureHarness.petId,
+        memoryType: 'first_focus',
+        content: '这个才是 QA 创建的',
+        happenedAt: DateTime(2020, 1, 3),
+      ));
+
+      final removed = await db.petDao.deleteMemoriesWithIdPrefix('qa_');
+      final left = await db.petDao.findMemories(QaFixtureHarness.petId);
+
+      expect(removed, 1);
+      expect(left.map((m) => m.id), ['qaXmemory'],
+          reason: 'only the literal qa_ prefix may be deleted');
+    });
+
     test('reset is scoped by id, not by a LIKE pattern', () async {
       await harness.seed(QaScenario.demoDay);
 

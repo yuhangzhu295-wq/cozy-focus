@@ -27,22 +27,28 @@ The existing A–F golden flows were not modified, weakened or skipped.
 | 07 | 历史数据与数据库 | `persistence_recovery_test.dart` → *v1 to v2 …*, *v2 to v3 …*, *the full v1 to v4 chain preserves every row*, *an already-current database is left alone*; `golden_flows_a_to_f_test.dart` → *F: an old database opens at the head without losing a focus record* | **PASS** |
 | 08 | 备份与恢复 | `test/data/backup/backup_round_trip_test.dart` (11 tests: empty, populated, corrupt checksum, newer format, wrong schema, unknown column, duplicate row rollback, live session refusal, repeated restore, pack replace-not-merge, checksum stability) | **PASS (device)** |
 | 09 | 不可用功能真实性 | `focus_setup_honest_rows_test.dart` → *the setup screen offers no toggle at all*, *white noise is stated, not offered*, *the reminder is stated, not switchable*, *the two rows agree with the settings page*; `phase7c_data_sync_test.dart` → test 3 (no fake switch; only the two real backup actions) | **PASS** |
-| 10 | 使用体验与异常环境 | `screen_size_and_text_sweep_test.dart` → 360×800 / 393×852 / 412×915 at 1.0 and 1.3 text, plus the deliberate-overflow and reachability reverse proofs; `landscape_sweep.py` (device, previous round); `presentation_widgets_test.dart` (small-screen overlap) | **PARTIAL** |
+| 10 | 使用体验与异常环境 | `screen_size_and_text_sweep_test.dart` → 360×800 / 393×852 / 412×915 at 1.0 and 1.3 text, plus the deliberate-overflow and reachability reverse proofs; `flow10_keyboard_and_retry_test.dart` → *the create-task screen survives the keyboard at 360x800* (no overflow, save button visible above the keyboard) and *a failed load says so, and the retry actually recovers*; `landscape_sweep.py` (device, previous round); `presentation_widgets_test.dart` (small-screen overlap) | **PARTIAL** |
 
 ## The honest gaps in FLOW-10
 
 These are not covered by an automated assertion and are not claimed:
 
-- **键盘弹出**: no test opens the soft keyboard and re-measures. The device
-  walk in this round used `input text` on the create-task screen without
-  asserting the resulting layout.
-- **加载状态 / 操作失败**: individual pages have error paths, but there is no
-  flow-level assertion that a failed load renders a retry rather than a blank.
 - **前后台切换**: `persistence_recovery_test` covers the data consequences; the
   visual state on resume is device-only.
 - **角色切换**: `multi_companion_test` covers selection and rendering identity;
   the on-device animation smoothness of a live switch was not re-recorded this
   round.
+
+Closed since the last round, with the test that closes it:
+
+- **键盘弹出** → `flow10_keyboard_and_retry_test.dart` sets a 300dp bottom inset
+  at 360×800, asserts no overflow, and requires the save button's bottom edge to
+  be above the keyboard. The assertion is sensitive: raising the inset to 780dp
+  moves the button to y=101.5 and fails the check.
+- **加载状态 / 操作失败** → the same file injects a repository that fails its
+  first read, asserts `任务没能读出来` + `再试一次`, then taps the retry and
+  requires the real row to appear. An error state that cannot recover is a dead
+  end with a button on it.
 
 ## Evidence of the device walk for FLOW-08
 

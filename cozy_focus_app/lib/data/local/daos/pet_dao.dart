@@ -98,7 +98,17 @@ class PetDao extends DatabaseAccessor<AppDatabase> with _$PetDaoMixin {
   }
 
   Future<int> deleteMemoriesWithIdPrefix(String prefix) {
-    return (delete(petMemories)..where((t) => t.id.like('$prefix%'))).go();
+    // Not `like '$prefix%'`. In SQL LIKE, `_` matches any single character, and
+    // the QA prefix is `qa_` — so a real memory called `qaXmemory` matched it
+    // and was deleted. `substr` compares the literal prefix.
+    return customUpdate(
+      'delete from pet_memories where substr(id, 1, ?) = ?',
+      variables: [
+        Variable.withInt(prefix.length),
+        Variable.withString(prefix),
+      ],
+      updateKind: UpdateKind.delete,
+    );
   }
 
   domain.Pet _mapPet(dynamic row) => domain.Pet(
