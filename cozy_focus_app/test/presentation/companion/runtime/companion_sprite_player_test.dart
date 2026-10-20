@@ -1,4 +1,5 @@
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_action_manifest.dart';
+import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_art.dart';
 import 'package:cozy_focus_app/presentation/companion/runtime/companion_sprite_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -242,6 +243,37 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(shownIndex(tester), 0);
       expect(find.byType(Image), findsOneWidget);
+    });
+  });
+
+  group('the real celebrate sequence', () {
+    // The device clip cannot show the middle of the burst: the sequence is five
+    // frames at 8fps (625ms) and then holds its last pose until the 1.2s cycle
+    // hands back to idle, so the screen stops changing and stops presenting
+    // frames. This walks the player through the real spec frame by frame, which
+    // is the evidence the clip cannot give.
+    testWidgets('plays all five frames and then holds the last',
+        (tester) async {
+      final celebrate = CompanionSpriteArt.specForAction('rabbit', 'celebrate');
+      expect(celebrate, isNotNull);
+      expect(celebrate!.frames.length, 5);
+      expect(celebrate.loopMode, SpriteLoopMode.once);
+      expect(celebrate.frameDuration, const Duration(milliseconds: 125));
+
+      await tester.pumpWidget(host(
+        CompanionSpritePlayer(spec: celebrate, size: 100),
+      ));
+      await tester.pump();
+      expect(shownIndex(tester), 0);
+
+      for (var i = 1; i < 5; i++) {
+        await tester.pump(celebrate.frameDuration);
+        expect(shownIndex(tester), i, reason: 'frame $i of the sequence');
+      }
+
+      // One-shot: the next interval holds the last frame instead of wrapping.
+      await tester.pump(celebrate.frameDuration * 2);
+      expect(shownIndex(tester), 4);
     });
   });
 }

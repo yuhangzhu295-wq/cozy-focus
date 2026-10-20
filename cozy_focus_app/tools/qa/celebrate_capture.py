@@ -760,7 +760,11 @@ def analyse(frames, times, box, source, native_timing=True, control=CONTROL,
             "single-frame hand-over back to the ambient pose is not counted as "
             "a second celebration. The gate is BLOCKED, not PASS, when the "
             "recording stalls inside the burst: the clip then shows the start "
-            "and the end but not the frames between."
+            "and the end but not the frames between. A burst that stops "
+            "changing after its last frame is the sequence's designed hold "
+            "(5 frames at 8fps, then the last pose until the 1.2s cycle), not "
+            "a capture failure - the sprite-motion test is the evidence for "
+            "those frames."
         ),
     }, start
 
