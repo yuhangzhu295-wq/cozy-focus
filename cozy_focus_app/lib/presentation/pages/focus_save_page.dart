@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
 import '../../domain/models/focus_review.dart';
+import '../../domain/models/task.dart';
 import '../../domain/services/reward_service.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/home_controller.dart';
@@ -43,13 +44,30 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
   final TextEditingController _nextController = TextEditingController();
   bool _isSaving = false;
 
-  final List<Map<String, dynamic>> _categories = [
-    {'name': '学习', 'id': 'study', 'color': AppColors.catStudy},
-    {'name': '工作', 'id': 'work', 'color': AppColors.catWork},
-    {'name': '阅读', 'id': 'reading', 'color': AppColors.catReading},
-    {'name': '生活', 'id': 'life', 'color': AppColors.catLife},
-    {'name': '其他', 'id': 'other', 'color': AppColors.catOther},
-  ];
+  /// The chips offered for a new record.
+  ///
+  /// The task domain knows four categories (`taskCategories`), and this page
+  /// used to add a fifth, 阅读, that nothing else understood. A record saved
+  /// under it fell back to 未分类 in the history and the reports. The four are
+  /// the vocabulary now.
+  ///
+  /// A session that already carries an id outside those four still has to show
+  /// its own value: the user picked it, and silently re-saving it as 学习 would
+  /// rewrite a fact. That category gets a chip of its own, first in the row, and
+  /// survives unless the user taps another.
+  late final List<Map<String, dynamic>> _categories;
+
+  static const Map<String, Color> _categoryColors = {
+    'life': AppColors.catLife,
+    'study': AppColors.catStudy,
+    'work': AppColors.catWork,
+    'other': AppColors.catOther,
+    'reading': AppColors.catReading,
+  };
+
+  /// Labels for ids the domain no longer offers, so a carried value is readable
+  /// rather than shown as a raw id.
+  static const Map<String, String> _carriedLabels = {'reading': '阅读'};
 
   @override
   void initState() {
@@ -57,8 +75,26 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
     final sessionState = ref.read(focusSessionControllerProvider);
     _taskController =
         TextEditingController(text: sessionState.taskName ?? '专注任务');
-    if (sessionState.categoryId != null) {
-      _selectedCategoryId = sessionState.categoryId!;
+
+    _categories = [
+      for (final category in taskCategories)
+        {
+          'id': category.id,
+          'name': category.label,
+          'color': _categoryColors[category.id] ?? AppColors.catOther,
+        },
+    ];
+    final carriedId = sessionState.categoryId;
+    if (carriedId != null && !_categories.any((c) => c['id'] == carriedId)) {
+      _categories.insert(0, {
+        'id': carriedId,
+        'name': _carriedLabels[carriedId] ?? carriedId,
+        'color': _categoryColors[carriedId] ?? AppColors.catOther,
+      });
+    }
+
+    if (carriedId != null) {
+      _selectedCategoryId = carriedId;
       // The id decides the chip. A name carried separately could disagree with
       // it — a work session preselected 学习 while saving 'work'.
       for (final category in _categories) {
@@ -69,6 +105,12 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
       }
     } else if (sessionState.categoryName != null) {
       _selectedCategory = sessionState.categoryName!;
+      for (final category in _categories) {
+        if (category['name'] == _selectedCategory) {
+          _selectedCategoryId = category['id'] as String;
+          break;
+        }
+      }
     }
   }
 

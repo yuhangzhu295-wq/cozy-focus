@@ -33,7 +33,7 @@
     "15_data_sync": "PASS"
   },
   "notes": {
-    "01": "Layout and hierarchy match. The 25:00 timer is an existing product feature; the gear is the settings entry; the stats card is below the fold but present. Procedural room art is a recorded gap.",
+    "01": "Layout and hierarchy match. On the review agent's D1 decision the 25:00 timer and its steppers were removed; the 今天的专注 ring is now fully visible on the first screen at the device size, and 放松一下 is reachable by scrolling (the board's phone frame is 2.8:1, the device 2.22:1). Procedural room art accepted by D3.",
     "02": "Selected filter is solid sage.",
     "03": "Selected segment is solid sage.",
     "04": "Real running screen: ring timer, three modes, action row, Mochi.",
@@ -55,6 +55,14 @@
     "04B: generous whitespace and a secondary outline button; accepted by the reviewer.",
     "06A: the gains row peeks at the fold; the page scrolls and the section is fully reachable."
   ],
+  "decisions": {
+    "D1_home_timer": "REMOVED. The board has no timer; it pushed the stats ring below the fold. The four duration chips, 自定义 and 开始专注 remain.",
+    "D2_save_categories": "UNIFIED to taskCategories (生活/学习/工作/其他). A session that already carries reading keeps it visible and is saved unchanged unless the user picks another chip.",
+    "D3_room_art": "ACCEPTED. Procedural room art is the product line; photo-realistic room is not required.",
+    "D4_reward_layout": "ACCEPTED. The outline workshop button stays secondary to the filled return-home button.",
+    "D5_review_fold": "ACCEPTED. The gains section is reachable by scrolling; the page is not clipped.",
+    "D6_stop": "CONTINUE until D1/D2 were implemented and re-reviewed; that is now done."
+  },
   "owner_approved": false,
   "owner_approval_note": "The owner's final style approval has not been given. REVIEW_APPROVED is not OWNER_VISUAL_APPROVED.",
   "evidence": "outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md"

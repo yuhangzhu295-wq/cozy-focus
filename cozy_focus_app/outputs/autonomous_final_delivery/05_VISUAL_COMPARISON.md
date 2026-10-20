@@ -74,6 +74,42 @@ looked at the images. The engineer did not self-approve any page.**
 | 9 | 保存/奖励页状态栏图标是白色，在米白背景上不可见 | `AppBarTheme.systemOverlayStyle = SystemUiOverlayStyle.dark` | 去掉后测试报 `Expected Brightness.dark / Actual null`；真机顶部暗像素从 0% 回到 1.6% |
 | 10 | 记录页「预计奖励」只写 XP，奖励页却给专注币+XP | `RewardService.project()` 成为唯一投影；两页共用 | 把记录页硬币改 0 后测试报 `Found 0 widgets with text "+50 专注币"` |
 
+## 2026-10-20 第二轮：审核代理拍板 D1–D6，并复验 01/06A
+
+所有者把剩余的产品与视觉取舍交给审核代理决定。它逐项裁定：
+
+| 决策 | 裁定 | 落地 |
+|---|---|---|
+| D1 首页 25:00 计时器与 ± | **删除**（展板 01 没有；它把统计环推下首屏） | 保留四枚时长胶囊、自定义、开始专注；删除步进代码与说明行 |
+| D2 记录页的「阅读」分类 | **统一到领域四类**；历史 `reading` 保留 | 新记录只提供 生活/学习/工作/其他；会话已带 `reading` 时显示「阅读」并原值保存，直到用户改选 |
+| D3 01/10 房间画风 | **接受程序化插画** | 不重开美术施工；差距如实记录 |
+| D4 04B 留白与工坊按钮 | **接受** | 不改按钮层级，保留小屏滚动 |
+| D5 06A 首屏折叠 | **接受** | 保留滚动布局，验证键盘弹出后可到达 |
+| D6 是否停止 | **先修 D1/D2 再复验** | 已完成，见下 |
+
+### D1 的验证
+
+- 新增测试在真机逻辑尺寸（1080×2400 → 411×914，含 24dp 上下系统栏）且**有当前任务卡**时，
+  要求「今天的专注」环形完整位于底部导航之上。
+- 反向证明：把 `home_page.dart` 回退到带计时器的版本，测试报
+  `Expected: <= 857.33, Actual: 877.08`；修复后环底 800.44，导航顶 857.33。
+- 真机复验：`01_home.png` 首屏可见完整圆环（10%、25 分钟、完成 1 次），
+  `放松一下` 在下方可滚动到达。
+
+### D2 的验证
+
+- `offers the four task categories, not a fifth`：普通会话只有 生活/学习/工作/其他。
+- `a carried reading category is shown and preserved`：会话带 `reading` 时显示「阅读」，
+  不点选直接保存仍写 `reading`。
+- `changing the category writes the chosen one`：点「学习」后保存写 `study`。
+- 反向证明：回退 `focus_save_page.dart` 后第一条报 `Found 1 widget with text "阅读"`。
+
+### 复验
+
+GPT 审查代理对重拍后的 `01_home.png` 与 `06_focus_review*.png` 复验：
+**01 PASS**（在补充「展板手机框 2.8:1、真机 2.22:1，放松一下 可滚动到达」与 D3 裁定后），
+**06A PASS**（四类分类、滚动后预计奖励同时显示 +2 专注币与 +5 XP）。
+
 ## 审查者误判与已决策偏离（不修，记录在案）
 
 | 审查结论 | 为什么不成立 / 为什么保留 |

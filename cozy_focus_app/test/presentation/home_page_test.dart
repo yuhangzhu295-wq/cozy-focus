@@ -158,6 +158,51 @@ void main() {
           reason: '放松一下 must become visible once the page is scrolled');
     });
 
+    testWidgets('at the device size the ring itself is on the first screen',
+        (tester) async {
+      // 411x914 is the emulator's logical size (1080x2400 at 2.625). The 64pt
+      // timer that used to sit above the stats pushed the ring behind the bottom
+      // nav here. At 360x800 the hero is shorter and the old layout still
+      // passed, so that size could not tell the two builds apart.
+      //
+      // The insets matter: without them the test's bottom nav is ~24dp shorter
+      // than the device's, and the old layout fits in the extra room. These are
+      // the device's own status-bar and gesture-bar insets, in physical pixels
+      // (24dp at 1080/411).
+      tester.view.padding = const FakeViewPadding(top: 63, bottom: 63);
+      addTearDown(tester.view.resetPadding);
+
+      // The device screenshot that exposed this had a current-task card above
+      // the duration panel; without one the test's content is ~80dp shorter and
+      // the old layout fits in the extra room.
+      final tasks = container.read(taskRepositoryProvider);
+      await tasks.insert(Task(
+        id: 'ring-task',
+        userId: 'default_user',
+        title: '写完本周周报',
+        categoryId: 'work',
+        estimatedSeconds: 25 * 60,
+        createdAt: DateTime(2026, 10, 9, 9),
+      ));
+      await tasks.schedule(
+        taskId: 'ring-task',
+        userId: 'default_user',
+        startAt: DateTime(2026, 10, 9, 20),
+        plannedSeconds: 25 * 60,
+      );
+
+      // 1080x2400 is the emulator's physical size; pumpHome maps it to 411x914.
+      await pumpHome(tester, size: const Size(1080, 2400));
+
+      final ring = find.byType(CircularProgressIndicator, skipOffstage: false);
+      expect(ring, findsOneWidget);
+      final ringRect = tester.getRect(ring);
+      final navTop = tester.getRect(find.byType(BottomNavigationBar)).top;
+      expect(ringRect.bottom, lessThanOrEqualTo(navTop),
+          reason: 'the whole 今天的专注 ring must be visible above the bottom nav '
+              'on the device size; found ${ringRect.bottom} vs nav $navTop');
+    });
+
     testWidgets('the greeting follows the clock across a band boundary',
         (tester) async {
       // The greeting used to read the clock during build, and

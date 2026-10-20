@@ -47,13 +47,18 @@ void main() {
   });
 
   /// Runs a session to the point where the review screen is what comes next.
-  Future<String> finishedSession() async {
+  Future<String> finishedSession({
+    String? categoryId,
+    String? categoryName,
+  }) async {
     final notifier = container.read(focusSessionControllerProvider.notifier);
     final session = await notifier.startSession(
       userId: userId,
       plannedSeconds: 25 * 60,
       mode: FocusMode.focus,
       taskName: '写产品方案',
+      categoryId: categoryId,
+      categoryName: categoryName,
     );
     clock.advance(const Duration(minutes: 25));
     await notifier.completeSession();
@@ -232,6 +237,44 @@ void main() {
     await save(tester);
 
     expect(find.text('reward'), findsOneWidget);
+  });
+
+  testWidgets('offers the four task categories, not a fifth', (tester) async {
+    await finishedSession();
+    await pump(tester);
+
+    for (final label in const ['生活', '学习', '工作', '其他']) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    expect(find.text('阅读'), findsNothing,
+        reason: '阅读 is not in taskCategories; a new record must not offer it');
+  });
+
+  testWidgets('a carried reading category is shown and preserved',
+      (tester) async {
+    final sessionId =
+        await finishedSession(categoryId: 'reading', categoryName: '阅读');
+    await pump(tester);
+
+    expect(find.text('阅读'), findsOneWidget,
+        reason: 'the value the user picked must be visible, even though the '
+            'domain no longer offers it');
+
+    await save(tester);
+    expect((await recordFor(sessionId)).categoryId, 'reading',
+        reason: 'saving without touching the chip must not rewrite the fact');
+  });
+
+  testWidgets('changing the category writes the chosen one', (tester) async {
+    final sessionId =
+        await finishedSession(categoryId: 'reading', categoryName: '阅读');
+    await pump(tester);
+
+    await tester.tap(find.text('学习'));
+    await settle(tester);
+    await save(tester);
+
+    expect((await recordFor(sessionId)).categoryId, 'study');
   });
 
   testWidgets('the estimate is the projection settlement uses', (tester) async {

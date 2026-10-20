@@ -98,18 +98,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     await ref.read(homeControllerProvider.notifier).loadHomeData();
   }
 
-  void _increment() {
-    setState(() {
-      _selectedMinutes = (_selectedMinutes + 5).clamp(5, 180);
-    });
-  }
-
-  void _decrement() {
-    setState(() {
-      _selectedMinutes = (_selectedMinutes - 5).clamp(5, 180);
-    });
-  }
-
   Future<void> _handleStartFocus() async {
     final homeState = ref.read(homeControllerProvider);
     if (homeState.hasActiveSession) {
@@ -436,11 +424,11 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _buildFocusPanel(bool hasActive) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      // Reference 01 measures the card at 257.0pt: ~11.5pt above the first ink
-      // and ~11.6pt below the button, 16pt on each side. The vertical rhythm is
-      // set by the type's own line boxes (the 64pt timer supplies ~75pt of it)
-      // rather than by stacked SizedBoxes, which is what previously made this
-      // card ~41dp taller than the approved design.
+      // Board 01 has no timer in this card: a title, four duration chips and
+      // the start button. The 64pt figure and its steppers were an addition
+      // that pushed the 今天的专注 ring below the fold, so they were removed
+      // on the review agent's decision (2026-10-20). The chips still choose the
+      // real session length, and 自定义 still opens the setup page.
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -504,54 +492,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                 ),
               ],
-            ),
-          ),
-          // Reference 01 pins the two steppers to the card's own content edges
-          // (x 33.00 -> 74.67pt) and centres the figure between them. A centred
-          // Row put the left stepper at 57.14dp, 24.1dp too far right.
-          Row(
-            children: [
-              _StepButton(
-                icon: Icons.remove,
-                semanticLabel: '减少 5 分钟',
-                onTap: _decrement,
-              ),
-              Expanded(
-                child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      '$_selectedMinutes:00',
-                      style: const TextStyle(
-                        // Reference 01 sets the timer as the page's dominant
-                        // element: the figure measures 160.7pt wide by 45.7pt
-                        // tall, which is a 64pt Roboto figure in deep sage, not
-                        // `textPrimary`.
-                        fontSize: 64,
-                        fontWeight: FontWeight.w700,
-                        height: _kLineHeight,
-                        color: AppColors.timerInk,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              _StepButton(
-                icon: Icons.add,
-                semanticLabel: '增加 5 分钟',
-                onTap: _increment,
-              ),
-            ],
-          ),
-          const Center(
-            child: Text(
-              '专注，让美好的事情发生',
-              style: TextStyle(
-                fontSize: 13,
-                height: _kLineHeight,
-                color: AppColors.textSecondary,
-              ),
             ),
           ),
           const SizedBox(height: 14),
@@ -938,44 +878,6 @@ class _DurationChip extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StepButton extends StatelessWidget {
-  final IconData icon;
-  final String semanticLabel;
-  final VoidCallback onTap;
-  const _StepButton({
-    required this.icon,
-    required this.semanticLabel,
-    required this.onTap,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
-      child: Container(
-        // Reference 01 draws both steppers as 42pt neutral circles with a dark
-        // glyph; the earlier sage-tinted 40dp buttons read as brand actions
-        // rather than as steppers.
-        width: 42,
-        height: 42,
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceMuted,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          color: AppColors.textPrimary,
-          size: 20,
-          // Without this the button is reported to accessibility services as an
-          // unlabelled button (uiautomator marks it NAF="true"), so a screen
-          // reader announces "button" and nothing else.
-          semanticLabel: semanticLabel,
         ),
       ),
     );

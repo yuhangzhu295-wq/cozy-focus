@@ -15,7 +15,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2283/2283** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation, strict record formats, 7 visual-contract guards) |
+| Full suite | **2287/2287** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation, strict record formats, 11 visual-contract guards) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** at `7d645c5` (2026-10-20 15:12); DEVICE_MATRIX p50 1939 µs / p90 4287 µs, 1 late frame, host 4014 MB free and 20.8% busy. The 4 BLOCKED are release signing, launcher icon, the owner's final visual approval, and Flow video generation. |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -274,6 +274,24 @@ card, procedural room art).
 
 `OWNER_VISUAL_APPROVED` remains NO: the owner still decides whether the
 procedural rooms and the reward page's whitespace are the final look.
+
+### The review agent's D1–D6 decisions (2026-10-20, second pass)
+
+The owner delegated the remaining product and visual choices to the review
+agent. It decided: remove the home's 25:00 timer and steppers (D1); unify the
+review screen's categories to the domain's four and preserve a carried
+`reading` value (D2); accept the procedural room art (D3); accept the reward
+page's layout (D4); accept the review screen's fold (D5); and continue until D1
+and D2 were done and re-reviewed (D6).
+
+D1 was implemented and proved with a device-size test: with a current task card
+and the device's 24dp insets, the 今天的专注 ring must sit entirely above the
+bottom nav. The old build fails it (`877.08 > 857.33`); the new one passes
+(`800.44 < 857.33`). D2 has three tests: four categories only, a carried
+`reading` shown and preserved, and changing it writes the chosen id. Reverting
+the save page makes the first one fail with `Found 1 widget with text "阅读"`.
+The GPT review agent re-passed 01 and 06A on the new screenshots. Full suite is
+now **2287/2287**.
 
 ## Not done, with the reason
 
