@@ -17,7 +17,7 @@
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
 | Full suite | **2283/2283** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation, strict record formats, 7 visual-contract guards) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
-| Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** at `130b0f8`; DEVICE_MATRIX p50 1490 µs / p90 2958 µs, 2 late frames, host 3125 MB free and 9.5% busy. |
+| Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** at `7d645c5` (2026-10-20 15:12); DEVICE_MATRIX p50 1939 µs / p90 4287 µs, 1 late frame, host 4014 MB free and 20.8% busy. The 4 BLOCKED are release signing, launcher icon, the owner's final visual approval, and Flow video generation. |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
 
 ## This round: twenty-four review rounds on the same fixture

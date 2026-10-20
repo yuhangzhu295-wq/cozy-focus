@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-20 12:01:29",
-  "head": "130b0f897a9e42bd855b4ab8b7173ee72dab5885",
-  "remote_head": "130b0f897a9e42bd855b4ab8b7173ee72dab5885",
+  "generated_at": "2026-10-20 15:12:53",
+  "head": "7d645c5d966bb9a2288ae46116c2adce92d943f5",
+  "remote_head": "7d645c5d966bb9a2288ae46116c2adce92d943f5",
   "local_equals_remote": true,
   "counts": {
     "PASS": 14,
@@ -11,68 +11,68 @@
     {
       "gate": "DEVICE_MATRIX",
       "status": "PASS",
-      "evidence": "FRAME_TIME 687 frames on emulator-5554, 657 after the 30-frame startup warmup; host free memory at measurement: 3125 MB, CPU busy: 9.5%; steady-state UI-thread build p50 1490 us / p90 2958 us / p99 8033 us; frames over the 16.67 ms budget after the warmup: 2. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
-      "seconds": 119.6
+      "evidence": "FRAME_TIME 684 frames on emulator-5554, 654 after the 30-frame startup warmup; host free memory at measurement: 4014 MB, CPU busy: 20.8%; steady-state UI-thread build p50 1939 us / p90 4287 us / p99 9268 us; frames over the 16.67 ms budget after the warmup: 1. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
+      "seconds": 135.0
     },
     {
       "gate": "FORMAT",
       "status": "PASS",
       "evidence": "482 files, 0 changed",
-      "seconds": 3.7
+      "seconds": 4.8
     },
     {
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 12.4
+      "seconds": 19.7
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
-      "evidence": "2276/2276 passed",
-      "seconds": 158.3
+      "evidence": "2283/2283 passed",
+      "seconds": 277.1
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "54/54 passed",
-      "seconds": 13.2
+      "seconds": 21.0
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 4.6
+      "seconds": 7.4
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 10.1
+      "seconds": 13.6
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "81/81 passed",
-      "seconds": 11.4
+      "seconds": 20.7
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 8.1
+      "seconds": 15.5
     },
     {
       "gate": "APK",
       "status": "PASS",
       "evidence": "32.1 MB (budget 34 MB)",
-      "seconds": 73.2
+      "seconds": 24.4
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "50.7 MB (budget 55 MB)",
-      "seconds": 14.9
+      "seconds": 16.4
     },
     {
       "gate": "DIFF_CHECK",
@@ -95,7 +95,7 @@
     {
       "gate": "OWNER_VISUAL_GATE",
       "status": "BLOCKED",
-      "evidence": "OWNER_VISUAL_GATE is REQUIRED and has not run: no review agent could receive an image on this machine. Four visual-judge agents are bound to an unentitled plan; every gpt-6-sol/gemini/claude subagent returns 'media omitted from provider request because the selected model does not support image input'; image-reader's API key is malformed and no other vision credential is configured. 27 current screenshots and 16 boards are ready to review the moment a channel exists. Evidence: outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md",
+      "evidence": "OWNER_VISUAL_GATE: the independent review passed all 16 boards and every supplementary state on 2026-10-20 (final-gate). The owner's final style approval has not been given, and REVIEW_APPROVED is not OWNER_VISUAL_APPROVED. Evidence: outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md",
       "seconds": 0.0
     },
     {
@@ -108,7 +108,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 5.2
+      "seconds": 6.4
     },
     {
       "gate": "FLOW_GENERATION",

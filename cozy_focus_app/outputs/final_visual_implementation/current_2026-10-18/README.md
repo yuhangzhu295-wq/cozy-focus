@@ -4,7 +4,8 @@
 `emulator-5554`（Pixel 7 / API 34，1080×2400）上的真实截图，不是拼图、不是旧图重发。
 
 **2026-10-20 复验：16 张展板与补充状态均已由独立审查代理（`final-gate`）明确判 PASS。**
-逐页证据与修复清单见
+机器可读判定在 `REVIEW_VERDICT.json`（`tools/cozy_gate.py` 的 `OWNER_VISUAL_GATE`
+直接读它）；逐页证据与修复清单见
 `outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md`。
 
 这**不等于** `OWNER_VISUAL_APPROVED`：所有者仍保留最终画风审批权，尤其对 01/10 的

@@ -115,6 +115,12 @@ looked at the images. The engineer did not self-approve any page.**
 
 ## 状态
 
+机器可读判定在
+`outputs/final_visual_implementation/current_2026-10-18/REVIEW_VERDICT.json`。
+`tools/cozy_gate.py` 的 `OWNER_VISUAL_GATE` 现在读这个文件，而不是复述上一轮的
+"没有审查代理能收到图像"——那条在 2026-10-20 已经不成立。门禁据此区分三种情况：
+审查不完整 / 审查完成但所有者未批 / 审查与所有者都已通过。
+
 `OWNER_VISUAL_GATE`：**REVIEW_APPROVED（16/16 展板 + 补充状态）**。
 
 这**不等于** `OWNER_VISUAL_APPROVED`：所有者仍保留最终画风审批权，尤其对 01/10 的

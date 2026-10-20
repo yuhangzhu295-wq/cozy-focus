@@ -1,13 +1,13 @@
 # Automated product gate
 
-Generated 2026-10-20 12:01:29 at `130b0f89`. Local equals remote: **YES**.
+Generated 2026-10-20 15:12:53 at `7d645c5d`. Local equals remote: **YES**.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 687 frames on emulator-5554, 657 after the 30-frame startup warmup; host free memory at measurement: 3125 MB, CPU busy: 9.5%; steady-state UI-thread build p50 1490 us / p90 2958 us / p99 8033 us; frames over the 16.67 ms budget after the warmup: 2. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
+| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 684 frames on emulator-5554, 654 after the 30-frame startup warmup; host free memory at measurement: 4014 MB, CPU busy: 20.8%; steady-state UI-thread build p50 1939 us / p90 4287 us / p99 9268 us; frames over the 16.67 ms budget after the warmup: 1. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
 | `FORMAT` | **PASS** | 482 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
-| `UNIT_TESTS` | **PASS** | 2276/2276 passed |
+| `UNIT_TESTS` | **PASS** | 2283/2283 passed |
 | `INTEGRATION_TESTS` | **PASS** | 54/54 passed |
 | `GOLDEN_FLOW` | **PASS** | 6/6 passed |
 | `MIGRATION` | **PASS** | 16/16 passed |
@@ -18,7 +18,7 @@ Generated 2026-10-20 12:01:29 at `130b0f89`. Local equals remote: **YES**.
 | `DIFF_CHECK` | **PASS** | no whitespace errors |
 | `RELEASE_SIGNING` | **BLOCKED** | RELEASE_SIGNING = NOT_RECOVERED: android/key.properties is absent, and no keystore was invented. The build switches over with no code change the moment it appears. |
 | `LAUNCHER_ICON` | **BLOCKED** | still the stock Flutter logo in android/ (dominant colours 0,0,0 / 84,197,248 / 1,87,155). A candidate has been drawn - outputs/launcher_icon_candidate/, six sizes from the app's own palette - but it is NOT approved, so nothing under android/ was touched. Blocked on the owner's approval, not on artwork existing. |
-| `OWNER_VISUAL_GATE` | **BLOCKED** | OWNER_VISUAL_GATE is REQUIRED and has not run: no review agent could receive an image on this machine. Four visual-judge agents are bound to an unentitled plan; every gpt-6-sol/gemini/claude subagent returns 'media omitted from provider request because the selected model does not support image input'; image-reader's API key is malformed and no other vision credential is configured. 27 current screenshots and 16 boards are ready to review the moment a channel exists. Evidence: outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md |
+| `OWNER_VISUAL_GATE` | **BLOCKED** | OWNER_VISUAL_GATE: the independent review passed all 16 boards and every supplementary state on 2026-10-20 (final-gate). The owner's final style approval has not been given, and REVIEW_APPROVED is not OWNER_VISUAL_APPROVED. Evidence: outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md |
 | `PRODUCT_DECISIONS` | **PASS** | P25 reads CLOSED with 0 PRODUCT_DECISION_REQUIRED: every owner decision is made. Four of the six needed no code change - the code already behaved as decided - and two did, D3 (furniture names) and D4 (the long-session memory). Read from the document, not recited. 6 DEFERRED and 4 BLOCKED_EXTERNAL remain in the same file. |
 | `BEHAVIOR_AUTHORITY` | **PASS** | BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action. |
 | `FLOW_GENERATION` | **BLOCKED** | FLOW_GENERATION: no video surface reachable in Flow, and Flow's own banner reports video generation degraded. The video-to-sprite pipeline is built and validated against a local clip; no production video art exists. |
