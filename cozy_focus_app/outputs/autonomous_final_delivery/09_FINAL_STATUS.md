@@ -14,14 +14,14 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2276/2276** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
+| Full suite | **2276/2276** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation, strict record formats) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** at `cf60738`; DEVICE_MATRIX p50 1073 µs / p90 2268 µs, 0 late frames, host 2643 MB free and 10.1% busy. |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
 
-## This round: eight review rounds on the same fixture
+## This round: twenty-four review rounds on the same fixture
 
-The QA fixture that produces the screenshot data has been through eight review rounds. Each
+The QA fixture that produces the screenshot data has been through twenty-four review rounds. Each
 round found a real defect, including ones introduced by the previous fix:
 
 1. It wrote ledger rows and XP by hand. Settlement also writes the memories, the
