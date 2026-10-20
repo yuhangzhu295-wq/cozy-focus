@@ -16,7 +16,7 @@
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
 | Full suite | **2276/2276** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
-| Full gate (`--with-device`) | **13 PASS / 5 BLOCKED / 0 FAIL** at `e033f6b`; DEVICE_MATRIX is BLOCKED (host 1244 MB free after a cold emulator boot; AVD guest RAM 2048 MB). The last passing device measurement was at `697cccc`: p50 5232 µs / p90 13656 µs, 2471 MB free. |
+| Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** at `cf60738`; DEVICE_MATRIX p50 1073 µs / p90 2268 µs, 0 late frames, host 2643 MB free and 10.1% busy. |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
 
 ## This round: eight review rounds on the same fixture
