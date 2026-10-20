@@ -155,6 +155,18 @@ round found a real defect, including ones introduced by the previous fix:
     survived reset while its XP was lost. All three are fixed; the id set is
     now one shared list used by both decisions.
 
+**Round 24 verdict (glm-5.3, independent): `NO_ENGINEERING_DEFECTS_REMAIN`.**
+It ran analyze, the full suite (2276), the dev suite (136) and the full gate
+(14 PASS / 4 BLOCKED / 0 FAIL, device p50 1232 µs / p90 3352 µs), performed both
+mutation proofs itself (prefix filter → the look-alike test failed with 0 vs
+250; inverted origin → the completion-created row stayed), audited every
+encoding pair, every reader's validation order, the exact-id list and `reset()`,
+and found no behavioural defect. Its one finding was documentation: a stale
+sentence about three-part snapshots and the dead `parts.length >= 6` guard it
+described. Both are removed, and the three baseline fields now throw on a
+non-numeric value like the other fields. Security: no keystore, private key or
+password in git.
+
 Every fix carries a test and a reverse proof (the old behaviour restored makes
 that test fail), including the transaction: making the last write throw leaves
 the week deleted without the transaction and intact with it.

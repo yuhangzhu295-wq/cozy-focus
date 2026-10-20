@@ -1422,22 +1422,23 @@ class QaFixtureHarness {
 
     // Add back what real sessions settled after the snapshot. The snapshot is
     // the state before the QA run; the user's own work since then is not the
-    // fixture's to delete. Six-part snapshots carry the ledger totals that make
-    // this measurable; a three-part snapshot (older build) has no baseline, so
-    // nothing is added and the old behaviour stands.
-    if (parts.length >= 6) {
-      final snapXp = int.tryParse(parts[3]);
-      final snapMinutes = int.tryParse(parts[4]);
-      final snapCount = int.tryParse(parts[5]);
-      if (snapXp != null && snapMinutes != null && snapCount != null) {
-        final now = await _nonDemoLedgerTotals();
-        xp += (now.xp - snapXp).clamp(0, 1 << 40);
-        minutes += (now.minutes - snapMinutes).clamp(0, 1 << 40);
-        // Settlement adds 5 happiness per session, clamped at 100.
-        happiness = (happiness + 5 * (now.count - snapCount).clamp(0, 100))
-            .clamp(0, 100);
-      }
+    // fixture's to delete. The reader above requires exactly six fields, so the
+    // three baselines are always present.
+    final snapXp = int.tryParse(parts[3]);
+    final snapMinutes = int.tryParse(parts[4]);
+    final snapCount = int.tryParse(parts[5]);
+    if (snapXp == null || snapMinutes == null || snapCount == null) {
+      throw StateError(
+        'app_settings[$_savedProgressKey] has a non-numeric baseline; reset '
+        'the QA database before seeding again',
+      );
     }
+    final now = await _nonDemoLedgerTotals();
+    xp += (now.xp - snapXp).clamp(0, 1 << 40);
+    minutes += (now.minutes - snapMinutes).clamp(0, 1 << 40);
+    // Settlement adds 5 happiness per session, clamped at 100.
+    happiness =
+        (happiness + 5 * (now.count - snapCount).clamp(0, 100)).clamp(0, 100);
 
     final current = await pets.findPetProgress(petId);
     if (current == null) return;
