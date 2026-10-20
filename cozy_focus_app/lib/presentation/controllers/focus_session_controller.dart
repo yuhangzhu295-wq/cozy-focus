@@ -201,7 +201,9 @@ class FocusSessionController extends StateNotifier<FocusSessionUIState> {
     );
     state = state.copyWith(
       taskName: taskName ?? '专注任务',
-      categoryName: categoryName ?? '学习',
+      // Null when the caller did not know it. The review screen derives the
+      // chip from categoryId, so a wrong default here cannot show a false one.
+      categoryName: categoryName,
       categoryId: categoryId,
     );
     _syncFromEngine();

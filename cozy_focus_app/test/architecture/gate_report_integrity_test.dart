@@ -107,12 +107,61 @@ void main() {
     );
   });
 
-  test('the report states whether local matches remote', () {
-    expect(report['local_equals_remote'], isA<bool>());
-    expect(report['head'], isA<String>());
-    expect((report['head'] as String).trim(), isNotEmpty,
+  test('the report describes the revision it was generated from', () {
+    // A type check is not a check. The report once claimed
+    // `local_equals_remote: false` while local and remote were the same
+    // commit, and its `head` described code three commits behind — both passed
+    // a test that only asserted the fields' types.
+    String git(List<String> args) {
+      final result = Process.runSync('git', args);
+      return result.exitCode == 0 ? (result.stdout as String).trim() : '';
+    }
+
+    final head = (report['head'] as String).trim();
+    expect(head, isNotEmpty,
         reason: 'a gate report without the revision it describes cannot be '
             'acted on');
+
+    final actual = git(['rev-parse', 'HEAD']);
+    expect(actual, isNotEmpty, reason: 'git must answer in this checkout');
+
+    // The report is committed after it runs, so its head is normally the
+    // parent of HEAD. What must not happen is a report from another line of
+    // history, or one whose git fields describe a state that is not true now.
+    final ancestor = Process.runSync(
+          'git',
+          ['merge-base', '--is-ancestor', head, actual],
+        ).exitCode ==
+        0;
+    expect(ancestor, isTrue,
+        reason: 'the report head $head is not an ancestor of HEAD $actual');
+
+    // Internal consistency first: the boolean must be the comparison of the
+    // two hashes printed beside it. This is the lie the old test missed — it
+    // reported false while its own head and remote_head were equal.
+    final reportedRemote = (report['remote_head'] as String?)?.trim() ?? '';
+    expect(
+      report['local_equals_remote'],
+      head == reportedRemote,
+      reason: 'local_equals_remote says ${report['local_equals_remote']} but '
+          'the report head is $head and remote_head is '
+          '$reportedRemote',
+    );
+
+    // When the report describes the current commit, it must also describe the
+    // current relation to the remote. A report that is older is allowed — it
+    // is committed after it runs — but it cannot claim a state that was never
+    // true of the hashes it prints.
+    final remote = git(['rev-parse', 'origin/recovery/v4.2.1-rebuild']);
+    if (remote.isNotEmpty && head == actual) {
+      expect(
+        report['local_equals_remote'],
+        actual == remote,
+        reason: 'the report describes HEAD but says local_equals_remote is '
+            '${report['local_equals_remote']}; local is $actual and the '
+            'remote branch is $remote',
+      );
+    }
   });
 
   test('a gate that can be measured says it measured', () {

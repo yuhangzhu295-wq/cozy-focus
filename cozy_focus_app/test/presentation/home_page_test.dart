@@ -324,6 +324,7 @@ void main() {
         id: 'task-1',
         userId: 'default_user',
         title: 'first-task',
+        categoryId: 'work',
         estimatedSeconds: 25 * 60,
         createdAt: DateTime(2026, 10, 9, 9),
       ));
@@ -347,6 +348,12 @@ void main() {
       expect(session, isNotNull);
       expect(session!.taskId, 'task-1');
       expect(session.taskName, 'first-task');
+
+      // The label has to match the id. It was hardcoded to '学习', so a work
+      // task's review screen preselected the 学习 chip while saving 'work'.
+      final state = container.read(focusSessionControllerProvider);
+      expect(state.categoryId, 'work');
+      expect(state.categoryName, '工作');
 
       // The session is still running, and its ticker outlives the widget tree.
       await container

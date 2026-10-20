@@ -950,7 +950,10 @@ void main() {
         } catch (_) {}
       });
       Directory('${root.path}/companion_packs').createSync();
-      File('${root.path}/.cozy_restore_journal.json')
+      // Awaited. `writeAsString` returns a Future; without the await the
+      // restore's synchronous `existsSync()` check occasionally ran before the
+      // file landed, and the test failed about once in ten full-file runs.
+      await File('${root.path}/.cozy_restore_journal.json')
           .writeAsString('{"epoch":"stuck"}');
 
       await expectLater(

@@ -1,10 +1,10 @@
 # Automated product gate
 
-Generated 2026-10-20 08:33:13 at `cf607389`. Local equals remote: **NO**.
+Generated 2026-10-20 12:01:29 at `130b0f89`. Local equals remote: **YES**.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 691 frames on emulator-5554, 661 after the 30-frame startup warmup; host free memory at measurement: 2643 MB, CPU busy: 10.1%; steady-state UI-thread build p50 1073 us / p90 2268 us / p99 7983 us; frames over the 16.67 ms budget after the warmup: 0. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
+| `DEVICE_MATRIX` | **PASS** | FRAME_TIME 687 frames on emulator-5554, 657 after the 30-frame startup warmup; host free memory at measurement: 3125 MB, CPU busy: 9.5%; steady-state UI-thread build p50 1490 us / p90 2958 us / p99 8033 us; frames over the 16.67 ms budget after the warmup: 2. Criterion: p90 within one 16.67 ms frame and p50 within half of one. The late-frame count is reported but does not decide. HISTORICAL NOTE, not this run's figure: across the runs taken while building this harness it ranged 0 to 3, tracking host load rather than the app; this run's count is the number above, and it is recorded rather than hidden. RASTER TIME IS NOT TRANSFERABLE: this AVD has no GPU and Flutter falls back to swiftshader, so the raster numbers describe a software rasteriser, not a phone. The build numbers are Dart CPU work and do transfer. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
 | `FORMAT` | **PASS** | 482 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
 | `UNIT_TESTS` | **PASS** | 2276/2276 passed |

@@ -56,11 +56,18 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
     final sessionState = ref.read(focusSessionControllerProvider);
     _taskController =
         TextEditingController(text: sessionState.taskName ?? '专注任务');
-    if (sessionState.categoryName != null) {
-      _selectedCategory = sessionState.categoryName!;
-    }
     if (sessionState.categoryId != null) {
       _selectedCategoryId = sessionState.categoryId!;
+      // The id decides the chip. A name carried separately could disagree with
+      // it — a work session preselected 学习 while saving 'work'.
+      for (final category in _categories) {
+        if (category['id'] == _selectedCategoryId) {
+          _selectedCategory = category['name'] as String;
+          break;
+        }
+      }
+    } else if (sessionState.categoryName != null) {
+      _selectedCategory = sessionState.categoryName!;
     }
   }
 

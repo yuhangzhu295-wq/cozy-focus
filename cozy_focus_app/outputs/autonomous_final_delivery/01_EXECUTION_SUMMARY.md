@@ -4,9 +4,16 @@
 **Starting HEAD:** `a8d679c` (local == remote)
 **This round's commits:** `b9e19ee`, `599099a`, `df811ca`, `b068495`, `6f03180`,
 `1264a20`
-**Gate commit:** `b314c28` (14 PASS / 3 BLOCKED / 1 DEFERRED / 0 FAIL). These
-delivery documents are committed immediately after it, and both are pushed to
+**Gate commit:** `b314c28` (14 PASS / 3 BLOCKED / 1 DEFERRED / 0 FAIL) — the
+run for the commits listed above. These delivery documents are committed
+immediately after it, and both are pushed to
 `origin/recovery/v4.2.1-rebuild`.
+
+> **This count is historical.** `OWNER_VISUAL_GATE` was later changed from
+> `DEFERRED` to `BLOCKED` (the owner's 2026-10-18 ruling), so a current run
+> reports **14 PASS / 4 BLOCKED / 0 DEFERRED**. The current numbers are in
+> `09_FINAL_STATUS.md` and `outputs/ai_handoff/AUTOMATED_PRODUCT_GATE.json`;
+> this paragraph describes the b314c28 run and must not be quoted as current.
 
 ## What was actually built
 

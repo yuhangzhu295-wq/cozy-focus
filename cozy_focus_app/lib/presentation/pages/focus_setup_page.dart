@@ -129,6 +129,10 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
   @override
   Widget build(BuildContext context) {
     final companionName = ref.watch(companionDisplayNameProvider);
+    // The hero is drawn under the status bar, so every offset inside it has to
+    // clear the inset. Hardcoded values assumed a 24dp bar; on a notch or a
+    // dynamic island the back button and the title sat under the system icons.
+    final topInset = MediaQuery.paddingOf(context).top;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
@@ -151,7 +155,7 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                 ),
                 // Back button
                 Positioned(
-                  top: 44,
+                  top: topInset + 20,
                   left: 8,
                   child: IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new_rounded,
@@ -162,11 +166,11 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                   ),
                 ),
                 // Centre top title
-                const Positioned(
-                  top: 44,
+                Positioned(
+                  top: topInset + 20,
                   left: 0,
                   right: 0,
-                  child: Column(
+                  child: const Column(
                     children: [
                       Text(
                         '专注设置',
@@ -188,7 +192,7 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                 // Left hero text
                 Positioned(
                   left: 20,
-                  top: 100,
+                  top: topInset + 76,
                   child: Text(
                     '和 $companionName 一起\n专注吧！🌱',
                     style: const TextStyle(
@@ -199,10 +203,10 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                     ),
                   ),
                 ),
-                const Positioned(
+                Positioned(
                   left: 20,
-                  top: 158,
-                  child: Text(
+                  top: topInset + 134,
+                  child: const Text(
                     '专注当下，\n让更好的自己慢慢长大。',
                     style: TextStyle(
                         fontSize: 12,
@@ -213,7 +217,7 @@ class _FocusSetupPageState extends ConsumerState<FocusSetupPage> {
                 // Sticky note – top right
                 Positioned(
                   right: 20,
-                  top: 96,
+                  top: topInset + 72,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),

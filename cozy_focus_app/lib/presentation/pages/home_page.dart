@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
 import '../../domain/models/focus_record.dart';
+import '../../domain/models/task.dart';
 import '../../domain/models/task_schedule.dart';
 import '../../domain/services/duration_text.dart';
 import '../controllers/home_controller.dart';
@@ -138,7 +139,9 @@ class _HomePageState extends ConsumerState<HomePage> {
           taskId: next?.schedule.taskId,
           taskName: next?.title ?? '专注任务',
           categoryId: next?.categoryId,
-          categoryName: '学习',
+          // The label has to match the id. A hardcoded '学习' put a work
+          // session's review page on the 学习 chip while saving 'work'.
+          categoryName: taskCategoryLabel(next?.categoryId),
         );
     if (mounted) context.go('/focus/active');
   }

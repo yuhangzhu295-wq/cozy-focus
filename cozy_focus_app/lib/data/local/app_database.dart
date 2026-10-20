@@ -180,7 +180,6 @@ class AppDatabase extends _$AppDatabase {
         if (from < 8) {
           await m.createTable(distractionNotes);
         }
-        // v8 -> v9: the review's two extra answers, and the mood vocabulary.
         // v10 -> v11: the app's own preferences. A new table, so nothing existing
         // is touched and every setting reads as unset until it is chosen.
         if (from < 11) {
@@ -192,6 +191,7 @@ class AppDatabase extends _$AppDatabase {
         if (from < 10) {
           await m.createTable(restSessions);
         }
+        // v8 -> v9: the review's two extra answers, and the mood vocabulary.
         if (from < 9) {
           await m.addColumn(focusRecords, focusRecords.gains);
           await m.addColumn(focusRecords, focusRecords.nextIntention);
