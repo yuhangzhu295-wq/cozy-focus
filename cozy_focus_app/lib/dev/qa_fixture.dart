@@ -1252,7 +1252,14 @@ class QaFixtureHarness {
 
   Future<void> _addCraftDelta(String jobId, int seconds) async {
     final saved = await _savedMap(_craftDeltasKey);
-    final current = int.tryParse(saved[jobId] ?? '0') ?? 0;
+    final existing = saved[jobId];
+    final current = existing == null ? 0 : int.tryParse(existing);
+    if (current == null) {
+      throw StateError(
+        'app_settings[$_craftDeltasKey] has a non-numeric delta for $jobId; '
+        'reset the QA database before seeding again',
+      );
+    }
     saved[jobId] = '${current + seconds}';
     await _saveMap(_craftDeltasKey, saved);
   }
