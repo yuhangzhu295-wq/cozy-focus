@@ -327,9 +327,7 @@ class QaFixtureHarness {
     // and it carries no user scoping at all. A pattern-based delete that catches
     // a session the fixture did not create would remove its ledger row without
     // unwinding its reward.
-    final demoIds = <String>[
-      for (var n = 1; n <= demoSessionCount; n++) '${idPrefix}demo_sess_$n',
-    ];
+    final demoIds = _demoSessionIds;
 
     // The pet's progress. When a snapshot exists it is authoritative: it was
     // taken before the first seed touched anything, so restoring it undoes both
@@ -1197,7 +1195,12 @@ class QaFixtureHarness {
       final sessionId = _dec(bits[0]);
       final jobId = _dec(bits[1]);
       final seconds = int.tryParse(bits[2]);
-      if (seconds == null) return;
+      if (seconds == null) {
+        throw StateError(
+          'app_settings[$_craftPendingKey] has a non-numeric duration; reset '
+          'the QA database before seeding again',
+        );
+      }
       final settled = await db.customSelect(
         'select 1 as present from reward_ledger where session_id = ?',
         variables: [Variable.withString(sessionId)],
@@ -1215,7 +1218,12 @@ class QaFixtureHarness {
       ).getSingleOrNull();
       if (job == null || job.read<String>('status') != 'completed') return;
       final progressBefore = int.tryParse(bits[3]);
-      if (progressBefore == null) return;
+      if (progressBefore == null) {
+        throw StateError(
+          'app_settings[$_craftPendingKey] has a non-numeric baseline; reset '
+          'the QA database before seeding again',
+        );
+      }
       final recipe = await db.customSelect(
         'select required_minutes, output_item_id from craft_recipes '
         'where id = ?',
@@ -1225,14 +1233,13 @@ class QaFixtureHarness {
       if (required == null) return;
       if (progressBefore + seconds < required * 60) return;
 
-      final completed = await _savedList(_craftCompletedKey);
-      if (!completed.contains(jobId)) {
-        completed.add(jobId);
-        await _saveList(_craftCompletedKey, completed);
+      final completed = await _savedMap(_craftCompletedKey);
+      if (!completed.containsKey(jobId)) {
+        completed[jobId] = '1';
+        await _saveMap(_craftCompletedKey, completed);
       }
-      final itemId = bits.length > 4 && bits[4].isNotEmpty
-          ? bits[4]
-          : recipe?.read<String?>('output_item_id');
+      final pendingItem = bits[4].isEmpty ? null : _dec(bits[4]);
+      final itemId = pendingItem ?? recipe?.read<String?>('output_item_id');
       if (itemId != null) {
         // `0` means the completion created the row, `1` means it pre-existed.
         final existed = bits[5];
@@ -1244,39 +1251,10 @@ class QaFixtureHarness {
   }
 
   Future<void> _addCraftDelta(String jobId, int seconds) async {
-    final deltas = <String, int>{};
-    for (final part in await _savedPairs(_craftDeltasKey)) {
-      final value = int.tryParse(part.$2);
-      if (value != null) deltas[part.$1] = value;
-    }
-    deltas[jobId] = (deltas[jobId] ?? 0) + seconds;
-    await db.customStatement(
-      'insert or replace into app_settings (key, value) values (?, ?)',
-      [
-        _craftDeltasKey,
-        deltas.entries.map((e) => '${e.key}:${e.value}').join(';'),
-      ],
-    );
-  }
-
-  Future<List<String>> _savedList(String key) async {
-    final row = await db.customSelect(
-      'select value from app_settings where key = ?',
-      variables: [Variable.withString(key)],
-    ).getSingleOrNull();
-    if (row == null) return <String>[];
-    return row
-        .read<String>('value')
-        .split(',')
-        .where((v) => v.isNotEmpty)
-        .toList();
-  }
-
-  Future<void> _saveList(String key, List<String> values) async {
-    await db.customStatement(
-      'insert or replace into app_settings (key, value) values (?, ?)',
-      [key, values.join(',')],
-    );
+    final saved = await _savedMap(_craftDeltasKey);
+    final current = int.tryParse(saved[jobId] ?? '0') ?? 0;
+    saved[jobId] = '${current + seconds}';
+    await _saveMap(_craftDeltasKey, saved);
   }
 
   Future<List<(String, String)>> _savedPairs(String key) async {
@@ -1295,12 +1273,19 @@ class QaFixtureHarness {
   /// - inventory: take back one unit per item the demo completion granted, so
   ///   items the user gained afterwards survive.
   Future<void> _restoreCraftFromReset() async {
+    final deltaMap = await _savedMap(_craftDeltasKey);
     final deltas = <String, int>{};
-    for (final part in await _savedPairs(_craftDeltasKey)) {
-      final seconds = int.tryParse(part.$2);
-      if (seconds != null) deltas[part.$1] = seconds;
+    for (final entry in deltaMap.entries) {
+      final seconds = int.tryParse(entry.value);
+      if (seconds == null) {
+        throw StateError(
+          'app_settings[$_craftDeltasKey] has a non-numeric delta; reset the '
+          'QA database before seeding again',
+        );
+      }
+      deltas[entry.key] = seconds;
     }
-    final completed = await _savedList(_craftCompletedKey);
+    final completed = (await _savedMap(_craftCompletedKey)).keys.toList();
     final granted = await _savedMap(_craftGrantedKey);
     if (deltas.isEmpty && completed.isEmpty && granted.isEmpty) return;
 
@@ -1365,12 +1350,22 @@ class QaFixtureHarness {
   ///
   /// Only the demo week is the fixture's to undo. Every other ledger row is the
   /// user's own work, including anything settled between the seed and the reset.
+  /// The exact ids `demo_day` creates.
+  ///
+  /// Used by both the reset deletion and the non-demo ledger totals. A prefix
+  /// test in one place and an exact list in the other let a look-alike session
+  /// survive reset while its XP was excluded from the restored progress.
+  static List<String> get _demoSessionIds => [
+        for (var n = 1; n <= demoSessionCount; n++) '${idPrefix}demo_sess_$n',
+      ];
+
   Future<({int xp, int minutes, int count})> _nonDemoLedgerTotals() async {
+    final demoIds = _demoSessionIds.toSet();
     var xp = 0;
     var minutes = 0;
     var count = 0;
     for (final row in await ledger.findForUser(userId)) {
-      if (row.sessionId.startsWith('${idPrefix}demo_sess_')) continue;
+      if (demoIds.contains(row.sessionId)) continue;
       xp += row.experienceEarned;
       minutes += row.experienceEarned ~/ 5;
       count++;
@@ -1411,7 +1406,12 @@ class QaFixtureHarness {
     var xp = int.tryParse(parts[0]);
     var minutes = int.tryParse(parts[1]);
     var happiness = int.tryParse(parts[2]);
-    if (xp == null || minutes == null || happiness == null) return;
+    if (xp == null || minutes == null || happiness == null) {
+      throw StateError(
+        'app_settings[$_savedProgressKey] has a non-numeric field; reset the '
+        'QA database before seeding again',
+      );
+    }
 
     // Add back what real sessions settled after the snapshot. The snapshot is
     // the state before the QA run; the user's own work since then is not the

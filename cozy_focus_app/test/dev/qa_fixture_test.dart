@@ -1071,6 +1071,30 @@ void main() {
           reason: 'the completion created this row; reset must remove it');
     });
 
+    test('a look-alike session id is not mistaken for the demo week', () async {
+      // The non-demo totals used to exclude any id starting with
+      // `qa_demo_sess_`, while reset deleted only the seven exact ids. A real
+      // session with a look-alike id survived reset but its XP was dropped from
+      // the restored progress.
+      await harness.seed(QaScenario.demoDay);
+      await settleReal('qa_demo_sess_extra', 50, DateTime(2026, 10, 18, 12));
+
+      await harness.reset();
+
+      final progress = (await db.petDao.findProgress(QaFixtureHarness.petId))!;
+      expect(progress.experiencePoints, 250,
+          reason: 'the look-alike session belongs to the user, not the week');
+      expect(progress.totalFocusMinutes, 50);
+      final ledger = (await db
+              .customSelect(
+                "select count(*) as c from reward_ledger "
+                "where session_id = 'qa_demo_sess_extra'",
+              )
+              .getSingle())
+          .read<int>('c');
+      expect(ledger, 1, reason: 'its ledger row survives reset');
+    });
+
     test('a second reset does not take another fixture unit', () async {
       await harness.seed(QaScenario.roomTwoAnchors);
       await db.customStatement(
