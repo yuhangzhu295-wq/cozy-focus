@@ -501,6 +501,7 @@
 - **修复**：dwell 改 1–2 秒（JSON 与运行时表同步，奇偶校验测试盯着）；新增 `CompanionPresentationIntent.behaviorStartedAt` 作为**表现令牌**，来自导演自己的宏结束时间，**故意计入 `==`**（被排除的那几个字段是每帧都在动的，这个只在"选了行为"时动）；`CompanionSpritePlayer.restartToken` 让"被重新选中的一次性动作"重新播，循环动作忽略它；令牌在两条渲染路径上都被传下去。
 - **测试与反向证明**：`sprite_player_restarts_one_shot_test.dart` 去掉令牌条件即红（停在 `celebrate_004` 而不是回到 `celebrate_000`）；`companion_life_loop_test.dart` 用旧 dwell 即红，失败信息自己把缺陷说清楚——"a 12000ms dwell over a 625ms one-shot leaves the companion holding a still frame for 11375ms"。
 - **设备复测**：修复后 5 秒窗口内测到 **4 次庆祝**、最长静止 1.4 秒；把 dwell 改回 6–12 秒重录，同一测量读到 **1 次庆祝、4.4 秒静止**，闸门 FAIL。
+  - **2026-10-21 口径修正**：这一行的数字来自 20fps 抽帧，而设备实际只录到约 16fps，超过一半是复制帧；"1.4 秒"那次最大变化是**庆祝结束交回待机姿势的单帧切换**，不是庆祝本身。现在的仪器读 `screenrecord` 的原生时间戳，用"一秒内多次大变化"识别 burst，并在 burst 内部有录制停顿时判 `BLOCKED`。见 `outputs/final_visual_implementation/README.md` 4a 节的修正段。
 - **闸门自己的判据也错了**：原来有一条 `quiets_after_burst`（"爆发之后要安静下来"）—— **那正是缺陷本身，被写成了要求。** 改成 `celebrates_more_than_once` + `no_long_freeze`。
 - **元教训**：**"没抓到"和"没有"是两件事。** 轮询闸门报 `NOT_VERIFIED` 是对的，但换成长录像之后才发现真正的问题不是窗口太短，而是宠物真的冻住了。**每一层修完都必须重新上设备量一次**——这次前三次修改在单测层面全部自洽，在设备上全部无效。
 

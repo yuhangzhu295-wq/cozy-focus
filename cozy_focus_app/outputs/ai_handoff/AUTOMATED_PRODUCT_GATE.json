@@ -1,84 +1,85 @@
 {
-  "generated_at": "2026-10-20 16:51:44",
-  "head": "29d18205dd25d72e1a7be0097abb9e98f71e1097",
-  "remote_head": "29d18205dd25d72e1a7be0097abb9e98f71e1097",
-  "local_equals_remote": true,
+  "generated_at": "2026-10-21 02:52:11",
+  "head": "8ae903536932d4a22f538d79d5ca9b39f3838072",
+  "remote_head": "7e1248c923daeb02100c986df5384d44287143fd",
+  "local_equals_remote": false,
   "counts": {
-    "BLOCKED": 5,
-    "PASS": 13
+    "DEFERRED": 1,
+    "PASS": 13,
+    "BLOCKED": 4
   },
   "gates": [
     {
       "gate": "DEVICE_MATRIX",
-      "status": "BLOCKED",
-      "evidence": "the frame-time harness cannot be measured: the host was 63.8% busy after settling, so the frame times would describe the other work rather than the app. Quit the heavy processes and re-run. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
-      "seconds": 43.6
+      "status": "DEFERRED",
+      "evidence": "the frame-time harness (integration_test/frame_time_test.dart, driver test_driver/perf_driver.dart) is re-runnable but needs an attached device and about three minutes, so it is not run by default. Pass --with-device to run it. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand.",
+      "seconds": 0.0
     },
     {
       "gate": "FORMAT",
       "status": "PASS",
       "evidence": "482 files, 0 changed",
-      "seconds": 5.2
+      "seconds": 3.5
     },
     {
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 20.6
+      "seconds": 17.0
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
       "evidence": "2287/2287 passed",
-      "seconds": 221.9
+      "seconds": 191.9
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "54/54 passed",
-      "seconds": 17.1
+      "seconds": 12.8
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 6.0
+      "seconds": 4.4
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 11.7
+      "seconds": 8.9
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "81/81 passed",
-      "seconds": 18.7
+      "seconds": 11.9
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 14.0
+      "seconds": 8.6
     },
     {
       "gate": "APK",
       "status": "PASS",
       "evidence": "32.1 MB (budget 34 MB)",
-      "seconds": 187.2
+      "seconds": 14.4
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "50.7 MB (budget 55 MB)",
-      "seconds": 14.9
+      "seconds": 10.1
     },
     {
       "gate": "DIFF_CHECK",
       "status": "PASS",
       "evidence": "no whitespace errors",
-      "seconds": 0.1
+      "seconds": 0.3
     },
     {
       "gate": "RELEASE_SIGNING",
@@ -108,7 +109,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 4.6
+      "seconds": 5.3
     },
     {
       "gate": "FLOW_GENERATION",

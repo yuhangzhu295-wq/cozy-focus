@@ -100,6 +100,27 @@ CELEBRATION_MIN = 10.0
 # measurement read 11.2s.
 MAX_STILL_RUN_S = 3.0
 
+# A burst is a *group* of large steps close together in time, not one. The
+# renderer swaps from the celebration sequence back to the ambient pose in a
+# single frame, and that hand-over is one of the largest single differences in
+# the clip (20-25 against a celebration of 13-25). A sprite sequence runs at
+# 5-8fps, so at a 16-60fps capture its swaps are *isolated* large steps too -
+# requiring consecutive moving samples would miss the sequence entirely and
+# mistake the hand-over for it. What separates them is repetition: a sequence
+# produces several large steps within a second, a hand-over produces one.
+BURST_MIN_STEPS = 2
+BURST_MAX_GAP_S = 0.5
+
+# A burst that starts later than this after the page arrives is not the moment
+# the completion screen triggers.
+CELEBRATION_WINDOW_S = 1.5
+
+# The recording must resolve the inside of the burst. `screenrecord` on this
+# emulator stalls for up to 1.3s (measured), and a stall inside the burst means
+# the clip shows the start and the end but not the frames between - so the
+# animation is not verified even though it plainly began.
+CAPTURE_GAP_S = 0.5
+
 
 def adb(*args, timeout=180):
     return subprocess.run([ADB, *args], capture_output=True, text=True,
@@ -223,16 +244,56 @@ def pet_box(xml):
     return best[1] if best else None
 
 
+def frame_times(mp4):
+    """The recording's own presentation timestamps, in seconds.
+
+    ## Why not count samples at 20fps
+
+    `-vf fps=20` does not make the device record 20 frames a second; it
+    duplicates the frames it has. The celebrate clip holds 132 real frames over
+    15.96s - about 8fps, with a 1.29s stall in the middle - so a 20fps
+    extraction is 315 images of which more than half are copies. Counting
+    stillness or motion on those copies invents a timebase the device never
+    delivered. This reads the timestamps the encoder actually wrote.
+    """
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "frame=pts_time", "-of", "csv=p=0", mp4],
+        capture_output=True, text=True)
+    times = []
+    for line in out.stdout.splitlines():
+        try:
+            times.append(float(line.strip().rstrip(",")))
+        except ValueError:
+            continue
+    return sorted(times)
+
+
 def extract(mp4, dest):
     if os.path.isdir(dest):
         shutil.rmtree(dest)
     os.makedirs(dest, exist_ok=True)
+    # Passthrough: one PNG per recorded frame, no duplication. The image2
+    # muxer warns about non-monotonic dts because screenrecord writes a few
+    # frames at the same timestamp; that is harmless here and the count still
+    # matches the probe.
     subprocess.run(
         ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", mp4,
-         "-vf", f"fps={FPS}", os.path.join(dest, "f_%04d.png")],
+         "-fps_mode", "passthrough", os.path.join(dest, "f_%04d.png")],
         check=True)
-    return sorted(os.path.join(dest, f) for f in os.listdir(dest)
-                  if f.endswith(".png"))
+    frames = sorted(os.path.join(dest, f) for f in os.listdir(dest)
+                    if f.endswith(".png"))
+    times = frame_times(mp4)
+    if len(times) != len(frames):
+        # A mismatch means the two readings disagree about the clip; fall back
+        # to an even spread but keep the flag so the report cannot present it as
+        # native timing.
+        step = (times[-1] - times[0]) / max(1, len(frames) - 1) if times else 0
+        times = [i * step for i in range(len(frames))]
+        print(f"WARNING: {len(frames)} frames but {len(times)} timestamps; "
+              "using an even spread", file=sys.stderr)
+        return frames, times, False
+    return frames, times, True
 
 
 def region(path, box):
@@ -294,7 +355,49 @@ def reach_running():
     return False
 
 
-def find_arrival(frames):
+def selftest():
+    """The burst classifier's own cases. A gate that cannot be shown to fail
+    proves nothing."""
+    def series(marks, n=200, dt=1 / 60):
+        steps = [0.0] * n
+        for i in marks:
+            steps[i] = 20.0
+        return steps, [dt] * n
+
+    cases = [
+        # A 5fps sprite sampled at 60fps: one large step every 12 frames.
+        ("sprite sequence at 5fps", [10, 22, 34, 46, 58, 70], 1),
+        # One frame swapped back to the ambient pose.
+        ("single handover", [10], 0),
+        # Two sequences a second apart are two celebrations, not one.
+        ("sequence, then another", [10, 22, 34, 110, 122, 134], 2),
+        # Two isolated steps 0.6s apart are not a sequence.
+        ("isolated steps apart", [10, 46], 0),
+        # A sequence with the hand-over adjacent stays one burst.
+        ("sequence plus adjacent handover", [10, 22, 34, 46], 1),
+    ]
+    failed = 0
+    for name, marks, want in cases:
+        steps, dts = series(marks)
+        got = len(find_bursts(steps, dts, CELEBRATION_MIN))
+        ok = got == want
+        print(f"{'PASS' if ok else 'FAIL'} {name}: got {got}, want {want}")
+        if not ok:
+            failed += 1
+    return 1 if failed else 0
+
+
+def display_size():
+    out = adb("shell", "wm", "size")
+    m = re.search(r"(\d+)x(\d+)", out)
+    return (int(m.group(1)), int(m.group(2))) if m else (1080, 2400)
+
+
+def scale_box(box, scale):
+    return tuple(int(round(v * scale)) for v in box)
+
+
+def find_arrival(frames, control=CONTROL):
     """Where the completion screen has arrived: just after the control stops moving.
 
     Anchored on the **control region**, not on the whole frame and not on distance
@@ -310,7 +413,7 @@ def find_arrival(frames):
     region the control check uses, so the two cannot disagree about where the
     measurement starts.
     """
-    ctrl = [region(p, CONTROL) for p in frames]
+    ctrl = [region(p, control) for p in frames]
     steps = [float(np.abs(ctrl[i] - ctrl[i + 1]).mean())
              for i in range(len(ctrl) - 1)]
     if not steps:
@@ -341,19 +444,45 @@ def find_arrival(frames):
     return hi + 1
 
 
-def analyse(frames, box, source):
-    """Measure the post-arrival window. Returns the report dict."""
-    # Drop the tail of the clip. A screenrecord stops mid-frame, so the last
-    # sample is a partial one - it moved the control region by 0.74 all by
-    # itself, which was enough to push the settled-window search to the final
-    # frame and leave nothing to measure. It is also the anchor frame for the
-    # arrival test, so trimming it makes that reading steadier too.
-    frames = frames[:len(frames) - max(1, int(0.25 * FPS))]
+def find_bursts(steps, dts, threshold, min_steps=BURST_MIN_STEPS,
+                max_gap_s=BURST_MAX_GAP_S):
+    """Groups of at least `min_steps` large steps, each group within
+    `max_gap_s` of the next.
 
-    start = find_arrival(frames)
+    `dts[i]` is the time between frame i and frame i+1, so it is the duration
+    of step i. The gap between two steps is the time between the end of the
+    earlier one and the start of the later one.
+    """
+    big = [i for i, s in enumerate(steps) if s > threshold]
+    groups = []
+    cur = []
+    for i in big:
+        if cur:
+            gap = sum(dts[cur[-1] + 1:i])
+            if gap > max_gap_s:
+                groups.append(cur)
+                cur = []
+        cur.append(i)
+    if cur:
+        groups.append(cur)
+    return [g for g in groups if len(g) >= min_steps]
+
+
+def analyse(frames, times, box, source, native_timing=True, control=CONTROL):
+    """Measure the post-arrival window. Returns the report dict and the cut."""
+    # Drop the final frame: a screenrecord stops mid-frame, so it is partial.
+    # It is also the anchor frame for the arrival test, so trimming it makes
+    # that reading steadier too.
+    frames = frames[:-1]
+    times = times[:-1]
+
+    start = find_arrival(frames, control)
     after = frames[start:]
-    print(f"{len(frames)} frames at {FPS}fps; control settled at frame {start}; "
-          f"measuring {len(after)} frames")
+    t0 = times[start]
+    aft = [t - t0 for t in times[start:]]
+    print(f"{len(frames)} recorded frames over {times[-1] - times[0]:.2f}s; "
+          f"arrival at frame {start} ({t0 - times[0]:.2f}s into the clip); "
+          f"measuring {len(after)} frames / {aft[-1]:.2f}s")
 
     subj = [region(p, box) for p in after]
     ctrl = [region(p, CONTROL) for p in after]
@@ -362,118 +491,147 @@ def analyse(frames, box, source):
              for i in range(len(subj) - 1)]
     ctrl_steps = [float(np.abs(ctrl[i] - ctrl[i + 1]).mean())
                   for i in range(len(ctrl) - 1)]
+    dts = [aft[i + 1] - aft[i] for i in range(len(aft) - 1)]
     first = subj[0]
     from_first = [float(np.abs(f - first).mean()) for f in subj]
 
-    peak = max(steps) if steps else 0.0
-    peak_at = steps.index(peak) if steps else -1
+    # The celebration is the opening burst, and a burst is a *run* of moving
+    # samples. Everything after it should be the settle; the renderer hand-over
+    # is a single frame swap and does not qualify.
+    bursts = find_bursts(steps, dts, CELEBRATION_MIN)
+    first_burst = bursts[0] if bursts else None
+    if first_burst:
+        lo, hi = first_burst[0], first_burst[-1]
+        burst_start_s = aft[lo]
+        # The last step of the group ends at frame `hi + 1`.
+        burst_span_s = aft[hi + 1] - aft[lo]
+        burst_gap_s = max(dts[lo:hi + 1])
+        celebration_step = max(steps[i] for i in first_burst)
+        celebration_at_s = aft[first_burst[
+            [steps[i] for i in first_burst].index(celebration_step)] + 1]
+    else:
+        burst_start_s = burst_span_s = burst_gap_s = celebration_step = None
+        celebration_at_s = None
 
-    # Motion episodes: runs of moving frames separated by at least three still
-    # ones.
-    moving = [i for i, s in enumerate(steps) if s > MIN_BURST]
-    episodes = 0
-    longest_still = 0
-    run = 0
-    last = None
-    for i in moving:
-        if last is None or i - last >= 4:
-            episodes += 1
-        last = i
-    # The longest stretch with nothing moving, in seconds - the direct measure of
-    # "is the companion frozen".
-    #
-    # Measured over half a second rather than frame to frame, and that matters:
-    # the two renderers move on completely different time scales. A sprite
-    # sequence swaps a whole frame at 5-8fps, so consecutive 20fps samples differ
-    # a lot; the layered rig breathes slowly and continuously, so consecutive
-    # samples differ by almost nothing while the companion is plainly alive.
-    # Frame-to-frame made the rig look frozen - it read 3-6s of "stillness" on a
-    # companion that was breathing the whole time.
-    slow = [float(np.abs(subj[i] - subj[i + SLOW_LAG]).mean())
-            for i in range(len(subj) - SLOW_LAG)]
-    longest_still = 0
-    still = 0
-    for s in slow:
-        if s > MIN_BURST:
-            still = 0
+    in_burst = set()
+    for group in bursts:
+        in_burst.update(group)
+    handover_step = max([s for i, s in enumerate(steps)
+                         if i not in in_burst] or [0.0])
+
+    # Half-second lag: the sprite swaps whole frames at 5-8fps while the rig
+    # breathes slowly, so a frame-to-frame test made the rig look frozen. A
+    # frame counts as "still" when it has not changed by MIN_BURST against the
+    # frame at least SLOW_LAG_S earlier.
+    slow = []
+    for i in range(len(aft)):
+        j = i
+        while j < len(aft) and aft[j] - aft[i] < SLOW_LAG_S:
+            j += 1
+        if j < len(aft):
+            slow.append((i, j, float(np.abs(subj[j] - subj[i]).mean())))
+
+    longest_still = 0.0
+    still_from = None
+    for i, j, d in slow:
+        if d > MIN_BURST:
+            still_from = None
         else:
-            still += 1
-            longest_still = max(longest_still, still)
+            if still_from is None:
+                still_from = i
+            longest_still = max(longest_still, aft[j] - aft[still_from])
 
-    # The celebration, measured as the *window* in which the companion does not
-    # yet look settled rather than as a count of large steps.
-    #
-    # Counting steps conflated two different things: the celebration, and the
-    # single frame where the renderer hands over from the celebration sequence to
-    # whatever follows. That hand-over is one big frame-to-frame difference and it
-    # was being counted as a second celebration - the gate said "two" while the
-    # device had celebrated once. Distance from the *settled* appearance separates
-    # them cleanly: during the celebration the companion is nowhere near its final
-    # look, and after it, it is.
-    # The celebration is the opening burst; everything after it should be the
-    # settle.
-    #
-    # Earlier versions tried to locate the celebration by how far the companion
-    # was from its settled appearance. That does not work on this screen: the rig
-    # breathes, so the settle wanders as far from its own final frame as 12.5,
-    # while the celebration reaches 22-25 - and a threshold that separates those
-    # on one run merges them on another. The opening/tail split needs no
-    # calibration at all: the celebration is at the start by construction, and
-    # the question is only whether anything as large happens after it.
-    opening_s = 2.0
-    cut = int(opening_s * FPS)
-    opening = steps[:cut]
-    later = steps[cut:]
-    window_s = len(subj) / FPS
+    # The raw frame-to-frame hold, reported separately: it is what the encoder
+    # saw, but it overstates a freeze on the slowly breathing rig.
+    longest_hold = 0.0
+    hold = 0.0
+    for i, s in enumerate(steps):
+        if s > MIN_BURST:
+            hold = 0.0
+        else:
+            hold += dts[i]
+            longest_hold = max(longest_hold, hold)
+
+    window_s = aft[-1]
+    raw_gaps = [b - a for a, b in zip(times, times[1:])]
+    raw_max_gap = max(raw_gaps) if raw_gaps else 0.0
 
     checks = {
-        # The moment played: a celebration-sized change in the opening seconds.
-        "celebration_played": bool(opening) and max(opening) > CELEBRATION_MIN,
+        # The moment played: a burst that starts as the screen arrives.
+        "celebration_played": (first_burst is not None and
+                               burst_start_s <= CELEBRATION_WINDOW_S),
         "control_is_static": (max(ctrl_steps) if ctrl_steps else 0.0)
         <= MAX_CONTROL_MOTION,
-        # And it played once. A second one is the companion looping its own
+        # And it played once. A second burst is the companion looping its own
         # celebration, which is not a celebration - it is what the device
         # measured as four celebrations in five seconds before the
         # once-per-completion rule.
-        "no_further_celebration": (max(later) if later else 0.0)
-        <= CELEBRATION_MIN,
+        "no_further_celebration": len(bursts) <= 1,
         # The settle is alive rather than a held frame.
-        "no_long_freeze": longest_still / FPS < MAX_STILL_RUN_S,
+        "no_long_freeze": longest_still < MAX_STILL_RUN_S,
     }
     blocking = [k for k, v in checks.items() if not v]
+
+    # Whether the clip can support the claim at all. A stall inside the burst
+    # leaves the animation's interior unrecorded: the start and the end are
+    # visible, the frames between are not.
+    burst_interior_resolved = (first_burst is not None and
+                               burst_gap_s <= CAPTURE_GAP_S)
 
     return {
         "label": "celebrate",
         "source": source,
-        "fps": FPS,
-        "frames_total": len(frames),
-        "arrival_frame": start,
         "frames_measured": len(after),
+        "arrival_frame": start,
         "companion_box": list(box),
-        "control_box": list(CONTROL),
-        "peak_step": round(peak, 3),
-        "peak_at_frame": peak_at,
-        "peak_at_seconds": round(peak_at / FPS, 3),
-        "opening_max_step": round(max(opening) if opening else 0.0, 3),
-        "later_max_step": round(max(later) if later else 0.0, 3),
+        "control_box": list(control),
+        "native_timing": native_timing,
+        "raw_frames": len(frames),
+        "raw_duration_s": round(times[-1] - times[0], 3),
+        "raw_max_gap_s": round(raw_max_gap, 3),
+        "burst_count": len(bursts),
+        "bursts_s": [[round(aft[g[0]], 3), round(aft[g[-1] + 1], 3)]
+                     for g in bursts],
+        "burst_max_step": round(celebration_step, 3)
+        if celebration_step is not None else None,
+        "burst_max_at_s": round(celebration_at_s, 3)
+        if celebration_at_s is not None else None,
+        "burst_span_s": round(burst_span_s, 3) if burst_span_s is not None else None,
+        "burst_gap_s": round(burst_gap_s, 3) if burst_gap_s is not None else None,
+        "burst_interior_resolved": burst_interior_resolved,
+        "largest_step_outside_burst": round(handover_step, 3),
         "window_s": round(window_s, 3),
-        "longest_still_run_s": round(longest_still / FPS, 3),
+        "longest_still_run_s": round(longest_still, 3),
+        "longest_hold_run_s": round(longest_hold, 3),
         "subject_steps": [round(s, 3) for s in steps],
+        "subject_dts": [round(d, 3) for d in dts],
         "control_steps": [round(s, 3) for s in ctrl_steps],
         "distance_from_first": [round(d, 3) for d in from_first],
+        "slow_lag_steps": [round(d, 3) for _i, _j, d in slow],
         "thresholds": {"min_burst": MIN_BURST,
                        "celebration_min": CELEBRATION_MIN,
+                       "burst_min_steps": BURST_MIN_STEPS,
+                       "celebration_window_s": CELEBRATION_WINDOW_S,
+                       "capture_gap_s": CAPTURE_GAP_S,
                        "max_control_motion": MAX_CONTROL_MOTION,
                        "max_still_run_s": MAX_STILL_RUN_S},
         "checks": checks,
-        "technical_visual_gate": "FAIL" if blocking else "PASS",
+        "capture_blocking": ([] if burst_interior_resolved
+                             else ["burst_interior_not_captured"]),
+        "technical_visual_gate": ("FAIL" if blocking else
+                                  ("BLOCKED" if not burst_interior_resolved
+                                   else "PASS")),
         "blocking": blocking,
         "owner_visual_gate": "REQUIRED",
         "note": (
             "celebrateCycle is 1200ms and one-shot. This asserts the moment "
             "plays once and the companion then settles into something alive. "
             "Whether it reads well is OWNER_VISUAL_GATE and is never decided "
-            "here."
+            "here. A burst is at least two consecutive moving samples, so the "
+            "single-frame hand-over back to the ambient pose is not counted as "
+            "a second celebration. The gate is BLOCKED, not PASS, when the "
+            "recording stalls inside the burst: the clip then shows the start "
+            "and the end but not the frames between."
         ),
     }, start
 
@@ -485,14 +643,34 @@ def run(analyse_only=False):
     local_mp4 = os.path.join(BUILD, "celebrate.mp4")
     box_path = os.path.join(BUILD, "companion_box.json")
 
+    # A smaller recording is the only lever on the encoder stall. `screenrecord`
+    # drops 0.75-1.3s exactly as the completion screen appears, which is inside
+    # the burst; encoding fewer pixels is cheaper, so `--size 720x1600` may get
+    # through it. The boxes are in device pixels, so they scale with the clip.
+    size = None
+    for i, a in enumerate(sys.argv):
+        if a == "--size" and i + 1 < len(sys.argv):
+            size = sys.argv[i + 1]
+        elif a.startswith("--size="):
+            size = a.split("=", 1)[1]
+    base_w, _ = display_size()
+    scale = 1.0
+    if size:
+        scale = int(size.lower().split("x")[0]) / base_w
+
     if analyse_only:
         if not os.path.exists(local_mp4):
             print("no recording to analyse", file=sys.stderr)
             return 2
         with open(box_path, encoding="utf-8") as fh:
-            box = tuple(json.load(fh))
-        frames = extract(local_mp4, os.path.join(BUILD, "frames"))
-        return finish(frames, box, local_mp4)
+            saved = json.load(fh)
+        if isinstance(saved, dict):
+            box = tuple(saved["box"])
+            scale = saved.get("scale", 1.0)
+        else:
+            box = tuple(saved)
+        frames, times, native = extract(local_mp4, os.path.join(BUILD, "frames"))
+        return finish(frames, times, box, local_mp4, native, scale)
 
     if not guard(settle=45):
         print("REFUSING: CozyFocus is not foreground and painted",
@@ -525,10 +703,12 @@ def run(analyse_only=False):
     # burst begins when the screen appears, so a recording started after arrival
     # has already missed it.
     adb("shell", "rm", "-f", "/sdcard/_celebrate.mp4")
-    subprocess.Popen(
-        [ADB, "shell", "screenrecord", "--time-limit", str(RECORD_SECONDS),
-         "--bit-rate", "6000000", "/sdcard/_celebrate.mp4"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    record = [ADB, "shell", "screenrecord", "--time-limit", str(RECORD_SECONDS),
+              "--bit-rate", "6000000"]
+    if size:
+        record += ["--size", size]
+    subprocess.Popen(record + ["/sdcard/_celebrate.mp4"],
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(2)
 
     if not tap_label("提前结束", settle=4):
@@ -554,9 +734,9 @@ def run(analyse_only=False):
     if not box:
         print("no companion on the completion screen", file=sys.stderr)
         return 2
-    print(f"companion box {box}")
+    print(f"companion box {box} (record scale {scale:.3f})")
     with open(box_path, "w", encoding="utf-8") as fh:
-        json.dump(list(box), fh)
+        json.dump({"box": list(scale_box(box, scale)), "scale": scale}, fh)
 
     # Let the recording run out; it holds the burst and the settle afterwards.
     time.sleep(RECORD_SECONDS)
@@ -568,27 +748,35 @@ def run(analyse_only=False):
         return 2
     print(f"recorded {os.path.getsize(local_mp4)} bytes")
 
-    frames = extract(local_mp4, os.path.join(BUILD, "frames"))
+    frames, times, native = extract(local_mp4, os.path.join(BUILD, "frames"))
     if len(frames) < 20:
         print(f"only {len(frames)} frames extracted", file=sys.stderr)
         return 2
-    return finish(frames, box, local_mp4)
+    return finish(frames, times, scale_box(box, scale), local_mp4, native,
+                  scale)
 
 
-def finish(frames, box, local_mp4):
-    report, start = analyse(frames, box, os.path.relpath(local_mp4, APP))
+def finish(frames, times, box, local_mp4, native_timing=True, scale=1.0):
+    control = scale_box(CONTROL, scale)
+    report, start = analyse(frames, times, box,
+                            os.path.relpath(local_mp4, APP), native_timing,
+                            control)
+    report["record_scale"] = round(scale, 3)
     path = os.path.join(OUT, "celebrate_MOTION_REPORT.json")
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2)
 
     # Keep a strip of frames from arrival onwards as the visual evidence.
-    strip = frames[start:start + int(2.0 * FPS):2]
+    strip = frames[start:start + 16:2]
     for i, p in enumerate(strip):
         shutil.copy(p, os.path.join(OUT, f"burst_{i:02d}.png"))
 
     print(json.dumps({k: report[k] for k in
-                      ("peak_step", "peak_at_seconds", "opening_max_step",
-                       "later_max_step", "longest_still_run_s", "checks",
+                      ("raw_frames", "raw_duration_s", "raw_max_gap_s",
+                       "burst_count", "bursts_s", "burst_max_step",
+                       "burst_max_at_s", "largest_step_outside_burst",
+                       "burst_interior_resolved", "longest_still_run_s",
+                       "longest_hold_run_s", "checks",
                        "technical_visual_gate")},
                      indent=2))
     print(f"\nreport: {path}")
@@ -596,4 +784,6 @@ def finish(frames, box, local_mp4):
 
 
 if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        sys.exit(selftest())
     sys.exit(run(analyse_only="--analyze-only" in sys.argv))

@@ -70,11 +70,108 @@ INK_LEVEL = 64
 # ink. The companion is either drawn or it is not; there is no middle.
 DIP_SHARE = 0.25
 
+# A flicker is a *short* low run that returns. A page that legitimately has no
+# companion stays low for many frames (or to the end of the clip), and a
+# round-trip between pages can also return to ink. Only a run this short is the
+# action-switch blank the instrument exists for.
+MAX_BLANK_FRAMES = 3
+
 
 def ink_count(path, box):
     with Image.open(path) as im:
         a = np.asarray(im.convert("L").crop(box), dtype=np.int16)
     return int((a < INK_LEVEL).sum())
+
+
+def extract(mp4, dest):
+    """Sample the clip at FPS. These are samples, not recorded frames.
+
+    The device's own rate is reported separately by [raw_video_meta]. `fps=60`
+    here cannot recover a frame screenrecord never wrote: it duplicates what is
+    there, so the temporal resolution of every claim is the recorded interval,
+    not 1/FPS.
+    """
+    if os.path.isdir(dest):
+        shutil.rmtree(dest)
+    os.makedirs(dest, exist_ok=True)
+    subprocess.run(
+        ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", mp4,
+         "-vf", f"fps={FPS}", os.path.join(dest, "f_%04d.png")],
+        check=True)
+    return sorted(os.path.join(dest, f) for f in os.listdir(dest)
+                  if f.endswith(".png"))
+
+
+def raw_video_meta(mp4):
+    """The recording's own frames, not the extracted samples.
+
+    `--fps` changes ffmpeg's extraction rate; it cannot make the device record
+    more frames. This reports what screenrecord actually produced so a report
+    cannot present interpolated samples as native device frames.
+    """
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "frame=pts_time", "-of", "csv=p=0", mp4],
+        capture_output=True, text=True)
+    times = []
+    for line in out.stdout.splitlines():
+        try:
+            times.append(float(line.strip().rstrip(",")))
+        except ValueError:
+            continue
+    times.sort()
+    gaps = [b - a for a, b in zip(times, times[1:])]
+    return {
+        "raw_frames": len(times),
+        "raw_duration_s": round(times[-1] - times[0], 3) if times else 0,
+        "raw_max_gap_s": round(max(gaps), 3) if gaps else 0,
+        "raw_median_gap_s": round(sorted(gaps)[len(gaps) // 2], 3)
+        if gaps else 0,
+    }
+
+
+def classify_flicker(inks, median, max_blank=MAX_BLANK_FRAMES):
+    """Low runs that are short and return. Long absences are page changes."""
+    low = [v < median * DIP_SHARE for v in inks]
+    frames = []
+    i = 0
+    while i < len(low):
+        if not low[i]:
+            i += 1
+            continue
+        j = i
+        while j < len(low) and low[j]:
+            j += 1
+        length = j - i
+        before = max(inks[:i]) if i > 0 else 0
+        after = max(inks[j:]) if j < len(inks) else 0
+        if (length <= max_blank and
+                before >= median * 0.6 and after >= median * 0.6):
+            frames.extend(range(i, j))
+        i = j
+    return frames
+
+
+def selftest():
+    cases = [
+        ("one blank frame", [100] * 10 + [0] + [100] * 10, [10]),
+        ("two blank frames", [100] * 10 + [0, 0] + [100] * 10, [10, 11]),
+        ("three blank frames", [100] * 10 + [0] * 3 + [100] * 10,
+         [10, 11, 12]),
+        ("four blank frames is a page change", [100] * 10 + [0] * 4 +
+         [100] * 10, []),
+        ("page round-trip", [100] * 5 + [0] * 20 + [100] * 5, []),
+        ("stays absent", [100] * 10 + [0] * 20, []),
+        ("no dip", [100] * 20, []),
+    ]
+    failed = 0
+    for name, inks, expected in cases:
+        got = classify_flicker(inks, 100.0)
+        ok = got == expected
+        print(f"{'PASS' if ok else 'FAIL'} {name}: got {got}, want {expected}")
+        if not ok:
+            failed += 1
+    return 1 if failed else 0
 
 
 def reach_home():
@@ -110,8 +207,15 @@ def main():
     ap.add_argument("--fps", type=int, default=20,
                     help="sampling rate for the extracted frames. A blank that "
                          "lasts one 60Hz vsync can fall between 20fps samples, "
-                         "so 60 is the stricter run")
+                         "so 60 is the stricter run. This only changes how "
+                         "many samples ffmpeg takes from the recording; the "
+                         "device's own frame rate is reported separately")
+    ap.add_argument("--selftest", action="store_true",
+                    help="run the classifier's own cases and exit. A gate that "
+                         "cannot be shown to fail proves nothing")
     a = ap.parse_args()
+    if a.selftest:
+        return selftest()
     global FPS
     FPS = a.fps
     C.FPS = a.fps
@@ -172,7 +276,7 @@ def main():
         print("pull failed", file=sys.stderr)
         return 2
 
-    frames = C.extract(local, os.path.join(BUILD, "frames"))
+    frames = extract(local, os.path.join(BUILD, "frames"))
     # Drop the tail: a screenrecord stops mid-frame and the last sample is
     # partial. Same reason as the celebrate instrument.
     frames = frames[:len(frames) - max(1, int(0.25 * FPS))]
@@ -203,26 +307,17 @@ def main():
     dips = [i for i, v in enumerate(inks) if v < median * DIP_SHARE]
     interior = [i for i in dips if 0 < i < len(inks) - 1]
 
-    # ...and interior is not enough on its own. Switching to a page that has no
-    # companion drops the ink to nothing *and leaves it there*: 5867, 5867, ...
-    # 0, 0, 0, 2801, 2801. That is the intended result of a tab change, and
-    # calling the six frames where it settles a flicker means the `--tab` control
-    # run reports FAIL for behaving correctly. So a low run is only a flicker when
-    # ink **returns** to its previous level afterwards. The companion being gone
-    # for the rest of the window is a page change, and is reported as such.
-    def returns_after(i):
-        tail = inks[i + 1:]
-        before = inks[:i]
-        if not tail or not before:
-            return False
-        return (max(tail) >= median * 0.6 and
-                max(before) >= median * 0.6)
-
-    flicker = sorted({i for i in interior if returns_after(i)})
+    # Only a *short* returning run is the action-switch blank. A page change
+    # that stays absent, or a round-trip whose absence lasts many frames, is
+    # legitimate navigation and must not be reported as a flicker.
+    flicker = classify_flicker(inks, median)
+    raw = raw_video_meta(local)
 
     report = {
         "label": label,
         "frames": len(frames),
+        "extract_fps": FPS,
+        **raw,
         "companion_box": list(box),
         "ink_median": median,
         "ink_min": min(inks),
@@ -230,14 +325,21 @@ def main():
         "dip_frames": interior,
         "flicker_frames": flicker,
         "ink_series": inks,
-        "thresholds": {"ink_level": INK_LEVEL, "dip_share": DIP_SHARE},
+        "thresholds": {"ink_level": INK_LEVEL, "dip_share": DIP_SHARE,
+                       "max_blank_frames": MAX_BLANK_FRAMES},
         "checks": {"no_flicker": len(flicker) == 0},
         "technical_visual_gate": "FAIL" if flicker else "PASS",
         "owner_visual_gate": "REQUIRED",
         "note": (
             "Answers 'did the companion vanish for a frame'. It cannot see a "
             "frame that draws the right amount of content but the wrong "
-            "content, and it does not judge whether the transition reads well."
+            "content, and it does not judge whether the transition reads well. "
+            "`frames` are extraction samples; `raw_frames` are what "
+            "screenrecord actually captured, and a gap larger than one sample "
+            "interval means the device dropped frames the extractor cannot "
+            "recover. The temporal resolution of a clean result is "
+            "`raw_median_gap_s`, not 1/extract_fps: a blank shorter than one "
+            "recorded interval is not excluded by this run."
         ),
     }
     path = os.path.join(OUT, f"{label}_FLICKER_REPORT.json")
@@ -251,8 +353,10 @@ def main():
         shutil.copy(frames[i], os.path.join(OUT, f"{label}_f{n:02d}.png"))
 
     print(json.dumps({k: report[k] for k in
-                      ("ink_median", "dip_frames", "flicker_frames",
-                       "checks", "technical_visual_gate")}, indent=2))
+                      ("frames", "extract_fps", "raw_frames",
+                       "raw_duration_s", "raw_max_gap_s", "raw_median_gap_s",
+                       "ink_median", "dip_frames", "flicker_frames", "checks",
+                       "technical_visual_gate")}, indent=2))
     print(f"\nreport: {path}")
     return 0 if report["technical_visual_gate"] == "PASS" else 1
 

@@ -1,10 +1,10 @@
 # Automated product gate
 
-Generated 2026-10-20 16:51:44 at `29d18205`. Local equals remote: **YES**.
+Generated 2026-10-21 02:52:11 at `8ae90353`. Local equals remote: **NO**.
 
 | Gate | Status | Evidence |
 |---|---|---|
-| `DEVICE_MATRIX` | **BLOCKED** | the frame-time harness cannot be measured: the host was 63.8% busy after settling, so the frame times would describe the other work rather than the app. Quit the heavy processes and re-run. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
+| `DEVICE_MATRIX` | **DEFERRED** | the frame-time harness (integration_test/frame_time_test.dart, driver test_driver/perf_driver.dart) is re-runnable but needs an attached device and about three minutes, so it is not run by default. Pass --with-device to run it. The rest of the device matrix - the golden flows, the size sweep, large text, landscape, the migration walk - is still driven by hand. |
 | `FORMAT` | **PASS** | 482 files, 0 changed |
 | `ANALYZE` | **PASS** | 0 issues |
 | `UNIT_TESTS` | **PASS** | 2287/2287 passed |
@@ -26,7 +26,8 @@ Generated 2026-10-20 16:51:44 at `29d18205`. Local equals remote: **YES**.
 ## Counts
 
 - **PASS**: 13
-- **BLOCKED**: 5
+- **BLOCKED**: 4
+- **DEFERRED**: 1
 
 ---
 
