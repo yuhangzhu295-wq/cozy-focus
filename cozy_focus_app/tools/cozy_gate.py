@@ -293,26 +293,62 @@ def gate_launcher_icon():
 def gate_owner_visual():
     # BLOCKED, not DEFERRED. The owner made this gate mandatory on 2026-10-18:
     # no page may be called visually accepted until a review agent has looked at
-    # both the board and the device screenshot. It has not run, and the reason is
-    # outside engineering: every image-capable channel on this machine drops the
-    # PNG before it reaches a model (four visual-judge agents on an unentitled
-    # plan; gpt-6-sol, gemini and claude subagents all return "media omitted ...
-    # does not support image input"; the image-reader key is malformed; no
-    # qwen/minimax/baidu credentials). The per-channel evidence is in
-    # outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md.
+    # both the board and the device screenshot.
     #
-    # DEFERRED would read as "not run by decision", which is the opposite of the
-    # truth: it is required and could not run. That distinction is the whole
-    # point of having BLOCKED.
-    return BLOCKED, (
-        "OWNER_VISUAL_GATE is REQUIRED and has not run: no review agent could "
-        "receive an image on this machine. Four visual-judge agents are bound to "
-        "an unentitled plan; every gpt-6-sol/gemini/claude subagent returns "
-        "'media omitted from provider request because the selected model does "
-        "not support image input'; image-reader's API key is malformed and no "
-        "other vision credential is configured. 27 current screenshots and 16 "
-        "boards are ready to review the moment a channel exists. Evidence: "
-        "outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md")
+    # The gate reads the review's own verdict file rather than reciting a state.
+    # It used to say "no review agent could receive an image", which was true on
+    # 2026-10-18 and false on 2026-10-20 when the final-gate sub-agent read the
+    # images; a gate that keeps repeating a finding it never re-checks cannot
+    # notice the day it stops being true.
+    verdict_path = os.path.join(
+        APP,
+        "outputs",
+        "final_visual_implementation",
+        "current_2026-10-18",
+        "REVIEW_VERDICT.json",
+    )
+    try:
+        with open(verdict_path, encoding="utf-8") as fh:
+            verdict = json.load(fh)
+    except (OSError, ValueError) as error:
+        return BLOCKED, (
+            "OWNER_VISUAL_GATE is REQUIRED and no readable review verdict "
+            f"exists at {verdict_path} ({error}). The owner's final style "
+            "approval cannot be claimed without one."
+        )
+
+    boards = verdict.get("boards", {})
+    expected = [f"{index:02d}" for index in range(1, 17)]
+    missing = [board for board in expected if boards.get(board) != "PASS"]
+    if missing:
+        return BLOCKED, (
+            "OWNER_VISUAL_GATE: the independent review is incomplete; boards "
+            f"{', '.join(missing)} are not PASS. The owner's final style "
+            "approval cannot be claimed."
+        )
+
+    supplementary = verdict.get("supplementary", {})
+    not_passed = [name for name, value in supplementary.items() if value != "PASS"]
+    if not_passed:
+        return BLOCKED, (
+            "OWNER_VISUAL_GATE: the independent review left supplementary "
+            f"states without PASS: {', '.join(not_passed)}."
+        )
+
+    if not verdict.get("owner_approved"):
+        return BLOCKED, (
+            "OWNER_VISUAL_GATE: the independent review passed all 16 boards and "
+            f"every supplementary state on {verdict.get('reviewed_at', '?')} "
+            f"({verdict.get('reviewer', '?')}). The owner's final style approval "
+            "has not been given, and REVIEW_APPROVED is not "
+            "OWNER_VISUAL_APPROVED. Evidence: "
+            f"{verdict.get('evidence', 'outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md')}"
+        )
+
+    return PASS, (
+        "OWNER_VISUAL_GATE: the independent review passed all 16 boards and the "
+        "owner has approved the final look."
+    )
 
 
 

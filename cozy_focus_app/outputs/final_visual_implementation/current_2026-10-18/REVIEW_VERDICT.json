@@ -1,0 +1,61 @@
+{
+  "reviewed_at": "2026-10-20",
+  "reviewer": "final-gate",
+  "reviewer_kind": "independent sub-agent; the engineer did not self-approve",
+  "boards": {
+    "01": "PASS",
+    "02": "PASS",
+    "03": "PASS",
+    "04": "PASS",
+    "05": "PASS",
+    "06": "PASS",
+    "07": "PASS",
+    "08": "PASS",
+    "09": "PASS",
+    "10": "PASS",
+    "11": "PASS",
+    "12": "PASS",
+    "13": "PASS",
+    "14": "PASS",
+    "15": "PASS",
+    "16": "PASS"
+  },
+  "supplementary": {
+    "03B_resume": "PASS",
+    "03C_end_confirm": "PASS",
+    "04B_reward": "PASS",
+    "06_complete": "PASS",
+    "06_focus_review": "PASS",
+    "06_focus_review_scrolled": "PASS",
+    "08_free_time": "PASS",
+    "10A_dress_up": "PASS",
+    "10B_collection": "PASS",
+    "15_data_sync": "PASS"
+  },
+  "notes": {
+    "01": "Layout and hierarchy match. The 25:00 timer is an existing product feature; the gear is the settings entry; the stats card is below the fold but present. Procedural room art is a recorded gap.",
+    "02": "Selected filter is solid sage.",
+    "03": "Selected segment is solid sage.",
+    "04": "Real running screen: ring timer, three modes, action row, Mochi.",
+    "05": "Records, capture sheet, detail, history and calendar each PASS.",
+    "06": "Weekly report: three tile tints, per-category dots, pale-green bars.",
+    "07": "Monthly report: axis labels 1/5/10/15/20/25/30.",
+    "08": "Free-time page matches; the sound-note entry is deliberately absent.",
+    "09": "Timeline is list/time-line; statistics live on the records report page by decision.",
+    "10": "Growth and room structure match; procedural room art is a recorded gap.",
+    "11": "Create-task form matches.",
+    "12": "Task detail matches; the progress card renders only with subtasks.",
+    "13": "Inbox: status+category chips are a recorded enhancement.",
+    "14": "Schedule-to-today matches.",
+    "15": "Settings: fake notification/white-noise switches deliberately absent.",
+    "16": "Empty task list matches, both CTAs present."
+  },
+  "residual_gaps": [
+    "01/10: procedural room art is flatter than the boards' photographic scenes; the owner decided against a photo room.",
+    "04B: generous whitespace and a secondary outline button; accepted by the reviewer.",
+    "06A: the gains row peeks at the fold; the page scrolls and the section is fully reachable."
+  ],
+  "owner_approved": false,
+  "owner_approval_note": "The owner's final style approval has not been given. REVIEW_APPROVED is not OWNER_VISUAL_APPROVED.",
+  "evidence": "outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md"
+}
