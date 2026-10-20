@@ -17,7 +17,7 @@
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
 | Full suite | **2287/2287** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation, strict record formats, 11 visual-contract guards) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
-| Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** at `7d645c5` (2026-10-20 15:12); DEVICE_MATRIX p50 1939 µs / p90 4287 µs, 1 late frame, host 4014 MB free and 20.8% busy. The 4 BLOCKED are release signing, launcher icon, the owner's final visual approval, and Flow video generation. |
+| Full gate (`--with-device`) | **13 PASS / 5 BLOCKED / 0 FAIL** at `29d1820` (2026-10-20 16:51). DEVICE_MATRIX is BLOCKED, not failed: the host was 63.8% busy after settling, so the gate refused to report frame times that would describe the other work. The last measurement on this host, at `7d645c5` (before the UI-only D1/D2 change), was p50 1939 µs / p90 4287 µs, 1 late frame, 4014 MB free and 20.8% busy. The other 4 BLOCKED are release signing, launcher icon, the owner's final visual approval, and Flow video generation. |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
 
 ## This round: twenty-four review rounds on the same fixture
