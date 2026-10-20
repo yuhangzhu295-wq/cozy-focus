@@ -111,11 +111,13 @@ void main() {
     int minutes = 25,
     String? taskId,
     String? taskName,
+    String? categoryId,
   }) =>
       records.insert(FocusRecord(
         id: id,
         sessionId: 'sess_$id',
         userId: userId,
+        categoryId: categoryId,
         taskId: taskId,
         taskName: taskName,
         durationSeconds: minutes * 60,
@@ -258,6 +260,102 @@ void main() {
     for (final kind in const ['day', 'week', 'month']) {
       expect(find.byKey(ValueKey('stats_range_$kind')), findsOneWidget,
           reason: kind);
+    }
+  });
+
+  testWidgets('the three summary tiles carry three different tints',
+      (tester) async {
+    await addRecord(id: 'a', startAt: DateTime(2026, 10, 6, 9), minutes: 30);
+
+    final c = container();
+    await pump(tester, c);
+
+    // Board 07 draws 黄 / 绿 / 浅绿 circles behind the three icons. Before
+    // this, all three were the same sage glyph with no tint, so the row read
+    // as one repeated card rather than three measures.
+    Color tintOf(IconData icon) {
+      final containers = tester.widgetList<Container>(
+        find.ancestor(
+          of: find.byIcon(icon),
+          matching: find.byType(Container),
+        ),
+      );
+      for (final container in containers) {
+        final decoration = container.decoration;
+        if (decoration is BoxDecoration &&
+            decoration.shape == BoxShape.circle) {
+          return decoration.color!;
+        }
+      }
+      fail('no tint circle around $icon');
+    }
+
+    expect(tintOf(Icons.access_time_rounded), AppColors.accentGoldLight,
+        reason: 'total time');
+    expect(tintOf(Icons.check_circle_outline), AppColors.primaryLight,
+        reason: 'session count');
+    expect(tintOf(Icons.bar_chart_rounded), AppColors.chartBarFaint,
+        reason: 'mean duration');
+
+    // The report's bars are board 07's pale green, not page 01's chartBar.
+    final bars =
+        tester.widgetList<Container>(find.byType(Container)).where((w) {
+      final d = w.decoration;
+      return d is BoxDecoration && d.color == AppColors.chartBarReport;
+    }).length;
+    expect(bars, greaterThan(0), reason: 'the day with focus has a bar');
+  });
+
+  testWidgets('each distribution row is dotted with its category colour',
+      (tester) async {
+    await addRecord(
+      id: 'work',
+      startAt: DateTime(2026, 10, 5, 9),
+      minutes: 30,
+      taskName: '写方案',
+      categoryId: 'work',
+    );
+    await addRecord(
+      id: 'study',
+      startAt: DateTime(2026, 10, 6, 9),
+      minutes: 30,
+      taskName: '读一章',
+      categoryId: 'study',
+    );
+
+    final c = container();
+    await pump(tester, c);
+
+    int dots(Color color) =>
+        tester.widgetList<Container>(find.byType(Container)).where((w) {
+          final d = w.decoration;
+          return d is BoxDecoration &&
+              d.shape == BoxShape.circle &&
+              d.color == color;
+        }).length;
+
+    expect(dots(AppColors.catWork), 1, reason: 'the work row');
+    expect(dots(AppColors.catStudy), 1, reason: 'the study row');
+    expect(dots(AppColors.primarySage), 0,
+        reason: 'no row falls back to the old one-colour dot');
+  });
+
+  testWidgets('a month labels its axis by date, not by weekday',
+      (tester) async {
+    await addRecord(id: 'a', startAt: DateTime(2026, 10, 6, 9), minutes: 30);
+
+    final c = container();
+    await pump(tester, c);
+    await tester.tap(find.byKey(const ValueKey('stats_range_month')));
+    await settle(tester);
+
+    // 31 weekday names do not fit; they used to run together into a band of
+    // repeated 周X. A month is read against dates, so every fifth day is
+    // labelled and the rest are blank.
+    expect(find.text('周一'), findsNothing);
+    expect(find.text('周二'), findsNothing);
+    for (final day in const ['5', '10', '15', '20', '25']) {
+      expect(find.text(day), findsOneWidget, reason: 'axis label $day');
     }
   });
 }

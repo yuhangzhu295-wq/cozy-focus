@@ -100,6 +100,8 @@ class _SummaryBody extends StatelessWidget {
             Expanded(
               child: _StatTile(
                 icon: Icons.access_time_rounded,
+                iconColor: AppColors.accentGold,
+                tint: AppColors.accentGoldLight,
                 value: formatDurationText(summary.totalSeconds),
                 label: '专注总时长',
               ),
@@ -108,6 +110,8 @@ class _SummaryBody extends StatelessWidget {
             Expanded(
               child: _StatTile(
                 icon: Icons.check_circle_outline,
+                iconColor: AppColors.primarySage,
+                tint: AppColors.primaryLight,
                 value: '${summary.sessionCount}',
                 label: '专注次数',
               ),
@@ -116,6 +120,8 @@ class _SummaryBody extends StatelessWidget {
             Expanded(
               child: _StatTile(
                 icon: Icons.bar_chart_rounded,
+                iconColor: AppColors.primaryDark,
+                tint: AppColors.chartBarFaint,
                 value: formatDurationText(summary.averageSeconds),
                 label: '平均时长',
               ),
@@ -128,6 +134,7 @@ class _SummaryBody extends StatelessWidget {
         _DailyChart(
           daily: summary.daily,
           busiest: summary.busiestDaySeconds,
+          kind: summary.range.kind,
         ),
         const SizedBox(height: 20),
         const _SectionLabel(text: '任务专注时长分布'),
@@ -246,11 +253,15 @@ class _RangeHeader extends StatelessWidget {
 
 class _StatTile extends StatelessWidget {
   final IconData icon;
+  final Color iconColor;
+  final Color tint;
   final String value;
   final String label;
 
   const _StatTile({
     required this.icon,
+    required this.iconColor,
+    required this.tint,
     required this.value,
     required this.label,
   });
@@ -266,7 +277,14 @@ class _StatTile extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(icon, size: 18, color: AppColors.primarySage),
+          // Board 07 gives the three tiles three different tints; three identical
+          // green glyphs made the row read as one repeated card.
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(color: tint, shape: BoxShape.circle),
+            child: Icon(icon, size: 17, color: iconColor),
+          ),
           const SizedBox(height: 8),
           FittedBox(
             fit: BoxFit.scaleDown,
@@ -319,8 +337,25 @@ class _SectionLabel extends StatelessWidget {
 class _DailyChart extends StatelessWidget {
   final List<DailyFocusBucket> daily;
   final int busiest;
+  final AnalyticsRangeKind kind;
 
-  const _DailyChart({required this.daily, required this.busiest});
+  const _DailyChart({
+    required this.daily,
+    required this.busiest,
+    required this.kind,
+  });
+
+  /// The label under one bar.
+  ///
+  /// A month has 28-31 bars, and printing `周一` under every one of them ran the
+  /// seven weekday names together into an unreadable band. Days are what a month
+  /// chart is read against, so it labels every fifth day with its date and
+  /// leaves the rest blank; day and week keep the weekday names, which fit.
+  String _axisLabel(DailyFocusBucket bucket) {
+    if (kind != AnalyticsRangeKind.month) return bucket.weekdayLabel;
+    final day = bucket.day.day;
+    return day == 1 || day % 5 == 0 ? '$day' : '';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -368,14 +403,14 @@ class _DailyChart extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: bucket.seconds == 0
                                     ? AppColors.border
-                                    : AppColors.primarySage,
+                                    : AppColors.chartBarReport,
                                 borderRadius: BorderRadius.circular(3),
                               ),
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            bucket.weekdayLabel,
+                            _axisLabel(bucket),
                             style: const TextStyle(
                               fontSize: 10,
                               color: AppColors.textSecondary,
@@ -408,8 +443,10 @@ class _ShareRow extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration: const BoxDecoration(
-              color: AppColors.primarySage,
+            decoration: BoxDecoration(
+              // Board 07 colours each row by category. One shared green made
+              // the distribution look like a single-category week.
+              color: AppColors.categoryColor(share.categoryId),
               shape: BoxShape.circle,
             ),
           ),

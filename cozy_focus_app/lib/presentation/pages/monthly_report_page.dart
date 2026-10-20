@@ -64,20 +64,7 @@ class _MonthlyReportPageState extends ConsumerState<MonthlyReportPage> {
     }
   }
 
-  Color _categoryColor(String id) {
-    switch (id) {
-      case 'study':
-        return AppColors.catStudy;
-      case 'work':
-        return AppColors.catWork;
-      case 'reading':
-        return AppColors.catReading;
-      case 'life':
-        return AppColors.catLife;
-      default:
-        return AppColors.catOther;
-    }
-  }
+  Color _categoryColor(String id) => AppColors.categoryColor(id);
 
   Future<void> _shareMonthlyAchievement(
       PeriodReport report, PeriodComparison? comp, int year, int month) async {

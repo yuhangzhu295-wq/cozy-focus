@@ -26,6 +26,16 @@ class RewardService {
   static const int _coinsPerMinute = 2;
   static const int _xpPerMinute = 5;
 
+  /// What a session of [focusMinutes] earns, before it is settled.
+  ///
+  /// The one place the rate lives. The save screen's estimate reads this too:
+  /// when it carried its own `minutes * 5`, that screen said "+5 XP" while the
+  /// reward screen said "+2 专注币 / +5 XP" for the same session.
+  static ({int coins, int xp}) project(int focusMinutes) => (
+        coins: focusMinutes * _coinsPerMinute,
+        xp: focusMinutes * _xpPerMinute,
+      );
+
   RewardService({
     required IRewardLedgerRepository ledgerRepo,
     required IPetRepository petRepo,
@@ -44,8 +54,9 @@ class RewardService {
   /// Returns [false] if the session was already settled (safe no-op).
   Future<bool> settle(FocusSession session) async {
     final focusMinutes = (session.elapsedSeconds / 60).floor();
-    final coins = focusMinutes * _coinsPerMinute;
-    final xp = focusMinutes * _xpPerMinute;
+    final projected = project(focusMinutes);
+    final coins = projected.coins;
+    final xp = projected.xp;
     final now = _clock.now();
 
     final entry = RewardLedger(

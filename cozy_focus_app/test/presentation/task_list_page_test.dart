@@ -249,6 +249,35 @@ void main() {
     }
   });
 
+  testWidgets('the selected filter is a filled sage pill', (tester) async {
+    final c = container();
+    await pump(tester, c);
+
+    BoxDecoration decorationOf(String filter) {
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byKey(ValueKey('task_filter_$filter')),
+          matching: find.byType(Container),
+        ),
+      );
+      return container.decoration! as BoxDecoration;
+    }
+
+    // Board 02 fills the chosen filter solid sage. A white pill on the cream
+    // background left the active filter with no visible state.
+    expect(decorationOf('today').color, AppColors.primarySage);
+    expect(decorationOf('done').color, Colors.transparent);
+
+    final label = tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(const ValueKey('task_filter_today')),
+        matching: find.text('今天'),
+      ),
+    );
+    expect(label.style?.color, Colors.white,
+        reason: 'the sage fill needs light ink to stay readable');
+  });
+
   testWidgets('the duration reads the way the design writes it',
       (tester) async {
     // Three shapes, one function: minutes, whole hours, and hours with minutes.

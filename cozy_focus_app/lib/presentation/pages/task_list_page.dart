@@ -152,15 +152,14 @@ class _FilterTabs extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     padding: const EdgeInsets.symmetric(vertical: 9),
                     decoration: BoxDecoration(
+                      // Board 02 fills the selected filter solid sage. The
+                      // earlier white pill read as "not selected" next to the
+                      // cream background, so the active filter had no visible
+                      // state at all.
                       color: filter == active
-                          ? AppColors.surface
+                          ? AppColors.primarySage
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
-                      border: Border.all(
-                        color: filter == active
-                            ? AppColors.border
-                            : Colors.transparent,
-                      ),
                     ),
                     child: Text(
                       _labels[filter]!,
@@ -171,7 +170,7 @@ class _FilterTabs extends StatelessWidget {
                             ? FontWeight.w700
                             : FontWeight.w500,
                         color: filter == active
-                            ? AppColors.textPrimary
+                            ? Colors.white
                             : AppColors.textSecondary,
                       ),
                     ),

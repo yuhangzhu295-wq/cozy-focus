@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/enums.dart';
 import '../../domain/models/focus_review.dart';
+import '../../domain/services/reward_service.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/home_controller.dart';
 import '../companion/companion_avatar.dart';
@@ -145,7 +146,9 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
     final sessionState = ref.watch(focusSessionControllerProvider);
     final elapsedSec = sessionState.elapsedSeconds;
     final minutes = (elapsedSec / 60).floor();
-    final earnedXp = minutes * 5;
+    // The same projection the settlement uses, so this card cannot promise a
+    // different reward from the one the next screen shows.
+    final projected = RewardService.project(minutes);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -546,18 +549,42 @@ class _FocusSavePageState extends ConsumerState<FocusSavePage> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                Row(
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
-                                    const Text('⭐',
-                                        style: TextStyle(fontSize: 18)),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '+$earnedXp XP',
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.accentPeach,
-                                      ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text('🪙',
+                                            style: TextStyle(fontSize: 16)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '+${projected.coins} 专注币',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.accentGold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text('⭐',
+                                            style: TextStyle(fontSize: 16)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '+${projected.xp} XP',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.accentPeach,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),

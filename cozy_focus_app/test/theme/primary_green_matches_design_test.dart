@@ -73,6 +73,17 @@ void main() {
       expect(resolved, AppColors.primarySage);
     });
 
+    test('the app bar asks for dark status bar icons', () {
+      // Every page is light. Without this the save and reward pages inherited
+      // the dark focus screen's white icons and drew an invisible status bar
+      // on a cream background.
+      expect(
+        AppTheme
+            .lightTheme.appBarTheme.systemOverlayStyle?.statusBarIconBrightness,
+        Brightness.dark,
+      );
+    });
+
     testWidgets('a FilledButton paints it', (tester) async {
       await tester.pumpWidget(
         MaterialApp(

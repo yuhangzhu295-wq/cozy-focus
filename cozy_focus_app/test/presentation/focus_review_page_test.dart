@@ -234,6 +234,17 @@ void main() {
     expect(find.text('reward'), findsOneWidget);
   });
 
+  testWidgets('the estimate is the projection settlement uses', (tester) async {
+    await finishedSession();
+    await pump(tester);
+
+    // 25 minutes at 2 coins and 5 XP per minute. This screen used to show only
+    // +125 XP, so the reward page that followed said "+50 专注币 / +125 XP" for
+    // the same session — two places, two answers.
+    expect(find.text('+50 专注币'), findsOneWidget);
+    expect(find.text('+125 XP'), findsOneWidget);
+  });
+
   testWidgets('the counters count characters, not code units', (tester) async {
     await finishedSession();
     await pump(tester);

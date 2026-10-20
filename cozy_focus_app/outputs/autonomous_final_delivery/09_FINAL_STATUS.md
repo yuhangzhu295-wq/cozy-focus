@@ -2,7 +2,8 @@
 
 **ENGINEERING_COMPLETE = YES for the scope below — this is a claim about the work, not the review. The review rounds are recorded further down, and the last recorded round's verdict is the authority on whether engineering defects remain.**
 **STORE_RELEASE_READY = NO.**
-**OWNER_VISUAL_APPROVED = NO — not claimed.**
+**REVIEW_APPROVED = YES (2026-10-20) — 16/16 design boards and every supplementary state were judged PASS by independent review agents.**
+**OWNER_VISUAL_APPROVED = NO — the owner still holds the final style approval.**
 
 ## Done
 
@@ -14,7 +15,7 @@
 | Local backup + restore | `df811ca`; 11 isolated tests; device walk |
 | Backup UI in 数据与同步 | two real actions, preview, explicit confirmation |
 | FLOW-01/02/04 gaps | `b068495`; 3 tests on the real engine |
-| Full suite | **2276/2276** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation, strict record formats) |
+| Full suite | **2283/2283** (64 ordered pairs, 8 reset-to-empty, placement ids, 3 real-session orderings, reset atomicity, real-memory and real-craft preservation, strict record formats, 7 visual-contract guards) |
 | Analyze / format / APK / AAB | 0 issues, 0 changed, 32.1 MB, 50.7 MB |
 | Full gate (`--with-device`) | **14 PASS / 4 BLOCKED / 0 FAIL** at `130b0f8`; DEVICE_MATRIX p50 1490 µs / p90 2958 µs, 2 late frames, host 3125 MB free and 9.5% busy. |
 | Device screenshots | `device/` — backup flow, candidate home/room/focus, shipped home/room |
@@ -232,14 +233,56 @@ the production adoption row (`mochi_pet_id`, 0 XP, 0 minutes). That row stays on
 purpose — it is what the app creates on first launch, and deleting it would let a
 QA cleanup remove a real user's companion.
 
+## 2026-10-20 visual round — the channel opened and every page passed
+
+The previous status recorded the visual gate as BLOCKED because no channel on
+this machine could deliver a PNG to a model. That was re-tested with a
+discriminative probe first: `final-gate` read board 13 and screenshot 13_inbox,
+and reported chip sets that differed from each other and matched the app source
+(`待处理 / 已处理` at `distraction_inbox_page.dart:266-267`) — a blind model
+could not have produced that. The channel is open.
+
+Five review groups then compared the 16 boards with the current device
+screenshots, and the supplementary states against the product's own design
+language. **All 16 boards and every supplementary state now have an explicit
+PASS**, with the verdicts and evidence in `05_VISUAL_COMPARISON.md`.
+
+Ten defects found by that review were fixed, each with a test and a reverse
+proof:
+
+1. 02 / 03 selected filter and segment were white outlines; now solid sage.
+2. 06 / 07 summary tiles had one identical green glyph; now three tints.
+3. 06 / 07 distribution dots were all the same green; now per category.
+4. 07's month axis printed 31 weekday names into an unreadable band; now dates.
+5. 07's bars used the home chart's dark green; now board 07's `#BCD4BC`.
+6. `04_focus_running.png` was the resume layer (99.5% identical to
+   `03B_resume.png`); re-shot, now 91.5% different and shows the real ring.
+7. 04B had no Mochi at all; the reward screen now carries the companion and a
+   speech bubble, and scrolls on short screens.
+8. The save and reward pages drew white status-bar icons on cream (inherited
+   from the dark focus screen), i.e. no visible status bar; the AppBar theme now
+   asks for dark icons.
+9. The save screen's "预计奖励" showed only XP while the reward screen showed
+   coins + XP; `RewardService.project()` is now the single projection both read.
+10. 08 and 16 had no current screenshots; both were captured (16 from an empty
+    database via `QA_RESET`).
+
+The reviewer's false positives and the documented deviations are listed in
+`05_VISUAL_COMPARISON.md` (statistics moved to 记录/报告, conditional subtask
+card, deliberately absent fake switches, 3-item main navigation, the home timer
+card, procedural room art).
+
+`OWNER_VISUAL_APPROVED` remains NO: the owner still decides whether the
+procedural rooms and the reward page's whitespace are the final look.
+
 ## Not done, with the reason
 
 | Item | Status | Reason |
 |---|---|---|
 | Release signing | BLOCKED | No keystore; the owner must generate and store it. No private key was written. |
 | Launcher icon | BLOCKED | Candidate exists; approval not given; `android/` untouched. |
-| Owner visual gate | BLOCKED | Required, and not run: no image-capable reviewer channel exists on this machine. See `05_VISUAL_COMPARISON.md`. |
-| Independent visual review | WAITING | No available reviewer accepts Flutter screenshots. |
+| Owner visual gate | REVIEW_APPROVED / OWNER PENDING | 16/16 boards and all supplementary states passed independent review on 2026-10-20. The owner's final style approval is still required; see `05_VISUAL_COMPARISON.md`. |
+| Independent visual review | DONE | `final-gate`, 2026-10-20, five board groups plus the supplementary states. |
 | Physical-GPU frame time | NOT MEASURED | Emulator uses swiftshader; raster numbers are not transferable. |
 | TalkBack walk | NOT MEASURED | Not run this round. |
 | Cloud sync / white noise / notifications / dress | NOT IMPLEMENTED | Product decisions; the UI says so honestly. |
@@ -248,8 +291,10 @@ QA cleanup remove a real user's companion.
 
 ## Evidence gaps that are not hidden
 
-- The **board-level visual review** is not an independent pass. The screenshots
-  and per-element comparisons exist; the sign-off does not.
+- The **board-level visual review** now has an independent PASS on all 16 boards
+  and the supplementary states (2026-10-20). It is still not the owner's final
+  style approval: the procedural rooms on 01/10 and 04B's whitespace are
+  recorded as residual gaps.
 - The **candidate performance** numbers are from the previous round. This round
   did not re-run them, and no new number is claimed.
 - **FLOW-06's animation smoothness on a live switch** was not re-recorded this
@@ -273,7 +318,8 @@ QA cleanup remove a real user's companion.
 2. Generate and back up the release keystore.
 3. Choose the room: shipped or candidate (and, if candidate, whether the shelf
    crop and soft window are the first fixes).
-4. The visual gate.
+4. Final style approval: the independent review passed every page; the owner
+   still decides on the procedural room art (01/10) and 04B's whitespace.
 5. Whether data export/restore needs encryption or a merge mode — V1 replaces,
    and says so.
 

@@ -274,6 +274,34 @@ void main() {
     await pump(tester, c);
     expect(find.text('10 月 7 日 · 周三'), findsOneWidget);
   });
+
+  testWidgets('the chosen view is a filled sage pill', (tester) async {
+    final c = container();
+    await pump(tester, c);
+
+    BoxDecoration decorationOf(String key) {
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byKey(ValueKey(key)),
+          matching: find.byType(Container),
+        ),
+      );
+      return container.decoration! as BoxDecoration;
+    }
+
+    // Board 03 fills the chosen segment solid sage. A white pill on the beige
+    // track was the least prominent thing on the row.
+    expect(decorationOf('plan_view_list').color, AppColors.primarySage);
+    expect(decorationOf('plan_view_timeline').color, Colors.transparent);
+
+    final label = tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(const ValueKey('plan_view_list')),
+        matching: find.text('列表'),
+      ),
+    );
+    expect(label.style?.color, Colors.white);
+  });
 }
 
 /// A clock the test sets by hand, so "today" is a fixed day rather than the day

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Cozy Focus Design System Tokens & Theme
 /// Aligned directly with designs/: warm pastel, cozy atmosphere, rounded cards,
@@ -57,6 +58,14 @@ class AppColors {
   static const Color chartBar = Color(0xFF7AB278);
   static const Color chartBarFaint = Color(0xFFCEE8C1);
 
+  /// The report page's bars.
+  ///
+  /// Board 07 fills its 每日专注时长 bars with a much paler green than page
+  /// 01's: the tall runs measure in the `#C0D4BC` / `#ACC8AC` band, not
+  /// [chartBar]. Reusing the home chart's green made the report's bars the
+  /// heaviest thing on the page.
+  static const Color chartBarReport = Color(0xFFBCD4BC);
+
   /// The fill of the chosen length in 选择专注时长, and the leaf on every one.
   ///
   /// Measured from page 01: the chosen card is filled `#517C52` with its number
@@ -83,6 +92,27 @@ class AppColors {
   static const Color catReading = Color(0xFF7CAFA1);
   static const Color catLife = Color(0xFFF0B367);
   static const Color catOther = Color(0xFFA5A9A7);
+
+  /// The colour that stands for a category id, using the same mapping as the
+  /// history list and the weekly report.
+  ///
+  /// One definition rather than a copy per screen: board 07's distribution dots
+  /// and the report legend have to agree, and a second switch would drift from
+  /// the first the moment a category is added.
+  static Color categoryColor(String? id) {
+    switch (id) {
+      case 'study':
+        return catStudy;
+      case 'work':
+        return catWork;
+      case 'reading':
+        return catReading;
+      case 'life':
+        return catLife;
+      default:
+        return catOther;
+    }
+  }
 
   // Text
   static const Color textPrimary = Color(0xFF2D312E);
@@ -149,6 +179,11 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
+        // Every screen in this app is light. Without an explicit style the
+        // status bar kept whatever the previous screen set: coming back from
+        // the dark focus screen, the save and reward pages showed white clock
+        // and battery icons on a cream background, i.e. no status bar at all.
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         iconTheme: IconThemeData(color: AppColors.textPrimary),
         titleTextStyle: TextStyle(
           color: AppColors.textPrimary,

@@ -57,20 +57,7 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
     }
   }
 
-  Color _categoryColor(String id) {
-    switch (id) {
-      case 'study':
-        return AppColors.catStudy;
-      case 'work':
-        return AppColors.catWork;
-      case 'reading':
-        return AppColors.catReading;
-      case 'life':
-        return AppColors.catLife;
-      default:
-        return AppColors.catOther;
-    }
-  }
+  Color _categoryColor(String id) => AppColors.categoryColor(id);
 
   String _weekdayName(int weekday) {
     switch (weekday) {

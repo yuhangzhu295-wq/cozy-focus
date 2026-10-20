@@ -40,6 +40,14 @@ class TaskFocusShare {
   /// The task's id, when the time belongs to a task that still exists.
   final String? taskId;
 
+  /// The category the grouped records carried, when they agreed on one.
+  ///
+  /// Board 07 colours each distribution row's dot by category, so the row needs
+  /// to know it. Records under one task can in principle carry different
+  /// categories; the first non-null wins, which is stable for a given window
+  /// and never invents a category that no record had.
+  final String? categoryId;
+
   final int seconds;
   final int sessions;
 
@@ -49,6 +57,7 @@ class TaskFocusShare {
   const TaskFocusShare({
     required this.title,
     this.taskId,
+    this.categoryId,
     required this.seconds,
     required this.sessions,
     required this.fraction,
@@ -116,8 +125,14 @@ AnalyticsSummary buildAnalyticsSummary({
   var total = 0;
   var sessions = 0;
   final byDay = <String, ({int seconds, int sessions})>{};
-  final byTask =
-      <String, ({String title, String? taskId, int seconds, int sessions})>{};
+  final byTask = <String,
+      ({
+    String title,
+    String? taskId,
+    String? categoryId,
+    int seconds,
+    int sessions,
+  })>{};
 
   for (final record in records) {
     // Only records inside the window. The caller is expected to have queried the
@@ -156,6 +171,7 @@ AnalyticsSummary buildAnalyticsSummary({
     byTask[groupKey] = (
       title: title,
       taskId: taskId,
+      categoryId: current?.categoryId ?? record.categoryId,
       seconds: (current?.seconds ?? 0) + record.durationSeconds,
       sessions: (current?.sessions ?? 0) + 1,
     );
@@ -178,6 +194,7 @@ AnalyticsSummary buildAnalyticsSummary({
       TaskFocusShare(
         title: entry.title,
         taskId: entry.taskId,
+        categoryId: entry.categoryId,
         seconds: entry.seconds,
         sessions: entry.sessions,
         fraction: total == 0 ? 0 : entry.seconds / total,

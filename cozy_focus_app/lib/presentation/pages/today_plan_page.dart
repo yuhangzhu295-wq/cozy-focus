@@ -390,7 +390,9 @@ class _Segments extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: active ? AppColors.surface : Colors.transparent,
+              // Board 03 fills the selected segment solid sage. A white pill
+              // on the beige track was the least prominent thing on the row.
+              color: active ? AppColors.primarySage : Colors.transparent,
               borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
             child: Text(
@@ -399,7 +401,7 @@ class _Segments extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                color: active ? AppColors.textPrimary : AppColors.textSecondary,
+                color: active ? Colors.white : AppColors.textSecondary,
               ),
             ),
           ),

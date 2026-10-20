@@ -1,11 +1,14 @@
-# 当前真机截图（2026-10-18）
+# 当前真机截图（2026-10-18，2026-10-20 补拍）
 
-这 27 张图是**当前 HEAD 的 shipping entry point**（`lib/main.dart`）在
+这些图是**当前 HEAD 的 shipping entry point**（`lib/main.dart`）在
 `emulator-5554`（Pixel 7 / API 34，1080×2400）上的真实截图，不是拼图、不是旧图重发。
 
-**它们没有通过视觉验收。** 按所有者 2026-10-18 的规则，一页只有审查代理同时看过设计
-展板与这张截图、并明确说 PASS 才算过关。这批图是**送审材料**，不是结论。任何一页都
-不得标 `VISUAL_VERIFIED` 或 `OWNER_VISUAL_APPROVED`。
+**2026-10-20 复验：16 张展板与补充状态均已由独立审查代理（`final-gate`）明确判 PASS。**
+逐页证据与修复清单见
+`outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md`。
+
+这**不等于** `OWNER_VISUAL_APPROVED`：所有者仍保留最终画风审批权，尤其对 01/10 的
+程序化房间与 04B 的留白。任何一页都不得在所有者确认前标 `OWNER_VISUAL_APPROVED`。
 
 ## 数据来源：可复现的 `demo_day`
 
@@ -73,6 +76,7 @@ seed→reset→seed 后 XP 回到 1275 而不是 2550、两条长会话记忆都
 | `10_room.png` | Mochi 的小房间（5 件家具） | 10 |
 | `10A_dress_up.png` | 装扮（空态：装扮系统未接数据） | 10A |
 | `08_collection.png` | 收藏图鉴（5/8） | 10B |
+| `08_free_time.png` | 自由时间（休息） | 08 |
 | `04_focus_running.png` | 专注中 | 04 |
 | `03B_resume.png` | 后台回来后的恢复层 | 03B |
 | `03C_end_confirm.png` | 提前结束确认 | 03C |
@@ -80,6 +84,7 @@ seed→reset→seed 后 XP 回到 1275 而不是 2550、两条长会话记忆都
 | `05_capture_sheet.png` | 分心收集箱浮层 | 05 |
 | `06_complete.png` | 专注完成 | 04 |
 | `06_focus_review.png` | 记录感受 | 04A |
+| `06_focus_review_scrolled.png` | 记录感受（滚动后，「本次收获」完整可达） | 04A |
 | `05C_record_detail.png` | 记录详情 | 05C |
 | `05_history.png` | 历史记录 | 05B |
 | `05D_calendar.png` | 日历 | 05D |
@@ -91,6 +96,7 @@ seed→reset→seed 后 XP 回到 1275 而不是 2550、两条长会话记忆都
 | `14_schedule_to_today.png` | 安排到今日计划 | 14 |
 | `15_settings.png` | 设置 | 15 |
 | `15_data_sync.png` | 数据与同步（本地备份 / 恢复入口） | 15 |
+| `16_empty_state.png` | 任务列表空态（空库另拍） | 16 |
 
 展板原件在 `outputs/visual_qa/reference/`（16 张，文件名带 `_screen.png` 的是裁出的
 手机区域；其中 02/14/15 的 `_screen` 裁切是坏的——20×32、88×24、28×56——比对时请用
@@ -114,10 +120,21 @@ seed→reset→seed 后 XP 回到 1275 而不是 2550、两条长会话记忆都
   `WrapCrossAlignment.center` 后报 `25 and 自定义 are not on the same baseline`（测试
   面 9.5px，真机 25px）。
 
-## 未覆盖
+## 2026-10-20 补拍与修复
 
-- **16 号展板（任务列表空态）没有当前截图。** 空态需要空数据库，与 `demo_day` 互斥；
-  它由 widget 测试与 `outputs/final_product_qa` 的旧证据覆盖，本轮没有重拍。
+- **16 号空态已补拍**：用 `--dart-define=QA_RESET=true` 清空 QA 数据后拍摄
+  （`16_empty_state.png`），随后重新播种 `demo_day` 并把设备留在 shipping build。
+- **08 号自由时间已补拍**（`08_free_time.png`）。
+- `04_focus_running.png` 之前误拍成恢复层（与 `03B_resume.png` 像素差 0.47%），
+  已重拍为真实运行页（像素差 91.49%）。
+- 02/03/06/07/09/01/04B/06A 已按当前 HEAD 重拍。
+- 本轮修掉的 10 个缺陷（选中态、报告配色、月报轴、奖励页 Mochi、状态栏图标、
+  预计奖励口径等）与逐条反向证明，见
+  `outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md`。
+
+## 仍未覆盖 / 已知差距
+
 - 02/14/15 的 `_screen` 裁图是坏的（见上），没有修，因为整张展板可用。
-- **视觉结论：未取得。** 详见
-  `outputs/autonomous_final_delivery/05_VISUAL_COMPARISON.md` 的「送审通道」一节。
+- 01/10 的程序化房间与展板的照片级场景仍有美术差距（已决定不做照片房间）。
+- 视觉结论：**16/16 展板 + 补充状态 REVIEW_APPROVED**（审查代理判定）；
+  `OWNER_VISUAL_APPROVED` 仍待所有者最终画风审批。

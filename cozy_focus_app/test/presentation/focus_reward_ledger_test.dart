@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cozy_focus_app/data/local/app_database.dart';
 import 'package:cozy_focus_app/domain/models/sync_models.dart';
 import 'package:cozy_focus_app/domain/services/focus_clock.dart';
+import 'package:cozy_focus_app/presentation/companion/companion_avatar.dart';
 import 'package:cozy_focus_app/presentation/companion/companion_selection.dart';
 import 'package:cozy_focus_app/presentation/controllers/providers.dart';
 import 'package:cozy_focus_app/presentation/pages/focus_reward_page.dart';
@@ -84,6 +85,11 @@ void main() {
     expect(find.text('+120 $name XP'), findsOneWidget);
     expect(find.text('+0 专注币'), findsNothing);
     expect(find.text('+0 $name XP'), findsNothing);
+
+    // The reward moment has to have the companion in it. Before this, 04B was
+    // the only reward screen with no Mochi at all: two number chips and a
+    // workshop card, i.e. a receipt.
+    expect(find.byType(CompanionAvatar), findsOneWidget);
   });
 
   testWidgets('renders zeros only when the ledger row really is zero',

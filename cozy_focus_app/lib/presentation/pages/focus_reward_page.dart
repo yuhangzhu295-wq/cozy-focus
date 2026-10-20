@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../domain/models/enums.dart';
+import '../companion/companion_avatar.dart';
 import '../companion/companion_selection.dart';
 import '../controllers/focus_session_controller.dart';
 import '../controllers/home_controller.dart';
@@ -69,77 +71,100 @@ class _FocusRewardPageState extends ConsumerState<FocusRewardPage> {
             final coins = ledger?.focusCoinsEarned ?? 0;
             final xp = ledger?.experienceEarned ?? 0;
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Column(
-                children: [
-                  const Spacer(flex: 1),
+            // Scrollable so the companion and the reward chips still fit on a
+            // short screen. The Spacers keep the vertical rhythm on a tall one;
+            // IntrinsicHeight gives them a height to divide when it scrolls.
+            return LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 28),
+                      child: Column(
+                        children: [
+                          const Spacer(flex: 1),
 
-                  // Header
-                  const Text(
-                    '专注完成！',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primarySage,
+                          // Header
+                          const Text(
+                            '专注完成！',
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primarySage,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            '专注时间转化为了经验值与专注币',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // The companion is the product's through-line. This page was
+                          // the one reward moment with no Mochi in it at all — a ledger
+                          // receipt with numbers and no one to receive them.
+                          const CompanionAvatar(
+                            size: 112,
+                            showStateBadge: false,
+                            visualStateOverride: PetVisualState.celebrate,
+                            message: '辛苦啦，收下这份\n专注换来的礼物吧 🌱',
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Real reward chips from RewardLedger
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildRewardChip(
+                                icon: '🪙',
+                                label: '+$coins 专注币',
+                                color: AppColors.accentGoldLight,
+                                textColor: const Color(0xFFB07D1C),
+                              ),
+                              const SizedBox(width: 12),
+                              _buildRewardChip(
+                                icon: '⭐',
+                                label: '+$xp $companionName XP',
+                                color: AppColors.primaryLight,
+                                textColor: AppColors.primaryDark,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 32),
+
+                          // Craft progress section — real data from CraftEngine
+                          _buildCraftSection(context, craft),
+
+                          const Spacer(flex: 2),
+
+                          // Return home
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                ref
+                                    .read(homeControllerProvider.notifier)
+                                    .loadHomeData();
+                                context.go('/');
+                              },
+                              child: const Text(
+                                '返回首页',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    '专注时间转化为了经验值与专注币',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Real reward chips from RewardLedger
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildRewardChip(
-                        icon: '🪙',
-                        label: '+$coins 专注币',
-                        color: AppColors.accentGoldLight,
-                        textColor: const Color(0xFFB07D1C),
-                      ),
-                      const SizedBox(width: 12),
-                      _buildRewardChip(
-                        icon: '⭐',
-                        label: '+$xp $companionName XP',
-                        color: AppColors.primaryLight,
-                        textColor: AppColors.primaryDark,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Craft progress section — real data from CraftEngine
-                  _buildCraftSection(context, craft),
-
-                  const Spacer(flex: 2),
-
-                  // Return home
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ref
-                            .read(homeControllerProvider.notifier)
-                            .loadHomeData();
-                        context.go('/');
-                      },
-                      child: const Text(
-                        '返回首页',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                ),
               ),
             );
           },
