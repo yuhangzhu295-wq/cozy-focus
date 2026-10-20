@@ -107,7 +107,14 @@ def main():
                          "frames that are already decoded, so a cold-cache "
                          "cause blanks only the first time and a structural "
                          "cause blanks both")
+    ap.add_argument("--fps", type=int, default=20,
+                    help="sampling rate for the extracted frames. A blank that "
+                         "lasts one 60Hz vsync can fall between 20fps samples, "
+                         "so 60 is the stricter run")
     a = ap.parse_args()
+    global FPS
+    FPS = a.fps
+    C.FPS = a.fps
 
     os.makedirs(BUILD, exist_ok=True)
     os.makedirs(OUT, exist_ok=True)
