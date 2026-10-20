@@ -126,59 +126,70 @@ class _FilterTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: Row(
-        children: [
-          for (final filter in TaskFilter.values)
-            Expanded(
-              child: Semantics(
-                // Keyed so a test can address one tab without matching its
-                // prose, which also appears in the empty state.
-                key: ValueKey('task_filter_${filter.id}'),
-                // The wrapper supplies the whole name, so it excludes the chip's
-                // own text. Without this the device tree read `今天\n今天` for
-                // each of the three — a screen reader saying every filter twice.
-                // It survived the earlier accessibility sweep because the label
-                // is written `_labels[filter]` and the text `_labels[filter]!`,
-                // and the null-assertion was enough to hide the match from the
-                // scan while the device showed it plainly.
-                excludeSemantics: true,
-                onTap: () => onChanged(filter),
-                button: true,
-                selected: filter == active,
-                label: _labels[filter],
-                child: GestureDetector(
+      // The reference board draws the three filters as one segmented control: a
+      // light track with the selected one filled inside it. Without the track
+      // the selected pill floats on its own and the other two read as loose
+      // labels, which is how the landscape review saw it.
+      child: Container(
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceMuted,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+        child: Row(
+          children: [
+            for (final filter in TaskFilter.values)
+              Expanded(
+                child: Semantics(
+                  // Keyed so a test can address one tab without matching its
+                  // prose, which also appears in the empty state.
+                  key: ValueKey('task_filter_${filter.id}'),
+                  // The wrapper supplies the whole name, so it excludes the chip's
+                  // own text. Without this the device tree read `今天\n今天` for
+                  // each of the three — a screen reader saying every filter twice.
+                  // It survived the earlier accessibility sweep because the label
+                  // is written `_labels[filter]` and the text `_labels[filter]!`,
+                  // and the null-assertion was enough to hide the match from the
+                  // scan while the device showed it plainly.
+                  excludeSemantics: true,
                   onTap: () => onChanged(filter),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    decoration: BoxDecoration(
-                      // Board 02 fills the selected filter solid sage. The
-                      // earlier white pill read as "not selected" next to the
-                      // cream background, so the active filter had no visible
-                      // state at all.
-                      color: filter == active
-                          ? AppColors.primarySage
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                    ),
-                    child: Text(
-                      _labels[filter]!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: filter == active
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                  button: true,
+                  selected: filter == active,
+                  label: _labels[filter],
+                  child: GestureDetector(
+                    onTap: () => onChanged(filter),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      decoration: BoxDecoration(
+                        // Board 02 fills the selected filter solid sage. The
+                        // earlier white pill read as "not selected" next to the
+                        // cream background, so the active filter had no visible
+                        // state at all.
                         color: filter == active
-                            ? Colors.white
-                            : AppColors.textSecondary,
+                            ? AppColors.primarySage
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                      child: Text(
+                        _labels[filter]!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: filter == active
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: filter == active
+                              ? Colors.white
+                              : AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

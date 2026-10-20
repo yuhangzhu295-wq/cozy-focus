@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-21 02:52:11",
-  "head": "8ae903536932d4a22f538d79d5ca9b39f3838072",
+  "generated_at": "2026-10-21 04:15:26",
+  "head": "653f51f9f8276d5f5a477047a9aab4249b7ab65c",
   "remote_head": "7e1248c923daeb02100c986df5384d44287143fd",
   "local_equals_remote": false,
   "counts": {
@@ -25,37 +25,37 @@
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 17.0
+      "seconds": 14.8
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
-      "evidence": "2287/2287 passed",
-      "seconds": 191.9
+      "evidence": "2288/2288 passed",
+      "seconds": 189.2
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "54/54 passed",
-      "seconds": 12.8
+      "seconds": 18.0
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 4.4
+      "seconds": 4.5
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 8.9
+      "seconds": 9.6
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "81/81 passed",
-      "seconds": 11.9
+      "seconds": 11.8
     },
     {
       "gate": "ASSET_GATES",
@@ -67,19 +67,19 @@
       "gate": "APK",
       "status": "PASS",
       "evidence": "32.1 MB (budget 34 MB)",
-      "seconds": 14.4
+      "seconds": 88.8
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "50.7 MB (budget 55 MB)",
-      "seconds": 10.1
+      "seconds": 21.4
     },
     {
       "gate": "DIFF_CHECK",
       "status": "PASS",
       "evidence": "no whitespace errors",
-      "seconds": 0.3
+      "seconds": 0.2
     },
     {
       "gate": "RELEASE_SIGNING",
@@ -109,7 +109,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 5.3
+      "seconds": 11.3
     },
     {
       "gate": "FLOW_GENERATION",

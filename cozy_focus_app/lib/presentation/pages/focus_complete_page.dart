@@ -140,6 +140,10 @@ class _FocusCompletePageState extends ConsumerState<FocusCompletePage> {
     // is persisted, which happens on the button below.
     final coins = focusMinutes * 2;
     final xp = focusMinutes * 5;
+    // A session ended before the first whole minute earns nothing. Congratulating
+    // and printing +0 in the same breath reads as a broken promise, so the copy
+    // and the reward card both follow what was actually earned.
+    final earned = coins > 0 || xp > 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -156,7 +160,7 @@ class _FocusCompletePageState extends ConsumerState<FocusCompletePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildHeroArea(context),
+              _buildHeroArea(context, earned: earned),
               const SizedBox(height: _cardGap),
               _buildDurationCard(elapsed),
               const SizedBox(height: _cardGap),
@@ -182,7 +186,7 @@ class _FocusCompletePageState extends ConsumerState<FocusCompletePage> {
 
   // ── hero band ──────────────────────────────────────────────────────────────
 
-  Widget _buildHeroArea(BuildContext context) {
+  Widget _buildHeroArea(BuildContext context, {bool earned = true}) {
     final topInset = MediaQuery.paddingOf(context).top;
 
     return SizedBox(
@@ -195,10 +199,10 @@ class _FocusCompletePageState extends ConsumerState<FocusCompletePage> {
           Positioned(
             top: topInset + 8,
             left: 20,
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   '专注完成 🌱',
                   style: TextStyle(
                     fontSize: 22,
@@ -207,10 +211,10 @@ class _FocusCompletePageState extends ConsumerState<FocusCompletePage> {
                     height: 1.15,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  '太棒了！\n又一次专注，让自己变得更好啦！',
-                  style: TextStyle(
+                  earned ? '太棒了！\n又一次专注，让自己变得更好啦！' : '这次先到这里。\n下一次，慢慢来。',
+                  style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
                     height: 1.35,
@@ -306,36 +310,50 @@ class _FocusCompletePageState extends ConsumerState<FocusCompletePage> {
 
   Widget _buildRewardCard(int coins, int xp) {
     final companionName = ref.watch(companionDisplayNameProvider);
+    final earned = coins > 0 || xp > 0;
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _cardHeader(Icons.card_giftcard_rounded, '恭喜获得奖励'),
+          _cardHeader(
+            Icons.card_giftcard_rounded,
+            earned ? '恭喜获得奖励' : '本次没有奖励',
+          ),
           // Reference 04 leaves 17.7pt between the header ink and the tile box.
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _rewardTile(
-                  icon: Icons.monetization_on_rounded,
-                  iconColor: AppColors.accentGold,
-                  value: '+$coins',
-                  label: '专注币',
-                  caption: '每一次专注，都是积累 ✨',
-                ),
+          if (!earned)
+            Text(
+              '专注满 1 分钟，才会积累专注币和 $companionName XP。',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                height: 1.4,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _rewardTile(
-                  icon: Icons.star_rounded,
-                  iconColor: AppColors.accentPeach,
-                  value: '+$xp',
-                  label: '$companionName XP',
-                  caption: '你正在成为更好的自己！',
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: _rewardTile(
+                    icon: Icons.monetization_on_rounded,
+                    iconColor: AppColors.accentGold,
+                    value: '+$coins',
+                    label: '专注币',
+                    caption: '每一次专注，都是积累 ✨',
+                  ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _rewardTile(
+                    icon: Icons.star_rounded,
+                    iconColor: AppColors.accentPeach,
+                    value: '+$xp',
+                    label: '$companionName XP',
+                    caption: '你正在成为更好的自己！',
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

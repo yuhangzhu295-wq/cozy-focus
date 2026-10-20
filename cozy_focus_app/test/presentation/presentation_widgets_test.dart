@@ -457,6 +457,37 @@ void main() {
       expect(find.text('+125'), findsOneWidget);
     });
 
+    testWidgets(
+        'Screen 04: a session under a minute does not congratulate a zero reward',
+        (tester) async {
+      // The review agent saw 太棒了！/恭喜获得奖励 above +0/+0 on a 39-second
+      // early end. The reward really is zero (2 coins and 5 XP per whole
+      // minute), so the copy has to follow the numbers rather than the other way
+      // round.
+      final notifier = container.read(focusSessionControllerProvider.notifier);
+      await notifier.startSession(
+        userId: 'test_user',
+        plannedSeconds: 1500,
+        mode: FocusMode.focus,
+        taskName: '写作练习',
+        categoryName: '学习',
+      );
+      testClock.advance(const Duration(seconds: 39));
+      await notifier.completeSession();
+
+      await tester
+          .pumpWidget(createTestApp(container, const FocusCompletePage()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('本次没有奖励'), findsOneWidget);
+      expect(find.textContaining('专注满 1 分钟'), findsOneWidget);
+      expect(find.text('恭喜获得奖励'), findsNothing);
+      expect(find.textContaining('太棒了'), findsNothing);
+      expect(find.text('+0'), findsNothing);
+      expect(find.text('00:39'), findsOneWidget);
+    });
+
     testWidgets('Screen 04: quick finish persists the record and the mood note',
         (tester) async {
       final notifier = container.read(focusSessionControllerProvider.notifier);

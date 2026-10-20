@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -14,6 +16,16 @@ import 'presentation/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Debug-only slow motion for the device capture. `celebrate_capture.py` cannot
+  // see the celebrate sequence's interior: it is five frames at 8fps (625ms) and
+  // `screenrecord` on this emulator stalls about a second at the page
+  // transition. At 1/5 speed the same recorder resolves every frame. The define
+  // is absent from every normal build, and this is a no-op in release.
+  const dilation = int.fromEnvironment('CELEBRATE_DILATION', defaultValue: 1);
+  if (kDebugMode && dilation > 1) {
+    timeDilation = dilation.toDouble();
+  }
 
   // Where installed companion packs live. Resolved once, here, rather than in a
   // provider: the catalog is synchronous and a build must not await a path. Until

@@ -32,6 +32,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 
 import numpy as np
@@ -120,6 +121,13 @@ CELEBRATION_WINDOW_S = 1.5
 # the clip shows the start and the end but not the frames between - so the
 # animation is not verified even though it plainly began.
 CAPTURE_GAP_S = 0.5
+
+# The celebrate sequence is 5 frames at 8fps (`animation_manifest.json`), so a
+# pose changes every 0.125s. To claim the interior was seen, the recording's
+# longest gap inside the burst must be shorter than one swap - otherwise a whole
+# pose can fall in the hole. With `--dilation N` the app runs N times slower, so
+# the swap interval and the window scale with it.
+SPRITE_SWAP_S = 0.125
 
 
 def adb(*args, timeout=180):
@@ -301,6 +309,11 @@ def region(path, box):
         return np.asarray(im.convert("RGB").crop(box), dtype=np.int16)
 
 
+def steps(frames):
+    return [float(np.abs(frames[i] - frames[i + 1]).mean())
+            for i in range(len(frames) - 1)]
+
+
 def whole(path):
     with Image.open(path) as im:
         return np.asarray(im.convert("RGB").resize((160, 90)), dtype=np.int16)
@@ -384,7 +397,104 @@ def selftest():
         print(f"{'PASS' if ok else 'FAIL'} {name}: got {got}, want {want}")
         if not ok:
             failed += 1
+
+    # A recording stall between two swaps must not manufacture a second
+    # celebration: the frames between were never written, so the clip cannot
+    # say they were two.
+    steps, dts = series([10, 22, 90], n=120)
+    dts[60] = 1.2
+    got = len(find_bursts(steps, dts, CELEBRATION_MIN))
+    ok = got == 1
+    print(f"{'PASS' if ok else 'FAIL'} stall inside a burst: got {got}, want 1")
+    if not ok:
+        failed += 1
+
+    arrival_cases = [
+        ("static control has no arrival", [0.0] * 10, None),
+        ("single transition", [0.0, 0.0, 200.0, 0.0, 0.0], 4),
+        ("fade run", [0.0, 50.0, 200.0, 20.0, 0.0], 5),
+    ]
+    for name, ctrl, want in arrival_cases:
+        got = arrival_index(ctrl)
+        ok = got == want
+        print(f"{'PASS' if ok else 'FAIL'} {name}: got {got}, want {want}")
+        if not ok:
+            failed += 1
     return 1 if failed else 0
+
+
+def capture_series(dest, duration_s):
+    """Screenshots as fast as adb allows, with wall-clock times.
+
+    `screenrecord` stalls ~1s at the completion transition on this emulator
+    while SurfaceFlinger keeps presenting at 60fps (`surface_timing.py`), so the
+    frames exist and only the recorder loses them. `screencap` is a different
+    path to the same compositor; it is slower but it does not share the
+    encoder's stall, which is what makes it usable for the burst interior.
+    """
+    if os.path.isdir(dest):
+        shutil.rmtree(dest)
+    os.makedirs(dest, exist_ok=True)
+    out = []
+    t0 = time.time()
+    i = 0
+    while time.time() - t0 < duration_s:
+        p = os.path.join(dest, f"cap_{i:03d}.png")
+        r = subprocess.run([ADB, "exec-out", "screencap", "-p"],
+                           capture_output=True)
+        if r.returncode == 0 and r.stdout:
+            with open(p, "wb") as fh:
+                fh.write(r.stdout)
+            out.append((time.time(), p))
+        i += 1
+    return out
+
+
+def screencap_interior(caps, box, control, scale, dilation=1.0):
+    """Does the screenshot series resolve the first 1.5s of the burst?
+
+    Same two ideas as the recording: the control says when the page arrived,
+    and the subject's frame-to-frame change says whether the animation was
+    playing. The claim is only that the interior was *seen* - the recorder's
+    timing is still the source for duration.
+    """
+    if len(caps) < 4:
+        return {"frames": len(caps), "resolved": False,
+                "reason": "too few screenshots"}
+    paths = [p for _t, p in caps]
+    stamps = [t for t, _p in caps]
+    frames = [region(p, scale_box(box, scale)) for p in paths]
+    ctrl = [region(p, scale_box(control, scale)) for p in paths]
+
+    ctrl_steps = steps(ctrl)
+    start = ctrl_steps.index(max(ctrl_steps)) if ctrl_steps else 0
+    # The transition's last frame, as in find_arrival: walk past the run.
+    floor = max(max(ctrl_steps) * 0.2, MAX_CONTROL_MOTION)
+    while start < len(ctrl_steps) - 1 and ctrl_steps[start] > floor:
+        start += 1
+    after = frames[start:]
+    at = [t - stamps[start] for t in stamps[start:]]
+    if len(after) < 3:
+        return {"frames": len(after), "resolved": False,
+                "reason": "nothing after arrival"}
+    subj_steps = steps(after)
+    dts = [b - a for a, b in zip(at, at[1:])]
+    window = [i for i, t in enumerate(at)
+              if t <= CELEBRATION_WINDOW_S * dilation]
+    gaps = [dts[i] for i in window if i < len(dts)]
+    moves = [subj_steps[i] for i in window if i < len(subj_steps)]
+    max_gap = max(gaps) if gaps else 0.0
+    return {
+        "frames": len(after),
+        "times_s": [round(t, 3) for t in at],
+        "subject_steps": [round(s, 3) for s in subj_steps],
+        "max_gap_in_window_s": round(max_gap, 3),
+        "moving_samples_in_window": len([s for s in moves if s > MIN_BURST]),
+        # Two separate frames that differ prove the sequence advanced; a single
+        # frozen frame cannot.
+        "resolved": (max_gap < SPRITE_SWAP_S * dilation and
+                     len([s for s in moves if s > MIN_BURST]) >= 1),
+    }
 
 
 def display_size():
@@ -395,6 +505,33 @@ def display_size():
 
 def scale_box(box, scale):
     return tuple(int(round(v * scale)) for v in box)
+
+
+def arrival_index(ctrl_steps):
+    """The frame the page has settled on, or None when nothing moved.
+
+    A control that never moves means the page was already there when the clip
+    started (or the wrong region was measured). Returning 0 would silently
+    measure the whole clip as "after arrival"; None says the cut was not
+    detected, and the report carries that.
+    """
+    if not ctrl_steps:
+        return None
+    peak = max(ctrl_steps)
+    if peak <= MAX_CONTROL_MOTION:
+        return None
+    peak_at = ctrl_steps.index(peak)
+    floor = max(peak * 0.2, MAX_CONTROL_MOTION)
+    hi = peak_at
+    while hi < len(ctrl_steps) - 1 and ctrl_steps[hi + 1] > floor:
+        hi += 1
+    # Then past whatever is left of the transition. The run test above uses a
+    # fraction of the peak, so the last frame or two of the fade can sit under it
+    # and land inside the window - where a control step of 20 would fail the
+    # control check for a reason that has nothing to do with the companion.
+    while hi < len(ctrl_steps) - 1 and ctrl_steps[hi] > MAX_CONTROL_MOTION:
+        hi += 1
+    return hi + 1
 
 
 def find_arrival(frames, control=CONTROL):
@@ -414,52 +551,34 @@ def find_arrival(frames, control=CONTROL):
     measurement starts.
     """
     ctrl = [region(p, control) for p in frames]
-    steps = [float(np.abs(ctrl[i] - ctrl[i + 1]).mean())
-             for i in range(len(ctrl) - 1)]
-    if not steps:
-        return 0
-
-    # The page transition is the *largest* control movement, and the arrival is
-    # the end of the run it belongs to. Taking "the last frame the control moved
-    # at all" was the previous version and it was too literal: the title block
-    # keeps twitching by a few tenths of a unit for a while afterwards - enough
-    # to cross a 0.5 threshold once - and the arrival was pushed past the
-    # celebration, so the gate reported no celebration on a companion that had
-    # just celebrated.
-    peak = max(steps)
-    peak_at = steps.index(peak)
-    floor = max(peak * 0.2, MAX_CONTROL_MOTION)
-    lo = peak_at
-    while lo > 0 and steps[lo - 1] > floor:
-        lo -= 1
-    hi = peak_at
-    while hi < len(steps) - 1 and steps[hi + 1] > floor:
-        hi += 1
-    # Then past whatever is left of the transition. The run test above uses a
-    # fraction of the peak, so the last frame or two of the fade can sit under it
-    # and land inside the window - where a control step of 20 would fail the
-    # control check for a reason that has nothing to do with the companion.
-    while hi < len(steps) - 1 and steps[hi] > MAX_CONTROL_MOTION:
-        hi += 1
-    return hi + 1
+    idx = arrival_index(steps(ctrl))
+    return 0 if idx is None else idx
 
 
 def find_bursts(steps, dts, threshold, min_steps=BURST_MIN_STEPS,
-                max_gap_s=BURST_MAX_GAP_S):
+                max_gap_s=BURST_MAX_GAP_S, stall_gap_s=CAPTURE_GAP_S):
     """Groups of at least `min_steps` large steps, each group within
     `max_gap_s` of the next.
 
     `dts[i]` is the time between frame i and frame i+1, so it is the duration
     of step i. The gap between two steps is the time between the end of the
     earlier one and the start of the later one.
+
+    A gap that contains a recording stall does not split the group. A stall
+    means the frames between were never written, so the two halves may be one
+    sequence - splitting there would report a second celebration that the clip
+    cannot actually show. The interior check is what says the clip is
+    unresolved.
     """
     big = [i for i, s in enumerate(steps) if s > threshold]
     groups = []
     cur = []
     for i in big:
         if cur:
-            gap = sum(dts[cur[-1] + 1:i])
-            if gap > max_gap_s:
+            between = dts[cur[-1] + 1:i]
+            gap = sum(between)
+            stalled = any(d > stall_gap_s for d in between)
+            if gap > max_gap_s and not stalled:
                 groups.append(cur)
                 cur = []
         cur.append(i)
@@ -468,7 +587,8 @@ def find_bursts(steps, dts, threshold, min_steps=BURST_MIN_STEPS,
     return [g for g in groups if len(g) >= min_steps]
 
 
-def analyse(frames, times, box, source, native_timing=True, control=CONTROL):
+def analyse(frames, times, box, source, native_timing=True, control=CONTROL,
+            caps=None, scale=1.0, device_box=None, dilation=1.0):
     """Measure the post-arrival window. Returns the report dict and the cut."""
     # Drop the final frame: a screenrecord stops mid-frame, so it is partial.
     # It is also the anchor frame for the arrival test, so trimming it makes
@@ -498,7 +618,8 @@ def analyse(frames, times, box, source, native_timing=True, control=CONTROL):
     # The celebration is the opening burst, and a burst is a *run* of moving
     # samples. Everything after it should be the settle; the renderer hand-over
     # is a single frame swap and does not qualify.
-    bursts = find_bursts(steps, dts, CELEBRATION_MIN)
+    bursts = find_bursts(steps, dts, CELEBRATION_MIN,
+                         max_gap_s=BURST_MAX_GAP_S * dilation)
     first_burst = bursts[0] if bursts else None
     if first_burst:
         lo, hi = first_burst[0], first_burst[-1]
@@ -559,7 +680,7 @@ def analyse(frames, times, box, source, native_timing=True, control=CONTROL):
     checks = {
         # The moment played: a burst that starts as the screen arrives.
         "celebration_played": (first_burst is not None and
-                               burst_start_s <= CELEBRATION_WINDOW_S),
+                               burst_start_s <= CELEBRATION_WINDOW_S * dilation),
         "control_is_static": (max(ctrl_steps) if ctrl_steps else 0.0)
         <= MAX_CONTROL_MOTION,
         # And it played once. A second burst is the companion looping its own
@@ -574,9 +695,16 @@ def analyse(frames, times, box, source, native_timing=True, control=CONTROL):
 
     # Whether the clip can support the claim at all. A stall inside the burst
     # leaves the animation's interior unrecorded: the start and the end are
-    # visible, the frames between are not.
-    burst_interior_resolved = (first_burst is not None and
-                               burst_gap_s <= CAPTURE_GAP_S)
+    # visible, the frames between are not. The screenshot series is the fallback:
+    # it is slower but does not share the recorder's stall, so it can resolve the
+    # interior even when the recording cannot.
+    recorded_resolved = (first_burst is not None and
+                         burst_gap_s <= SPRITE_SWAP_S * dilation)
+    cap_rep = (screencap_interior(caps, device_box or box, CONTROL, 1.0,
+                                 dilation)
+               if caps else {"frames": 0, "resolved": False,
+                             "reason": "no screenshot series"})
+    burst_interior_resolved = recorded_resolved or cap_rep["resolved"]
 
     return {
         "label": "celebrate",
@@ -599,6 +727,7 @@ def analyse(frames, times, box, source, native_timing=True, control=CONTROL):
         "burst_span_s": round(burst_span_s, 3) if burst_span_s is not None else None,
         "burst_gap_s": round(burst_gap_s, 3) if burst_gap_s is not None else None,
         "burst_interior_resolved": burst_interior_resolved,
+        "screencap_interior": cap_rep,
         "largest_step_outside_burst": round(handover_step, 3),
         "window_s": round(window_s, 3),
         "longest_still_run_s": round(longest_still, 3),
@@ -648,11 +777,19 @@ def run(analyse_only=False):
     # the burst; encoding fewer pixels is cheaper, so `--size 720x1600` may get
     # through it. The boxes are in device pixels, so they scale with the clip.
     size = None
+    dilation = 1.0
     for i, a in enumerate(sys.argv):
         if a == "--size" and i + 1 < len(sys.argv):
             size = sys.argv[i + 1]
         elif a.startswith("--size="):
             size = a.split("=", 1)[1]
+        elif a == "--dilation" and i + 1 < len(sys.argv):
+            dilation = float(sys.argv[i + 1])
+        elif a.startswith("--dilation="):
+            dilation = float(a.split("=", 1)[1])
+    # A slowed run needs a longer clip: the burst lasts 0.625 * dilation, and the
+    # route transition slows with it.
+    record_seconds = int(RECORD_SECONDS + 1.2 * max(0.0, dilation - 1))
     base_w, _ = display_size()
     scale = 1.0
     if size:
@@ -670,7 +807,8 @@ def run(analyse_only=False):
         else:
             box = tuple(saved)
         frames, times, native = extract(local_mp4, os.path.join(BUILD, "frames"))
-        return finish(frames, times, box, local_mp4, native, scale)
+        return finish(frames, times, box, local_mp4, native, scale, None, box,
+                      dilation)
 
     if not guard(settle=45):
         print("REFUSING: CozyFocus is not foreground and painted",
@@ -703,13 +841,24 @@ def run(analyse_only=False):
     # burst begins when the screen appears, so a recording started after arrival
     # has already missed it.
     adb("shell", "rm", "-f", "/sdcard/_celebrate.mp4")
-    record = [ADB, "shell", "screenrecord", "--time-limit", str(RECORD_SECONDS),
+    record = [ADB, "shell", "screenrecord", "--time-limit", str(record_seconds),
               "--bit-rate", "6000000"]
     if size:
         record += ["--size", size]
     subprocess.Popen(record + ["/sdcard/_celebrate.mp4"],
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(2)
+
+    # A second capture path, started before the tap. `screenrecord` loses ~1s
+    # here while the display keeps drawing; `screencap` is slower but does not
+    # share that stall, so it is what can show the burst's interior.
+    caps = []
+
+    def _capture():
+        caps.extend(capture_series(os.path.join(BUILD, "caps"), record_seconds))
+
+    cap_thread = threading.Thread(target=_capture, daemon=True)
+    cap_thread.start()
 
     if not tap_label("提前结束", settle=4):
         print("could not find 提前结束; screen had:", file=sys.stderr)
@@ -738,8 +887,11 @@ def run(analyse_only=False):
     with open(box_path, "w", encoding="utf-8") as fh:
         json.dump({"box": list(scale_box(box, scale)), "scale": scale}, fh)
 
+    cap_thread.join(timeout=20)
+    print(f"screencap series: {len(caps)} frames")
+
     # Let the recording run out; it holds the burst and the settle afterwards.
-    time.sleep(RECORD_SECONDS)
+    time.sleep(record_seconds)
 
     subprocess.run([ADB, "pull", "/sdcard/_celebrate.mp4", local_mp4],
                    capture_output=True, text=True)
@@ -753,15 +905,17 @@ def run(analyse_only=False):
         print(f"only {len(frames)} frames extracted", file=sys.stderr)
         return 2
     return finish(frames, times, scale_box(box, scale), local_mp4, native,
-                  scale)
+                  scale, caps, box, dilation)
 
 
-def finish(frames, times, box, local_mp4, native_timing=True, scale=1.0):
+def finish(frames, times, box, local_mp4, native_timing=True, scale=1.0,
+           caps=None, device_box=None, dilation=1.0):
     control = scale_box(CONTROL, scale)
     report, start = analyse(frames, times, box,
                             os.path.relpath(local_mp4, APP), native_timing,
-                            control)
+                            control, caps, scale, device_box, dilation)
     report["record_scale"] = round(scale, 3)
+    report["time_dilation"] = dilation
     path = os.path.join(OUT, "celebrate_MOTION_REPORT.json")
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2)

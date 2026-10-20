@@ -218,8 +218,8 @@ HUD 是真实控件。
 
 - 从 `screenrecord` 自己的时间戳读原生帧，不再用复制帧当时间轴；
 - `find_bursts()` 把**一秒内多次大变化**算作一次 burst，单帧交班不算 —— 5fps 的精灵序列在 60fps 采样下也是孤立的大变化，旧的"连续两帧"判据会把它整个漏掉；
-- `burst_interior_resolved` 检查 burst 内部有没有录制停顿。本轮录制在页面切换处停了 **1.0 秒**，正好落在 burst 内，所以 `technical_visual_gate = BLOCKED`：片段能看到开始和结束，看不到中间帧。这不是产品缺陷，是录制能力不足；
-- 两条仪器都有 `--selftest`：闪烁分类器 7 例、庆祝 burst 分类器 5 例，全部通过。
+- `burst_interior_resolved` 检查 burst 内部有没有录制停顿。本轮录制在页面切换处停了 **1.0–1.5 秒**，正好落在 burst 内，所以 `technical_visual_gate = BLOCKED`：片段能看到开始和结束，看不到中间帧。**2026-10-21 追加测量推翻了这个判据的归因**：`SurfaceFlinger --latency` 在同一时间窗内读到 **1249.8 ms / 998.6 ms 没有任何新帧被呈现**，说明是应用在完成页出现时停止出帧，不是编码器丢帧。见 `outputs/device_diagnostics/completion_freeze_2026-10-21.md`；该缺陷状态为 `REPORTED_NOT_FIXED`。
+- 两条仪器都有 `--selftest`：闪烁分类器 7 例、庆祝 burst 分类器 9 例（含录制停顿合并、到达点检测），全部通过。
 
 **教训写在这里**：`NOT_VERIFIED` 是对的，但把原因归给"我的窗口没对上"是**替被测对象开脱**。换一个工具之后，问题从来不在工具窗口上。
 
