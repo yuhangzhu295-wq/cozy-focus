@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-21 04:15:26",
-  "head": "653f51f9f8276d5f5a477047a9aab4249b7ab65c",
+  "generated_at": "2026-10-21 04:32:49",
+  "head": "4f1a29e95018ad7a86d42be39ff9b03876094eb0",
   "remote_head": "7e1248c923daeb02100c986df5384d44287143fd",
   "local_equals_remote": false,
   "counts": {
@@ -19,67 +19,67 @@
       "gate": "FORMAT",
       "status": "PASS",
       "evidence": "482 files, 0 changed",
-      "seconds": 3.5
+      "seconds": 3.2
     },
     {
       "gate": "ANALYZE",
       "status": "PASS",
       "evidence": "0 issues",
-      "seconds": 14.8
+      "seconds": 14.1
     },
     {
       "gate": "UNIT_TESTS",
       "status": "PASS",
-      "evidence": "2288/2288 passed",
-      "seconds": 189.2
+      "evidence": "2289/2289 passed",
+      "seconds": 227.8
     },
     {
       "gate": "INTEGRATION_TESTS",
       "status": "PASS",
       "evidence": "54/54 passed",
-      "seconds": 18.0
+      "seconds": 14.3
     },
     {
       "gate": "GOLDEN_FLOW",
       "status": "PASS",
       "evidence": "6/6 passed",
-      "seconds": 4.5
+      "seconds": 4.0
     },
     {
       "gate": "MIGRATION",
       "status": "PASS",
       "evidence": "16/16 passed",
-      "seconds": 9.6
+      "seconds": 9.1
     },
     {
       "gate": "LIFECYCLE",
       "status": "PASS",
       "evidence": "81/81 passed",
-      "seconds": 11.8
+      "seconds": 14.4
     },
     {
       "gate": "ASSET_GATES",
       "status": "PASS",
       "evidence": "75/75 passed",
-      "seconds": 8.6
+      "seconds": 8.2
     },
     {
       "gate": "APK",
       "status": "PASS",
       "evidence": "32.1 MB (budget 34 MB)",
-      "seconds": 88.8
+      "seconds": 15.0
     },
     {
       "gate": "AAB",
       "status": "PASS",
       "evidence": "50.7 MB (budget 55 MB)",
-      "seconds": 21.4
+      "seconds": 11.3
     },
     {
       "gate": "DIFF_CHECK",
       "status": "PASS",
       "evidence": "no whitespace errors",
-      "seconds": 0.2
+      "seconds": 0.1
     },
     {
       "gate": "RELEASE_SIGNING",
@@ -109,7 +109,7 @@
       "gate": "BEHAVIOR_AUTHORITY",
       "status": "PASS",
       "evidence": "BEHAVIOR_AUTHORITY_COUNT=1 (measured): the presented posture is determined by the committed action.",
-      "seconds": 11.3
+      "seconds": 6.6
     },
     {
       "gate": "FLOW_GENERATION",
