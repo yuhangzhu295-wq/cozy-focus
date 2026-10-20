@@ -88,11 +88,10 @@ def analyse(stamps):
     if len(stamps) < 2:
         return {"frames": len(stamps), "verdict": "NO_FRAMES"}
     gaps = [(b - a) * 1000 for a, b in zip(stamps, stamps[1:])]
-    max_gap = max(gaps)
     return {
         "frames": len(stamps),
         "window_s": round(stamps[-1] - stamps[0], 3),
-        "max_gap_ms": round(max_gap, 1),
+        "max_gap_ms": round(max(gaps), 1),
         "gaps_over_100ms": [round(g, 1) for g in gaps if g > 100],
         # Where each long gap sits in the buffer, so the completion transition
         # can be told apart from the dialog before it.
@@ -101,8 +100,15 @@ def analyse(stamps):
              "ms": round(g, 1)}
             for i, g in enumerate(gaps) if g > 100
         ],
-        "jank": max_gap > JANK_GAP_MS,
-        "verdict": "APP_STALLED" if max_gap > JANK_GAP_MS else "APP_KEPT_DRAWING",
+        # A gap between presented frames is not jank by itself. A screen with
+        # nothing animating presents nothing, and a blocked UI thread presents
+        # nothing either; this timeline cannot tell them apart. Content has to
+        # be captured (screencap) to say which.
+        "note": ("A long gap means no new buffer was presented. It is either a "
+                 "static screen or a blocked thread; only a content capture "
+                 "distinguishes them."),
+        "verdict": "GAP_IN_PRESENTATION" if max(gaps) > JANK_GAP_MS
+        else "CONTINUOUS_PRESENTATION",
     }
 
 
@@ -140,7 +146,9 @@ def main():
         json.dump(rep, fh, indent=2)
     print(json.dumps(rep, indent=2))
     print(f"\nreport: {path}")
-    return 0 if rep["verdict"] == "APP_KEPT_DRAWING" else 1
+    # A measurement, not a gate: a gap is either a static screen or a blocked
+    # thread, and this tool cannot choose.
+    return 0
 
 
 if __name__ == "__main__":
