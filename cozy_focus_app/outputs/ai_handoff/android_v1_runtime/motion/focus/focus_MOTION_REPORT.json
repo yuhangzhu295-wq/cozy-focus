@@ -16,17 +16,17 @@
     430
   ],
   "subject_steps": [
+    5.064,
+    4.919,
+    4.919,
     0.0,
     0.0,
+    4.919,
+    0.0,
+    5.145,
     0.0,
     0.0,
-    5.15,
-    0.0,
-    0.0,
-    0.0,
-    4.961,
-    15.182,
-    12.757
+    5.145
   ],
   "control_steps": [
     0.0,
@@ -43,22 +43,29 @@
   ],
   "distance_from_first": [
     0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    5.15,
-    5.15,
-    5.15,
-    5.15,
-    5.807,
-    15.084,
-    11.788
+    5.064,
+    5.55,
+    5.064,
+    5.064,
+    5.064,
+    5.55,
+    5.55,
+    7.736,
+    7.736,
+    7.736,
+    5.55
   ],
+  "repeat_distance": 0.0,
+  "repeat_pair": [
+    1,
+    4
+  ],
+  "typical_step": 4.919,
   "thresholds": {
     "min_subject_motion": 1.0,
     "max_control_motion": 0.5,
-    "cycle_return_fraction": 0.5
+    "cycle_return_fraction": 0.5,
+    "min_cycle_lag": 3
   },
   "checks": {
     "subject_animates": true,

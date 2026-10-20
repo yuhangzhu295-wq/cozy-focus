@@ -137,18 +137,30 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--only", default=None,
                     help="capture only this screen key")
+    ap.add_argument("--portrait", action="store_true",
+                    help="capture the same screens in portrait, writing the "
+                         "01..08 board files the visual review reads. Same "
+                         "navigation; the only difference is orientation and "
+                         "the destination")
     a = ap.parse_args()
 
-    os.makedirs(OUT, exist_ok=True)
+    dest = os.path.dirname(OUT) if a.portrait else OUT
+    os.makedirs(dest, exist_ok=True)
+    # `landscape_shot.OUT` is the board directory, where the *portrait* boards
+    # live. Writing there from this sweep overwrote 01_home..08_collection with
+    # 2400x1080 captures and left the landscape folder holding a week-old run.
+    # Each mode writes to its own directory.
+    L.OUT = dest
     if not guard(settle=45):
         print("REFUSING: CozyFocus is not foreground and painted",
               file=sys.stderr)
         return 2
 
-    L.rotate(L.ROTATION_LANDSCAPE)
-    if not drawn():
-        print("REFUSING: nothing painted after rotating", file=sys.stderr)
-        return 2
+    if not a.portrait:
+        L.rotate(L.ROTATION_LANDSCAPE)
+        if not drawn():
+            print("REFUSING: nothing painted after rotating", file=sys.stderr)
+            return 2
 
     captured, missing = [], []
     for name, (path, marker) in SCREENS.items():
@@ -197,8 +209,9 @@ def main():
         else:
             captured.append(name)
 
-    L.rotate(L.ROTATION_PORTRAIT)
-    L.unfreeze_rotation()
+    if not a.portrait:
+        L.rotate(L.ROTATION_PORTRAIT)
+        L.unfreeze_rotation()
     print(f"\ncaptured {len(captured)}: {', '.join(captured)}")
     if missing:
         print(f"missing: {', '.join(missing)}", file=sys.stderr)

@@ -53,10 +53,21 @@ MIN_SUBJECT_MOTION = 1.0
 # chosen, or the screen is scrolling -- either way the measurement is void.
 MAX_CONTROL_MOTION = 0.5
 
-# A cycle returns toward its starting frame; a one-way drift does not. Requiring
-# at least one frame to come back inside half the peak distance is what separates
-# "animating" from "sliding".
+# A cycle returns to a pose it has already been in; a one-way drift does not.
+# The test is a *repeat*: two frames at least MIN_CYCLE_LAG apart whose distance
+# is under half one typical frame step. Comparing against a typical step rather
+# than against the peak matters - a linear drift's distance grows with lag, so
+# its lag-3 distance is already a third of its peak and a peak-relative test
+# passes it.
+#
+# The previous test anchored on frame 0 and asked whether any later frame came
+# back within half the peak distance. That failed the focus screen on 2026-10-21
+# on an animation that repeats *exactly* at frames 1/4 and 1/9: the first
+# screenshot caught a different pose, so every later frame sat ~16 away from it
+# while the loop itself moved by ~7. The anchor was the outlier, not the
+# animation.
 CYCLE_RETURN_FRACTION = 0.5
+MIN_CYCLE_LAG = 3
 
 # Modes. An ambient action cycles in place; a travel moves one way. Asserting the
 # wrong one is worse than asserting nothing, so they are separate modes rather
@@ -94,6 +105,57 @@ def steps(frames):
             for i in range(len(frames) - 1)]
 
 
+def cycle_evidence(frames, min_lag=MIN_CYCLE_LAG):
+    """(returned, repeat_distance, repeat_pair, typical_step).
+
+    A repeat is the closest pair of frames at least `min_lag` apart. Comparing
+    it with the median adjacent step is what separates a loop (which revisits a
+    pose exactly) from a drift (whose frames only get further apart).
+    """
+    n = len(frames)
+    best = None
+    for i in range(n):
+        for j in range(i + 1, n):
+            if j - i < min_lag:
+                continue
+            d = float(np.abs(frames[i] - frames[j]).mean())
+            if best is None or d < best[0]:
+                best = (d, i, j)
+    adjacent = steps(frames)
+    typical = float(np.median(adjacent)) if adjacent else 0.0
+    returned = (best is not None and typical > 0 and
+                best[0] < CYCLE_RETURN_FRACTION * typical)
+    return returned, best, typical
+
+
+def selftest():
+    """Synthetic sequences: a loop must pass and a drift, a freeze and a
+    one-shot-then-hold must fail."""
+    def frames_from(values):
+        out = []
+        for v in values:
+            f = np.zeros((8, 8, 3), dtype=np.int16)
+            f[:, :, 0] = v
+            out.append(f)
+        return out
+
+    cases = [
+        ("loop", [10, 20, 30, 10, 20, 30], True),
+        ("drift", [0, 10, 20, 30, 40, 50], False),
+        ("freeze", [5, 5, 5, 5, 5, 5], False),
+        ("one shot then hold", [0, 20, 40, 40, 40, 40], False),
+    ]
+    failed = 0
+    for name, values, want in cases:
+        got, best, typical = cycle_evidence(frames_from(values))
+        ok = got == want
+        print(f"{'PASS' if ok else 'FAIL'} {name}: got {got}, want {want} "
+              f"(repeat {best[0]:.1f} at {best[1]}/{best[2]}, step {typical:.1f})")
+        if not ok:
+            failed += 1
+    return 1 if failed else 0
+
+
 def run(serial, label, subject, control, count, interval, out_dir,
         mode=MODE_IDLE):
     os.makedirs(out_dir, exist_ok=True)
@@ -109,11 +171,12 @@ def run(serial, label, subject, control, count, interval, out_dir,
     subj_steps = steps(subj)
     ctrl_steps = steps(ctrl)
 
-    # Distance of every frame from the first, for the cycle test.
+    # Distance of every frame from the first, kept for the travel check and for
+    # the report. It is not the cycle test: frame 0 is an arbitrary anchor and
+    # can be the outlier.
     first = subj[0]
     from_first = [float(np.abs(f - first).mean()) for f in subj]
-    peak = max(from_first)
-    returned = any(d < peak * CYCLE_RETURN_FRACTION for d in from_first[1:])
+    returned, repeat, typical_step = cycle_evidence(subj)
 
     checks = {
         "subject_animates": max(subj_steps) > MIN_SUBJECT_MOTION,
@@ -139,10 +202,14 @@ def run(serial, label, subject, control, count, interval, out_dir,
         "subject_steps": [round(s, 3) for s in subj_steps],
         "control_steps": [round(s, 3) for s in ctrl_steps],
         "distance_from_first": [round(d, 3) for d in from_first],
+        "repeat_distance": round(repeat[0], 3) if repeat else None,
+        "repeat_pair": [repeat[1], repeat[2]] if repeat else None,
+        "typical_step": round(typical_step, 3),
         "thresholds": {
             "min_subject_motion": MIN_SUBJECT_MOTION,
             "max_control_motion": MAX_CONTROL_MOTION,
             "cycle_return_fraction": CYCLE_RETURN_FRACTION,
+            "min_cycle_lag": MIN_CYCLE_LAG,
         },
         "checks": checks,
         "technical_visual_gate": "FAIL" if blocking else "PASS",
@@ -189,4 +256,6 @@ def main():
 
 
 if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        sys.exit(selftest())
     sys.exit(main())
